@@ -142,8 +142,11 @@ export class Game {
       } else {
         this.paused = true;
         this.hud.hide();
-        if (this.overlayState === 'playing' || this.overlayState === 'start') {
+        if (this.overlayState === 'playing') {
           this.showOverlay('paused');
+        } else if (this.overlayState === 'start') {
+          // 从开始界面尝试锁定失败，提示用户而非静默切到「已暂停」
+          this.pointerError.classList.remove('hidden');
         }
       }
     });
