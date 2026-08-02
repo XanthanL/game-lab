@@ -128,6 +128,7 @@ export class Game {
 
   start(): void {
     this.running = true;
+    this.timer.reset();
     requestAnimationFrame(this.loop);
   }
 
