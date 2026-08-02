@@ -3,320 +3,473 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Game Lab — 前端游戏试验场</title>
+<title>GAME LAB — 前端游戏实验场</title>
 <meta name="description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
 <style>
   :root {
-    --bg: #0a0c12;
-    --bg-2: #11141d;
-    --card: #161a26;
-    --card-2: #1d2230;
-    --border: rgba(255, 255, 255, 0.08);
-    --text: #e7e9ee;
-    --text-dim: #9aa0ad;
-    --text-mute: #646a78;
-    --accent: #ff5a36;
-    --accent-2: #ffb648;
-    --accent-3: #6ee7ff;
-    --shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
-    --radius: 18px;
+    --bg: #0b0b0d;
+    --bg-2: #111114;
+    --ink: #f2efe9;
+    --ink-dim: #8a8780;
+    --ink-mute: #4a4844;
+    --line: rgba(242, 239, 233, 0.12);
+    --line-strong: rgba(242, 239, 233, 0.28);
+    --accent: #ff4a1c;
+    --accent-soft: rgba(255, 74, 28, 0.14);
+    --serif: "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", "Courier New", monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
     background: var(--bg);
-    color: var(--text);
-    font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
+    color: var(--ink);
+    font-family: var(--sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   body {
     background:
-      radial-gradient(1200px 600px at 20% -10%, rgba(255, 90, 54, 0.15), transparent 60%),
-      radial-gradient(900px 500px at 90% 10%, rgba(110, 231, 255, 0.10), transparent 60%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-    background-attachment: fixed;
+      radial-gradient(800px 400px at 85% 0%, rgba(255, 74, 28, 0.06), transparent 70%),
+      var(--bg);
+    min-height: 100vh;
   }
 
-  .wrap {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 64px 28px 96px;
-  }
+  ::selection { background: var(--accent); color: var(--bg); }
 
-  /* ============ Header ============ */
-  header {
-    text-align: center;
-    margin-bottom: 56px;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.03);
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 22px;
-  }
-  .badge .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 12px var(--accent);
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.4); }
-  }
-
-  h1 {
-    font-size: clamp(40px, 7vw, 76px);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-    background: linear-gradient(135deg, #fff 0%, #ffb648 50%, #ff5a36 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 18px;
-  }
-
-  .subtitle {
-    font-size: clamp(15px, 1.6vw, 18px);
-    color: var(--text-dim);
-    max-width: 640px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
-
-  /* ============ Games Grid ============ */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
-  }
-
-  .card {
-    position: relative;
+  /* ============ 顶部细栏 ============ */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
     display: flex;
-    flex-direction: column;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-                border-color 0.35s ease,
-                box-shadow 0.35s ease;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-    isolation: isolate;
-  }
-
-  .card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(255, 255, 255, 0.18);
-    box-shadow: var(--shadow);
-  }
-
-  .card:hover .thumb::after { opacity: 0.4; }
-  .card:hover .thumb .play { opacity: 1; transform: scale(1); }
-  .card:hover .thumb canvas { transform: scale(1.05); }
-
-  .thumb {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    background: #000;
-    overflow: hidden;
-  }
-  .thumb canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .thumb::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
-    opacity: 0.55;
-    transition: opacity 0.35s ease;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 32px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    z-index: 100;
+    mix-blend-mode: difference;
     pointer-events: none;
   }
+  .topbar .right { display: flex; gap: 24px; }
+  .topbar .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    animation: blink 2.4s ease-in-out infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-  .play {
-    position: absolute;
-    inset: 0;
+  /* ============ HERO ============ */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: stretch;
+    padding: 0 32px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* 左侧：竖排巨型字母标题 */
+  .hero-title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 80px 0 60px;
+  }
+  .vertical {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(48px, 9vw, 128px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    display: flex;
+    flex-direction: column;
+  }
+  .vertical .letter {
+    display: block;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
+  }
+  .vertical .letter:hover {
+    color: var(--accent);
+    transform: translateX(8px);
+  }
+  .vertical .gap { display: block; height: 0.5em; }
+
+  /* 中间：生成艺术海报 */
+  .hero-art {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.35s ease, transform 0.35s ease;
-    z-index: 2;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+    padding: 80px 40px 60px;
+    position: relative;
   }
-  .play::before {
-    content: "▶";
-    margin-right: 10px;
-    font-size: 18px;
+  .hero-art canvas {
+    width: min(38vw, 460px);
+    aspect-ratio: 3 / 4;
+    display: block;
+    border: 1px solid var(--line);
+    background: #050505;
   }
-
-  .tags {
+  .hero-art .art-label {
     position: absolute;
-    top: 12px;
-    left: 12px;
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    z-index: 2;
-  }
-  .tag {
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
     font-size: 10px;
-    padding: 4px 9px;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    color: var(--text-dim);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.3em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    white-space: nowrap;
   }
-  .tag.accent { color: var(--accent-2); border-color: rgba(255, 182, 72, 0.4); }
 
-  .body {
-    padding: 20px 22px 24px;
+  /* 右侧：介绍 */
+  .hero-meta {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    justify-content: center;
+    padding: 80px 0 60px 40px;
+    gap: 32px;
+  }
+  .hero-meta .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .hero-meta .lede {
+    font-family: var(--serif);
+    font-size: clamp(18px, 1.8vw, 22px);
+    line-height: 1.55;
+    color: var(--ink);
+    max-width: 360px;
+  }
+  .hero-meta .lede em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero-meta .desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+    max-width: 340px;
+  }
+  .hero-meta .stats {
+    display: flex;
+    gap: 32px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .hero-meta .stats b {
+    display: block;
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: 0;
   }
 
-  .title-row {
+  /* ============ WORK 列表 ============ */
+  .section-head {
     display: flex;
+    justify-content: space-between;
     align-items: baseline;
-    gap: 10px;
-    margin-bottom: 8px;
+    padding: 80px 32px 24px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
   }
-  .title {
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.01em;
-  }
-  .title-en {
-    font-size: 12px;
-    color: var(--text-mute);
-    font-weight: 500;
+  .section-head h2 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
     letter-spacing: 0.08em;
+    color: var(--ink);
+    text-transform: none;
+  }
+  .section-head .count {
+    color: var(--accent);
+  }
+
+  .work-list {
+    list-style: none;
+  }
+
+  .work-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 80px 1fr 1.4fr 1fr 120px;
+    gap: 32px;
+    align-items: center;
+    padding: 32px;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.4s ease, padding 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+  }
+  .work-item:hover {
+    background: var(--bg-2);
+    padding-left: 48px;
+  }
+  .work-item:hover .work-num { color: var(--accent); }
+  .work-item:hover .work-title { transform: translateX(8px); }
+  .work-item:hover .work-arrow { opacity: 1; transform: translateX(0); }
+  .work-item:hover .poster { opacity: 1; transform: scale(1); }
+
+  .work-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--ink-mute);
+    transition: color 0.3s ease;
+  }
+
+  .work-title {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .work-title .cn {
+    font-family: var(--serif);
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .work-title .en {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .work-desc {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--ink-dim);
+  }
+
+  .work-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-
-  .desc {
-    font-size: 14px;
-    color: var(--text-dim);
-    line-height: 1.6;
-    margin-bottom: 18px;
-    flex: 1;
+  .work-stack span {
+    color: var(--ink-dim);
+    padding: 3px 0;
+    border-bottom: 1px solid var(--line);
   }
 
-  .meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--text-mute);
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .meta .stack {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .stack span {
-    padding: 3px 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 4px;
-    color: var(--text-dim);
-  }
-  .arrow {
-    font-size: 14px;
+  .work-arrow {
+    font-family: var(--serif);
+    font-size: 32px;
     color: var(--accent);
-    transition: transform 0.3s ease;
+    text-align: right;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .card:hover .arrow { transform: translateX(4px); }
+
+  /* 海报浮层（hover 时显示） */
+  .poster {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    transform: translate(0, -50%) scale(0.92);
+    width: 180px;
+    aspect-ratio: 3 / 4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 2;
+    border: 1px solid var(--line-strong);
+  }
+  .poster canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 
   /* ============ Footer ============ */
   footer {
-    margin-top: 80px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-mute);
-    line-height: 1.8;
+    padding: 80px 32px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: end;
+    border-top: 1px solid var(--line);
+    margin-top: 0;
   }
-  footer a {
-    color: var(--accent-3);
+  footer .colophon {
+    font-family: var(--serif);
+    font-size: clamp(20px, 2.4vw, 32px);
+    line-height: 1.4;
+    color: var(--ink-dim);
+    max-width: 480px;
+  }
+  footer .colophon em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  footer .meta {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    line-height: 2;
+  }
+  footer .meta a {
+    color: var(--ink-dim);
     text-decoration: none;
-    border-bottom: 1px dashed rgba(110, 231, 255, 0.4);
-    transition: border-color 0.2s ease;
+    border-bottom: 1px solid var(--line);
+    transition: color 0.3s ease, border-color 0.3s ease;
   }
-  footer a:hover { border-color: var(--accent-3); }
+  footer .meta a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
 
-  @media (max-width: 600px) {
-    .wrap { padding: 40px 18px 60px; }
-    .grid { grid-template-columns: 1fr; gap: 18px; }
+  /* ============ 响应式 ============ */
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      padding: 0 24px;
+    }
+    .hero-title { padding: 100px 0 20px; justify-content: center; }
+    .vertical { writing-mode: horizontal-tb; flex-direction: row; gap: 0.1em; font-size: clamp(56px, 16vw, 96px); }
+    .vertical .gap { width: 0.4em; height: auto; }
+    .hero-art { padding: 20px 0; }
+    .hero-art canvas { width: min(70vw, 360px); }
+    .hero-meta { padding: 40px 0 80px; }
+    .work-item {
+      grid-template-columns: 60px 1fr 60px;
+      grid-template-rows: auto auto auto;
+      gap: 12px 20px;
+      padding: 24px;
+    }
+    .work-item:hover { padding-left: 32px; }
+    .work-num { grid-row: 1; grid-column: 1; }
+    .work-title { grid-row: 1; grid-column: 2; }
+    .work-arrow { grid-row: 1; grid-column: 3; }
+    .work-desc { grid-row: 2; grid-column: 2 / 4; }
+    .work-stack { grid-row: 3; grid-column: 2 / 4; }
+    .poster { display: none; }
+    footer { grid-template-columns: 1fr; text-align: left; }
+    footer .meta { text-align: left; }
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="badge"><span class="dot"></span>Agent · Game Lab</div>
-      <h1>Game Lab</h1>
-      <p class="subtitle">一个用于测试不同 Agent 制作不同前端游戏的实验场。每个项目都是一次独立尝试，托管于 GitHub Pages。</p>
-    </header>
 
-    <main class="grid" id="grid"></main>
-
-    <footer>
-      <div>共 <span id="count">0</span> 个实验性项目 · 持续追加中</div>
-      <div style="margin-top:6px;">Powered by <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
-    </footer>
+  <div class="topbar">
+    <div><span class="dot"></span>GAME LAB / 2026</div>
+    <div class="right">
+      <span>AGENT · EXPERIMENTS</span>
+      <span>GITHUB PAGES</span>
+    </div>
   </div>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-title">
+      <div class="vertical" id="heroTitle">
+        <span class="letter">G</span>
+        <span class="letter">A</span>
+        <span class="letter">M</span>
+        <span class="letter">E</span>
+        <span class="gap"></span>
+        <span class="letter">L</span>
+        <span class="letter">A</span>
+        <span class="letter">B</span>
+      </div>
+    </div>
+
+    <div class="hero-art">
+      <canvas id="heroCanvas" width="600" height="800"></canvas>
+      <div class="art-label">GENERATIVE POSTER · NO.001</div>
+    </div>
+
+    <div class="hero-meta">
+      <div class="tag">— Agent · Game Lab</div>
+      <div class="lede">
+        一个用 <em>不同 Agent</em> 制造不同前端游戏的<em>实验场</em>。
+      </div>
+      <div class="desc">
+        每一个条目都是一次独立尝试：不同模型、不同风格、不同技术栈。从 Raycast 恐怖到 Phaser 卡牌，从 Canvas 塔防到 Three.js 弹幕。托管于 GitHub Pages，持续追加。
+      </div>
+      <div class="stats">
+        <div><b>04</b>Projects</div>
+        <div><b>04</b>Agents</div>
+        <div><b>∞</b>Attempts</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WORK ============ -->
+  <div class="section-head">
+    <h2>Work</h2>
+    <div><span class="count" id="count">00</span> / 04 — Selected Experiments</div>
+  </div>
+
+  <ul class="work-list" id="workList"></ul>
+
+  <!-- ============ Footer ============ -->
+  <footer>
+    <div class="colophon">
+      所有作品均为 <em>实验性</em> 尝试。<br>
+      用 AI Agent 写游戏，<em>从想法到可玩</em>。
+    </div>
+    <div class="meta">
+      <div>© 2026 GAME LAB</div>
+      <div>Hosted on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
+      <div>Source on <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a></div>
+    </div>
+  </footer>
 
 <script>
 "use strict";
 
-/* ============ 游戏清单 ============
- * path: 入口相对路径（GitHub Pages 根 = 仓库根）
- * thumb: 用 canvas 程序化绘制的封面（无外部图片依赖）
- */
+/* ============ 游戏清单 ============ */
 const GAMES = [
   {
     title: "咒 · 怨宅",
-    titleEn: "JYU",
+    titleEn: "JYU / Cursed House",
     desc: "第一人称日式恐怖。雨夜被困在被诅咒的老宅，找到大门钥匙逃出去——小心，它也在找你。",
     path: "./cursed-house/index.html",
     stack: ["Canvas", "Raycast", "WebAudio"],
-    tag: "恐怖",
-    palette: { sky: "#0a0810", accent: "#a01212", moon: "#e8e2d2", fog: "#1c1622" },
-    scene: "horrorHouse"
+    code: "jyu-0001",
+    palette: { bg: "#0a0810", ink: "#a01212", moon: "#e8e2d2", accent: "#3a1818" },
+    scene: "horror"
   },
   {
     title: "FPS Vampire",
@@ -324,9 +477,9 @@ const GAMES = [
     desc: "第一人称吸血鬼幸存者。自动索敌、波次推进、越战越强。Three.js 驱动的 3D 弹幕生存。",
     path: "./FPS%20Vampire/dist/index.html",
     stack: ["Three.js", "TypeScript", "Vite"],
-    tag: "3D",
-    palette: { sky: "#1a0a18", accent: "#ff3060", moon: "#ffd0d8", fog: "#2a0a20" },
-    scene: "fpsVampire"
+    code: "vmp-0002",
+    palette: { bg: "#1a0a18", ink: "#ff3060", moon: "#ffd0d8", accent: "#5a1838" },
+    scene: "vampire"
   },
   {
     title: "植物大战僵尸",
@@ -334,8 +487,8 @@ const GAMES = [
     desc: "经典塔防玩法复刻。选关卡、种植物、守房子。阳光管理与波次节奏的怀旧练习。",
     path: "./PVZ/index.html",
     stack: ["Canvas", "Vanilla JS"],
-    tag: "塔防",
-    palette: { sky: "#1a2410", accent: "#7cc242", moon: "#ffe6a0", fog: "#243a18" },
+    code: "pvz-0003",
+    palette: { bg: "#1a2410", ink: "#7cc242", moon: "#ffe6a0", accent: "#3a5a1a" },
     scene: "pvz"
   },
   {
@@ -344,213 +497,238 @@ const GAMES = [
     desc: "Phaser 3 回合制卡牌。从浅海到地核的分层推进，构筑卡组、对抗火星异生态。",
     path: "./forcing-mars/index.html",
     stack: ["Phaser 3", "Vanilla JS"],
-    tag: "卡牌",
-    palette: { sky: "#1a0808", accent: "#d44a28", moon: "#ffb070", fog: "#3a1410" },
+    code: "mrs-0004",
+    palette: { bg: "#1a0808", ink: "#d44a28", moon: "#ffb070", accent: "#5a1810" },
     scene: "mars"
   }
 ];
 
-/* ============ 封面绘制器 ============
- * 每个封面是一段轻量 Canvas 程序化动画，避免引入任何外部图片
+/* ============ Hero 生成艺术海报 ============
+ * 单色 + 噪点 + 几何块，像一张黑白印刷海报
  */
-function makeThumb(container, game) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 640;
-  canvas.height = 360;
-  container.appendChild(canvas);
+function drawHeroPoster() {
+  const c = document.getElementById("heroCanvas");
+  const ctx = c.getContext("2d");
+  const W = c.width, H = c.height;
+
+  function frame(t) {
+    // 底色
+    ctx.fillStyle = "#050505";
+    ctx.fillRect(0, 0, W, H);
+
+    // 大字 GAME LAB（被裁切的衬线大字，印刷海报感）
+    ctx.fillStyle = "#0e0e0e";
+    ctx.font = "italic 280px 'Times New Roman', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("GAME", W / 2, H * 0.32);
+    ctx.fillText("LAB", W / 2, H * 0.62);
+
+    // 红色印章方块
+    const sx = W * 0.18, sy = H * 0.78, ss = 90;
+    ctx.fillStyle = "#c8360e";
+    ctx.fillRect(sx, sy, ss, ss);
+    ctx.fillStyle = "#f2ead8";
+    ctx.font = "bold 56px 'Times New Roman', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("玩", sx + ss / 2, sy + ss / 2);
+
+    // 几何线条（缓慢移动）
+    ctx.strokeStyle = "rgba(242, 239, 233, 0.18)";
+    ctx.lineWidth = 1;
+    const off = (t * 0.02) % 40;
+    for (let i = 0; i < 6; i++) {
+      const y = 80 + i * 110 + Math.sin(t * 0.0005 + i) * 6;
+      ctx.beginPath();
+      ctx.moveTo(40, y);
+      ctx.lineTo(W - 40, y);
+      ctx.stroke();
+    }
+
+    // 圆点矩阵
+    ctx.fillStyle = "rgba(242, 239, 233, 0.4)";
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 6; x++) {
+        const px = 60 + x * 80;
+        const py = H - 220 + y * 20;
+        const a = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + x * 0.5 + y * 0.3));
+        ctx.globalAlpha = a;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // 顶部小字
+    ctx.fillStyle = "rgba(242, 239, 233, 0.4)";
+    ctx.font = "10px 'Courier New', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("NO.001 / GENERATIVE POSTER", 40, 30);
+    ctx.textAlign = "right";
+    ctx.fillText("AGENT · GAME LAB", W - 40, 30);
+
+    // 底部小字
+    ctx.textAlign = "left";
+    ctx.fillText("— FROM IDEA TO PLAYABLE", 40, H - 30);
+    ctx.textAlign = "right";
+    ctx.fillText("2026", W - 40, H - 30);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ============ 列表项小海报（hover 显示） ============ */
+function drawPoster(canvas, game) {
   const ctx = canvas.getContext("2d");
+  const W = canvas.width = 360;
+  const H = canvas.height = 480;
   const p = game.palette;
 
   const drawers = {
-    horrorHouse(t) {
-      // 渐变夜空
-      const g = ctx.createLinearGradient(0, 0, 0, 360);
-      g.addColorStop(0, p.sky);
-      g.addColorStop(0.6, "#15101c");
-      g.addColorStop(1, "#0a0508");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
-      // 月亮 + 光晕
-      const mx = 470, my = 90;
-      const rg = ctx.createRadialGradient(mx, my, 10, mx, my, 110);
-      rg.addColorStop(0, "rgba(242,238,224,0.55)");
+    horror(t) {
+      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
+      // 月
+      const rg = ctx.createRadialGradient(W * 0.7, H * 0.25, 5, W * 0.7, H * 0.25, 80);
+      rg.addColorStop(0, "rgba(242,238,224,0.5)");
       rg.addColorStop(1, "rgba(242,238,224,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(mx, my, 38, 0, Math.PI * 2); ctx.fill();
-      // 雾
-      ctx.fillStyle = "rgba(200,206,222,0.06)";
-      for (let i = 0; i < 3; i++) {
-        const y = 200 + i * 30 + Math.sin(t * 0.0006 + i) * 8;
-        ctx.fillRect(0, y, 640, 50);
-      }
-      // 远处老宅剪影
-      ctx.fillStyle = "#06050a";
+      ctx.beginPath(); ctx.arc(W * 0.7, H * 0.25, 26, 0, Math.PI * 2); ctx.fill();
+      // 老宅剪影
+      ctx.fillStyle = "#020203";
       ctx.beginPath();
-      ctx.moveTo(180, 360); ctx.lineTo(180, 220);
-      ctx.lineTo(240, 170); ctx.lineTo(300, 220);
-      ctx.lineTo(300, 360); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(340, 360); ctx.lineTo(340, 200);
-      ctx.lineTo(400, 150); ctx.lineTo(460, 200);
-      ctx.lineTo(460, 360); ctx.closePath(); ctx.fill();
-      // 红色窗
-      const flick = 0.6 + Math.sin(t * 0.012) * 0.4;
-      ctx.fillStyle = `rgba(255,80,40,${0.5 * flick})`;
-      ctx.fillRect(210, 250, 14, 22);
-      ctx.fillRect(370, 230, 16, 24);
-      // 血色印章「咒」
-      ctx.save();
-      ctx.translate(110, 110); ctx.rotate(-0.12);
-      ctx.fillStyle = p.accent;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.arc(0, 0, 38, 0, Math.PI * 2); ctx.fill();
+      ctx.moveTo(W * 0.2, H * 0.95); ctx.lineTo(W * 0.2, H * 0.6);
+      ctx.lineTo(W * 0.32, H * 0.45); ctx.lineTo(W * 0.44, H * 0.6);
+      ctx.lineTo(W * 0.44, H * 0.95); ctx.fill();
+      // 红窗
+      ctx.fillStyle = p.ink;
+      ctx.globalAlpha = 0.6 + Math.sin(t * 0.008) * 0.4;
+      ctx.fillRect(W * 0.28, H * 0.7, 8, 14);
+      ctx.globalAlpha = 1;
+      // 印章「咒」
+      ctx.fillStyle = p.ink;
+      ctx.fillRect(W * 0.12, H * 0.12, 56, 56);
       ctx.fillStyle = "#f2ead8";
-      ctx.font = "bold 38px serif";
+      ctx.font = "bold 36px serif";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("咒", 0, 2);
-      ctx.restore();
+      ctx.fillText("咒", W * 0.12 + 28, H * 0.12 + 30);
     },
-
-    fpsVampire(t) {
-      const g = ctx.createLinearGradient(0, 0, 0, 360);
-      g.addColorStop(0, p.sky);
-      g.addColorStop(1, "#08020a");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
-      // 网格地面（透视）
-      ctx.strokeStyle = "rgba(255,48,96,0.25)";
+    vampire(t) {
+      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
+      // 网格
+      ctx.strokeStyle = "rgba(255,48,96,0.2)";
       ctx.lineWidth = 1;
-      const off = (t * 0.05) % 40;
-      for (let i = 0; i < 12; i++) {
-        const y = 200 + i * 14 + off * 0.4;
-        ctx.beginPath();
-        ctx.moveTo(0, y); ctx.lineTo(640, y); ctx.stroke();
+      for (let i = 0; i < 8; i++) {
+        const y = H * 0.5 + i * 24;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
-      for (let i = -10; i <= 10; i++) {
+      for (let i = -6; i <= 6; i++) {
         ctx.beginPath();
-        ctx.moveTo(320, 200);
-        ctx.lineTo(320 + i * 80, 360);
+        ctx.moveTo(W / 2, H * 0.5);
+        ctx.lineTo(W / 2 + i * 50, H);
         ctx.stroke();
       }
-      // 中心光球（吸血鬼能量核）
-      const cx = 320, cy = 180;
-      const rg = ctx.createRadialGradient(cx, cy, 4, cx, cy, 100);
+      // 中心核
+      const cx = W / 2, cy = H * 0.42;
+      const rg = ctx.createRadialGradient(cx, cy, 4, cx, cy, 80);
       rg.addColorStop(0, "rgba(255,80,120,0.9)");
-      rg.addColorStop(0.4, "rgba(255,48,96,0.4)");
       rg.addColorStop(1, "rgba(255,48,96,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
-      // 飞射的弹幕
-      for (let i = 0; i < 14; i++) {
-        const ang = (i / 14) * Math.PI * 2 + t * 0.001;
-        const r = 80 + ((t * 0.08 + i * 30) % 180);
-        const x = cx + Math.cos(ang) * r;
-        const y = cy + Math.sin(ang) * r * 0.6;
-        ctx.fillStyle = `rgba(255,${120 + i * 8},180,0.8)`;
-        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+      // 弹幕环
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + t * 0.001;
+        const r = 50 + ((t * 0.06 + i * 20) % 100);
+        ctx.fillStyle = "rgba(255,160,180,0.85)";
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.6, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       }
-      // HUD 准星
-      ctx.strokeStyle = "rgba(255,255,255,0.7)";
-      ctx.lineWidth = 2;
+      // 准星
+      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 4, cy);
-      ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + 12, cy);
-      ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 4);
-      ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + 12);
+      ctx.moveTo(cx - 14, cy); ctx.lineTo(cx - 5, cy);
+      ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 14, cy);
       ctx.stroke();
     },
-
     pvz(t) {
-      // 草坪
-      const g = ctx.createLinearGradient(0, 0, 0, 360);
-      g.addColorStop(0, "#3a6020");
-      g.addColorStop(1, p.sky);
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
       // 草坪条纹
-      ctx.fillStyle = "rgba(0,0,0,0.08)";
-      for (let i = 0; i < 5; i++) {
-        if (i % 2 === 0) ctx.fillRect(0, i * 72, 640, 72);
-      }
+      ctx.fillStyle = "rgba(0,0,0,0.1)";
+      for (let i = 0; i < 5; i++) if (i % 2 === 0) ctx.fillRect(0, i * H / 5, W, H / 5);
       // 阳光
-      const sx = 80 + Math.sin(t * 0.001) * 10;
-      const sy = 70 + Math.cos(t * 0.001) * 6;
-      const rg = ctx.createRadialGradient(sx, sy, 6, sx, sy, 60);
-      rg.addColorStop(0, "rgba(255,230,160,0.95)");
+      const sx = W * 0.2, sy = H * 0.2;
+      const rg = ctx.createRadialGradient(sx, sy, 4, sx, sy, 50);
+      rg.addColorStop(0, "rgba(255,230,160,0.9)");
       rg.addColorStop(1, "rgba(255,230,160,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(sx, sy, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.fill();
       // 豌豆射手
-      const px = 200, py = 220;
+      const px = W * 0.35, py = H * 0.6;
       ctx.fillStyle = "#2a5e1a";
-      ctx.fillRect(px - 4, py, 8, 60);
-      ctx.fillStyle = p.accent;
-      ctx.beginPath(); ctx.arc(px, py, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(px - 3, py, 6, 50);
+      ctx.fillStyle = p.ink;
+      ctx.beginPath(); ctx.arc(px, py, 22, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#1a4010";
-      ctx.beginPath(); ctx.arc(px + 22, py - 4, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 18, py - 4, 8, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.arc(px - 6, py - 8, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px - 5, py - 6, 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#000";
-      ctx.beginPath(); ctx.arc(px - 5, py - 8, 2.5, 0, Math.PI * 2); ctx.fill();
-      // 飞行豌豆
-      const peaX = (240 + t * 0.15) % 400 + 240;
+      ctx.beginPath(); ctx.arc(px - 4, py - 6, 2, 0, Math.PI * 2); ctx.fill();
+      // 豌豆
+      const peaX = (W * 0.4 + t * 0.12) % (W * 0.4) + W * 0.4;
       ctx.fillStyle = "#7cc242";
-      ctx.beginPath(); ctx.arc(peaX, py - 4, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(peaX, py - 4, 5, 0, Math.PI * 2); ctx.fill();
       // 僵尸
-      const zx = 480 - (t * 0.04) % 100;
-      const zy = 230;
+      const zx = W * 0.78 - (t * 0.03) % 60;
+      const zy = H * 0.62;
       ctx.fillStyle = "#7a8a6a";
-      ctx.fillRect(zx - 14, zy - 30, 28, 50);
-      ctx.beginPath(); ctx.arc(zx, zy - 40, 14, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#a01818";
-      ctx.fillRect(zx - 8, zy - 44, 4, 4);
-      ctx.fillRect(zx + 4, zy - 44, 4, 4);
+      ctx.fillRect(zx - 10, zy - 22, 20, 36);
+      ctx.beginPath(); ctx.arc(zx, zy - 28, 10, 0, Math.PI * 2); ctx.fill();
     },
-
     mars(t) {
-      const g = ctx.createLinearGradient(0, 0, 0, 360);
-      g.addColorStop(0, "#2a0a08");
-      g.addColorStop(0.5, p.sky);
-      g.addColorStop(1, "#080202");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
-      // 火星表面
-      ctx.fillStyle = "#5a1a10";
-      ctx.beginPath();
-      ctx.moveTo(0, 280);
-      for (let x = 0; x <= 640; x += 20) {
-        ctx.lineTo(x, 280 + Math.sin(x * 0.02) * 12);
-      }
-      ctx.lineTo(640, 360); ctx.lineTo(0, 360); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
       // 远山
       ctx.fillStyle = "#3a0e08";
       ctx.beginPath();
-      ctx.moveTo(0, 220);
-      ctx.lineTo(120, 160); ctx.lineTo(200, 200);
-      ctx.lineTo(320, 140); ctx.lineTo(440, 190);
-      ctx.lineTo(540, 150); ctx.lineTo(640, 200);
-      ctx.lineTo(640, 280); ctx.lineTo(0, 280); ctx.closePath(); ctx.fill();
+      ctx.moveTo(0, H * 0.55);
+      ctx.lineTo(W * 0.2, H * 0.4); ctx.lineTo(W * 0.35, H * 0.5);
+      ctx.lineTo(W * 0.55, H * 0.35); ctx.lineTo(W * 0.75, H * 0.48);
+      ctx.lineTo(W * 0.9, H * 0.4); ctx.lineTo(W, H * 0.5);
+      ctx.lineTo(W, H * 0.7); ctx.lineTo(0, H * 0.7); ctx.fill();
+      // 地表
+      ctx.fillStyle = "#5a1a10";
+      ctx.beginPath();
+      ctx.moveTo(0, H * 0.7);
+      for (let x = 0; x <= W; x += 20) ctx.lineTo(x, H * 0.7 + Math.sin(x * 0.03) * 8);
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
       // 太阳
-      const sx = 500, sy = 110;
-      const rg = ctx.createRadialGradient(sx, sy, 8, sx, sy, 80);
-      rg.addColorStop(0, "rgba(255,180,110,0.95)");
+      const sx = W * 0.8, sy = H * 0.25;
+      const rg = ctx.createRadialGradient(sx, sy, 6, sx, sy, 60);
+      rg.addColorStop(0, "rgba(255,180,110,0.9)");
       rg.addColorStop(1, "rgba(255,180,110,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
-      // 卡牌符号（飘浮的卡牌）
+      ctx.beginPath(); ctx.arc(sx, sy, 22, 0, Math.PI * 2); ctx.fill();
+      // 卡牌
+      const symbols = ["⚔", "🛡", "✦"];
       for (let i = 0; i < 3; i++) {
-        const cx = 160 + i * 120;
-        const cy = 160 + Math.sin(t * 0.001 + i) * 10;
-        const rot = Math.sin(t * 0.0008 + i) * 0.15;
+        const cx = W * 0.25 + i * W * 0.18;
+        const cy = H * 0.45 + Math.sin(t * 0.001 + i) * 6;
         ctx.save();
-        ctx.translate(cx, cy); ctx.rotate(rot);
-        ctx.fillStyle = "rgba(40,20,20,0.85)";
-        ctx.strokeStyle = p.accent;
-        ctx.lineWidth = 1.5;
-        ctx.fillRect(-22, -30, 44, 60);
-        ctx.strokeRect(-22, -30, 44, 60);
-        ctx.fillStyle = p.accent;
-        ctx.font = "bold 18px serif";
+        ctx.translate(cx, cy); ctx.rotate(Math.sin(t * 0.0008 + i) * 0.12);
+        ctx.fillStyle = "rgba(40,20,20,0.9)";
+        ctx.strokeStyle = p.ink;
+        ctx.lineWidth = 1;
+        ctx.fillRect(-16, -22, 32, 44);
+        ctx.strokeRect(-16, -22, 32, 44);
+        ctx.fillStyle = p.ink;
+        ctx.font = "bold 16px serif";
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        const symbols = ["⚔", "🛡", "✦"];
         ctx.fillText(symbols[i], 0, 0);
         ctx.restore();
       }
@@ -565,47 +743,46 @@ function makeThumb(container, game) {
   requestAnimationFrame(frame);
 }
 
-/* ============ 渲染卡片 ============ */
-function render() {
-  const grid = document.getElementById("grid");
+/* ============ 渲染列表 ============ */
+function renderWork() {
+  const list = document.getElementById("workList");
   const count = document.getElementById("count");
-  count.textContent = GAMES.length;
+  count.textContent = String(GAMES.length).padStart(2, "0");
 
-  GAMES.forEach((g) => {
+  GAMES.forEach((g, i) => {
+    const li = document.createElement("li");
     const a = document.createElement("a");
-    a.className = "card";
+    a.className = "work-item";
     a.href = g.path;
-    a.target = "_top"; // GitHub Pages 内跳转更稳
 
+    const num = String(i + 1).padStart(2, "0");
     a.innerHTML = `
-      <div class="thumb">
-        <div class="tags">
-          <span class="tag accent">${g.tag}</span>
-          ${g.stack.slice(0, 1).map(s => `<span class="tag">${s}</span>`).join("")}
-        </div>
-        <div class="play">进入游戏</div>
+      <div class="work-num">#${g.code}<br>${num} / ${String(GAMES.length).padStart(2, "0")}</div>
+      <div class="work-title">
+        <div class="cn">${g.title}</div>
+        <div class="en">${g.titleEn}</div>
       </div>
-      <div class="body">
-        <div class="title-row">
-          <div class="title">${g.title}</div>
-          <div class="title-en">${g.titleEn}</div>
-        </div>
-        <div class="desc">${g.desc}</div>
-        <div class="meta">
-          <div class="stack">
-            ${g.stack.map(s => `<span>${s}</span>`).join("")}
-          </div>
-          <div class="arrow">→</div>
-        </div>
+      <div class="work-desc">${g.desc}</div>
+      <div class="work-stack">
+        ${g.stack.map(s => `<span>${s}</span>`).join("")}
       </div>
+      <div class="work-arrow">→</div>
     `;
 
-    grid.appendChild(a);
-    makeThumb(a.querySelector(".thumb"), g);
+    // 悬浮海报
+    const poster = document.createElement("div");
+    poster.className = "poster";
+    const pc = document.createElement("canvas");
+    poster.appendChild(pc);
+    a.appendChild(poster);
+    drawPoster(pc, g);
+
+    list.appendChild(a);
   });
 }
 
-render();
+drawHeroPoster();
+renderWork();
 </script>
 </body>
 </html>
