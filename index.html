@@ -158,7 +158,6 @@
     flex-direction: column;
     justify-content: center;
     padding: 80px 0 60px 40px;
-    gap: 32px;
   }
   .hero-meta .tag {
     font-family: var(--mono);
@@ -166,41 +165,6 @@
     letter-spacing: 0.25em;
     text-transform: uppercase;
     color: var(--accent);
-  }
-  .hero-meta .lede {
-    font-family: var(--serif);
-    font-size: clamp(18px, 1.8vw, 22px);
-    line-height: 1.55;
-    color: var(--ink);
-    max-width: 360px;
-  }
-  .hero-meta .lede em {
-    font-style: italic;
-    color: var(--accent);
-  }
-  .hero-meta .desc {
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--ink-dim);
-    max-width: 340px;
-  }
-  .hero-meta .stats {
-    display: flex;
-    gap: 32px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--ink-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-  }
-  .hero-meta .stats b {
-    display: block;
-    font-family: var(--serif);
-    font-size: 28px;
-    font-weight: 400;
-    color: var(--ink);
-    margin-bottom: 4px;
-    letter-spacing: 0;
   }
 
   /* ============ WORK 列表 ============ */
@@ -338,24 +302,10 @@
 
   /* ============ Footer ============ */
   footer {
-    padding: 80px 32px 40px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    align-items: end;
+    padding: 60px 32px 40px;
+    display: flex;
+    justify-content: flex-end;
     border-top: 1px solid var(--line);
-    margin-top: 0;
-  }
-  footer .colophon {
-    font-family: var(--serif);
-    font-size: clamp(20px, 2.4vw, 32px);
-    line-height: 1.4;
-    color: var(--ink-dim);
-    max-width: 480px;
-  }
-  footer .colophon em {
-    font-style: italic;
-    color: var(--accent);
   }
   footer .meta {
     text-align: right;
@@ -402,7 +352,7 @@
     .work-desc { grid-row: 2; grid-column: 2 / 4; }
     .work-stack { grid-row: 3; grid-column: 2 / 4; }
     .poster { display: none; }
-    footer { grid-template-columns: 1fr; text-align: left; }
+    footer { justify-content: flex-start; }
     footer .meta { text-align: left; }
   }
 </style>
@@ -439,17 +389,6 @@
 
     <div class="hero-meta">
       <div class="tag">— Agent · Game Lab</div>
-      <div class="lede">
-        一个用 <em>不同 Agent</em> 制造不同前端游戏的<em>实验场</em>。
-      </div>
-      <div class="desc">
-        每一个条目都是一次独立尝试：不同模型、不同风格、不同技术栈。从 Raycast 恐怖到 Phaser 卡牌，从 Canvas 塔防到 Three.js 弹幕。托管于 GitHub Pages，持续追加。
-      </div>
-      <div class="stats">
-        <div><b>04</b>Projects</div>
-        <div><b>04</b>Agents</div>
-        <div><b>∞</b>Attempts</div>
-      </div>
     </div>
   </section>
 
@@ -463,10 +402,6 @@
 
   <!-- ============ Footer ============ -->
   <footer>
-    <div class="colophon">
-      所有作品均为 <em>实验性</em> 尝试。<br>
-      用 AI Agent 写游戏，<em>从想法到可玩</em>。
-    </div>
     <div class="meta">
       <div>© 2026 GAME LAB</div>
       <div>Hosted on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
