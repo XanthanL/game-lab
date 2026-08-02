@@ -63,7 +63,6 @@ export class PlayerController {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
-    if (e.isComposing) return;
     this.keys.add(e.code);
     if (e.key && e.key.length === 1) {
       this.keys.add(e.key.toLowerCase());
