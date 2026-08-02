@@ -47,9 +47,9 @@ export class Game {
   private waves: WaveSystem;
   private particles: Particles;
   private dmgNumbers: DamageNumbers;
-  private readonly timer = new THREE.Timer();
   private readonly fireOrigin = new THREE.Vector3();
   private readonly tmpVec = new THREE.Vector3();
+  private lastTime = 0;
   private running = false;
   private paused = false;
   private elapsed = 0;
@@ -128,7 +128,7 @@ export class Game {
 
   start(): void {
     this.running = true;
-    this.timer.reset();
+    this.lastTime = performance.now();
     requestAnimationFrame(this.loop);
   }
 
@@ -337,7 +337,9 @@ export class Game {
 
   private loop = (): void => {
     if (!this.running) return;
-    const dt = Math.min(this.timer.getDelta(), 0.05);
+    const now = performance.now();
+    const dt = Math.min((now - this.lastTime) / 1000, 0.05);
+    this.lastTime = now;
     if (!this.paused) {
       this.elapsed += dt;
       this.player.update(dt);
