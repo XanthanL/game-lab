@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>植物大战僵尸</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="menu" class="overlay hidden">
+      <h1>植物大战僵尸</h1>
+      <button id="startBtn">开始游戏</button>
+      <div class="volume-row">
+        <label for="menuVolume">音量</label>
+        <input id="menuVolume" type="range" min="0" max="100" step="5">
+      </div>
+      <p class="tip">选择关卡 · 守住你的房子</p>
+    </div>
+
+    <div id="levelSelect" class="overlay hidden">
+      <h1>选择关卡</h1>
+      <div id="levelBtns" class="level-grid"></div>
+      <button id="levelBackBtn" class="secondary">返回</button>
+    </div>
+
+    <div id="pausePanel" class="overlay hidden">
+      <h1>暂停</h1>
+      <div class="btn-col">
+        <button id="resumeBtn">继续游戏</button>
+        <button id="speedBtn">速度: 1x</button>
+        <div class="volume-row">
+          <label for="pauseVolume">音量</label>
+          <input id="pauseVolume" type="range" min="0" max="100" step="5">
+        </div>
+        <button id="pauseRetryBtn">重新开始</button>
+        <button id="pauseBackBtn" class="secondary">返回菜单</button>
+      </div>
+    </div>
+
+    <div id="result" class="overlay hidden">
+      <h1 id="resultTitle">胜利！</h1>
+      <p id="resultMsg"></p>
+      <div class="btn-row">
+        <button id="retryBtn">重新开始</button>
+        <button id="nextBtn">下一关</button>
+        <button id="backBtn" class="secondary">返回菜单</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/art/draw.js"></script>
+  <script src="js/systems/collision.js"></script>
+  <script src="js/systems/save.js"></script>
+  <script src="js/systems/audio.js"></script>
+  <script src="js/entities/plant.js"></script>
+  <script src="js/entities/zombie.js"></script>
+  <script src="js/entities/projectile.js"></script>
+  <script src="js/entities/effect.js"></script>
+  <script src="js/systems/sun.js"></script>
+  <script src="js/systems/seed.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

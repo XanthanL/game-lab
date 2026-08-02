@@ -1,0 +1,10 @@
+{
+  "name": "forcing-mars",
+  "version": "1.0.0",
+  "description": "强渡火星 — Phaser 3 回合制卡牌游戏（纯静态，无构建步骤）",
+  "private": true,
+  "scripts": {
+    "dev": "python -m http.server 8765",
+    "start": "python -m http.server 8765"
+  }
+}

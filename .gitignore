@@ -1,0 +1,48 @@
+# ============ 非 Web 项目（不适合 git / 不部署到 Pages）============
+# Minecraft 是 Fabric Java Mod 项目；Protocol Extract 是 Godot 项目
+# 二者均包含大体积二进制（引擎、存档、jar、mca），且无法在浏览器运行
+/Minecraft/
+/Protocol Extract/
+
+# ============ 依赖与编译产物 ============
+node_modules/
+**/.gradle/
+**/build/libs/
+**/build/devlibs/
+**/build/tmp/
+**/build/loom-cache/
+
+# FPS Vampire 构建中间产物（dist 保留用于部署）
+/FPS Vampire/node_modules/
+
+# forcing-mars 本地开发服务器无构建产物，无需处理
+
+# ============ 运行时目录（含存档、日志、敏感数据）============
+**/run/
+**/run2/
+**/logs/
+**/saves/
+**/data/
+
+# ============ Godot 编辑器缓存与引擎二进制 ============
+**/.godot/
+*.exe
+
+# ============ 编译产物 ============
+*.jar
+*.class
+
+# ============ 备份 ============
+**/dist_backup_*/
+
+# ============ 系统/编辑器杂项 ============
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+*.tmp
+
+# ============ 本地环境 ============
+.env
+.env.local

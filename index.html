@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Game Lab — 前端游戏试验场</title>
+<meta name="description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<style>
+  :root {
+    --bg: #0a0c12;
+    --bg-2: #11141d;
+    --card: #161a26;
+    --card-2: #1d2230;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #e7e9ee;
+    --text-dim: #9aa0ad;
+    --text-mute: #646a78;
+    --accent: #ff5a36;
+    --accent-2: #ffb648;
+    --accent-3: #6ee7ff;
+    --shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
+    --radius: 18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(255, 90, 54, 0.15), transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, rgba(110, 231, 255, 0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+  }
+
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 28px 96px;
+  }
+
+  /* ============ Header ============ */
+  header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+  .badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  h1 {
+    font-size: clamp(40px, 7vw, 76px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    background: linear-gradient(135deg, #fff 0%, #ffb648 50%, #ff5a36 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 18px;
+  }
+
+  .subtitle {
+    font-size: clamp(15px, 1.6vw, 18px);
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ============ Games Grid ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.35s ease,
+                box-shadow 0.35s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    isolation: isolate;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow);
+  }
+
+  .card:hover .thumb::after { opacity: 0.4; }
+  .card:hover .thumb .play { opacity: 1; transform: scale(1); }
+  .card:hover .thumb canvas { transform: scale(1.05); }
+
+  .thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    overflow: hidden;
+  }
+  .thumb canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+    opacity: 0.55;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+
+  .play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    z-index: 2;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  }
+  .play::before {
+    content: "▶";
+    margin-right: 10px;
+    font-size: 18px;
+  }
+
+  .tags {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    z-index: 2;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 4px 9px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    color: var(--text-dim);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    letter-spacing: 0.05em;
+  }
+  .tag.accent { color: var(--accent-2); border-color: rgba(255, 182, 72, 0.4); }
+
+  .body {
+    padding: 20px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .title {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .title-en {
+    font-size: 12px;
+    color: var(--text-mute);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 18px;
+    flex: 1;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-mute);
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .meta .stack {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .stack span {
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    color: var(--text-dim);
+  }
+  .arrow {
+    font-size: 14px;
+    color: var(--accent);
+    transition: transform 0.3s ease;
+  }
+  .card:hover .arrow { transform: translateX(4px); }
+
+  /* ============ Footer ============ */
+  footer {
+    margin-top: 80px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.8;
+  }
+  footer a {
+    color: var(--accent-3);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(110, 231, 255, 0.4);
+    transition: border-color 0.2s ease;
+  }
+  footer a:hover { border-color: var(--accent-3); }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 40px 18px 60px; }
+    .grid { grid-template-columns: 1fr; gap: 18px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge"><span class="dot"></span>Agent · Game Lab</div>
+      <h1>Game Lab</h1>
+      <p class="subtitle">一个用于测试不同 Agent 制作不同前端游戏的实验场。每个项目都是一次独立尝试，托管于 GitHub Pages。</p>
+    </header>
+
+    <main class="grid" id="grid"></main>
+
+    <footer>
+      <div>共 <span id="count">0</span> 个实验性项目 · 持续追加中</div>
+      <div style="margin-top:6px;">Powered by <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
+    </footer>
+  </div>
+
+<script>
+"use strict";
+
+/* ============ 游戏清单 ============
+ * path: 入口相对路径（GitHub Pages 根 = 仓库根）
+ * thumb: 用 canvas 程序化绘制的封面（无外部图片依赖）
+ */
+const GAMES = [
+  {
+    title: "咒 · 怨宅",
+    titleEn: "JYU",
+    desc: "第一人称日式恐怖。雨夜被困在被诅咒的老宅，找到大门钥匙逃出去——小心，它也在找你。",
+    path: "./cursed-house/index.html",
+    stack: ["Canvas", "Raycast", "WebAudio"],
+    tag: "恐怖",
+    palette: { sky: "#0a0810", accent: "#a01212", moon: "#e8e2d2", fog: "#1c1622" },
+    scene: "horrorHouse"
+  },
+  {
+    title: "FPS Vampire",
+    titleEn: "First-Person Survivor",
+    desc: "第一人称吸血鬼幸存者。自动索敌、波次推进、越战越强。Three.js 驱动的 3D 弹幕生存。",
+    path: "./FPS%20Vampire/dist/index.html",
+    stack: ["Three.js", "TypeScript", "Vite"],
+    tag: "3D",
+    palette: { sky: "#1a0a18", accent: "#ff3060", moon: "#ffd0d8", fog: "#2a0a20" },
+    scene: "fpsVampire"
+  },
+  {
+    title: "植物大战僵尸",
+    titleEn: "Plants vs Zombies",
+    desc: "经典塔防玩法复刻。选关卡、种植物、守房子。阳光管理与波次节奏的怀旧练习。",
+    path: "./PVZ/index.html",
+    stack: ["Canvas", "Vanilla JS"],
+    tag: "塔防",
+    palette: { sky: "#1a2410", accent: "#7cc242", moon: "#ffe6a0", fog: "#243a18" },
+    scene: "pvz"
+  },
+  {
+    title: "强渡火星",
+    titleEn: "Forcing Mars",
+    desc: "Phaser 3 回合制卡牌。从浅海到地核的分层推进，构筑卡组、对抗火星异生态。",
+    path: "./forcing-mars/index.html",
+    stack: ["Phaser 3", "Vanilla JS"],
+    tag: "卡牌",
+    palette: { sky: "#1a0808", accent: "#d44a28", moon: "#ffb070", fog: "#3a1410" },
+    scene: "mars"
+  }
+];
+
+/* ============ 封面绘制器 ============
+ * 每个封面是一段轻量 Canvas 程序化动画，避免引入任何外部图片
+ */
+function makeThumb(container, game) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 360;
+  container.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  const p = game.palette;
+
+  const drawers = {
+    horrorHouse(t) {
+      // 渐变夜空
+      const g = ctx.createLinearGradient(0, 0, 0, 360);
+      g.addColorStop(0, p.sky);
+      g.addColorStop(0.6, "#15101c");
+      g.addColorStop(1, "#0a0508");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
+      // 月亮 + 光晕
+      const mx = 470, my = 90;
+      const rg = ctx.createRadialGradient(mx, my, 10, mx, my, 110);
+      rg.addColorStop(0, "rgba(242,238,224,0.55)");
+      rg.addColorStop(1, "rgba(242,238,224,0)");
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = p.moon;
+      ctx.beginPath(); ctx.arc(mx, my, 38, 0, Math.PI * 2); ctx.fill();
+      // 雾
+      ctx.fillStyle = "rgba(200,206,222,0.06)";
+      for (let i = 0; i < 3; i++) {
+        const y = 200 + i * 30 + Math.sin(t * 0.0006 + i) * 8;
+        ctx.fillRect(0, y, 640, 50);
+      }
+      // 远处老宅剪影
+      ctx.fillStyle = "#06050a";
+      ctx.beginPath();
+      ctx.moveTo(180, 360); ctx.lineTo(180, 220);
+      ctx.lineTo(240, 170); ctx.lineTo(300, 220);
+      ctx.lineTo(300, 360); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(340, 360); ctx.lineTo(340, 200);
+      ctx.lineTo(400, 150); ctx.lineTo(460, 200);
+      ctx.lineTo(460, 360); ctx.closePath(); ctx.fill();
+      // 红色窗
+      const flick = 0.6 + Math.sin(t * 0.012) * 0.4;
+      ctx.fillStyle = `rgba(255,80,40,${0.5 * flick})`;
+      ctx.fillRect(210, 250, 14, 22);
+      ctx.fillRect(370, 230, 16, 24);
+      // 血色印章「咒」
+      ctx.save();
+      ctx.translate(110, 110); ctx.rotate(-0.12);
+      ctx.fillStyle = p.accent;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(0, 0, 38, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#f2ead8";
+      ctx.font = "bold 38px serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("咒", 0, 2);
+      ctx.restore();
+    },
+
+    fpsVampire(t) {
+      const g = ctx.createLinearGradient(0, 0, 0, 360);
+      g.addColorStop(0, p.sky);
+      g.addColorStop(1, "#08020a");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
+      // 网格地面（透视）
+      ctx.strokeStyle = "rgba(255,48,96,0.25)";
+      ctx.lineWidth = 1;
+      const off = (t * 0.05) % 40;
+      for (let i = 0; i < 12; i++) {
+        const y = 200 + i * 14 + off * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(0, y); ctx.lineTo(640, y); ctx.stroke();
+      }
+      for (let i = -10; i <= 10; i++) {
+        ctx.beginPath();
+        ctx.moveTo(320, 200);
+        ctx.lineTo(320 + i * 80, 360);
+        ctx.stroke();
+      }
+      // 中心光球（吸血鬼能量核）
+      const cx = 320, cy = 180;
+      const rg = ctx.createRadialGradient(cx, cy, 4, cx, cy, 100);
+      rg.addColorStop(0, "rgba(255,80,120,0.9)");
+      rg.addColorStop(0.4, "rgba(255,48,96,0.4)");
+      rg.addColorStop(1, "rgba(255,48,96,0)");
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      // 飞射的弹幕
+      for (let i = 0; i < 14; i++) {
+        const ang = (i / 14) * Math.PI * 2 + t * 0.001;
+        const r = 80 + ((t * 0.08 + i * 30) % 180);
+        const x = cx + Math.cos(ang) * r;
+        const y = cy + Math.sin(ang) * r * 0.6;
+        ctx.fillStyle = `rgba(255,${120 + i * 8},180,0.8)`;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      // HUD 准星
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 4, cy);
+      ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + 12, cy);
+      ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 4);
+      ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + 12);
+      ctx.stroke();
+    },
+
+    pvz(t) {
+      // 草坪
+      const g = ctx.createLinearGradient(0, 0, 0, 360);
+      g.addColorStop(0, "#3a6020");
+      g.addColorStop(1, p.sky);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
+      // 草坪条纹
+      ctx.fillStyle = "rgba(0,0,0,0.08)";
+      for (let i = 0; i < 5; i++) {
+        if (i % 2 === 0) ctx.fillRect(0, i * 72, 640, 72);
+      }
+      // 阳光
+      const sx = 80 + Math.sin(t * 0.001) * 10;
+      const sy = 70 + Math.cos(t * 0.001) * 6;
+      const rg = ctx.createRadialGradient(sx, sy, 6, sx, sy, 60);
+      rg.addColorStop(0, "rgba(255,230,160,0.95)");
+      rg.addColorStop(1, "rgba(255,230,160,0)");
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = p.moon;
+      ctx.beginPath(); ctx.arc(sx, sy, 22, 0, Math.PI * 2); ctx.fill();
+      // 豌豆射手
+      const px = 200, py = 220;
+      ctx.fillStyle = "#2a5e1a";
+      ctx.fillRect(px - 4, py, 8, 60);
+      ctx.fillStyle = p.accent;
+      ctx.beginPath(); ctx.arc(px, py, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#1a4010";
+      ctx.beginPath(); ctx.arc(px + 22, py - 4, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(px - 6, py - 8, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath(); ctx.arc(px - 5, py - 8, 2.5, 0, Math.PI * 2); ctx.fill();
+      // 飞行豌豆
+      const peaX = (240 + t * 0.15) % 400 + 240;
+      ctx.fillStyle = "#7cc242";
+      ctx.beginPath(); ctx.arc(peaX, py - 4, 6, 0, Math.PI * 2); ctx.fill();
+      // 僵尸
+      const zx = 480 - (t * 0.04) % 100;
+      const zy = 230;
+      ctx.fillStyle = "#7a8a6a";
+      ctx.fillRect(zx - 14, zy - 30, 28, 50);
+      ctx.beginPath(); ctx.arc(zx, zy - 40, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#a01818";
+      ctx.fillRect(zx - 8, zy - 44, 4, 4);
+      ctx.fillRect(zx + 4, zy - 44, 4, 4);
+    },
+
+    mars(t) {
+      const g = ctx.createLinearGradient(0, 0, 0, 360);
+      g.addColorStop(0, "#2a0a08");
+      g.addColorStop(0.5, p.sky);
+      g.addColorStop(1, "#080202");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 360);
+      // 火星表面
+      ctx.fillStyle = "#5a1a10";
+      ctx.beginPath();
+      ctx.moveTo(0, 280);
+      for (let x = 0; x <= 640; x += 20) {
+        ctx.lineTo(x, 280 + Math.sin(x * 0.02) * 12);
+      }
+      ctx.lineTo(640, 360); ctx.lineTo(0, 360); ctx.closePath(); ctx.fill();
+      // 远山
+      ctx.fillStyle = "#3a0e08";
+      ctx.beginPath();
+      ctx.moveTo(0, 220);
+      ctx.lineTo(120, 160); ctx.lineTo(200, 200);
+      ctx.lineTo(320, 140); ctx.lineTo(440, 190);
+      ctx.lineTo(540, 150); ctx.lineTo(640, 200);
+      ctx.lineTo(640, 280); ctx.lineTo(0, 280); ctx.closePath(); ctx.fill();
+      // 太阳
+      const sx = 500, sy = 110;
+      const rg = ctx.createRadialGradient(sx, sy, 8, sx, sy, 80);
+      rg.addColorStop(0, "rgba(255,180,110,0.95)");
+      rg.addColorStop(1, "rgba(255,180,110,0)");
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = p.moon;
+      ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+      // 卡牌符号（飘浮的卡牌）
+      for (let i = 0; i < 3; i++) {
+        const cx = 160 + i * 120;
+        const cy = 160 + Math.sin(t * 0.001 + i) * 10;
+        const rot = Math.sin(t * 0.0008 + i) * 0.15;
+        ctx.save();
+        ctx.translate(cx, cy); ctx.rotate(rot);
+        ctx.fillStyle = "rgba(40,20,20,0.85)";
+        ctx.strokeStyle = p.accent;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-22, -30, 44, 60);
+        ctx.strokeRect(-22, -30, 44, 60);
+        ctx.fillStyle = p.accent;
+        ctx.font = "bold 18px serif";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const symbols = ["⚔", "🛡", "✦"];
+        ctx.fillText(symbols[i], 0, 0);
+        ctx.restore();
+      }
+    }
+  };
+
+  function frame(time) {
+    const fn = drawers[game.scene];
+    if (fn) fn(time);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ============ 渲染卡片 ============ */
+function render() {
+  const grid = document.getElementById("grid");
+  const count = document.getElementById("count");
+  count.textContent = GAMES.length;
+
+  GAMES.forEach((g) => {
+    const a = document.createElement("a");
+    a.className = "card";
+    a.href = g.path;
+    a.target = "_top"; // GitHub Pages 内跳转更稳
+
+    a.innerHTML = `
+      <div class="thumb">
+        <div class="tags">
+          <span class="tag accent">${g.tag}</span>
+          ${g.stack.slice(0, 1).map(s => `<span class="tag">${s}</span>`).join("")}
+        </div>
+        <div class="play">进入游戏</div>
+      </div>
+      <div class="body">
+        <div class="title-row">
+          <div class="title">${g.title}</div>
+          <div class="title-en">${g.titleEn}</div>
+        </div>
+        <div class="desc">${g.desc}</div>
+        <div class="meta">
+          <div class="stack">
+            ${g.stack.map(s => `<span>${s}</span>`).join("")}
+          </div>
+          <div class="arrow">→</div>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(a);
+    makeThumb(a.querySelector(".thumb"), g);
+  });
+}
+
+render();
+</script>
+</body>
+</html>

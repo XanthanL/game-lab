@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FPS Vampire — 第一人称吸血鬼幸存者</title>
+    <link rel="stylesheet" href="/src/ui/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+      <div id="damage-flash"></div>
+      <div id="announce"></div>
+      <div id="hud" class="hidden">
+        <div id="hud-health" class="hud-bar-wrap">
+          <div class="hud-bar-label">HP</div>
+          <div class="hud-bar-track"><div id="hud-health-fill" class="hud-bar-fill health"></div></div>
+          <span id="hud-health-text" class="hud-bar-text">100 / 100</span>
+        </div>
+        <div id="hud-xp" class="hud-bar-wrap">
+          <div class="hud-bar-label xp">XP</div>
+          <div class="hud-bar-track"><div id="hud-xp-fill" class="hud-bar-fill xp"></div></div>
+          <span id="hud-xp-text" class="hud-bar-text">0 / 8</span>
+        </div>
+        <div id="hud-stats">
+          <div class="hud-stat">Lv <span id="hud-level">1</span></div>
+          <div class="hud-stat">🕐 <span id="hud-time">00:00</span></div>
+          <div class="hud-stat">💀 <span id="hud-kills">0</span></div>
+        </div>
+      </div>
+      <div id="crosshair" class="hidden"></div>
+      <div id="overlay" class="overlay">
+        <div class="overlay-card">
+          <h1 id="overlay-title">FPS VAMPIRE</h1>
+          <p class="overlay-subtitle">第一人称 · 自动索敌 · 越战越强</p>
+          <div id="best-stats" class="best-stats hidden">
+            <div class="best-stat"><span id="best-time" class="best-value">--:--</span><span class="best-label">最长存活</span></div>
+            <div class="best-stat"><span id="best-kills" class="best-value">0</span><span class="best-label">最高击杀</span></div>
+            <div class="best-stat"><span id="best-level" class="best-value">1</span><span class="best-label">最高等级</span></div>
+          </div>
+          <div id="weapon-roster" class="weapon-roster"></div>
+          <div class="controls-hint">
+            <span><b>WASD</b> 移动</span><span><b>鼠标</b> 转向</span><span><b>M</b> 静音</span><span><b>Esc</b> 暂停</span>
+          </div>
+          <button id="start-btn">点击进入游戏</button>
+          <p id="pointer-error" class="pointer-error hidden">浏览器拒绝了指针锁定，请点击屏幕或检查浏览器设置。</p>
+        </div>
+      </div>
+      <div id="upgrade-panel" class="overlay hidden">
+        <div class="overlay-card upgrade-card">
+          <h1 id="upgrade-title">升级！</h1>
+          <p class="overlay-hint">选择一项强化</p>
+          <div id="upgrade-options"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
