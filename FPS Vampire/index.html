@@ -10,6 +10,7 @@
     <div id="app">
       <canvas id="game-canvas"></canvas>
       <div id="damage-flash"></div>
+      <div id="damage-dir"><div id="damage-dir-rot"><div id="damage-arrow"></div></div></div>
       <div id="announce"></div>
       <div id="hud" class="hidden">
         <div id="hud-health" class="hud-bar-wrap">
@@ -22,6 +23,10 @@
           <div class="hud-bar-track"><div id="hud-xp-fill" class="hud-bar-fill xp"></div></div>
           <span id="hud-xp-text" class="hud-bar-text">0 / 8</span>
         </div>
+        <div id="hud-stamina" class="hud-bar-wrap stamina">
+          <div class="hud-bar-label sta">体力</div>
+          <div class="hud-bar-track"><div id="hud-stamina-fill" class="hud-bar-fill stamina"></div></div>
+        </div>
         <div id="hud-stats">
           <div class="hud-stat">Lv <span id="hud-level">1</span></div>
           <div class="hud-stat">🕐 <span id="hud-time">00:00</span></div>
@@ -32,7 +37,7 @@
       <div id="overlay" class="overlay">
         <div class="overlay-card">
           <h1 id="overlay-title">FPS VAMPIRE</h1>
-          <p class="overlay-subtitle">第一人称 · 自动索敌 · 越战越强</p>
+          <p class="overlay-subtitle">第一人称 · 手动开火 · 越战越强</p>
           <div id="overlay-stats" class="overlay-stats hidden"></div>
           <div id="best-stats" class="best-stats hidden">
             <div class="best-stat"><span id="best-time" class="best-value">--:--</span><span class="best-label">最长存活</span></div>
@@ -41,7 +46,7 @@
           </div>
           <div id="weapon-roster" class="weapon-roster"></div>
           <div class="controls-hint">
-            <span><b>WASD</b> 移动</span><span><b>鼠标</b> 转向</span><span><b>M</b> 静音</span><span><b>Esc</b> 暂停</span>
+            <span><b>WASD</b> 移动</span><span><b>空格</b> 跳跃</span><span><b>Shift</b> 冲刺</span><span><b>鼠标左键</b> 开火/挥动</span><span><b>1-5 / 滚轮 / Q</b> 切换武器</span><span><b>鼠标</b> 转向</span><span><b>M</b> 静音</span><span><b>Esc</b> 暂停</span>
           </div>
           <button id="start-btn">点击进入游戏</button>
           <p id="pointer-error" class="pointer-error hidden">浏览器拒绝了指针锁定，请点击屏幕或检查浏览器设置。</p>

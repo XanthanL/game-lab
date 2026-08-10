@@ -61,6 +61,7 @@ export class Projectiles {
     p.returning = false;
     p.phase = 0;
     pool.count++;
+    pool.mesh.count = pool.count;
     this.write(pool, p);
   }
 
@@ -88,6 +89,7 @@ export class Projectiles {
     p.hits.length = 0;
     p.phase = 0;
     pool.count++;
+    pool.mesh.count = pool.count;
     this.write(pool, p);
   }
 

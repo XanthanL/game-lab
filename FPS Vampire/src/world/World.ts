@@ -20,12 +20,12 @@ export class World {
   private buildGround(): void {
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 1 })
+      new THREE.MeshStandardMaterial({ color: 0xbcd0a8, roughness: 1 })
     );
     ground.rotation.x = -Math.PI / 2;
     this.scene.add(ground);
 
-    const grid = new THREE.GridHelper(MAP.HALF_SIZE * 2, 40, 0x2c2c3e, 0x232333);
+    const grid = new THREE.GridHelper(MAP.HALF_SIZE * 2, 40, 0x9fb48f, 0x8aa07c);
     grid.position.y = 0.01;
     this.scene.add(grid);
   }
@@ -33,7 +33,7 @@ export class World {
   private buildWalls(): void {
     const h = MAP.HALF_SIZE;
     const t = 1.5;
-    const material = new THREE.MeshStandardMaterial({ color: 0x3a3a4a, roughness: 0.9 });
+    const material = new THREE.MeshStandardMaterial({ color: 0xc2cbd6, roughness: 0.9 });
     const wall = (x: number, z: number, w: number, d: number): void => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 3, d), material);
       mesh.position.set(x, 1.5, z);
@@ -46,28 +46,33 @@ export class World {
   }
 
   private buildSky(): void {
-    const count = 400;
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 500;
-      positions[i * 3 + 1] = 20 + Math.random() * 250;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 500;
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({
-      color: 0x9aa7c7,
-      size: 1.2,
-      transparent: true,
-      opacity: 0.7,
-      sizeAttenuation: false,
-      fog: false,
-    });
-    this.scene.add(new THREE.Points(geometry, material));
+    // 浅色天空下用几团柔和的白云点缀，替代原先的暗色星空
+    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false });
+    const makeCloud = (x: number, y: number, z: number, s: number): void => {
+      const g = new THREE.Group();
+      const puffs: Array<[number, number, number, number]> = [
+        [0, 0, 0, 1],
+        [s * 0.9, -s * 0.1, 0, 0.7],
+        [-s * 0.9, -s * 0.1, 0, 0.7],
+        [s * 0.4, s * 0.3, s * 0.2, 0.6],
+      ];
+      for (const [px, py, pz, ps] of puffs) {
+        const box = new THREE.Mesh(new THREE.BoxGeometry(s * 2 * ps, s * 0.9 * ps, s * 1.4 * ps), cloudMat);
+        box.position.set(px, py, pz);
+        g.add(box);
+      }
+      g.position.set(x, y, z);
+      this.scene.add(g);
+    };
+    makeCloud(-40, 60, -60, 6);
+    makeCloud(50, 72, -30, 8);
+    makeCloud(10, 90, 40, 7);
+    makeCloud(-70, 80, 50, 5);
+    makeCloud(70, 64, 60, 6);
   }
 
   private buildDecor(): void {
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x4a4a5a, roughness: 0.8 });
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xc8cdd6, roughness: 0.8 });
     const spots: Array<[number, number]> = [
       [20, 20],
       [-25, 18],
@@ -85,7 +90,7 @@ export class World {
       this.obstacles.push({ x, z, radius: 0.9 });
     }
 
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.9 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0xb9bfca, roughness: 0.9 });
     const rocks: Array<[number, number, number]> = [
       [15, -10, 0.7],
       [-18, 12, 0.9],

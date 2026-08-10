@@ -9,12 +9,15 @@ export class HUD {
   private healthText: HTMLElement;
   private xpFill: HTMLElement;
   private xpText: HTMLElement;
+  private staminaFill: HTMLElement;
   private level: HTMLElement;
   private time: HTMLElement;
   private kills: HTMLElement;
   private root: HTMLElement;
   private crosshair: HTMLElement;
   private announceEl: HTMLElement;
+  private damageDirRot: HTMLElement;
+  private damageArrow: HTMLElement;
   private announceTimer = 0;
 
   constructor() {
@@ -23,11 +26,14 @@ export class HUD {
     this.healthText = el('hud-health-text');
     this.xpFill = el('hud-xp-fill');
     this.xpText = el('hud-xp-text');
+    this.staminaFill = el('hud-stamina-fill');
     this.level = el('hud-level');
     this.time = el('hud-time');
     this.kills = el('hud-kills');
     this.crosshair = el('crosshair');
     this.announceEl = el('announce');
+    this.damageDirRot = el('damage-dir-rot');
+    this.damageArrow = el('damage-arrow');
   }
 
   setHealth(hp: number, maxHp: number): void {
@@ -54,6 +60,19 @@ export class HUD {
 
   setKills(kills: number): void {
     this.kills.textContent = String(kills);
+  }
+
+  setStamina(ratio: number): void {
+    const r = Math.max(0, Math.min(1, ratio));
+    this.staminaFill.style.width = `${r * 100}%`;
+  }
+
+  /** rel: 相对玩家朝向的角度（弧度），0=正前方，正值=右侧。 */
+  showDamageDir(rel: number): void {
+    this.damageDirRot.style.transform = `rotate(${rel}rad)`;
+    this.damageArrow.classList.remove('active');
+    void this.damageArrow.offsetWidth;
+    this.damageArrow.classList.add('active');
   }
 
   announce(text: string): void {

@@ -8,6 +8,15 @@ export const PLAYER = {
   LOOK_SENSITIVITY: 0.0022,
   RADIUS: 0.4,
   MAX_HEALTH: 100,
+  // 跳跃 / 重力
+  GRAVITY: 24,
+  JUMP_SPEED: 8.5,
+  // 冲刺 / 体力
+  SPRINT_MULT: 1.7,
+  STAMINA_MAX: 100,
+  STAMINA_DRAIN: 30,
+  STAMINA_REGEN: 18,
+  SPRINT_MIN: 12,
 };
 
 export const BALANCE = {

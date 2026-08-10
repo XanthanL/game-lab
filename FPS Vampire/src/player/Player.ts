@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { BALANCE, PLAYER } from '../config/constants';
 
 export interface PlayerStats {
@@ -25,18 +26,18 @@ export class Player {
   passiveLevels: Record<string, number> = {};
   alive = true;
   invulnTimer = 0;
-  onDamaged?: (amount: number) => void;
+  onDamaged?: (amount: number, source?: THREE.Vector3) => void;
 
   update(dt: number): void {
     this.invulnTimer = Math.max(0, this.invulnTimer - dt);
   }
 
-  takeDamage(raw: number): void {
+  takeDamage(raw: number, source?: THREE.Vector3): void {
     if (!this.alive || this.invulnTimer > 0) return;
     this.invulnTimer = BALANCE.IFRAMES;
     const amount = raw * (1 - this.stats.armor / 100);
     this.hp = Math.max(0, this.hp - amount);
-    this.onDamaged?.(amount);
+    this.onDamaged?.(amount, source);
     if (this.hp <= 0) this.alive = false;
   }
 

@@ -10,8 +10,8 @@ export class Renderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0a14);
-    this.scene.fog = new THREE.Fog(0x0a0a14, 80, 160);
+    this.scene.background = new THREE.Color(0xcfe9ff);
+    this.scene.fog = new THREE.Fog(0xcfe9ff, 140, 360);
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
     this.scene.add(this.camera);
@@ -22,11 +22,14 @@ export class Renderer {
   }
 
   private addLights(): void {
-    const hemi = new THREE.HemisphereLight(0x8899ff, 0x222233, 0.7);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xaebfd0, 1.0);
     this.scene.add(hemi);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.15);
     dir.position.set(30, 60, 20);
     this.scene.add(dir);
+    const fill = new THREE.DirectionalLight(0xcfe0ff, 0.35);
+    fill.position.set(-20, 30, -30);
+    this.scene.add(fill);
   }
 
   private resize(): void {

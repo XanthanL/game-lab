@@ -51,6 +51,7 @@ body,
   font-size: 13px;
   font-weight: 700;
   color: #ff6b6b;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .hud-bar-track {
@@ -89,6 +90,19 @@ body,
   background: linear-gradient(90deg, #7c4dff, #38bdf8);
 }
 
+#hud-stamina {
+  top: 74px;
+  width: 260px;
+}
+
+.hud-bar-label.sta {
+  color: #6fdc8c;
+}
+
+.hud-bar-fill.stamina {
+  background: linear-gradient(90deg, #3ddc84, #aef27a);
+}
+
 #hud-stats {
   position: absolute;
   top: 16px;
@@ -107,33 +121,67 @@ body,
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
 }
 
-#crosshair::before,
 #crosshair::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.85);
-}
-
-#crosshair::before {
   left: 50%;
-  top: 0;
-  width: 2px;
-  height: 100%;
-  transform: translateX(-50%);
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
-#crosshair::after {
+#damage-dir {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+#damage-dir-rot {
+  position: absolute;
+  left: 50%;
   top: 50%;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  transform: translateY(-50%);
+  transform-origin: center;
+}
+
+#damage-arrow {
+  position: absolute;
+  left: -18px;
+  top: -190px;
+  width: 36px;
+  height: 36px;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 60, 60, 0.95), rgba(180, 0, 0, 0.85));
+  /* 一个朝下的三角，指向屏幕中心（攻击来源方向） */
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  filter: drop-shadow(0 0 8px rgba(255, 40, 40, 0.9));
+}
+
+#damage-arrow.active {
+  animation: damage-dir-fade 0.9s ease-out;
+}
+
+@keyframes damage-dir-fade {
+  0% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
 }
 
 .overlay {
@@ -233,17 +281,47 @@ body,
 }
 
 .weapon-chip {
-  width: 92px;
-  padding: 10px 6px 8px;
+  position: relative;
+  width: 84px;
+  padding: 12px 6px 8px;
   border-radius: 10px;
   background: linear-gradient(180deg, #242438, #181826);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: transform 0.12s, border-color 0.15s;
+  transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .weapon-chip:hover {
   transform: translateY(-3px);
   border-color: #ff4d6d;
+}
+
+.weapon-chip.active {
+  border-color: #ffd23f;
+  box-shadow: 0 0 16px rgba(255, 210, 63, 0.45);
+  background: linear-gradient(180deg, #2e2a1c, #1f1c12);
+}
+
+.weapon-chip-key {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #2a2a40;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ddd;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weapon-chip.active .weapon-chip-key {
+  background: #ffd23f;
+  color: #1a1a10;
+  border-color: #ffd23f;
 }
 
 .weapon-chip-icon {
@@ -261,11 +339,6 @@ body,
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 2px;
-}
-
-.weapon-chip-tag {
-  font-size: 10px;
-  color: #9aa;
 }
 
 .controls-hint {

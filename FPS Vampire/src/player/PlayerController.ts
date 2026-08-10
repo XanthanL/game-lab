@@ -11,6 +11,13 @@ export class PlayerController {
   private readonly keys = new Set<string>();
   private locked = false;
   private onLockChange?: (locked: boolean) => void;
+  // 跳跃 / 垂直
+  private vy = 0;
+  private grounded = true;
+  // 冲刺 / 体力
+  private stamina = PLAYER.STAMINA_MAX;
+  private sprinting = false;
+  private moving = false;
 
   constructor(
     private camera: THREE.PerspectiveCamera,
@@ -19,7 +26,10 @@ export class PlayerController {
   ) {
     this.domElement.tabIndex = -1;
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener('keyup', (e) => {
+      this.keys.delete(e.code);
+      if (e.key && e.key.length === 1) this.keys.delete(e.key.toLowerCase());
+    });
     window.addEventListener('blur', () => this.keys.clear());
     document.addEventListener('mousemove', (e) => this.onMouseMove(e));
     this.domElement.addEventListener('mousedown', () => this.lock());
@@ -36,6 +46,33 @@ export class PlayerController {
 
   get yaw(): number {
     return this.yawValue;
+  }
+
+  get isGrounded(): boolean {
+    return this.grounded;
+  }
+
+  get isSprinting(): boolean {
+    return this.sprinting;
+  }
+
+  get isMoving(): boolean {
+    return this.moving;
+  }
+
+  get staminaRatio(): number {
+    return this.stamina / PLAYER.STAMINA_MAX;
+  }
+
+  reset(): void {
+    this.position.set(0, 0, 0);
+    this.velocity.set(0, 0, 0);
+    this.vy = 0;
+    this.grounded = true;
+    this.stamina = PLAYER.STAMINA_MAX;
+    this.sprinting = false;
+    this.moving = false;
+    this.keys.clear();
   }
 
   lock(): void {
@@ -70,6 +107,11 @@ export class PlayerController {
     if (this.locked && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
       e.preventDefault();
     }
+    // 跳跃：仅在落地且非长按重复时触发
+    if (e.code === 'Space' && this.locked && !e.repeat && this.grounded) {
+      this.vy = PLAYER.JUMP_SPEED;
+      this.grounded = false;
+    }
   }
 
   private onMouseMove(e: MouseEvent): void {
@@ -88,10 +130,21 @@ export class PlayerController {
     if (has('KeyS', 's')) forward -= 1;
     if (has('KeyA', 'a')) strafe -= 1;
     if (has('KeyD', 'd')) strafe += 1;
+    this.moving = forward !== 0 || strafe !== 0;
+
+    // 冲刺 + 体力
+    const sprintKey = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
+    const canStart = this.stamina > (this.sprinting ? 0 : PLAYER.SPRINT_MIN);
+    this.sprinting = sprintKey && this.moving && canStart;
+    if (this.sprinting) {
+      this.stamina = Math.max(0, this.stamina - PLAYER.STAMINA_DRAIN * dt);
+    } else {
+      this.stamina = Math.min(PLAYER.STAMINA_MAX, this.stamina + PLAYER.STAMINA_REGEN * dt);
+    }
 
     const sin = Math.sin(this.yawValue);
     const cos = Math.cos(this.yawValue);
-    const speed = this.player.stats.moveSpeed;
+    const speed = this.player.stats.moveSpeed * (this.sprinting ? PLAYER.SPRINT_MULT : 1);
     const target = new THREE.Vector3(
       (-sin * forward + cos * strafe) * speed,
       0,
@@ -100,6 +153,17 @@ export class PlayerController {
     const t = 1 - Math.exp(-12 * dt);
     this.velocity.lerp(target, t);
     this.position.addScaledVector(this.velocity, dt);
+
+    // 垂直：重力 + 跳跃
+    this.vy -= PLAYER.GRAVITY * dt;
+    this.position.y += this.vy * dt;
+    if (this.position.y <= 0) {
+      this.position.y = 0;
+      this.vy = 0;
+      this.grounded = true;
+    } else {
+      this.grounded = false;
+    }
   }
 
   private clampToBounds(): void {

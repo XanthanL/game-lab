@@ -10,6 +10,7 @@ import { sound } from '../audio/SoundManager';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { Projectiles } from '../weapons/Projectiles';
 import { WeaponManager } from '../weapons/WeaponManager';
+import { Viewmodel } from '../weapons/Viewmodel';
 import { WEAPON_CONFIGS } from '../weapons/weaponConfigs';
 import { XpSystem } from '../systems/XpSystem';
 import { UpgradeSystem, type UpgradeOption } from '../systems/UpgradeSystem';
@@ -25,14 +26,6 @@ interface BestStats {
   level: number;
 }
 
-const WEAPON_TAGS: Record<string, string> = {
-  magicBolt: '追踪弹',
-  soulBlade: '回旋切割',
-  holyWater: '范围灼烧',
-  lightning: '群体落雷',
-  whip: '近战挥击',
-};
-
 export class Game {
   private renderer: Renderer;
   private world: World;
@@ -42,13 +35,16 @@ export class Game {
   private enemies: EnemyManager;
   private projectiles: Projectiles;
   private weapons: WeaponManager;
+  private viewmodel: Viewmodel;
   private xp: XpSystem;
   private upgrades: UpgradeSystem;
   private waves: WaveSystem;
   private particles: Particles;
   private dmgNumbers: DamageNumbers;
   private readonly fireOrigin = new THREE.Vector3();
+  private readonly aimDir = new THREE.Vector3();
   private readonly tmpVec = new THREE.Vector3();
+  private firing = false;
   private lastTime = 0;
   private running = false;
   private paused = false;
@@ -78,6 +74,14 @@ export class Game {
     this.enemies = new EnemyManager(this.renderer.scene);
     this.projectiles = new Projectiles(this.renderer.scene, this.enemies);
     this.weapons = new WeaponManager(this.renderer.scene, this.projectiles, this.enemies, this.player);
+    this.viewmodel = new Viewmodel(this.renderer.camera);
+    this.weapons.onFire = () => this.viewmodel.kick();
+    this.weapons.onWeaponAdded = (cfg) => this.viewmodel.setAccent(cfg.accent);
+    this.weapons.onActiveChanged = (cfg) => {
+      this.viewmodel.setAccent(cfg.accent);
+      this.refreshRoster();
+    };
+    this.viewmodel.setAccent(WEAPON_CONFIGS.magicBolt.accent);
     this.xp = new XpSystem(this.renderer.scene, this.particles);
     this.upgrades = new UpgradeSystem(this.player, this.weapons);
     this.hud = new HUD();
@@ -93,15 +97,23 @@ export class Game {
     this.weaponRoster = this.require('weapon-roster');
 
     this.best = this.loadBest();
-    this.renderRoster();
     this.renderBest();
 
-    this.player.onDamaged = (amount) => {
+    this.player.onDamaged = (amount, source) => {
       this.flashDamage();
       this.shake(0.35);
       sound.play('hurt');
       const p = this.tmpVec.set(this.controller.position.x, 1.8, this.controller.position.z);
       this.dmgNumbers.show(p, String(Math.round(amount)), 'player');
+      if (source) {
+        const dx = source.x - this.controller.position.x;
+        const dz = source.z - this.controller.position.z;
+        const yaw = this.controller.yaw;
+        // 相对于玩家朝向：fwd 向前为正，right 向右为正
+        const fwd = dx * -Math.sin(yaw) + dz * -Math.cos(yaw);
+        const right = dx * Math.cos(yaw) + dz * -Math.sin(yaw);
+        this.hud.showDamageDir(Math.atan2(right, fwd));
+      }
     };
     this.enemies.onEnemyKilled = (enemy) => {
       this.player.kills++;
@@ -140,8 +152,10 @@ export class Game {
         this.pointerError.classList.add('hidden');
         this.overlayState = 'playing';
         this.hud.show();
+        this.viewmodel.setVisible(true);
       } else {
         this.paused = true;
+        this.firing = false;
         this.hud.hide();
         if (this.overlayState === 'playing') {
           this.showOverlay('paused');
@@ -149,6 +163,7 @@ export class Game {
           // 从开始界面尝试锁定失败，提示用户而非静默切到「已暂停」
           this.pointerError.classList.remove('hidden');
         }
+        this.viewmodel.setVisible(false);
       }
     });
     this.startBtn.addEventListener('click', () => {
@@ -164,7 +179,46 @@ export class Game {
         sound.toggleMute();
         this.hud.announce(sound.isMuted ? '♪ 音效：关' : '♪ 音效：开');
       }
+      if (e.code.startsWith('Digit')) {
+        const n = parseInt(e.code.slice(5), 10);
+        if (n >= 1 && n <= 5) this.weapons.setActive(n - 1);
+      }
+      if (e.code === 'KeyQ' || e.code === 'Tab') {
+        e.preventDefault();
+        this.weapons.cycle(1);
+      }
     });
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (!this.controller.isLocked) return;
+        this.weapons.cycle(e.deltaY > 0 ? 1 : -1);
+      },
+      { passive: true }
+    );
+    // 手动开火：按住鼠标左键射击/挥动
+    document.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      this.firing = true;
+      this.tryFire();
+    });
+    document.addEventListener('mouseup', (e) => {
+      if (e.button === 0) this.firing = false;
+    });
+    window.addEventListener('blur', () => {
+      this.firing = false;
+    });
+  }
+
+  private tryFire(): void {
+    if (!this.controller.isLocked || this.overlayState !== 'playing' || !this.player.alive) return;
+    this.renderer.camera.getWorldDirection(this.aimDir);
+    this.fireOrigin.set(
+      this.controller.position.x,
+      this.controller.position.y + 1.3,
+      this.controller.position.z
+    );
+    this.weapons.fire(this.aimDir, this.fireOrigin);
   }
 
   private restart(): void {
@@ -177,7 +231,8 @@ export class Game {
     this.weapons.addWeapon(WEAPON_CONFIGS.magicBolt);
     this.waves.reset();
     this.player.reset();
-    this.controller.position.set(0, 0, 0);
+    this.controller.reset();
+    this.viewmodel.setAccent(WEAPON_CONFIGS.magicBolt.accent);
     this.elapsed = 0;
     this.shakeAmount = 0;
     this.overlayState = 'start';
@@ -257,17 +312,24 @@ export class Game {
     this.require('best-level').textContent = String(this.best.level);
   }
 
-  private renderRoster(): void {
+  private renderRoster(activeIndex = 0): void {
     this.weaponRoster.innerHTML = '';
-    for (const cfg of Object.values(WEAPON_CONFIGS)) {
+    const owned = this.weapons.getWeapons();
+    owned.forEach((w, i) => {
+      const cfg = w.config;
       const chip = document.createElement('div');
-      chip.className = 'weapon-chip';
+      chip.className = 'weapon-chip' + (i === activeIndex ? ' active' : '');
       chip.innerHTML = `
+        <div class="weapon-chip-key">${i + 1}</div>
         <div class="weapon-chip-icon">${cfg.icon}</div>
-        <div class="weapon-chip-name">${cfg.name}</div>
-        <div class="weapon-chip-tag">${WEAPON_TAGS[cfg.id] ?? ''}</div>`;
+        <div class="weapon-chip-name">${cfg.name}</div>`;
+      chip.addEventListener('click', () => this.weapons.setActive(i));
       this.weaponRoster.appendChild(chip);
-    }
+    });
+  }
+
+  private refreshRoster(): void {
+    this.renderRoster(this.weapons.getActiveIndex());
   }
 
   private openLevelUp(): void {
@@ -278,6 +340,7 @@ export class Game {
     }
     this.overlayState = 'levelup';
     this.paused = true;
+    this.firing = false;
     this.hud.hide();
     sound.play('levelup');
     document.exitPointerLock();
@@ -346,23 +409,25 @@ export class Game {
       if (this.player.alive) {
         this.controller.update(dt, this.world.obstacles);
         this.applyShake(dt);
-        const origin = this.fireOrigin.set(
-          this.controller.position.x,
-          this.controller.position.y + 1.3,
-          this.controller.position.z
-        );
         this.enemies.update(dt, this.player, this.controller.position);
         this.projectiles.update(dt);
-        this.weapons.update(dt, origin, this.controller.yaw);
+        this.weapons.update(dt);
+        if (this.firing) this.tryFire();
         this.xp.update(dt, this.player, this.controller.position, this.player.stats.magnet);
         this.particles.update(dt);
         this.dmgNumbers.update(dt, this.renderer.camera);
         this.waves.update(this.elapsed);
+        this.viewmodel.update(dt, {
+          moving: this.controller.isMoving,
+          sprinting: this.controller.isSprinting,
+          airborne: !this.controller.isGrounded,
+        });
         if (this.upgrades.checkLevelUp()) {
           this.openLevelUp();
         }
       } else if (this.overlayState !== 'gameover') {
         this.paused = true;
+        this.firing = false;
         this.dmgNumbers.clear();
         document.exitPointerLock();
         this.hud.hide();
@@ -374,6 +439,7 @@ export class Game {
       this.hud.setXp(this.player.xp, this.upgrades.xpToNext(this.player.level));
       this.hud.setHealth(this.player.hp, this.player.stats.maxHp);
       this.hud.setKills(this.player.kills);
+      this.hud.setStamina(this.controller.staminaRatio);
     }
     this.renderer.render();
     requestAnimationFrame(this.loop);

@@ -11,6 +11,7 @@ import { sound } from '../audio/SoundManager';
 export class Weapon {
   level = 1;
   onHeavy?: () => void;
+  onFire?: () => void;
   private timer = 0;
 
   constructor(
@@ -35,34 +36,36 @@ export class Weapon {
     if (this.level < this.config.maxLevel) this.level++;
   }
 
-  update(dt: number, origin: THREE.Vector3, yaw: number): void {
+  update(dt: number): void {
     this.timer -= dt;
+  }
+
+  /** 玩家手动开火：沿 aimDir 方向发射（不再自动连发）。 */
+  fire(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
     if (this.timer > 0) return;
     switch (this.config.behavior) {
       case 'bullet':
-        this.fireBullet(origin);
+        this.fireBullet(origin, aimDir);
         break;
       case 'boomerang':
-        this.fireBoomerang(origin, yaw);
+        this.fireBoomerang(origin, aimDir);
         break;
       case 'groundAoE':
-        this.throwPool(origin, yaw);
+        this.throwPool(origin, aimDir);
         break;
       case 'beam':
         this.castLightning(origin);
         break;
       case 'meleeSwing':
-        this.swing(origin, yaw);
+        this.swing(origin, aimDir);
         break;
     }
   }
 
-  private fireBullet(origin: THREE.Vector3): void {
-    const target = this.enemies.getNearestEnemy(origin, this.config.range);
-    if (!target) return;
+  private fireBullet(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
+    const dir = aimDir.clone().normalize();
+    const start = origin.clone().addScaledVector(dir, 0.6);
     this.timer = this.cooldown;
-    const dir = new THREE.Vector3(target.pos.x - origin.x, 0, target.pos.z - origin.z).normalize();
-    const start = new THREE.Vector3(origin.x + dir.x * 0.6, origin.y, origin.z + dir.z * 0.6);
     this.projectiles.spawnLinear(
       start,
       dir,
@@ -73,16 +76,11 @@ export class Weapon {
       this.config.projectileRadius
     );
     sound.play('shoot');
+    this.onFire?.();
   }
 
-  private fireBoomerang(origin: THREE.Vector3, yaw: number): void {
-    const target = this.enemies.getNearestEnemy(origin, this.config.range * 3);
-    let dir: THREE.Vector3;
-    if (target) {
-      dir = new THREE.Vector3(target.pos.x - origin.x, 0, target.pos.z - origin.z).normalize();
-    } else {
-      dir = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-    }
+  private fireBoomerang(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
+    const dir = aimDir.clone().normalize();
     this.timer = this.cooldown;
     this.projectiles.spawnBoomerang(
       origin,
@@ -93,21 +91,18 @@ export class Weapon {
       this.config.projectileRadius
     );
     sound.play('throw');
+    this.onFire?.();
   }
 
-  private throwPool(origin: THREE.Vector3, yaw: number): void {
-    const target = this.enemies.getNearestEnemy(origin, this.config.range);
-    let dir: THREE.Vector3;
-    if (target) {
-      dir = new THREE.Vector3(target.pos.x - origin.x, 0, target.pos.z - origin.z).normalize();
-    } else {
-      dir = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-    }
+  private throwPool(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
+    const hdir = new THREE.Vector3(aimDir.x, 0, aimDir.z);
+    if (hdir.lengthSq() < 1e-6) hdir.set(-Math.sin(this.playerYaw(aimDir)), 0, -Math.cos(this.playerYaw(aimDir)));
+    hdir.normalize();
     const throwRange = this.config.throwRange ?? 3.5;
     const point = new THREE.Vector3(
-      origin.x + dir.x * throwRange,
+      origin.x + hdir.x * throwRange,
       origin.y,
-      origin.z + dir.z * throwRange
+      origin.z + hdir.z * throwRange
     );
     this.timer = this.cooldown;
     this.pools.spawn(
@@ -118,6 +113,11 @@ export class Weapon {
       this.damage
     );
     sound.play('throw');
+    this.onFire?.();
+  }
+
+  private playerYaw(aimDir: THREE.Vector3): number {
+    return Math.atan2(-aimDir.x, -aimDir.z);
   }
 
   private castLightning(origin: THREE.Vector3): void {
@@ -132,9 +132,11 @@ export class Weapon {
     this.lightnings.spawn(target.pos);
     sound.play('lightning');
     this.onHeavy?.();
+    this.onFire?.();
   }
 
-  private swing(origin: THREE.Vector3, yaw: number): void {
+  private swing(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
+    const yaw = this.playerYaw(aimDir);
     this.timer = this.cooldown;
     for (const e of this.enemies.queryInArc(origin, this.config.range, yaw, this.config.meleeHalfAngle ?? 1.0)) {
       this.enemies.applyDamage(e, this.damage);
@@ -142,5 +144,6 @@ export class Weapon {
     this.swings.spawn(origin, yaw);
     sound.play('swing');
     this.onHeavy?.();
+    this.onFire?.();
   }
 }

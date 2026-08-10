@@ -35,9 +35,10 @@ export class EnemyManager {
     for (const config of ENEMY_TYPES) {
       const material = new THREE.MeshStandardMaterial({
         color: config.color,
-        roughness: 0.6,
+        roughness: 0.5,
         metalness: 0.1,
-        emissive: new THREE.Color(config.color).multiplyScalar(0.18),
+        emissive: new THREE.Color(config.color).multiplyScalar(0.9),
+        emissiveIntensity: 1.15,
       });
       const mesh = new THREE.InstancedMesh(this.geometryFor(config), material, config.poolSize);
       mesh.count = 0;
@@ -307,7 +308,7 @@ export class EnemyManager {
     }
     if (dist < enemy.radius + PLAYER.RADIUS + 0.2 && enemy.hitCooldown <= 0) {
       enemy.hitCooldown = BALANCE.CONTACT_DAMAGE_INTERVAL;
-      player.takeDamage(enemy.damage);
+      player.takeDamage(enemy.damage, enemy.pos);
     }
     this.writeInstance(pool, enemy, 1);
   }

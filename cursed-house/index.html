@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>咒 -JYU- 怨宅</title>
 <style>
-html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;font-family:"Microsoft YaHei","Noto Serif CJK SC","SimSun",serif;}
+html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:none;font-family:"Microsoft YaHei","Noto Serif CJK SC","SimSun",serif;}
 body{display:flex;align-items:center;justify-content:center;}
-#c{image-rendering:pixelated;width:min(100vw,calc(100vh*1.6));height:auto;aspect-ratio:8/5;display:block;}
+#c{image-rendering:pixelated;position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;}
 .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfcfcf;z-index:10;text-align:center;user-select:none;}
 .scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
 .overlay>*{position:relative;z-index:1;}
@@ -38,10 +38,36 @@ body{display:flex;align-items:center;justify-content:center;}
 .crows{animation:crowsfly 40s linear infinite;}
 .crows.c2{animation-duration:55s;animation-delay:-20s;}
 @keyframes crowsfly{from{transform:translateX(-30px);}to{transform:translateX(120px);}}
+#touch{display:none;position:fixed;inset:0;z-index:5;pointer-events:none;}
+#mobileHud{display:none;position:fixed;top:calc(10px + env(safe-area-inset-top));left:0;right:0;z-index:6;pointer-events:none;flex-direction:column;align-items:center;gap:6px;color:#ececec;text-shadow:0 1px 3px #000;font-family:inherit;}
+#mobileHud .row{display:flex;gap:16px;font-size:13px;align-items:center;}
+#mobileHud .sanity{display:flex;align-items:center;gap:6px;font-size:12px;}
+#mobileHud .bar{width:130px;height:11px;border:1px solid rgba(225,225,225,0.5);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.5);}
+#mobileHud .bar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,rgb(70,150,70),rgb(190,150,60),rgb(190,50,45));transition:width .2s;}
+#stick{position:fixed;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.12),rgba(255,255,255,0.03));border:2px solid rgba(255,255,255,0.2);transform:translate(-50%,-50%);display:none;pointer-events:none;}
+#stickKnob{position:fixed;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,rgba(225,225,225,0.55),rgba(170,170,170,0.25));transform:translate(-50%,-50%);display:none;pointer-events:none;}
+.tbtn{position:fixed;z-index:6;width:66px;height:66px;border-radius:50%;border:2px solid rgba(255,255,255,0.28);background:rgba(18,18,20,0.55);color:#ececec;font-size:13px;line-height:1.15;font-family:inherit;display:flex;align-items:center;justify-content:center;text-align:center;user-select:none;touch-action:none;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+.tbtn:active{background:rgba(120,24,24,0.7);transform:scale(0.94);}
+#btnE{right:16px;bottom:calc(96px + env(safe-area-inset-bottom));}
+#btnM{right:16px;top:calc(14px + env(safe-area-inset-top));}
+#btnPause{left:16px;top:calc(14px + env(safe-area-inset-top));}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+
+<div id="mobileHud">
+  <div class="row"><span id="hudLevel">一层</span><span id="hudDolls">纸人偶 0/6</span><span id="hudKey">钥匙 无</span></div>
+  <div class="sanity">精神 <div class="bar"><i id="hudSanity"></i></div></div>
+</div>
+
+<div id="touch">
+  <div id="stick"></div>
+  <div id="stickKnob"></div>
+  <button id="btnPause" class="tbtn" aria-label="暂停">⏸</button>
+  <button id="btnM" class="tbtn" aria-label="静音">🔇</button>
+  <button id="btnE" class="tbtn">互动<br>E</button>
+</div>
 
 <div id="title" class="overlay">
   <svg class="scene" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -177,15 +203,29 @@ const TAU=Math.PI*2;
 
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
-const VW=480,VH=300;
-canvas.width=VW;canvas.height=VH;
-ctx.imageSmoothingEnabled=false;
+let VW=480,VH=300;
 const world=document.createElement('canvas');
-world.width=VW;world.height=VH;
 const wctx=world.getContext('2d');
-const imgData=wctx.createImageData(VW,VH);
-const buf32=new Uint32Array(imgData.data.buffer);
-const zBuffer=new Float32Array(VW);
+let imgData,buf32,zBuffer;
+function computeSize(){
+  const w=window.innerWidth||document.documentElement.clientWidth||480;
+  const h=window.innerHeight||document.documentElement.clientHeight||300;
+  const aspect=w/h;
+  let vw,vh;
+  if(aspect>=1){vh=300;vw=Math.round(300*aspect);if(vw>640)vw=640;}
+  else{vw=360;vh=Math.round(vw/aspect);if(vh>780)vh=780;}
+  return [vw,vh];
+}
+function setupBuffers(){
+  [VW,VH]=computeSize();
+  canvas.width=VW;canvas.height=VH;
+  world.width=VW;world.height=VH;
+  imgData=wctx.createImageData(VW,VH);
+  buf32=new Uint32Array(imgData.data.buffer);
+  zBuffer=new Float32Array(VW);
+}
+setupBuffers();
+ctx.imageSmoothingEnabled=false;
 
 const MAPS=[
 [
@@ -457,6 +497,52 @@ addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')ePressed=tru
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas)mouseDX+=e.movementX;});
 
+const isTouch=(navigator.maxTouchPoints>0)||('ontouchstart' in window)||!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+const joy={f:0,s:0};
+let paused=false;
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault());
+if(isTouch){document.getElementById('touch').style.display='block';setupTouch();}
+function setupTouch(){
+  const stick=document.getElementById('stick'),stickKnob=document.getElementById('stickKnob');
+  const R=55;
+  const touches={};
+  const inBtn=t=>t.target&&t.target.closest&&t.target.closest('.tbtn');
+  function onStart(e){
+    if(state!=='playing'||paused)return;
+    for(const t of e.changedTouches){
+      if(inBtn(t))continue;
+      const x=t.clientX,y=t.clientY;
+      if(x>window.innerWidth*0.5){touches[t.identifier]={zone:'look',lx:x,ly:y};}
+      else{touches[t.identifier]={zone:'move',ox:x,oy:y,lx:x,ly:y};stick.style.left=x+'px';stick.style.top=y+'px';stick.style.display='block';stickKnob.style.left=x+'px';stickKnob.style.top=y+'px';stickKnob.style.display='block';}
+    }
+  }
+  function onMove(e){
+    for(const t of e.changedTouches){
+      const tc=touches[t.identifier];if(!tc)continue;
+      const x=t.clientX,y=t.clientY;
+      if(tc.zone==='move'){
+        let dx=x-tc.ox,dy=y-tc.oy;const d=Math.hypot(dx,dy);
+        if(d>R){dx=dx/d*R;dy=dy/d*R;}
+        stickKnob.style.left=(tc.ox+dx)+'px';stickKnob.style.top=(tc.oy+dy)+'px';
+        joy.s=clamp(dx/R,-1,1);joy.f=-clamp(dy/R,-1,1);
+        if(Math.hypot(joy.s,joy.f)<0.25){joy.s=0;joy.f=0;}
+      }else{mouseDX+=(x-tc.lx)*0.004;tc.lx=x;tc.ly=y;}
+    }
+  }
+  function onEnd(e){
+    for(const t of e.changedTouches){
+      const tc=touches[t.identifier];if(!tc)continue;
+      if(tc.zone==='move'){joy.f=0;joy.s=0;stick.style.display='none';stickKnob.style.display='none';}
+      delete touches[t.identifier];
+    }
+  }
+  document.addEventListener('touchstart',onStart,{passive:false});
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onEnd,{passive:false});
+  document.addEventListener('touchcancel',onEnd,{passive:false});
+}
+
 let AC=null,master=null,noiseBuf=null,muted=false,ambGains=[];
 function initAudio(){
   if(AC)return;
@@ -545,6 +631,7 @@ function move(dt){
   if(keys.KeyS||keys.ArrowDown)f-=1;
   if(keys.KeyD||keys.ArrowRight)s+=1;
   if(keys.KeyA||keys.ArrowLeft)s-=1;
+  f+=joy.f;s+=joy.s;
   const rot=mouseDX*0.0022;mouseDX=0;
   if(rot){const c=Math.cos(rot),sn=Math.sin(rot);const dx=player.dirX*c-player.dirY*sn,dy=player.dirX*sn+player.dirY*c;player.dirX=dx;player.dirY=dy;const px=player.planeX*c-player.planeY*sn,py=player.planeX*sn+player.planeY*c;player.planeX=px;player.planeY=py;}
   if(f||s){
@@ -562,13 +649,13 @@ function move(dt){
 
 function update(dt){
   timeSec+=dt;
-  if(state!=='playing')return;
+  if(state!=='playing'||paused)return;
   if(seq){
     seq.t+=dt;
     if(seq.mode==='scare'&&seq.t>1.1){seq=null;}
     else if(seq.mode==='death'&&seq.t>3.2){state='dead';document.getElementById('dead').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();}
     else if(seq.mode==='win'&&seq.t>2.6){state='win';const m=(timeSec-startTime)/60|0,ss=(timeSec-startTime)%60|0;document.getElementById('winstats').textContent='你冲出了大门。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒  纸人偶 '+dollsTaken+' 体';document.getElementById('win').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();}
-  }else if(document.pointerLockElement===canvas){
+  }else if(isTouch||document.pointerLockElement===canvas){
     move(dt);
     if(ePressed){ePressed=false;interact();}
     if(lvl===1&&timeSec-lastScareAt>4)sanity=Math.max(0,sanity-0.8*dt);
@@ -598,7 +685,7 @@ function floorStyle(x,y){
 
 function render(tSec){
   const flicker=(0.85+0.15*Math.sin(tSec*13.7)+Math.random()*0.05)*(flickerEvent>0?0.35:1)*(lvl===1?0.82:1);
-  const horizon=150;
+  const horizon=VH>>1;
   const hw=VH/2;
   const tl=tiles[lvl],tlW=tl[0].length,tlH=tl.length;
   for(let y=0;y<horizon;y++){const tt=y/horizon;const v=(5+30*tt)|0;buf32.fill(pack(v,v,Math.min(255,v+6)),y*VW,y*VW+VW);}
@@ -806,25 +893,27 @@ function render(tSec){
   ctx.globalAlpha=1;
 
   if(state==='playing'){
-    ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(dollImg,12,VH-38,11,19);
-    ctx.drawImage(keyImg,14,VH-60,18,10);
-    ctx.imageSmoothingEnabled=false;
-    ctx.font='15px "Microsoft YaHei",serif';
-    ctx.textAlign='left';
-    ctx.fillStyle='rgba(220,220,220,0.85)';
-    ctx.fillText('纸人偶  '+dollsTaken+' / 6',28,VH-20);
-    ctx.fillText('钥匙　'+(hasKey?'有':'无'),28,VH-40);
-    ctx.fillText(lvl===0?'一层':'地下室',12,18);
-    ctx.textAlign='right';
-    ctx.fillStyle='rgba(220,220,220,0.85)';
-    ctx.fillText('精神',VW-12,VH-44);
-    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(VW-122,VH-38,110,10);
-    const sc=sanity/100;
-    const sg=ctx.createLinearGradient(VW-120,VH-36,VW-12,VH-36);
-    sg.addColorStop(0,'rgb(70,150,70)');sg.addColorStop(0.5,'rgb(190,150,60)');sg.addColorStop(1,'rgb(190,50,45)');
-    ctx.fillStyle=sg;ctx.fillRect(VW-120,VH-36,108*sc,6);
-    ctx.strokeStyle='rgba(220,220,220,0.5)';ctx.strokeRect(VW-122,VH-38,110,10);
+    if(!isTouch){
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(dollImg,12,VH-38,11,19);
+      ctx.drawImage(keyImg,14,VH-60,18,10);
+      ctx.imageSmoothingEnabled=false;
+      ctx.font='15px "Microsoft YaHei",serif';
+      ctx.textAlign='left';
+      ctx.fillStyle='rgba(220,220,220,0.85)';
+      ctx.fillText('纸人偶  '+dollsTaken+' / 6',28,VH-20);
+      ctx.fillText('钥匙　'+(hasKey?'有':'无'),28,VH-40);
+      ctx.fillText(lvl===0?'一层':'地下室',12,18);
+      ctx.textAlign='right';
+      ctx.fillStyle='rgba(220,220,220,0.85)';
+      ctx.fillText('精神',VW-12,VH-44);
+      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(VW-122,VH-38,110,10);
+      const sc=sanity/100;
+      const sg=ctx.createLinearGradient(VW-120,VH-36,VW-12,VH-36);
+      sg.addColorStop(0,'rgb(70,150,70)');sg.addColorStop(0.5,'rgb(190,150,60)');sg.addColorStop(1,'rgb(190,50,45)');
+      ctx.fillStyle=sg;ctx.fillRect(VW-120,VH-36,108*sc,6);
+      ctx.strokeStyle='rgba(220,220,220,0.5)';ctx.strokeRect(VW-122,VH-38,110,10);
+    }
     if(!seq){
       const fx=Math.floor(player.x+player.dirX*0.55),fy=Math.floor(player.y+player.dirY*0.55);
       const ft=tile(fx,fy);
@@ -841,19 +930,34 @@ function render(tSec){
       ctx.fillStyle='rgba(235,235,235,'+a.toFixed(3)+')';
       ctx.fillText(toast.text,VW/2,VH/2+70);
     }
+    if(isTouch)updateHud();
   }
 }
+function updateHud(){
+  const mh=document.getElementById('mobileHud');
+  if(state!=='playing'||paused){mh.style.display='none';return;}
+  mh.style.display='flex';
+  document.getElementById('hudLevel').textContent=lvl===0?'一层':'地下室';
+  document.getElementById('hudDolls').textContent='纸人偶 '+dollsTaken+'/6';
+  document.getElementById('hudKey').textContent='钥匙 '+(hasKey?'有':'无');
+  document.getElementById('hudSanity').style.width=clamp(sanity,0,100)+'%';
+}
 
-function lock(){if(canvas.requestPointerLock)canvas.requestPointerLock();}
-addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==canvas&&state==='playing'&&!seq){document.getElementById('pause').style.display='flex';}});
+function lock(){try{if(canvas.requestPointerLock){const p=canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}}catch(e){}}
+addEventListener('pointerlockchange',()=>{if(!isTouch&&document.pointerLockElement!==canvas&&state==='playing'&&!seq){document.getElementById('pause').style.display='flex';}});
 document.getElementById('title').addEventListener('click',()=>{
   initAudio();
   if(AC&&AC.state==='suspended')AC.resume();
-  state='playing';startTime=timeSec;
+  state='playing';paused=false;startTime=timeSec;
   document.getElementById('title').style.display='none';
   lock();
 });
-document.getElementById('pause').addEventListener('click',()=>{document.getElementById('pause').style.display='none';lock();});
+document.getElementById('pause').addEventListener('click',()=>{document.getElementById('pause').style.display='none';if(isTouch){paused=false;}else{lock();}});
+document.getElementById('dead').addEventListener('click',()=>location.reload());
+document.getElementById('win').addEventListener('click',()=>location.reload());
+document.getElementById('btnE').addEventListener('click',()=>{if(state==='playing'&&!paused)ePressed=true;});
+document.getElementById('btnM').addEventListener('click',()=>{toggleMute();});
+document.getElementById('btnPause').addEventListener('click',()=>{if(state!=='playing')return;if(paused){paused=false;document.getElementById('pause').style.display='none';}else{paused=true;document.getElementById('pause').style.display='flex';}});
 document.getElementById('dead').addEventListener('click',()=>location.reload());
 document.getElementById('win').addEventListener('click',()=>location.reload());
 
@@ -866,6 +970,8 @@ function loop(ts){
   render(timeSec);
 }
 requestAnimationFrame(loop);
+window.addEventListener('resize',()=>{setupBuffers();});
+window.addEventListener('orientationchange',()=>{setTimeout(setupBuffers,250);});
 </script>
 </body>
 </html>

@@ -19,12 +19,12 @@ export const ENEMY_TYPES: EnemyConfig[] = [
   {
     id: 'grunt',
     shape: 'box',
-    color: 0x8a3b5c,
+    color: 0xff5d8f,
     hp: 20,
     speed: 3.2,
     damage: 10,
     xp: 1,
-    scale: 1,
+    scale: 1.15,
     radius: 0.5,
     poolSize: 90,
     weight: 1.0,
@@ -33,7 +33,7 @@ export const ENEMY_TYPES: EnemyConfig[] = [
   {
     id: 'runner',
     shape: 'cone',
-    color: 0xc94f4f,
+    color: 0xff7a33,
     hp: 12,
     speed: 5.4,
     damage: 8,
@@ -47,7 +47,7 @@ export const ENEMY_TYPES: EnemyConfig[] = [
   {
     id: 'brute',
     shape: 'octahedron',
-    color: 0x4f4f9e,
+    color: 0x4d7cff,
     hp: 80,
     speed: 1.8,
     damage: 22,
@@ -61,7 +61,7 @@ export const ENEMY_TYPES: EnemyConfig[] = [
   {
     id: 'elite',
     shape: 'octahedron',
-    color: 0xff4d6d,
+    color: 0xc04dff,
     hp: 220,
     speed: 2.7,
     damage: 30,
@@ -75,7 +75,7 @@ export const ENEMY_TYPES: EnemyConfig[] = [
   {
     id: 'boss',
     shape: 'octahedron',
-    color: 0xb91c1c,
+    color: 0xff2e2e,
     hp: 1500,
     speed: 1.5,
     damage: 45,
