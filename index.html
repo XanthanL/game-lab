@@ -5,22 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GAME LAB — 前端游戏实验场</title>
 <meta name="description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<!-- ===== 微信 / Open Graph 分享卡片（game-lab 主站） ===== -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="GAME LAB" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:title" content="GAME LAB — 前端游戏实验场" />
+<meta property="og:description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
+<meta property="og:image:width" content="600" />
+<meta property="og:image:height" content="800" />
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="GAME LAB — 前端游戏实验场" />
+<meta name="twitter:description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
 <style>
   :root {
     --bg: #0b0b0d;
     --bg-2: #111114;
+    --bg-3: #16161a;
     --ink: #f2efe9;
     --ink-dim: #8a8780;
-    --ink-mute: #4a4844;
-    --line: rgba(242, 239, 233, 0.12);
-    --line-strong: rgba(242, 239, 233, 0.28);
+    --ink-mute: #56544e;
+    --line: rgba(242, 239, 233, 0.10);
+    --line-strong: rgba(242, 239, 233, 0.22);
     --accent: #ff4a1c;
+    --accent-soft: rgba(255, 74, 28, 0.14);
     --serif: "Times New Roman", "Songti SC", "Noto Serif SC", serif;
     --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
     --mono: "SF Mono", "JetBrains Mono", "Courier New", monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-2: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
 
   html, body {
     background: var(--bg);
@@ -33,26 +53,56 @@
 
   body {
     background:
-      radial-gradient(800px 400px at 85% 0%, rgba(255, 74, 28, 0.06), transparent 70%),
+      radial-gradient(1100px 620px at 82% -8%, rgba(255, 74, 28, 0.08), transparent 60%),
+      radial-gradient(900px 700px at 8% 108%, rgba(120, 80, 255, 0.05), transparent 60%),
       var(--bg);
     min-height: 100vh;
+    position: relative;
   }
 
   ::selection { background: var(--accent); color: var(--bg); }
 
-  /* 键盘聚焦可见 */
-  a:focus-visible {
+  a:focus-visible,
+  button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 4px;
   }
 
-  /* 尊重 reduced-motion 偏好 */
   @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
     }
+  }
+
+  /* ============ 自定义光标高光 ============ */
+  .spot, .ring {
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 2;
+    will-change: transform;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .spot {
+    width: 620px; height: 620px;
+    margin: -310px 0 0 -310px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 74, 28, 0.16), rgba(255, 74, 28, 0.04) 38%, transparent 62%);
+    mix-blend-mode: screen;
+  }
+  .ring {
+    width: 38px; height: 38px;
+    margin: -19px 0 0 -19px;
+    border-radius: 50%;
+    border: 1px solid rgba(242, 239, 233, 0.45);
+    mix-blend-mode: difference;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    body.cursor-on .spot, body.cursor-on .ring { opacity: 1; }
   }
 
   /* ============ 顶部细栏 ============ */
@@ -62,302 +112,529 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 32px;
+    padding: 20px 36px;
     font-family: var(--mono);
     font-size: 11px;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--ink-dim);
     z-index: 100;
     mix-blend-mode: difference;
     pointer-events: none;
   }
-  .topbar .right { display: flex; gap: 24px; }
+  .topbar .right { display: flex; gap: 28px; }
   .topbar .dot {
     display: inline-block;
     width: 6px; height: 6px;
     background: var(--accent);
     border-radius: 50%;
-    margin-right: 8px;
+    margin-right: 9px;
     vertical-align: middle;
-    animation: blink 2.4s ease-in-out infinite;
+    animation: blink 2.6s ease-in-out infinite;
   }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
 
   /* ============ HERO ============ */
   .hero {
     position: relative;
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: stretch;
-    padding: 0 32px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  /* 左侧：竖排巨型字母标题 */
-  .hero-title {
-    display: flex;
+    grid-template-columns: 1.05fr 0.95fr;
     align-items: center;
-    justify-content: flex-start;
-    padding: 80px 0 60px;
-  }
-  .vertical {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(48px, 9vw, 128px);
-    line-height: 0.92;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    display: flex;
-    flex-direction: column;
-  }
-  .vertical .letter {
-    display: block;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
-  }
-  .vertical .letter:hover {
-    color: var(--accent);
-    transform: translateX(8px);
-  }
-  .vertical .gap { display: block; height: 0.5em; }
-
-  /* 中间：生成艺术海报 */
-  .hero-art {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 40px 60px;
-    position: relative;
-  }
-  .hero-art canvas {
-    width: min(38vw, 460px);
-    aspect-ratio: 3 / 4;
-    display: block;
-    border: 1px solid var(--line);
-    background: #050505;
-  }
-  .hero-art .art-label {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    color: var(--ink-mute);
-    text-transform: uppercase;
-    white-space: nowrap;
+    gap: 40px;
+    padding: 120px 36px 80px;
+    max-width: 1480px;
+    margin: 0 auto;
   }
 
-  /* 右侧：介绍 */
-  .hero-meta {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 80px 0 60px 40px;
-  }
-  .hero-meta .tag {
+  .hero-left { position: relative; z-index: 3; }
+
+  .eyebrow {
     font-family: var(--mono);
     font-size: 11px;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
     color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 36px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
   }
 
-  /* ============ WORK 列表 ============ */
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(64px, 12vw, 168px);
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .hero h1 .line { display: block; overflow: hidden; }
+  .hero h1 .line span {
+    display: inline-block;
+    transform: translateY(110%);
+    transition: transform 1.1s var(--ease);
+  }
+  .hero h1 .line .accent { color: var(--accent); }
+  body.loaded .hero h1 .line span { transform: translateY(0); }
+  body.loaded .hero h1 .line:nth-child(2) span { transition-delay: 0.08s; }
+
+  .hero .sub {
+    margin-top: 30px;
+    max-width: 460px;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--ink-dim);
+  }
+  .hero .sub b { color: var(--ink); font-weight: 600; }
+
+  .hero-actions {
+    margin-top: 40px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .btn-enter {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 26px;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: background 0.5s var(--ease), border-color 0.5s var(--ease), color 0.5s var(--ease), transform 0.5s var(--ease);
+    will-change: transform;
+  }
+  .btn-enter .arrow {
+    transition: transform 0.5s var(--ease);
+  }
+  .btn-enter:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+  }
+  .btn-enter:hover .arrow { transform: translateX(6px); }
+
+  .hero-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  /* 右侧：轮播封面预览 */
+  .hero-right {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .featured {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    aspect-ratio: 3 / 4;
+    width: min(100%, 460px);
+    margin-left: auto;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+  .featured-stage { position: absolute; inset: 0; }
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(1.12);
+    transition: opacity 1.1s var(--ease), transform 6s linear;
+    will-change: opacity, transform;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  .slide img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .featured::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(8,8,10,0.82) 0%, rgba(8,8,10,0.12) 38%, transparent 60%);
+    pointer-events: none;
+  }
+  .featured-meta {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 2;
+    padding: 26px 28px;
+  }
+  .featured-meta .f-index {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .featured-meta .f-title {
+    font-family: var(--serif);
+    font-size: 30px;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .featured-meta .f-en {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-top: 8px;
+  }
+  .featured-dots {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    width: min(100%, 460px);
+    justify-content: flex-end;
+  }
+  .featured-dots button {
+    width: 26px; height: 3px;
+    border: 0;
+    padding: 0;
+    background: var(--line-strong);
+    cursor: pointer;
+    transition: background 0.4s var(--ease);
+  }
+  .featured-dots button.on { background: var(--accent); }
+
+  /* 滚动提示 */
+  .scroll-cue {
+    position: absolute;
+    left: 36px; bottom: 34px;
+    z-index: 3;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .scroll-cue .bar {
+    width: 1px; height: 34px;
+    background: linear-gradient(var(--accent), transparent);
+    position: relative;
+    overflow: hidden;
+  }
+  .scroll-cue .bar::after {
+    content: "";
+    position: absolute;
+    top: -50%; left: 0;
+    width: 100%; height: 50%;
+    background: var(--ink);
+    animation: cue 2.4s var(--ease) infinite;
+  }
+  @keyframes cue { 0% { top: -50%; } 60%, 100% { top: 100%; } }
+
+  /* ============ 跑马灯 ============ */
+  .marquee {
+    position: relative;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    padding: 18px 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee-track {
+    display: inline-flex;
+    gap: 48px;
+    white-space: nowrap;
+    will-change: transform;
+    animation: scroll-x 38s linear infinite;
+  }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  .marquee span {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 48px;
+  }
+  .marquee span::after {
+    content: "◆";
+    color: var(--accent);
+    font-size: 8px;
+  }
+  @keyframes scroll-x { to { transform: translateX(-50%); } }
+
+  /* ============ WORK ============ */
+  .work {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 36px;
+  }
   .section-head {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    padding: 80px 32px 24px;
-    border-bottom: 1px solid var(--line);
+    align-items: flex-end;
+    padding: 110px 0 40px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .section-head h2 {
+    font-family: var(--serif);
+    font-size: clamp(34px, 5vw, 58px);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .section-head .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    text-align: right;
+    line-height: 1.9;
+  }
+  .section-head .label .count { color: var(--accent); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    padding-bottom: 120px;
+  }
+
+  .card {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    overflow: hidden;
+    aspect-ratio: 16 / 11;
+  }
+  .card .cover { position: absolute; inset: 0; overflow: hidden; }
+  .card .cover img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: scale(1.02);
+    transition: transform 1.1s var(--ease), filter 0.6s var(--ease);
+    will-change: transform;
+  }
+  .card:hover .cover img { transform: scale(1.08); filter: saturate(1.1); }
+
+  .card .num {
+    position: absolute;
+    top: 18px; left: 18px;
+    z-index: 3;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--ink);
+    mix-blend-mode: difference;
+  }
+
+  .card .shade {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(to top, rgba(8,8,10,0.9) 4%, rgba(8,8,10,0.25) 42%, transparent 64%);
+    opacity: 0.9;
+    transition: opacity 0.6s var(--ease);
+  }
+  .card:hover .shade { opacity: 1; }
+
+  .card .cap {
+    position: absolute;
+    left: 22px; right: 22px; bottom: 22px;
+    z-index: 3;
+  }
+  .card .cap .cn {
+    font-family: var(--serif);
+    font-size: clamp(22px, 2.4vw, 30px);
+    line-height: 1.08;
+    color: var(--ink);
+    transition: transform 0.6s var(--ease);
+  }
+  .card .cap .en {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-top: 6px;
+    transition: transform 0.6s var(--ease);
+  }
+  .card:hover .cap .cn,
+  .card:hover .cap .en { transform: translateY(-4px); }
+
+  /* hover 揭示的详情层 */
+  .card .detail {
+    position: absolute;
+    left: 22px; right: 22px; top: 56px;
+    z-index: 3;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+  }
+  .card:hover .detail,
+  .card:focus-visible .detail {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .card .detail .desc {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+    max-width: 92%;
+  }
+  .card .detail .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .card .detail .stack span { border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+  .card .enter {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--ink-dim);
-  }
-  .section-head h2 {
-    font-family: var(--serif);
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    color: var(--ink);
-    text-transform: none;
-  }
-  .section-head .count {
     color: var(--accent);
   }
+  .card .enter .arrow { transition: transform 0.5s var(--ease); }
+  .card:hover .enter .arrow { transform: translateX(6px); }
 
-  .work-list {
-    list-style: none;
-  }
-
-  .work-item {
-    position: relative;
-    display: grid;
-    grid-template-columns: 80px 1fr 1.4fr 1fr 120px;
-    gap: 32px;
-    align-items: center;
-    padding: 32px;
-    border-bottom: 1px solid var(--line);
-    text-decoration: none;
-    color: inherit;
-    transition: background 0.4s ease, padding 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    overflow: hidden;
-  }
-  .work-item:hover {
-    background: var(--bg-2);
-    padding-left: 48px;
-  }
-  .work-item:hover .work-num,
-  .work-item:focus-visible .work-num { color: var(--accent); }
-  .work-item:hover .work-title,
-  .work-item:focus-visible .work-title { transform: translateX(8px); }
-  .work-item:hover .work-arrow,
-  .work-item:focus-visible .work-arrow { opacity: 1; transform: translateX(0); }
-  .work-item:hover .poster,
-  .work-item:focus-visible .poster { opacity: 1; transform: scale(1); }
-
-  .work-num {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    color: var(--ink-mute);
-    transition: color 0.3s ease;
-  }
-
-  .work-title {
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .work-title .cn {
-    font-family: var(--serif);
-    font-size: clamp(24px, 3vw, 36px);
-    font-weight: 400;
-    line-height: 1.1;
-    color: var(--ink);
-    margin-bottom: 4px;
-  }
-  .work-title .en {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--ink-mute);
-  }
-
-  .work-desc {
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--ink-dim);
-  }
-
-  .work-stack {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-  .work-stack span {
-    color: var(--ink-dim);
-    padding: 3px 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .work-arrow {
-    font-family: var(--serif);
-    font-size: 32px;
-    color: var(--accent);
-    text-align: right;
-    opacity: 0;
-    transform: translateX(-12px);
-    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* 海报浮层（hover 时显示） */
-  .poster {
+  /* 角标光晕 */
+  .card::after {
+    content: "";
     position: absolute;
-    right: 32px;
-    top: 50%;
-    transform: translate(0, -50%) scale(0.92);
-    width: 180px;
-    aspect-ratio: 3 / 4;
-    opacity: 0;
+    inset: 0;
+    z-index: 1;
+    border: 1px solid transparent;
+    transition: border-color 0.6s var(--ease), box-shadow 0.6s var(--ease);
     pointer-events: none;
-    transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 2;
-    border: 1px solid var(--line-strong);
   }
-  .poster canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
+  .card:hover::after,
+  .card:focus-visible::after {
+    border-color: rgba(255, 74, 28, 0.5);
+    box-shadow: inset 0 0 60px rgba(255, 74, 28, 0.08);
   }
 
   /* ============ Footer ============ */
   footer {
-    padding: 60px 32px 40px;
-    display: flex;
-    justify-content: flex-end;
     border-top: 1px solid var(--line);
+    padding: 70px 36px 56px;
+    max-width: 1480px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 40px;
+    flex-wrap: wrap;
   }
-  footer .meta {
+  .footer-word {
+    font-family: var(--serif);
+    font-size: clamp(48px, 11vw, 150px);
+    line-height: 0.86;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .footer-word .accent { color: var(--accent); }
+  .footer-meta {
     text-align: right;
     font-family: var(--mono);
     font-size: 11px;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--ink-mute);
-    line-height: 2;
+    line-height: 2.2;
   }
-  footer .meta a {
+  .footer-meta a {
     color: var(--ink-dim);
     text-decoration: none;
     border-bottom: 1px solid var(--line);
-    transition: color 0.3s ease, border-color 0.3s ease;
+    transition: color 0.4s var(--ease), border-color 0.4s var(--ease);
   }
-  footer .meta a:hover {
-    color: var(--accent);
-    border-color: var(--accent);
+  .footer-meta a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ============ 滚动揭示 ============ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 1s var(--ease), transform 1s var(--ease);
+    transition-delay: var(--d, 0s);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
   }
 
   /* ============ 响应式 ============ */
   @media (max-width: 900px) {
+    .topbar { padding: 16px 20px; }
+    .topbar .right { display: none; }
     .hero {
       grid-template-columns: 1fr;
-      padding: 0 24px;
+      gap: 36px;
+      padding: 110px 20px 90px;
     }
-    .hero-title { padding: 100px 0 20px; justify-content: center; }
-    .vertical { writing-mode: horizontal-tb; flex-direction: row; gap: 0.1em; font-size: clamp(56px, 16vw, 96px); }
-    .vertical .gap { width: 0.4em; height: auto; }
-    .hero-art { padding: 20px 0; }
-    .hero-art canvas { width: min(70vw, 360px); }
-    .hero-meta { padding: 40px 0 80px; }
-    .work-item {
-      grid-template-columns: 60px 1fr 60px;
-      grid-template-rows: auto auto auto;
-      gap: 12px 20px;
-      padding: 24px;
-    }
-    .work-item:hover { padding-left: 32px; }
-    .work-num { grid-row: 1; grid-column: 1; }
-    .work-title { grid-row: 1; grid-column: 2; }
-    .work-arrow { grid-row: 1; grid-column: 3; }
-    .work-desc { grid-row: 2; grid-column: 2 / 4; }
-    .work-stack { grid-row: 3; grid-column: 2 / 4; }
-    .poster { display: none; }
-    footer { justify-content: flex-start; }
-    footer .meta { text-align: left; }
+    .hero-right { order: -1; }
+    .featured { width: min(100%, 340px); margin: 0 auto; }
+    .featured-dots { width: min(100%, 340px); margin: 0 auto; }
+    .scroll-cue { display: none; }
+    .work { padding: 0 20px; }
+    .section-head { padding: 80px 0 32px; }
+    .grid { grid-template-columns: 1fr; gap: 18px; padding-bottom: 80px; }
+    footer { padding: 56px 20px 44px; flex-direction: column; align-items: flex-start; }
+    .footer-meta { text-align: left; }
+    /* 移动端直接展示详情，弱化 hover 依赖 */
+    .card { aspect-ratio: 4 / 3; }
+    .card .detail { opacity: 1; transform: none; position: static; padding: 18px 22px 22px; }
+    .card .cap { bottom: auto; top: 50%; transform: translateY(-50%); }
+    .card .cover img { transform: scale(1.06); }
   }
 </style>
 </head>
 <body>
+
+  <div class="spot" aria-hidden="true"></div>
+  <div class="ring" aria-hidden="true"></div>
 
   <div class="topbar">
     <div><span class="dot"></span>GAME LAB / 2026</div>
@@ -369,40 +646,62 @@
 
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <div class="hero-title">
-      <div class="vertical" id="heroTitle">
-        <span class="letter">G</span>
-        <span class="letter">A</span>
-        <span class="letter">M</span>
-        <span class="letter">E</span>
-        <span class="gap"></span>
-        <span class="letter">L</span>
-        <span class="letter">A</span>
-        <span class="letter">B</span>
+    <div class="hero-left">
+      <div class="eyebrow reveal">Agent · Game Lab — 2026</div>
+      <h1>
+        <span class="line"><span>GAME</span></span>
+        <span class="line"><span class="accent">LAB</span></span>
+      </h1>
+      <p class="sub reveal" style="--d:.18s">
+        一个由不同 <b>Agent</b> 制造不同前端游戏的实验场。
+        从恐怖解谜到 3D 弹幕生存，每一款都从一句话的念头长成可游玩的作品。
+      </p>
+      <div class="hero-actions reveal" style="--d:.28s">
+        <a class="btn-enter" href="#work">浏览实验 <span class="arrow">↓</span></a>
+        <div class="hero-meta" id="heroCount">04 SELECTED</div>
       </div>
     </div>
 
-    <div class="hero-art">
-      <canvas id="heroCanvas" width="600" height="800" aria-hidden="true"></canvas>
-      <div class="art-label">GENERATIVE POSTER · NO.001</div>
+    <div class="hero-right">
+      <a class="featured reveal" id="featured" href="#" aria-label="精选游戏预览">
+        <div class="featured-stage" id="featuredStage"></div>
+        <div class="featured-meta">
+          <div class="f-index" id="fIndex">01 — 04</div>
+          <div class="f-title" id="fTitle"></div>
+          <div class="f-en" id="fEn"></div>
+        </div>
+      </a>
+      <div class="featured-dots" id="featuredDots"></div>
     </div>
 
-    <div class="hero-meta">
-      <div class="tag">— Agent · Game Lab</div>
+    <div class="scroll-cue">
+      <span class="bar"></span>
+      Scroll
     </div>
   </section>
 
-  <!-- ============ WORK ============ -->
-  <div class="section-head">
-    <h2>Work</h2>
-    <div><span class="count" id="count">00</span> / 04 — Selected Experiments</div>
+  <!-- ============ 跑马灯 ============ -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track" id="marquee"></div>
   </div>
 
-  <ul class="work-list" id="workList"></ul>
+  <!-- ============ WORK ============ -->
+  <section class="work" id="work">
+    <div class="section-head reveal">
+      <h2>Selected<br>Experiments</h2>
+      <div class="label">
+        <div><span class="count" id="count">00</span> / 04 — Works</div>
+        <div>Agent-built · Playable</div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </section>
 
   <!-- ============ Footer ============ -->
   <footer>
-    <div class="meta">
+    <div class="footer-word reveal">GAME<br><span class="accent">LAB</span></div>
+    <div class="footer-meta reveal" style="--d:.1s">
       <div>© 2026 GAME LAB</div>
       <div>Hosted on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
       <div>Source on <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a></div>
@@ -419,390 +718,178 @@ const GAMES = [
     titleEn: "JYU / Cursed House",
     desc: "第一人称日式恐怖。雨夜被困在被诅咒的老宅，找到大门钥匙逃出去——小心，它也在找你。",
     path: "./cursed-house/index.html",
+    thumb: "./cursed-house/og.png",
     stack: ["Canvas", "Raycast", "WebAudio"],
     code: "jyu-0001",
-    palette: { bg: "#0a0810", ink: "#a01212", moon: "#e8e2d2", accent: "#3a1818" },
-    scene: "horror"
+    tag: "Horror"
   },
   {
     title: "FPS Vampire",
     titleEn: "First-Person Survivor",
     desc: "第一人称吸血鬼幸存者。自动索敌、波次推进、越战越强。Three.js 驱动的 3D 弹幕生存。",
     path: "./FPS%20Vampire/dist/index.html",
+    thumb: "./FPS%20Vampire/og.png",
     stack: ["Three.js", "TypeScript", "Vite"],
     code: "vmp-0002",
-    palette: { bg: "#1a0a18", ink: "#ff3060", moon: "#ffd0d8", accent: "#5a1838" },
-    scene: "vampire"
+    tag: "Action"
   },
   {
     title: "植物大战僵尸",
     titleEn: "Plants vs Zombies",
     desc: "经典塔防玩法复刻。选关卡、种植物、守房子。阳光管理与波次节奏的怀旧练习。",
     path: "./PVZ/index.html",
+    thumb: "./PVZ/og.png",
     stack: ["Canvas", "Vanilla JS"],
     code: "pvz-0003",
-    palette: { bg: "#1a2410", ink: "#7cc242", moon: "#ffe6a0", accent: "#3a5a1a" },
-    scene: "pvz"
+    tag: "Tower Defense"
   },
   {
     title: "强渡火星",
     titleEn: "Forcing Mars",
     desc: "Phaser 3 回合制卡牌。从浅海到地核的分层推进，构筑卡组、对抗火星异生态。",
     path: "./forcing-mars/index.html",
+    thumb: "./forcing-mars/og.png",
     stack: ["Phaser 3", "Vanilla JS"],
     code: "mrs-0004",
-    palette: { bg: "#1a0808", ink: "#d44a28", moon: "#ffb070", accent: "#5a1810" },
-    scene: "mars"
+    tag: "Card Battle"
   }
 ];
 
-/* ============ Hero 生成艺术海报 ============
- * 单色 + 噪点 + 几何块，像一张黑白印刷海报
- * 视口外 / 标签页隐藏时暂停 RAF，节省 CPU
- */
-function drawHeroPoster() {
-  const c = document.getElementById("heroCanvas");
-  const ctx = c.getContext("2d");
-  const W = c.width, H = c.height;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pad = n => String(n).padStart(2, "0");
 
-  let rafId = null;
-  let running = false;
-
-  function draw(t) {
-    // 底色
-    ctx.fillStyle = "#050505";
-    ctx.fillRect(0, 0, W, H);
-
-    // 大字 GAME LAB（被裁切的衬线大字，印刷海报感）
-    ctx.fillStyle = "#0e0e0e";
-    ctx.font = "italic 280px 'Times New Roman', serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("GAME", W / 2, H * 0.32);
-    ctx.fillText("LAB", W / 2, H * 0.62);
-
-    // 红色印章方块
-    const sx = W * 0.18, sy = H * 0.78, ss = 90;
-    ctx.fillStyle = "#c8360e";
-    ctx.fillRect(sx, sy, ss, ss);
-    ctx.fillStyle = "#f2ead8";
-    ctx.font = "bold 56px 'Times New Roman', serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("玩", sx + ss / 2, sy + ss / 2);
-
-    // 几何线条（缓慢移动）
-    ctx.strokeStyle = "rgba(242, 239, 233, 0.18)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 6; i++) {
-      const y = 80 + i * 110 + Math.sin(t * 0.0005 + i) * 6;
-      ctx.beginPath();
-      ctx.moveTo(40, y);
-      ctx.lineTo(W - 40, y);
-      ctx.stroke();
-    }
-
-    // 圆点矩阵
-    ctx.fillStyle = "rgba(242, 239, 233, 0.4)";
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 6; x++) {
-        const px = 60 + x * 80;
-        const py = H - 220 + y * 20;
-        const a = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + x * 0.5 + y * 0.3));
-        ctx.globalAlpha = a;
-        ctx.beginPath();
-        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.globalAlpha = 1;
-
-    // 顶部小字
-    ctx.fillStyle = "rgba(242, 239, 233, 0.4)";
-    ctx.font = "10px 'Courier New', monospace";
-    ctx.textAlign = "left";
-    ctx.fillText("NO.001 / GENERATIVE POSTER", 40, 30);
-    ctx.textAlign = "right";
-    ctx.fillText("AGENT · GAME LAB", W - 40, 30);
-
-    // 底部小字
-    ctx.textAlign = "left";
-    ctx.fillText("— FROM IDEA TO PLAYABLE", 40, H - 30);
-    ctx.textAlign = "right";
-    ctx.fillText("2026", W - 40, H - 30);
-  }
-
-  function frame(t) {
-    draw(t);
-    rafId = requestAnimationFrame(frame);
-  }
-
-  function start() {
-    if (running || reduceMotion) return;
-    running = true;
-    rafId = requestAnimationFrame(frame);
-  }
-  function stop() {
-    if (!running) return;
-    running = false;
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-
-  // 视口可见性：滚出时暂停
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => e.isIntersecting ? start() : stop());
-  }, { threshold: 0 });
-  io.observe(c);
-
-  // 标签页隐藏时暂停
-  document.addEventListener("visibilitychange", () => {
-    document.hidden ? stop() : start();
-  });
-
-  // reduced-motion 下只画一帧静态
-  if (reduceMotion) draw(0);
-}
-
-/* ============ 列表项小海报 ============
- * 默认不渲染，hover 时才启动 RAF，移出即停（节省 4 路画布开销）
- */
-function drawPoster(canvas, game) {
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width = 360;
-  const H = canvas.height = 480;
-  const p = game.palette;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const drawers = {
-    horror(t) {
-      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
-      // 月
-      const rg = ctx.createRadialGradient(W * 0.7, H * 0.25, 5, W * 0.7, H * 0.25, 80);
-      rg.addColorStop(0, "rgba(242,238,224,0.5)");
-      rg.addColorStop(1, "rgba(242,238,224,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(W * 0.7, H * 0.25, 26, 0, Math.PI * 2); ctx.fill();
-      // 老宅剪影
-      ctx.fillStyle = "#020203";
-      ctx.beginPath();
-      ctx.moveTo(W * 0.2, H * 0.95); ctx.lineTo(W * 0.2, H * 0.6);
-      ctx.lineTo(W * 0.32, H * 0.45); ctx.lineTo(W * 0.44, H * 0.6);
-      ctx.lineTo(W * 0.44, H * 0.95); ctx.fill();
-      // 红窗
-      ctx.fillStyle = p.ink;
-      ctx.globalAlpha = 0.6 + Math.sin(t * 0.008) * 0.4;
-      ctx.fillRect(W * 0.28, H * 0.7, 8, 14);
-      ctx.globalAlpha = 1;
-      // 印章「咒」
-      ctx.fillStyle = p.ink;
-      ctx.fillRect(W * 0.12, H * 0.12, 56, 56);
-      ctx.fillStyle = "#f2ead8";
-      ctx.font = "bold 36px serif";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("咒", W * 0.12 + 28, H * 0.12 + 30);
-    },
-    vampire(t) {
-      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
-      // 网格
-      ctx.strokeStyle = "rgba(255,48,96,0.2)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 8; i++) {
-        const y = H * 0.5 + i * 24;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
-      for (let i = -6; i <= 6; i++) {
-        ctx.beginPath();
-        ctx.moveTo(W / 2, H * 0.5);
-        ctx.lineTo(W / 2 + i * 50, H);
-        ctx.stroke();
-      }
-      // 中心核
-      const cx = W / 2, cy = H * 0.42;
-      const rg = ctx.createRadialGradient(cx, cy, 4, cx, cy, 80);
-      rg.addColorStop(0, "rgba(255,80,120,0.9)");
-      rg.addColorStop(1, "rgba(255,48,96,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-      // 弹幕环
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2 + t * 0.001;
-        const r = 50 + ((t * 0.06 + i * 20) % 100);
-        ctx.fillStyle = "rgba(255,160,180,0.85)";
-        ctx.beginPath();
-        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.6, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // 准星
-      ctx.strokeStyle = "rgba(255,255,255,0.6)";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(cx - 14, cy); ctx.lineTo(cx - 5, cy);
-      ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 14, cy);
-      ctx.stroke();
-    },
-    pvz(t) {
-      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
-      // 草坪条纹
-      ctx.fillStyle = "rgba(0,0,0,0.1)";
-      for (let i = 0; i < 5; i++) if (i % 2 === 0) ctx.fillRect(0, i * H / 5, W, H / 5);
-      // 阳光
-      const sx = W * 0.2, sy = H * 0.2;
-      const rg = ctx.createRadialGradient(sx, sy, 4, sx, sy, 50);
-      rg.addColorStop(0, "rgba(255,230,160,0.9)");
-      rg.addColorStop(1, "rgba(255,230,160,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.fill();
-      // 豌豆射手
-      const px = W * 0.35, py = H * 0.6;
-      ctx.fillStyle = "#2a5e1a";
-      ctx.fillRect(px - 3, py, 6, 50);
-      ctx.fillStyle = p.ink;
-      ctx.beginPath(); ctx.arc(px, py, 22, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#1a4010";
-      ctx.beginPath(); ctx.arc(px + 18, py - 4, 8, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.arc(px - 5, py - 6, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.beginPath(); ctx.arc(px - 4, py - 6, 2, 0, Math.PI * 2); ctx.fill();
-      // 豌豆
-      const peaX = (W * 0.4 + t * 0.12) % (W * 0.4) + W * 0.4;
-      ctx.fillStyle = "#7cc242";
-      ctx.beginPath(); ctx.arc(peaX, py - 4, 5, 0, Math.PI * 2); ctx.fill();
-      // 僵尸
-      const zx = W * 0.78 - (t * 0.03) % 60;
-      const zy = H * 0.62;
-      ctx.fillStyle = "#7a8a6a";
-      ctx.fillRect(zx - 10, zy - 22, 20, 36);
-      ctx.beginPath(); ctx.arc(zx, zy - 28, 10, 0, Math.PI * 2); ctx.fill();
-    },
-    mars(t) {
-      ctx.fillStyle = p.bg; ctx.fillRect(0, 0, W, H);
-      // 远山
-      ctx.fillStyle = "#3a0e08";
-      ctx.beginPath();
-      ctx.moveTo(0, H * 0.55);
-      ctx.lineTo(W * 0.2, H * 0.4); ctx.lineTo(W * 0.35, H * 0.5);
-      ctx.lineTo(W * 0.55, H * 0.35); ctx.lineTo(W * 0.75, H * 0.48);
-      ctx.lineTo(W * 0.9, H * 0.4); ctx.lineTo(W, H * 0.5);
-      ctx.lineTo(W, H * 0.7); ctx.lineTo(0, H * 0.7); ctx.fill();
-      // 地表
-      ctx.fillStyle = "#5a1a10";
-      ctx.beginPath();
-      ctx.moveTo(0, H * 0.7);
-      for (let x = 0; x <= W; x += 20) ctx.lineTo(x, H * 0.7 + Math.sin(x * 0.03) * 8);
-      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
-      // 太阳
-      const sx = W * 0.8, sy = H * 0.25;
-      const rg = ctx.createRadialGradient(sx, sy, 6, sx, sy, 60);
-      rg.addColorStop(0, "rgba(255,180,110,0.9)");
-      rg.addColorStop(1, "rgba(255,180,110,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = p.moon;
-      ctx.beginPath(); ctx.arc(sx, sy, 22, 0, Math.PI * 2); ctx.fill();
-      // 卡牌
-      const symbols = ["⚔", "🛡", "✦"];
-      for (let i = 0; i < 3; i++) {
-        const cx = W * 0.25 + i * W * 0.18;
-        const cy = H * 0.45 + Math.sin(t * 0.001 + i) * 6;
-        ctx.save();
-        ctx.translate(cx, cy); ctx.rotate(Math.sin(t * 0.0008 + i) * 0.12);
-        ctx.fillStyle = "rgba(40,20,20,0.9)";
-        ctx.strokeStyle = p.ink;
-        ctx.lineWidth = 1;
-        ctx.fillRect(-16, -22, 32, 44);
-        ctx.strokeRect(-16, -22, 32, 44);
-        ctx.fillStyle = p.ink;
-        ctx.font = "bold 16px serif";
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(symbols[i], 0, 0);
-        ctx.restore();
-      }
-    }
-  };
-
-  function draw(t) {
-    const fn = drawers[game.scene];
-    if (fn) fn(t);
-  }
-
-  function frame(time) {
-    draw(time);
-    rafId = requestAnimationFrame(frame);
-  }
-
-  let rafId = null;
-  let running = false;
-  function start() {
-    if (running || reduceMotion) return;
-    running = true;
-    rafId = requestAnimationFrame(frame);
-  }
-  function stop() {
-    if (!running) return;
-    running = false;
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-
-  // reduced-motion：画一帧静态即停
-  if (reduceMotion) draw(0);
-
-  return { start, stop };
-}
-
-/* ============ 渲染列表 ============ */
-function renderWork() {
-  const list = document.getElementById("workList");
-  const count = document.getElementById("count");
-  count.textContent = String(GAMES.length).padStart(2, "0");
+/* ============ 轮播封面 ============ */
+(function featured() {
+  const stage = document.getElementById("featuredStage");
+  const dotsWrap = document.getElementById("featuredDots");
+  const fIndex = document.getElementById("fIndex");
+  const fTitle = document.getElementById("fTitle");
+  const fEn = document.getElementById("fEn");
+  const link = document.getElementById("featured");
 
   GAMES.forEach((g, i) => {
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.className = "work-item";
-    a.href = g.path;
+    const s = document.createElement("div");
+    s.className = "slide" + (i === 0 ? " active" : "");
+    s.innerHTML = `<img src="${g.thumb}" alt="${g.title}" />`;
+    stage.appendChild(s);
 
-    const num = String(i + 1).padStart(2, "0");
+    const b = document.createElement("button");
+    b.className = i === 0 ? "on" : "";
+    b.setAttribute("aria-label", `查看 ${g.title}`);
+    b.addEventListener("click", (e) => { e.preventDefault(); go(i); restart(); });
+    dotsWrap.appendChild(b);
+  });
+
+  const slides = [...stage.children];
+  const dots = [...dotsWrap.children];
+  let cur = 0;
+  let timer = null;
+
+  function go(n) {
+    cur = (n + GAMES.length) % GAMES.length;
+    slides.forEach((s, i) => s.classList.toggle("active", i === cur));
+    dots.forEach((d, i) => d.classList.toggle("on", i === cur));
+    const g = GAMES[cur];
+    fIndex.textContent = `${pad(cur + 1)} — ${pad(GAMES.length)}`;
+    fTitle.textContent = g.title;
+    fEn.textContent = g.titleEn;
+    link.href = g.path;
+  }
+
+  function restart() {
+    if (reduceMotion) return;
+    clearInterval(timer);
+    timer = setInterval(() => go(cur + 1), 4200);
+  }
+
+  go(0);
+  restart();
+})();
+
+/* ============ 跑马灯 ============ */
+(function marquee() {
+  const track = document.getElementById("marquee");
+  const tags = ["Canvas", "Raycast", "Three.js", "Phaser 3", "WebAudio", "Vite", "TypeScript", "Agent-Built", "Experiment", "Playable"];
+  const group = tags.map(t => `<span>${t}</span>`).join("");
+  track.innerHTML = group + group; // 两份用于无缝循环
+})();
+
+/* ============ 卡片网格 ============ */
+(function grid() {
+  const wrap = document.getElementById("grid");
+  const count = document.getElementById("count");
+  const heroCount = document.getElementById("heroCount");
+  count.textContent = pad(GAMES.length);
+  heroCount.textContent = `${pad(GAMES.length)} SELECTED`;
+
+  GAMES.forEach((g, i) => {
+    const a = document.createElement("a");
+    a.className = "card reveal";
+    a.href = g.path;
+    a.style.setProperty("--d", `${i * 0.08}s`);
+    a.setAttribute("aria-label", `${g.title} — ${g.titleEn}`);
     a.innerHTML = `
-      <div class="work-num">#${g.code}<br>${num} / ${String(GAMES.length).padStart(2, "0")}</div>
-      <div class="work-title">
+      <div class="cover"><img src="${g.thumb}" alt="${g.title} 封面" loading="lazy" /></div>
+      <div class="shade"></div>
+      <div class="num">#${g.code}</div>
+      <div class="detail">
+        <p class="desc">${g.desc}</p>
+        <div class="stack">${g.stack.map(s => `<span>${s}</span>`).join("")}</div>
+        <div class="enter">进入 <span class="arrow">→</span></div>
+      </div>
+      <div class="cap">
         <div class="cn">${g.title}</div>
         <div class="en">${g.titleEn}</div>
       </div>
-      <div class="work-desc">${g.desc}</div>
-      <div class="work-stack">
-        ${g.stack.map(s => `<span>${s}</span>`).join("")}
-      </div>
-      <div class="work-arrow">→</div>
     `;
-
-    // 悬浮海报（aria-hidden，纯装饰）
-    const poster = document.createElement("div");
-    poster.className = "poster";
-    poster.setAttribute("aria-hidden", "true");
-    const pc = document.createElement("canvas");
-    poster.appendChild(pc);
-    a.appendChild(poster);
-    const ctrl = drawPoster(pc, g);
-
-    // hover / 键盘聚焦时启动海报动画，移出即停
-    const enter = () => ctrl.start();
-    const leave = () => ctrl.stop();
-    a.addEventListener("mouseenter", enter);
-    a.addEventListener("mouseleave", leave);
-    a.addEventListener("focus", enter);
-    a.addEventListener("blur", leave);
-
-    li.appendChild(a);
-    list.appendChild(li);
+    wrap.appendChild(a);
   });
-}
+})();
 
-drawHeroPoster();
-renderWork();
+/* ============ 滚动揭示 ============ */
+(function reveal() {
+  const els = document.querySelectorAll(".reveal");
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    els.forEach(e => e.classList.add("in"));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+  els.forEach(e => io.observe(e));
+})();
+
+/* ============ 自定义光标高光 ============ */
+(function cursor() {
+  if (reduceMotion) return;
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const spot = document.querySelector(".spot");
+  const ring = document.querySelector(".ring");
+  let mx = innerWidth / 2, my = innerHeight / 2;
+  let sx = mx, sy = my, rx = mx, ry = my;
+  let active = false;
+
+  addEventListener("mousemove", (e) => {
+    mx = e.clientX; my = e.clientY;
+    if (!active) { active = true; document.body.classList.add("cursor-on"); }
+  });
+  addEventListener("mouseleave", () => { document.body.classList.remove("cursor-on"); active = false; });
+
+  (function loop() {
+    sx += (mx - sx) * 0.12;
+    sy += (my - sy) * 0.12;
+    rx += (mx - rx) * 0.22;
+    ry += (my - ry) * 0.22;
+    spot.style.transform = `translate(${sx}px, ${sy}px)`;
+    ring.style.transform = `translate(${rx}px, ${ry}px)`;
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ============ 入场 ============ */
+addEventListener("load", () => requestAnimationFrame(() => document.body.classList.add("loaded")));
 </script>
 </body>
 </html>

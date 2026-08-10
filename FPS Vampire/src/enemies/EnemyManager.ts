@@ -37,8 +37,8 @@ export class EnemyManager {
         color: config.color,
         roughness: 0.5,
         metalness: 0.1,
-        emissive: new THREE.Color(config.color).multiplyScalar(0.9),
-        emissiveIntensity: 1.15,
+        emissive: new THREE.Color(config.color),
+        emissiveIntensity: 1.4,
       });
       const mesh = new THREE.InstancedMesh(this.geometryFor(config), material, config.poolSize);
       mesh.count = 0;
@@ -46,15 +46,19 @@ export class EnemyManager {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       for (let i = 0; i < config.poolSize; i++) {
         mesh.setColorAt(i, WHITE);
+        this.hideInstance(mesh, i);
       }
       scene.add(mesh);
 
-      const eyeGeo = new THREE.IcosahedronGeometry(0.07, 0);
-      const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+      const eyeGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2d2d });
       const eyes = new THREE.InstancedMesh(eyeGeo, eyeMat, config.poolSize * 2);
       eyes.count = 0;
       eyes.frustumCulled = false;
       eyes.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      for (let i = 0; i < config.poolSize * 2; i++) {
+        this.hideInstance(eyes, i);
+      }
       scene.add(eyes);
 
       this.pools.set(config.id, {
@@ -197,14 +201,9 @@ export class EnemyManager {
   }
 
   private geometryFor(config: EnemyConfig): THREE.BufferGeometry {
-    switch (config.shape) {
-      case 'box':
-        return new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-      case 'cone':
-        return new THREE.ConeGeometry(0.55, 1, 6).translate(0, 0.5, 0);
-      case 'octahedron':
-        return new THREE.OctahedronGeometry(0.75, 0).translate(0, 0.7, 0);
-    }
+    // 所有敌人统一为正方形方块（体素风），保证稳定可见、不依赖几何合并。
+    const size = config.radius * 2;
+    return new THREE.BoxGeometry(size, size, size).translate(0, size / 2, 0);
   }
 
   private trySpawn(): void {
@@ -217,7 +216,7 @@ export class EnemyManager {
     const pool = this.pools.get(typeId);
     if (!pool) return;
     if (pool.free.length === 0 || pool.eyeFree.length < 2) return;
-    const slot = pool.free.pop()!;
+    const slot = pool.free.shift()!;
     const pos = this.randomSpawnPos(dMin, dMax);
     if (!pos) {
       pool.free.push(slot);
@@ -335,9 +334,9 @@ export class EnemyManager {
     const yaw = enemy.yaw;
     const c = Math.cos(yaw);
     const sn = Math.sin(yaw);
-    const h = 0.16 * s;
-    const f = 0.42 * s;
-    const ey = 0.35 * s;
+    const h = 0.2 * s;
+    const f = 0.32 * s;
+    const ey = 0.72 * s;
     const x = enemy.pos.x;
     const z = enemy.pos.z;
     this.eyeDummy.position.set(x - h * c + f * sn, ey, z + h * sn + f * c);

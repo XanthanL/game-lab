@@ -44,7 +44,6 @@ export class Game {
   private readonly fireOrigin = new THREE.Vector3();
   private readonly aimDir = new THREE.Vector3();
   private readonly tmpVec = new THREE.Vector3();
-  private firing = false;
   private lastTime = 0;
   private running = false;
   private paused = false;
@@ -78,9 +77,11 @@ export class Game {
     this.weapons.onFire = () => this.viewmodel.kick();
     this.weapons.onWeaponAdded = (cfg) => this.viewmodel.setAccent(cfg.accent);
     this.weapons.onActiveChanged = (cfg) => {
+      this.viewmodel.setWeapon(cfg.id);
       this.viewmodel.setAccent(cfg.accent);
       this.refreshRoster();
     };
+    this.viewmodel.setWeapon('magicBolt');
     this.viewmodel.setAccent(WEAPON_CONFIGS.magicBolt.accent);
     this.xp = new XpSystem(this.renderer.scene, this.particles);
     this.upgrades = new UpgradeSystem(this.player, this.weapons);
@@ -155,7 +156,6 @@ export class Game {
         this.viewmodel.setVisible(true);
       } else {
         this.paused = true;
-        this.firing = false;
         this.hud.hide();
         if (this.overlayState === 'playing') {
           this.showOverlay('paused');
@@ -196,17 +196,10 @@ export class Game {
       },
       { passive: true }
     );
-    // 手动开火：按住鼠标左键射击/挥动
+    // 手动开火：每点击鼠标左键发射一发（无冷却限制，点击多快发多快）
     document.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
-      this.firing = true;
       this.tryFire();
-    });
-    document.addEventListener('mouseup', (e) => {
-      if (e.button === 0) this.firing = false;
-    });
-    window.addEventListener('blur', () => {
-      this.firing = false;
     });
   }
 
@@ -232,6 +225,7 @@ export class Game {
     this.waves.reset();
     this.player.reset();
     this.controller.reset();
+    this.viewmodel.setWeapon('magicBolt');
     this.viewmodel.setAccent(WEAPON_CONFIGS.magicBolt.accent);
     this.elapsed = 0;
     this.shakeAmount = 0;
@@ -340,7 +334,6 @@ export class Game {
     }
     this.overlayState = 'levelup';
     this.paused = true;
-    this.firing = false;
     this.hud.hide();
     sound.play('levelup');
     document.exitPointerLock();
@@ -412,7 +405,6 @@ export class Game {
         this.enemies.update(dt, this.player, this.controller.position);
         this.projectiles.update(dt);
         this.weapons.update(dt);
-        if (this.firing) this.tryFire();
         this.xp.update(dt, this.player, this.controller.position, this.player.stats.magnet);
         this.particles.update(dt);
         this.dmgNumbers.update(dt, this.renderer.camera);
@@ -427,7 +419,6 @@ export class Game {
         }
       } else if (this.overlayState !== 'gameover') {
         this.paused = true;
-        this.firing = false;
         this.dmgNumbers.clear();
         document.exitPointerLock();
         this.hud.hide();

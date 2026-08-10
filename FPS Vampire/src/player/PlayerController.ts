@@ -32,7 +32,6 @@ export class PlayerController {
     });
     window.addEventListener('blur', () => this.keys.clear());
     document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-    this.domElement.addEventListener('mousedown', () => this.lock());
     document.addEventListener('pointerlockchange', () => this.onPointerLockChange());
   }
 
@@ -76,6 +75,7 @@ export class PlayerController {
   }
 
   lock(): void {
+    if (this.locked) return;
     this.domElement.focus({ preventScroll: true });
     try {
       const p = this.domElement.requestPointerLock() as unknown;

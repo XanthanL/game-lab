@@ -12,7 +12,6 @@ export class Weapon {
   level = 1;
   onHeavy?: () => void;
   onFire?: () => void;
-  private timer = 0;
 
   constructor(
     readonly config: WeaponConfig,
@@ -24,10 +23,6 @@ export class Weapon {
     private player: Player
   ) {}
 
-  get cooldown(): number {
-    return this.config.cooldown * Math.pow(0.92, this.level - 1) * (1 - this.player.stats.haste);
-  }
-
   get damage(): number {
     return this.config.damage * (1 + 0.25 * (this.level - 1)) * this.player.stats.damageMult;
   }
@@ -36,13 +31,12 @@ export class Weapon {
     if (this.level < this.config.maxLevel) this.level++;
   }
 
-  update(dt: number): void {
-    this.timer -= dt;
+  update(_dt: number): void {
+    // 手动开火：不再有冷却限制，update 仅保留接口供未来扩展。
   }
 
-  /** 玩家手动开火：沿 aimDir 方向发射（不再自动连发）。 */
+  /** 玩家手动开火：沿 aimDir 方向发射（无冷却限制，点击多快发多快）。 */
   fire(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
-    if (this.timer > 0) return;
     switch (this.config.behavior) {
       case 'bullet':
         this.fireBullet(origin, aimDir);
@@ -65,7 +59,6 @@ export class Weapon {
   private fireBullet(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
     const dir = aimDir.clone().normalize();
     const start = origin.clone().addScaledVector(dir, 0.6);
-    this.timer = this.cooldown;
     this.projectiles.spawnLinear(
       start,
       dir,
@@ -81,7 +74,6 @@ export class Weapon {
 
   private fireBoomerang(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
     const dir = aimDir.clone().normalize();
-    this.timer = this.cooldown;
     this.projectiles.spawnBoomerang(
       origin,
       dir,
@@ -104,7 +96,6 @@ export class Weapon {
       origin.y,
       origin.z + hdir.z * throwRange
     );
-    this.timer = this.cooldown;
     this.pools.spawn(
       point,
       this.config.poolRadius ?? 1.7,
@@ -123,7 +114,6 @@ export class Weapon {
   private castLightning(origin: THREE.Vector3): void {
     const target = this.enemies.getNearestEnemy(origin, this.config.range);
     if (!target) return;
-    this.timer = this.cooldown;
     this.enemies.applyDamage(target, this.damage);
     const splash = this.config.splashRadius ?? 1.5;
     for (const e of this.enemies.queryInRadius(target.pos, splash)) {
@@ -137,7 +127,6 @@ export class Weapon {
 
   private swing(origin: THREE.Vector3, aimDir: THREE.Vector3): void {
     const yaw = this.playerYaw(aimDir);
-    this.timer = this.cooldown;
     for (const e of this.enemies.queryInArc(origin, this.config.range, yaw, this.config.meleeHalfAngle ?? 1.0)) {
       this.enemies.applyDamage(e, this.damage);
     }
