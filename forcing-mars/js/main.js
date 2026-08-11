@@ -20,10 +20,13 @@ function computeLayout() {
       W: 640, H: 960,
       playerX: 320, playerY: 620,
       enemyX: 320, enemyY: 200,
-      hpBarY: 80, hpBarW: 200,
+      // 玩家状态（血条/护甲/状态图标）应锚定在玩家自身上方（底部），
+      // 而非顶部——竖屏时敌人在上、玩家在下，hpBarY 若用顶部值会与怪物重叠。
+      hpBarY: 470, hpBarW: 200,
       batteryY: 720, potionY: 758,
       intentIconY: 320, intentTextY: 348,
-      turnPhaseY: 530, drawPileY: 800, discardPileY: 800,
+      // 回合提示移到中下部，避开顶部敌人区与底部玩家血条
+      turnPhaseY: 430, drawPileY: 800, discardPileY: 800,
       enemyHpBarY: 290,
     };
   } else {
@@ -5925,13 +5928,16 @@ function triggerPassiveOnPlayCard(scene, card) {
       }
       break;
     case 'mutantStatusBonus':
-      // 异变者：施加状态效果时层数 +1
+      // 异变者：施加状态效果时，在卡牌原有层数基础上额外叠加等同层数的状态，
+      // 支持多层累加：若目标已存在该效果，则叠在其原有层数之上，而非限制为单层。
       if (card.statusEffect) {
         const effects = Array.isArray(card.statusEffect) ? card.statusEffect : [card.statusEffect];
+        let total = 0;
         for (const eff of effects) {
-          GameState.enemy.addStatus(eff.type, 1);
+          GameState.enemy.addStatus(eff.type, eff.stacks);
+          total += eff.stacks;
         }
-        addLog('被动', `异变者：状态效果 +1 层`);
+        addLog('被动', `异变者：状态效果叠加 +${total} 层`);
       }
       break;
     case 'assaultEnergyChance':
@@ -5943,4 +5949,12 @@ function triggerPassiveOnPlayCard(scene, card) {
       }
       break;
   }
+}
+
+/* ============================================================
+ * 中英双语：重写 addLog 以即时翻译日志
+ * （i18n.js 已重写 scene.add.text / Text.setText；此处补日志通道）
+ * ============================================================ */
+if (window.I18N && typeof I18N.wrapLog === 'function') {
+  I18N.wrapLog();
 }

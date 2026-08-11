@@ -18,10 +18,13 @@
 <meta name="twitter:title" content="咒 · JYU 怨宅 | GAME LAB">
 <meta name="twitter:description" content="第一人称日式恐怖。雨夜被困在被诅咒的老宅，找到大门钥匙逃出去——小心，它也在找你。">
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/cursed-house/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <style>
-html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:none;font-family:"Microsoft YaHei","Noto Serif CJK SC","SimSun",serif;}
+html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:none;font-family:"Microsoft YaHei","Noto Sans SC","PingFang SC","Hiragino Sans GB","Heiti SC","Noto Serif CJK SC",sans-serif;}
 body{display:flex;align-items:center;justify-content:center;}
-#c{image-rendering:pixelated;position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;}
+#c{image-rendering:pixelated;position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;outline:none;}
 .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfcfcf;z-index:10;text-align:center;user-select:none;}
 .scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
 .overlay>*{position:relative;z-index:1;}
@@ -74,7 +77,7 @@ body{display:flex;align-items:center;justify-content:center;}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" tabindex="0"></canvas>
 
 <div id="mobileHud">
   <div class="row"><span id="hudLevel">一层</span><span id="hudDolls">纸人偶 0/6</span><span id="hudKey">钥匙 无</span></div>
@@ -230,6 +233,7 @@ const TAU=Math.PI*2;
 
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+const GAME_FONT='"Microsoft YaHei","Noto Sans SC","PingFang SC","Hiragino Sans GB","Heiti SC","Noto Serif CJK SC",sans-serif';
 let VW=480,VH=300;
 const world=document.createElement('canvas');
 const wctx=world.getContext('2d');
@@ -520,11 +524,27 @@ function solidAt(x,y){const r=0.22;return solid(Math.floor(x-r),Math.floor(y-r))
 
 const keys={};
 let mouseDX=0,ePressed=false;
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')ePressed=true;if(e.code==='KeyM')toggleMute();if(['KeyW','KeyA','KeyS','KeyD','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();});
+addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='INPUT')return;   // 不抢灵敏度滑块的键盘输入
+  keys[e.code]=true;if(e.code==='KeyE')ePressed=true;if(e.code==='KeyM')toggleMute();
+  if(['KeyW','KeyA','KeyS','KeyD','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+});
 addEventListener('keyup',e=>{keys[e.code]=false;});
-addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas)mouseDX+=e.movementX*lookSens;});
+// 桌面鼠标视角：锁定时用 movementX；未锁定但画布已聚焦（点击聚焦兜底）时同样即时生效。
+// 触摸进行中或纯触屏设备不处理，避免模拟鼠标事件与触控串扰。
+addEventListener('mousemove',e=>{
+  if(touchActive||!canHover)return;
+  if(state!=='playing'||paused)return;
+  if(document.pointerLockElement===canvas){mouseDX+=e.movementX*lookSens;return;}
+  if(document.activeElement!==canvas)canvas.focus();   // 聚焦兜底：鼠标移入即获得焦点，视角立即生效
+  mouseDX+=e.movementX*lookSens;
+});
 
-const isTouch=(navigator.maxTouchPoints>0)||('ontouchstart' in window)||!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+// 设备能力检测（运行时判定，支持混用设备的双路输入）
+const canTouch=(navigator.maxTouchPoints>0)||('ontouchstart' in window)||!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches);
+const canHover=!!(window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches)||!canTouch;
+const isTouch=canTouch;             // 触摸优先的 UI 模式
+let touchActive=false;              // 当前是否有触摸进行中（屏蔽模拟鼠标事件）
 const joy={f:0,s:0};
 let paused=false;
 let turnDir=0;                 // 长按 ◀ ▶ 的持续转向方向
@@ -539,7 +559,7 @@ function hideLookHint(){
   el.style.opacity='0';setTimeout(()=>{el.style.display='none';},1200);
 }
 function showLookHint(){
-  if(!isTouch||lookHintDone)return;
+  if(canHover||lookHintDone)return;   // 仅纯触屏展示滑动转视角提示
   const el=document.getElementById('lookHint');if(!el)return;
   el.style.display='flex';el.style.opacity='1';
   setTimeout(hideLookHint,5000);
@@ -562,7 +582,7 @@ function setupTouch(){
     let used=false;
     for(const t of e.changedTouches){
       if(inBtn(t))continue;
-      used=true;
+      used=true;touchActive=true;
       const x=t.clientX,y=t.clientY;
       if(x>window.innerWidth*0.5){touches[t.identifier]={zone:'look',lx:x,ly:y};}
       else{touches[t.identifier]={zone:'move',ox:x,oy:y,lx:x,ly:y};stick.style.left=x+'px';stick.style.top=y+'px';stick.style.display='block';stickKnob.style.left=x+'px';stickKnob.style.top=y+'px';stickKnob.style.display='block';}
@@ -596,6 +616,7 @@ function setupTouch(){
       if(tc.zone==='move'){joy.f=0;joy.s=0;stick.style.display='none';stickKnob.style.display='none';}
       delete touches[t.identifier];
     }
+    if(!Object.keys(touches).length)touchActive=false;   // 所有手指抬起后解除对桌面鼠标视角的屏蔽
   }
   document.addEventListener('touchstart',onStart,{passive:false});
   document.addEventListener('touchmove',onMove,{passive:false});
@@ -739,7 +760,7 @@ function update(dt){
     if(seq.mode==='scare'&&seq.t>1.1){seq=null;}
     else if(seq.mode==='death'&&seq.t>3.2){state='dead';document.getElementById('dead').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();}
     else if(seq.mode==='win'&&seq.t>2.6){state='win';const m=(timeSec-startTime)/60|0,ss=(timeSec-startTime)%60|0;document.getElementById('winstats').textContent='你冲出了大门。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒  纸人偶 '+dollsTaken+' 体';document.getElementById('win').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();}
-  }else if(isTouch||document.pointerLockElement===canvas){
+  }else if(isTouch||document.pointerLockElement===canvas||(canHover&&document.activeElement===canvas)){
     move(dt);
     if(ePressed){ePressed=false;interact();}
     if(lvl===1&&timeSec-lastScareAt>4)sanity=Math.max(0,sanity-0.8*dt);
@@ -982,7 +1003,7 @@ function render(tSec){
       ctx.drawImage(dollImg,12,VH-38,11,19);
       ctx.drawImage(keyImg,14,VH-60,18,10);
       ctx.imageSmoothingEnabled=false;
-      ctx.font='15px "Microsoft YaHei",serif';
+      ctx.font='15px '+GAME_FONT;
       ctx.textAlign='left';
       ctx.fillStyle='rgba(220,220,220,0.85)';
       ctx.fillText('纸人偶  '+dollsTaken+' / 6',28,VH-20);
@@ -1006,11 +1027,11 @@ function render(tSec){
       else if(ft==='U')hint=lvl===0?'E 进入地下室':'E 回到一层';
       else if(!keyItem.taken&&keyItem.lvl===lvl&&Math.hypot(keyItem.x-player.x,keyItem.y-player.y)<1.4)hint='E 捡起钥匙';
       else{for(const d of dolls){if(!d.taken&&d.lvl===lvl&&Math.hypot(d.x-player.x,d.y-player.y)<1.4){hint='E 拾起纸人偶';break;}}}
-      if(hint){ctx.textAlign='center';ctx.font='13px "Microsoft YaHei",serif';ctx.fillStyle='rgba(230,230,230,0.7)';ctx.fillText(hint,VW/2,VH-10);}
+      if(hint){ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle='rgba(230,230,230,0.7)';ctx.fillText(hint,VW/2,VH-10);}
     }
     if(toast.t>0){
       const a=Math.min(1,toast.t*2);
-      ctx.textAlign='center';ctx.font='16px "Microsoft YaHei",serif';
+      ctx.textAlign='center';ctx.font='16px '+GAME_FONT;
       ctx.fillStyle='rgba(235,235,235,'+a.toFixed(3)+')';
       ctx.fillText(toast.text,VW/2,VH/2+70);
     }
@@ -1028,16 +1049,31 @@ function updateHud(){
 }
 
 function lock(){try{if(canvas.requestPointerLock){const p=canvas.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}}catch(e){}}
-addEventListener('pointerlockchange',()=>{if(!isTouch&&document.pointerLockElement!==canvas&&state==='playing'&&!seq){document.getElementById('pause').style.display='flex';}});
+let wasLocked=false;   // 是否曾获得指针锁定（仅在丢失锁时才暂停，避免锁定被拒时误暂停）
+addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement===canvas){wasLocked=true;}
+  else{
+    const lost=wasLocked;wasLocked=false;
+    // 仅纯桌面（无触摸）在游戏中丢失锁时才暂停；触摸/混合设备用触摸控制，不应被误暂停
+    if(lost&&!canTouch&&state==='playing'&&!paused&&!seq){paused=true;document.getElementById('pause').style.display='flex';}
+  }
+});
+// 桌面端：鼠标在画面外时，点击任意处即聚焦画布并进入/恢复游戏（无需先点特定按钮）
+if(canHover&&!canTouch){
+  document.addEventListener('mousedown',()=>{
+    if(state==='playing'&&!paused&&document.pointerLockElement!==canvas){canvas.focus();lock();}
+  });
+}
 document.getElementById('title').addEventListener('click',()=>{
   initAudio();
   if(AC&&AC.state==='suspended')AC.resume();
   state='playing';paused=false;startTime=timeSec;
   document.getElementById('title').style.display='none';
   showLookHint();
-  lock();
+  canvas.focus();
+  if(!canTouch)lock();        // 纯桌面：进入即请求指针锁定；触屏走触摸控制
 });
-document.getElementById('pause').addEventListener('click',()=>{document.getElementById('pause').style.display='none';if(isTouch){paused=false;}else{lock();}});
+document.getElementById('pause').addEventListener('click',()=>{document.getElementById('pause').style.display='none';paused=false;if(!canTouch)lock();});
 (function(){
   const box=document.getElementById('setting'),sl=document.getElementById('sens'),lb=document.getElementById('sensVal');
   if(!box||!sl||!lb)return;

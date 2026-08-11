@@ -1,4 +1,4 @@
-// 僵尸实体：状态机 walk | eat | jump | dead，含减速/断头/撑杆跳逻辑
+// 僵尸实体：状态机 walk | eat | jump | dead，含减速/断头/撑杆跳/护甲/狂暴/Boss 逻辑
 (function () {
   'use strict';
 
@@ -17,7 +17,16 @@
       this.speed = cfg.speed * (speedMul || 1);
       this.damage = cfg.damage;
       this.eatInterval = cfg.eatInterval;
-      this.headgear = type === 'normal' ? null : type;
+
+      // 头部护具：仅路障/铁桶绘制在头顶（沿用旧版视觉）
+      this.headgear = (type === 'normal') ? null : (type === 'cone' || type === 'bucket') ? type : null;
+      // 身体护甲（门板/橄榄球/伽刚特尔的铁桶）：peas 优先扣护甲
+      this.armorKind = cfg.armor ? cfg.armor.kind : null;
+      this.armorHp = cfg.armor ? cfg.armor.hp : 0;
+      this.armorMax = this.armorHp;
+
+      this.isBoss = !!cfg.boss;
+      this.isRaged = false;
       this.poleUsed = type !== 'pole'; // 撑杆跳僵尸：未使用撑杆时遇到植物会跳过
 
       this.state = 'walk'; // walk | eat | jump | dead
@@ -80,14 +89,34 @@
         }
       } else {
         this.state = 'walk';
-        this.x -= this.speed * (this.slowT > 0 ? 0.5 : 1) * dt;
-        if (this.x <= game.loseX) game.lose();
+        this.x -= this.speed * (this.slowT > 0 ? 0.5 : 1) * (this.isRaged ? 1.8 : 1) * dt;
+        if (this.x <= game.loseX) {
+          const saved = game.onZombieReachHouse(this);
+          if (saved) return; // 割草机已触发，僵尸被碾碎
+        }
       }
     }
 
-    takeDamage(dmg) {
-      this.hp -= dmg;
-      this.hitT = 0.12;
+    takeDamage(dmg, silent) {
+      if (this.armorHp > 0) {
+        this.armorHp -= dmg;
+        if (this.armorHp <= 0) {
+          const leftover = -this.armorHp;
+          this.armorHp = 0;
+          this.armorKind = null; // 护甲破碎
+          PVZ.audio.play('armorBreak');
+          this.hp -= leftover;
+        }
+      } else {
+        this.hp -= dmg;
+      }
+      if (!silent) this.hitT = 0.12;
+
+      // 狂暴（报纸僵尸血量过半）
+      if (this.config.rage && !this.isRaged && this.hp <= this.maxHp * 0.5) {
+        this.isRaged = true;
+      }
+
       if (this.hp <= 0 && this.state !== 'dead') {
         this.state = 'dead';
         this.deadT = 0;
@@ -103,8 +132,22 @@
     render(ctx) {
       const opts = {
         slow: this.slowT > 0,
+        type: this.type,
         headgear: this.headgear,
-        pole: this.type === 'pole' && !this.poleUsed && this.state === 'walk'
+        pole: this.type === 'pole' && !this.poleUsed && this.state === 'walk',
+        armor: this.armorKind && this.armorHp > 0 ? this.armorKind : null,
+        raged: this.isRaged,
+        boss: this.isBoss ? this.type : null,
+        balloon: !!this.config.fly,
+        snorkel: !!this.config.dive,
+        jackbox: !!this.config.throw,
+        catapult: !!this.config.siege,
+        bungee: !!this.config.bungee,
+        digger: !!this.config.digger,
+        yeti: !!this.config.rare,
+        dancing: !!this.config.summonBackup,
+        // 按格宽缩放，使僵尸在两套布局下视觉大小一致、不溢出
+        scale: PVZ.config.cellWidth / 80
       };
 
       if (this.state === 'dead') {

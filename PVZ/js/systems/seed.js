@@ -1,4 +1,4 @@
-// 卡片栏：选卡、阳光消耗、冷却、拖拽种植
+// 卡片栏：选卡、阳光消耗、冷却、拖拽种植（移动端可由 DOM dock 调用 select）
 (function () {
   'use strict';
 
@@ -7,6 +7,7 @@
       this.game = game;
       this.cards = (deck || []).map(id => ({ id, cd: 0 }));
       this.selected = null;
+      this.visible = true; // 移动端 DOM dock 模式下置 false，隐藏画布内卡片栏
 
       this.x = 110;
       this.y = 5;
@@ -28,6 +29,29 @@
       for (const card of this.cards) {
         if (card.cd > 0) card.cd -= dt;
       }
+    }
+
+    // 由 DOM dock / 画布点击调用：选中或取消某卡片
+    select(id) {
+      const card = this.cards.find(c => c.id === id);
+      if (!card) return false;
+      const p = PVZ.config.PLANTS[id];
+      if (this.game.sun < p.cost || card.cd > 0) return false;
+      this.selected = (this.selected === id) ? null : id;
+      return true;
+    }
+
+    // 返回卡片状态（供 DOM dock 实时刷新）
+    stateOf(id) {
+      const card = this.cards.find(c => c.id === id);
+      if (!card) return null;
+      const p = PVZ.config.PLANTS[id];
+      return {
+        affordable: this.game.sun >= p.cost && card.cd <= 0,
+        cd: card.cd,
+        cdFrac: p.cooldown ? Math.min(1, card.cd / p.cooldown) : 0,
+        cooldown: p.cooldown
+      };
     }
 
     // 返回 { hit: 是否点在卡片上, id: 选中的植物 id 或 null }

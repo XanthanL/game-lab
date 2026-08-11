@@ -1,23 +1,23 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GAME LAB — 前端游戏实验场</title>
-<meta name="description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<title>GAME LAB — Frontend Game Lab</title>
+<meta name="description" content="An experiment field where different Agents build different frontend games, hosted on GitHub Pages." />
 <!-- ===== 微信 / Open Graph 分享卡片（game-lab 主站） ===== -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="GAME LAB" />
-<meta property="og:locale" content="zh_CN" />
-<meta property="og:title" content="GAME LAB — 前端游戏实验场" />
-<meta property="og:description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="GAME LAB — Frontend Game Lab" />
+<meta property="og:description" content="An experiment field where different Agents build different frontend games, hosted on GitHub Pages." />
 <meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
 <meta property="og:image:width" content="600" />
 <meta property="og:image:height" content="800" />
 <meta property="og:url" content="https://xanthanl.github.io/game-lab/" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="GAME LAB — 前端游戏实验场" />
-<meta name="twitter:description" content="一个用于测试不同 Agent 制作不同前端游戏的实验场，托管于 GitHub Pages。" />
+<meta name="twitter:title" content="GAME LAB — Frontend Game Lab" />
+<meta name="twitter:description" content="An experiment field where different Agents build different frontend games, hosted on GitHub Pages." />
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
 <style>
   :root {
@@ -105,6 +105,33 @@
     body.cursor-on .spot, body.cursor-on .ring { opacity: 1; }
   }
 
+  /* ============ 语言切换按钮 ============ */
+  .lang-toggle {
+    position: fixed;
+    top: 14px; right: 18px;
+    z-index: 300;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgba(11, 11, 13, 0.55);
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    padding: 8px 15px;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition: background 0.4s var(--ease), border-color 0.4s var(--ease), color 0.4s var(--ease), transform 0.4s var(--ease);
+  }
+  .lang-toggle:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    transform: translateY(-1px);
+  }
+  .lang-toggle:active { transform: translateY(0); }
+
   /* ============ 顶部细栏 ============ */
   .topbar {
     position: fixed;
@@ -112,7 +139,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 36px;
+    padding: 20px 120px 20px 36px;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.2em;
@@ -636,34 +663,36 @@
   <div class="spot" aria-hidden="true"></div>
   <div class="ring" aria-hidden="true"></div>
 
+  <button id="langToggle" class="lang-toggle" type="button" aria-label="切换到中文 / Switch to Chinese">中文</button>
+
   <div class="topbar">
     <div><span class="dot"></span>GAME LAB / 2026</div>
     <div class="right">
-      <span>AGENT · EXPERIMENTS</span>
-      <span>GITHUB PAGES</span>
+      <span data-i18n="agentExperiments">AGENT · EXPERIMENTS</span>
+      <span data-i18n="githubPages">GITHUB PAGES</span>
     </div>
   </div>
 
   <!-- ============ HERO ============ -->
   <section class="hero">
     <div class="hero-left">
-      <div class="eyebrow reveal">Agent · Game Lab — 2026</div>
+      <div class="eyebrow reveal" data-i18n="eyebrow">Agent · Game Lab — 2026</div>
       <h1>
         <span class="line"><span>GAME</span></span>
         <span class="line"><span class="accent">LAB</span></span>
       </h1>
-      <p class="sub reveal" style="--d:.18s">
+      <p class="sub reveal" style="--d:.18s" data-i18n="sub">
         一个由不同 <b>Agent</b> 制造不同前端游戏的实验场。
         从恐怖解谜到 3D 弹幕生存，每一款都从一句话的念头长成可游玩的作品。
       </p>
       <div class="hero-actions reveal" style="--d:.28s">
-        <a class="btn-enter" href="#work">浏览实验 <span class="arrow">↓</span></a>
+        <a class="btn-enter" href="#work"><span data-i18n="browse">Browse Experiments</span> <span class="arrow">↓</span></a>
         <div class="hero-meta" id="heroCount">04 SELECTED</div>
       </div>
     </div>
 
     <div class="hero-right">
-      <a class="featured reveal" id="featured" href="#" aria-label="精选游戏预览">
+      <a class="featured reveal" id="featured" href="#" aria-label="Featured game preview">
         <div class="featured-stage" id="featuredStage"></div>
         <div class="featured-meta">
           <div class="f-index" id="fIndex">01 — 04</div>
@@ -676,7 +705,7 @@
 
     <div class="scroll-cue">
       <span class="bar"></span>
-      Scroll
+      <span data-i18n="scroll">Scroll</span>
     </div>
   </section>
 
@@ -688,10 +717,10 @@
   <!-- ============ WORK ============ -->
   <section class="work" id="work">
     <div class="section-head reveal">
-      <h2>Selected<br>Experiments</h2>
+      <h2 data-i18n="sectionTitle">Selected<br>Experiments</h2>
       <div class="label">
-        <div><span class="count" id="count">00</span> / 04 — Works</div>
-        <div>Agent-built · Playable</div>
+        <div><span class="count" id="count">00</span> / <span id="totalCount">04</span> — <span data-i18n="worksCount">Works</span></div>
+        <div data-i18n="agentBuilt">Agent-built · Playable</div>
       </div>
     </div>
 
@@ -702,14 +731,14 @@
   <footer>
     <div class="footer-word reveal">GAME<br><span class="accent">LAB</span></div>
     <div class="footer-meta reveal" style="--d:.1s">
-      <div>© 2026 GAME LAB</div>
-      <div>Hosted on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
-      <div>Source on <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a></div>
+      <div data-i18n="copyright">© 2026 GAME LAB</div>
+      <div><span data-i18n="hostedOn">Hosted on</span> <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
+      <div><span data-i18n="sourceOn">Source on</span> <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a></div>
     </div>
   </footer>
 
 <script>
-"use strict";
+"useuse strict";
 
 /* ============ 游戏清单 ============ */
 const GAMES = [
@@ -717,6 +746,7 @@ const GAMES = [
     title: "咒 · 怨宅",
     titleEn: "JYU / Cursed House",
     desc: "第一人称日式恐怖。雨夜被困在被诅咒的老宅，找到大门钥匙逃出去——小心，它也在找你。",
+    descEn: "First-person Japanese horror. Trapped in a cursed old mansion on a rainy night — find the front-door key and escape. Careful: it's looking for you too.",
     path: "./cursed-house/index.html",
     thumb: "./cursed-house/og.png",
     stack: ["Canvas", "Raycast", "WebAudio"],
@@ -727,6 +757,7 @@ const GAMES = [
     title: "FPS Vampire",
     titleEn: "First-Person Survivor",
     desc: "第一人称吸血鬼幸存者。自动索敌、波次推进、越战越强。Three.js 驱动的 3D 弹幕生存。",
+    descEn: "First-person vampire survivors. Auto-targeting, wave-based progression, stronger with every run. A 3D bullet-hell survival powered by Three.js.",
     path: "./FPS%20Vampire/dist/index.html",
     thumb: "./FPS%20Vampire/og.png",
     stack: ["Three.js", "TypeScript", "Vite"],
@@ -737,6 +768,7 @@ const GAMES = [
     title: "植物大战僵尸",
     titleEn: "Plants vs Zombies",
     desc: "经典塔防玩法复刻。选关卡、种植物、守房子。阳光管理与波次节奏的怀旧练习。",
+    descEn: "A faithful recreation of the classic tower-defense formula. Pick a level, plant your defenses, hold the house. A nostalgic exercise in sun economy and wave timing.",
     path: "./PVZ/index.html",
     thumb: "./PVZ/og.png",
     stack: ["Canvas", "Vanilla JS"],
@@ -747,6 +779,7 @@ const GAMES = [
     title: "强渡火星",
     titleEn: "Forcing Mars",
     desc: "Phaser 3 回合制卡牌。从浅海到地核的分层推进，构筑卡组、对抗火星异生态。",
+    descEn: "A Phaser 3 turn-based card battler. Descend layer by layer from the shallow seas to the planet's core, build your deck, and fight Mars' alien ecosystem.",
     path: "./forcing-mars/index.html",
     thumb: "./forcing-mars/og.png",
     stack: ["Phaser 3", "Vanilla JS"],
@@ -758,53 +791,202 @@ const GAMES = [
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pad = n => String(n).padStart(2, "0");
 
+/* ============ 中英双语 ============ */
+const DICT = {
+  en: {
+    agentExperiments: "AGENT · EXPERIMENTS",
+    githubPages: "GITHUB PAGES",
+    eyebrow: "Agent · Game Lab — 2026",
+    sub: "An experiment field where different <b>Agent</b>s build different frontend games. From horror puzzles to 3D bullet-hell survival — each one grows from a one-line idea into a playable work.",
+    browse: "Browse Experiments",
+    scroll: "Scroll",
+    sectionTitle: "Selected<br>Experiments",
+    worksCount: "Works",
+    agentBuilt: "Agent-built · Playable",
+    copyright: "© 2026 GAME LAB",
+    hostedOn: "Hosted on",
+    sourceOn: "Source on",
+    featuredAria: "Featured game preview",
+    viewFeatured: "View {name}"
+  },
+  zh: {
+    agentExperiments: "智能体 · 实验场",
+    githubPages: "GitHub 页面",
+    eyebrow: "智能体 · 游戏实验室 — 2026",
+    sub: "一个由不同 <b>Agent</b> 制造不同前端游戏的实验场。从恐怖解谜到 3D 弹幕生存，每一款都从一句话的念头长成可游玩的作品。",
+    browse: "浏览实验",
+    scroll: "下滑滚动",
+    sectionTitle: "精选<br>实验作品",
+    worksCount: "作品",
+    agentBuilt: "智能体打造 · 可游玩",
+    copyright: "© 2026 GAME LAB",
+    hostedOn: "托管于",
+    sourceOn: "源码在",
+    featuredAria: "精选游戏预览",
+    viewFeatured: "查看 {name}"
+  }
+};
+
+const META = {
+  en: {
+    title: "GAME LAB — Frontend Game Lab",
+    desc: "An experiment field where different Agents build different frontend games, hosted on GitHub Pages.",
+    locale: "en_US"
+  },
+  zh: {
+    title: "GAME LAB — 前端游戏实验室",
+    desc: "一个由不同 Agent 制造不同前端游戏的实验场，托管于 GitHub Pages。",
+    locale: "zh_CN"
+  }
+};
+
+let lang = (function () { try { return localStorage.getItem("gl-lang") || "en"; } catch (e) { return "en"; } })();
+
+function t(key) { return (DICT[lang] && DICT[lang][key] != null) ? DICT[lang][key] : key; }
+function gName(g) { return lang === "zh" ? g.title : g.titleEn; }
+function gOther(g) { return lang === "zh" ? g.titleEn : g.title; }
+function gDesc(g) { return lang === "zh" ? g.desc : g.descEn; }
+function enterWord() { return lang === "zh" ? "进入" : "Enter"; }
+
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach(function (el) {
+    const val = t(el.dataset.i18n);
+    if (val.indexOf("<") !== -1) el.innerHTML = val; else el.textContent = val;
+  });
+}
+
+function updateMeta() {
+  const m = META[lang];
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  document.title = m.title;
+  const set = function (sel, attr, v) { const e = document.querySelector(sel); if (e) e.setAttribute(attr, v); };
+  set('meta[name="description"]', "content", m.desc);
+  set('meta[property="og:title"]', "content", m.title);
+  set('meta[property="og:description"]', "content", m.desc);
+  set('meta[property="og:locale"]', "content", m.locale);
+  set('meta[name="twitter:title"]', "content", m.title);
+  set('meta[name="twitter:description"]', "content", m.desc);
+}
+
 /* ============ 轮播封面 ============ */
-(function featured() {
+let featCur = 0, featTimer = null, featBuilt = false, featSlides = [], featDots = [];
+
+function buildFeatured() {
   const stage = document.getElementById("featuredStage");
   const dotsWrap = document.getElementById("featuredDots");
-  const fIndex = document.getElementById("fIndex");
-  const fTitle = document.getElementById("fTitle");
-  const fEn = document.getElementById("fEn");
-  const link = document.getElementById("featured");
-
-  GAMES.forEach((g, i) => {
+  GAMES.forEach(function (g, i) {
     const s = document.createElement("div");
     s.className = "slide" + (i === 0 ? " active" : "");
-    s.innerHTML = `<img src="${g.thumb}" alt="${g.title}" />`;
+    s.innerHTML = '<img src="' + g.thumb + '" alt="' + gName(g) + '" />';
     stage.appendChild(s);
 
     const b = document.createElement("button");
     b.className = i === 0 ? "on" : "";
-    b.setAttribute("aria-label", `查看 ${g.title}`);
-    b.addEventListener("click", (e) => { e.preventDefault(); go(i); restart(); });
+    b.setAttribute("aria-label", t("viewFeatured").replace("{name}", gName(g)));
+    b.addEventListener("click", function (e) { e.preventDefault(); go(i); restart(); });
     dotsWrap.appendChild(b);
   });
-
-  const slides = [...stage.children];
-  const dots = [...dotsWrap.children];
-  let cur = 0;
-  let timer = null;
-
-  function go(n) {
-    cur = (n + GAMES.length) % GAMES.length;
-    slides.forEach((s, i) => s.classList.toggle("active", i === cur));
-    dots.forEach((d, i) => d.classList.toggle("on", i === cur));
-    const g = GAMES[cur];
-    fIndex.textContent = `${pad(cur + 1)} — ${pad(GAMES.length)}`;
-    fTitle.textContent = g.title;
-    fEn.textContent = g.titleEn;
-    link.href = g.path;
-  }
-
-  function restart() {
-    if (reduceMotion) return;
-    clearInterval(timer);
-    timer = setInterval(() => go(cur + 1), 4200);
-  }
-
+  featSlides = Array.prototype.slice.call(stage.children);
+  featDots = Array.prototype.slice.call(dotsWrap.children);
+  featBuilt = true;
   go(0);
   restart();
-})();
+}
+
+const fIndex = document.getElementById("fIndex");
+const fTitle = document.getElementById("fTitle");
+const fEn = document.getElementById("fEn");
+const featLink = document.getElementById("featured");
+
+function go(n) {
+  featCur = (n + GAMES.length) % GAMES.length;
+  featSlides.forEach(function (s, i) { s.classList.toggle("active", i === featCur); });
+  featDots.forEach(function (d, i) { d.classList.toggle("on", i === featCur); });
+  const g = GAMES[featCur];
+  fIndex.textContent = pad(featCur + 1) + " — " + pad(GAMES.length);
+  fTitle.textContent = gName(g);
+  fEn.textContent = gOther(g);
+  featLink.href = g.path;
+  featLink.setAttribute("aria-label", t("featuredAria"));
+}
+
+function restart() {
+  if (reduceMotion) return;
+  if (featTimer) clearInterval(featTimer);
+  featTimer = setInterval(function () { go(featCur + 1); }, 4200);
+}
+
+function updateFeaturedLang() {
+  featSlides.forEach(function (s, i) {
+    const img = s.querySelector("img");
+    if (img) img.alt = gName(GAMES[i]);
+  });
+  featDots.forEach(function (d, i) {
+    d.setAttribute("aria-label", t("viewFeatured").replace("{name}", gName(GAMES[i])));
+  });
+  go(featCur);
+}
+
+/* ============ 卡片网格 ============ */
+function renderGrid(initial) {
+  const wrap = document.getElementById("grid");
+  const count = document.getElementById("count");
+  const total = document.getElementById("totalCount");
+  const heroCount = document.getElementById("heroCount");
+  count.textContent = pad(GAMES.length);
+  if (total) total.textContent = pad(GAMES.length);
+  heroCount.textContent = pad(GAMES.length) + " " + (lang === "zh" ? "精选" : "SELECTED");
+
+  wrap.innerHTML = "";
+  GAMES.forEach(function (g, i) {
+    const a = document.createElement("a");
+    a.className = "card reveal";
+    a.href = g.path;
+    a.style.setProperty("--d", (i * 0.08) + "s");
+    a.setAttribute("aria-label", gName(g) + " — " + g.titleEn);
+    a.innerHTML =
+      '<div class="cover"><img src="' + g.thumb + '" alt="' + gName(g) + ' 封面" loading="lazy" /></div>' +
+      '<div class="shade"></div>' +
+      '<div class="num">#' + g.code + '</div>' +
+      '<div class="detail">' +
+        '<p class="desc">' + gDesc(g) + '</p>' +
+        '<div class="stack">' + g.stack.map(function (s) { return '<span>' + s + '</span>'; }).join("") + '</div>' +
+        '<div class="enter">' + enterWord() + ' <span class="arrow">→</span></div>' +
+      '</div>' +
+      '<div class="cap">' +
+        '<div class="cn">' + gName(g) + '</div>' +
+        '<div class="en">' + gOther(g) + '</div>' +
+      '</div>';
+    if (!initial) a.classList.add("in");
+    wrap.appendChild(a);
+  });
+}
+
+/* ============ 语言切换 ============ */
+function updateToggle() {
+  const btn = document.getElementById("langToggle");
+  if (!btn) return;
+  btn.textContent = lang === "en" ? "中文" : "EN";
+  btn.setAttribute("aria-label", lang === "en" ? "切换到中文 / Switch to Chinese" : "切换到英文 / Switch to English");
+}
+
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem("gl-lang", l); } catch (e) {}
+  updateMeta();
+  applyI18n();
+  const first = !featBuilt;
+  if (first) buildFeatured(); else updateFeaturedLang();
+  renderGrid(first);
+  updateToggle();
+}
+
+document.getElementById("langToggle").addEventListener("click", function () {
+  setLang(lang === "en" ? "zh" : "en");
+});
+
+/* 初始渲染（默认英文） */
+setLang(lang);
 
 /* ============ 跑马灯 ============ */
 (function marquee() {
@@ -812,38 +994,6 @@ const pad = n => String(n).padStart(2, "0");
   const tags = ["Canvas", "Raycast", "Three.js", "Phaser 3", "WebAudio", "Vite", "TypeScript", "Agent-Built", "Experiment", "Playable"];
   const group = tags.map(t => `<span>${t}</span>`).join("");
   track.innerHTML = group + group; // 两份用于无缝循环
-})();
-
-/* ============ 卡片网格 ============ */
-(function grid() {
-  const wrap = document.getElementById("grid");
-  const count = document.getElementById("count");
-  const heroCount = document.getElementById("heroCount");
-  count.textContent = pad(GAMES.length);
-  heroCount.textContent = `${pad(GAMES.length)} SELECTED`;
-
-  GAMES.forEach((g, i) => {
-    const a = document.createElement("a");
-    a.className = "card reveal";
-    a.href = g.path;
-    a.style.setProperty("--d", `${i * 0.08}s`);
-    a.setAttribute("aria-label", `${g.title} — ${g.titleEn}`);
-    a.innerHTML = `
-      <div class="cover"><img src="${g.thumb}" alt="${g.title} 封面" loading="lazy" /></div>
-      <div class="shade"></div>
-      <div class="num">#${g.code}</div>
-      <div class="detail">
-        <p class="desc">${g.desc}</p>
-        <div class="stack">${g.stack.map(s => `<span>${s}</span>`).join("")}</div>
-        <div class="enter">进入 <span class="arrow">→</span></div>
-      </div>
-      <div class="cap">
-        <div class="cn">${g.title}</div>
-        <div class="en">${g.titleEn}</div>
-      </div>
-    `;
-    wrap.appendChild(a);
-  });
 })();
 
 /* ============ 滚动揭示 ============ */
@@ -861,7 +1011,7 @@ const pad = n => String(n).padStart(2, "0");
   els.forEach(e => io.observe(e));
 })();
 
-/* ============ 自定义光标高光 ============ */
+/* ============ 自定义光标高高 ============ */
 (function cursor() {
   if (reduceMotion) return;
   if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;

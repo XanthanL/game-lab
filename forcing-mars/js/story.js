@@ -226,7 +226,7 @@ class StoryScene extends Phaser.Scene {
       wordWrap: { width: 800 },
     });
 
-    this.lineObjects.push({ prefix: prefixText, main: mainText, fullText: lineData.text });
+    this.lineObjects.push({ prefix: prefixText, main: mainText, fullText: tr(lineData.text) });
     this.charIndex = 0;
     this.isTyping = true;
 

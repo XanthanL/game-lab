@@ -70,6 +70,10 @@
     die: () => { tone(420, 0.3, { type: 'sawtooth', freqEnd: 70, vol: 0.1 }); },
     click: () => { tone(700, 0.05, { type: 'square', vol: 0.06 }); },
     zombieSpawn: () => { tone(160, 0.4, { type: 'sawtooth', freqEnd: 120, vol: 0.05 }); },
+    chomp: () => { noise(0.18, 0.35, 500); tone(120, 0.18, { type: 'sawtooth', freqEnd: 60, vol: 0.12 }); },
+    torch: () => { noise(0.25, 0.25, 1400); tone(880, 0.2, { type: 'sine', freqEnd: 1200, vol: 0.06 }); },
+    armorBreak: () => { noise(0.12, 0.4, 2600); tone(420, 0.1, { type: 'square', freqEnd: 200, vol: 0.1 }); },
+    shovel: () => { noise(0.12, 0.3, 700); },
     win: () => {
       [523, 659, 784, 1046].forEach((f, i) => {
         setTimeout(() => tone(f, 0.25, { type: 'sine', vol: 0.12 }), i * 180);
