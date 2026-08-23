@@ -26,7 +26,7 @@ function mkEl(id) {
     removeEventListener() {},
     _h: {},
     appendChild(c) { el.children.push(c); return c; },
-    querySelector: () => null,
+    querySelector(sel) { if (!el['_q' + sel]) el['_q' + sel] = mkEl(el.id + '_' + sel); return el['_q' + sel]; },
     querySelectorAll: () => [],
     closest: () => null,
     focus() {}, click() { (el._h.click || []).forEach(f => f({ stopPropagation() {}, target: el })); },
@@ -134,7 +134,7 @@ async function tryChapter(btnId) {
     for (let i = 0; i < 5 && rafQ.length; i++) { const q = rafQ; rafQ = []; q.forEach(f => f(performance.now() + 16)); }
     // click the intro overlay to begin
     const introId = sandbox.state === 'intro' ? null : 'n/a';
-    for (const id of ['intro0', 'intro2', 'intro3']) {
+    for (const id of ['intro0', 'intro2', 'intro3', 'intro4']) {
       const iv = elements.get(id);
       if (iv && iv.style.display === 'flex') { iv.click(); break; }
     }
@@ -180,4 +180,33 @@ async function tryChapter(btnId) {
   }
   await tryChapter('ch2Btn');
   await tryChapter('ch3Btn');
+  await tryChapter('ch4Btn');
+  // 终章：祭品拾取 / 井台沉愿 / 木桶结局 / 真结局文案 / 地图可达性
+  try {
+    vm.runInContext('state="playing";paused=false;chapter=4;lvl=5;', sandbox);
+    // 关键点 BFS 可达性（井/三祭品/三油坛/出生点）
+    const reach = vm.runInContext('(function(){const cells=reachableByLevel[5];const ts=[[11,2],[17,2],[3,17],[19,12],[6,13],[16,4],[11,7],[12,17]];return ts.map(t=>cells.some(p=>Math.floor(p.x)===t[0]&&Math.floor(p.y)===t[1]));})()', sandbox);
+    console.log('ch4Reach:', JSON.stringify(reach));
+    const p1 = vm.runInContext('(function(){const o=offerings[0];player.x=o.x-0.3;player.y=o.y;interact();return {carried:carried.slice(),taken:o.taken};})()', sandbox);
+    console.log('ch4Pick1:', JSON.stringify(p1));
+    const s = vm.runInContext('(function(){offerings.forEach(o=>o.taken=true);carried=["doll","comb","salt"];let n=0;for(let i=0;i<3;i++){player.x=WELL_X-0.3;player.y=WELL_Y+0.5;interact();n=offerSunk;}return {sunk:n,bucket:bucketSpawned,ghostStun:ghost&&ghost.stunT>0};})()', sandbox);
+    console.log('ch4Sink:', JSON.stringify(s));
+    const w = vm.runInContext('(function(){player.x=WELL_X-0.3;player.y=WELL_Y+0.5;interact();return {seq:seq&&seq.mode};})()', sandbox);
+    console.log('ch4WellEnding:', JSON.stringify(w));
+    // 真结局（集齐 12 纸条）：win 分支文案
+    vm.runInContext('notesFound=NOTES.map((n,i)=>i);seq={mode:"win",t:2.7};state="playing";', sandbox);
+    for (let i = 0; i < 3 && rafQ.length; i++) { const q = rafQ; rafQ = []; q.forEach(f => f(performance.now() + 1e6 + i * 200)); }
+    const h1 = vm.runInContext('document.getElementById("win").querySelector("h1").textContent', sandbox);
+    const stats = vm.runInContext('document.getElementById("winstats").textContent.slice(0, 18)', sandbox);
+    console.log('ch4TrueEnd:', JSON.stringify({ h1, stats }));
+  } catch (e) {
+    console.error('CH4_ERROR:', e.stack ? e.stack.split('\n').slice(0, 6).join('\n') : e);
+  }
+  // 抓捕三次挣扎：前两次挣脱（怨灵硬直+弹开），第三次死亡
+  try {
+    const g = vm.runInContext('(function(){seq=null;state="playing";paused=false;chapter=2;grabs=0;grabGrace=0;const px=player.x;const a=hurtByGrab(px-1.2,player.y);grabGrace=0;const b=hurtByGrab(px-1.2,player.y);grabGrace=0;const c=hurtByGrab(px-1.2,player.y);return {a,b,c,dead:!!(seq&&seq.mode==="death"),knocked:player.x>px,grace:grabGrace>0,ghostStun:ghost&&ghost.stunT>0};})()', sandbox);
+    console.log('grabSystem:', JSON.stringify(g));
+  } catch (e) {
+    console.error('GRAB_ERROR:', e.stack ? e.stack.split('\n').slice(0, 6).join('\n') : e);
+  }
 })();

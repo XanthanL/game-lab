@@ -108,6 +108,7 @@ body{display:flex;align-items:center;justify-content:center;}
 #ch2Btn{--ac:#8fb6d9;--ac-glow:rgba(143,182,217,0.35);}   /* 第二章 · 月青 */
 #ch3Btn{--ac:#93a87e;--ac-glow:rgba(147,168,126,0.35);}   /* 第三章 · 荒草 */
 #ch0Btn{--ac:#e0b04a;--ac-glow:rgba(240,205,95,0.42);}    /* 第〇章 · 盛夏 */
+#ch4Btn{--ac:#6a9aa8;--ac-glow:rgba(90,160,180,0.4);}     /* 终章 · 井水 */
 #intro2{background:#000;}
 #intro2 p{max-width:34em;}
 .goCh2{cursor:pointer;display:inline-block;padding:9px 22px;border:1px solid rgba(232,216,176,0.55);color:#e8d8b0;font-size:min(3.4vw,16px);letter-spacing:0.3em;background:rgba(20,14,8,0.6);user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
@@ -205,6 +206,7 @@ body{display:flex;align-items:center;justify-content:center;}
     <div class="chbtn" id="ch1Btn"><span class="num">第壹章</span><span class="name">生还</span><small>老宅 · 探索收集<br>集齐纸人偶 寻钥逃生</small></div>
     <div class="chbtn" id="ch2Btn"><span class="num">第贰章</span><span class="name">归宅</span><small>旧宅 · 潜行仪式<br>送还人偶 点燃堂前之火</small></div>
     <div class="chbtn" id="ch3Btn"><span class="num">第叁章</span><span class="name">义庄</span><small>废墟 · 灯油纸人<br>请回牌位 天明前离开</small></div>
+    <div class="chbtn" id="ch4Btn"><span class="num">终 章</span><span class="name">封井</span><small>夜魇 · 井中歌<br>还她三愿 送她归家</small></div>
   </div>
   <p id="ctrlHint" style="margin-top:22px;font-size:min(2.6vw,12px);color:#6f6a60;">WASD 移动 / 鼠标 视角 / E 互动 / M 静音</p>
 </div>
@@ -236,6 +238,15 @@ body{display:flex;align-items:center;justify-content:center;}
   <p style="color:#b09a6a;">守灯人的规矩：<br>「长明灯不可灭。三块祖先牌位，请回神龛安放。<br>纸人畏目——盯着它们，它们便不敢动。」</p>
   <p style="color:#c96;">切记：<span style="color:#a01212">灯油燃尽之时，别背对任何东西。</span></p>
   <p class="blink">点击开始</p>
+</div>
+
+<div id="intro4" class="overlay hidden" style="background:linear-gradient(180deg,#04070c 0%,#0a1218 55%,#101a20 100%);">
+  <h2 style="color:#5a7480;">终 章</h2>
+  <h1 style="font-size:min(9vw,60px);letter-spacing:0.4em;color:#9ecbd8;text-shadow:0 2px 22px rgba(90,170,200,0.6),0 0 60px rgba(60,130,160,0.45);">封 井</h1>
+  <p style="color:#8fa8b2;">梦里你又站在村口的晒场上。<br>还是那口井。封井的石板被人掀开了，<br>湿漉漉地翻在一边——像有什么东西，从里面自己推开的。</p>
+  <p style="color:#7a95a2;">井沿的木牌字迹洇开了：<br>「她想要的东西一直没变——<br>第七只纸偶、娘的木梳、一罐没入过公账的老盐。」</p>
+  <p style="color:#68808c;">提着灯笼，把三样东西沉到井里去。<br><span style="color:#a05858;">井里有歌声。别在歌里走动。</span></p>
+  <p class="blink" style="color:#7aa0b0;">点击开始</p>
 </div>
 
 <div id="pause" class="overlay hidden">
@@ -467,6 +478,29 @@ const MAPS=[
 "#......................#",
 "########################",
 ],
+// ---- 终章「封井」：第〇章村庄的夜魇版。同一口井(11.5,2.6)、同一南院出生点，封石已掀开 ----
+[
+"########################",
+"#.......##........##...#",
+"#.......##........##...#",
+"#....X.............X...#",
+"#..JJ..............JJ..#",
+"#......................#",
+"#...##............##...#",
+"#...##............##...#",
+"#.........X............#",
+"#.......JJ......JJ.....#",
+"#......................#",
+"#..##...............##.#",
+"#..##...............##.#",
+"#......................#",
+"#.........JJ...........#",
+"#..........X...........#",
+"#...##............##...#",
+"#...##............##...#",
+"#......................#",
+"########################",
+],
 ];
 
 let lvl=0;
@@ -620,6 +654,7 @@ default:{const h=(x*7+y*13+(x*y)%5)%100;
   if(lvl===4)return h<38?sunPlaster:h<56?sunWood:h<72?shoji:h<88?sunPlaster:sunWood;   // 第〇章：干净土墙+浅木，阳光味
   if(lvl===2)return h<14?wood:h<44?darkwood:h<58?shoji:h<72?redwood:h<80?bloodTex:h<92?stone:redwood;   // 第二章：破败混色
   if(lvl===3)return h<30?stone:h<46?darkwood:h<60?bloodTex:h<72?shoji:h<86?redwood:stone;              // 第三章：义庄石木朽败
+  if(lvl===5)return h<26?darkwood:h<48?stone:h<60?bloodTex:h<72?shoji:h<86?wood:stone;                 // 终章：夜村湿木渗血
   return h<55?wood:h<78?darkwood:h<92?shoji:redwood;}}}
 
 function svgUrl(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
@@ -694,6 +729,33 @@ const paperImg=svgSprite(40,80,'<defs><linearGradient id="pp" x1="0" y1="0" x2="
 
 const steleImg=svgSprite(32,48,'<defs><linearGradient id="stl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#56565e"/><stop offset="0.5" stop-color="#78787e"/><stop offset="1" stop-color="#3e3e44"/></linearGradient></defs><ellipse cx="16" cy="45" rx="12" ry="3" fill="rgba(0,0,0,0.4)"/><rect x="4" y="40" width="24" height="5" rx="1" fill="#4a4a50"/><path d="M7 40 L7 8 Q7 3 12 3 L20 3 Q25 3 25 8 L25 40 Z" fill="url(#stl)"/><path d="M11 12 h10 M11 17 h10 M11 22 h7 M11 27 h10" stroke="#2c2c32" stroke-width="1.6"/><path d="M20 6 l4 -4 M22 8 l5 -5" stroke="#8a2020" stroke-width="1.4" opacity="0.7"/>');
 
+// ---- 终章「封井」精灵（decor 引用，须先于 decor 声明）----
+const girlFallback=makeSpriteCanvas(20,44,g=>{g.fillStyle='#cdd8da';g.fillRect(6,14,8,18);g.beginPath();g.arc(10,9,5,0,TAU);g.fill();g.fillStyle='#1a2226';g.fillRect(2,0,16,12);g.fillStyle='#0a0f12';g.fillRect(7,8,2,2);g.fillRect(12,8,2,2);});
+const girlImg=svgSprite(44,92,
+'<defs><linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe9ea"/><stop offset="1" stop-color="#93a8ad"/></linearGradient></defs>'+
+'<ellipse cx="22" cy="88" rx="13" ry="3" fill="rgba(0,10,14,0.55)"/>'+
+// 长发：湿发贴脸，遮住半张脸
+'<path d="M22 6 C34 6 38 16 37 30 L36 52 C36 60 32 64 28 66 L27 50 C31 40 30 24 26 18 Z" fill="#141d22"/>'+
+'<path d="M22 6 C10 6 6 16 7 30 L8 52 C8 60 12 64 16 66 L17 50 C13 40 14 24 18 18 Z" fill="#10181c"/>'+
+// 苍白的小小的身体：旧布裙湿透贴身
+'<ellipse cx="22" cy="15" rx="8.2" ry="8.6" fill="#cfd9d8"/>'+
+'<circle cx="18.6" cy="15.5" r="1.7" fill="#0c1214"/><circle cx="25.4" cy="15.5" r="1.7" fill="#0c1214"/>'+
+'<path d="M19.5 21 q2.5 1.6 5 0" stroke="#5a2020" stroke-width="1.1" fill="none"/>'+
+'<path d="M14 24 L30 24 L33 58 Q29 66 22 66 Q15 66 11 58 Z" fill="url(#gw)"/>'+
+// 湿裙水痕
+'<path d="M13 46 q4 3 9 3 q6 0 9 -3 l0 6 q-5 3 -9 3 q-5 0 -9 -3 Z" fill="#6a8a90" opacity="0.5"/>'+
+// 细瘦手臂垂着，指尖滴水
+'<path d="M13 27 L8 48 M31 27 L36 48" stroke="#cfd9d8" stroke-width="4.4" stroke-linecap="round"/>'+
+'<circle cx="8" cy="51" r="1.3" fill="#9ec4cc" opacity="0.8"/><circle cx="36" cy="51" r="1.3" fill="#9ec4cc" opacity="0.8"/>'+
+// 发间一缕红绳（与纸偶同源）
+'<path d="M22 6 q4 2 5 6" stroke="#a03028" stroke-width="1.3" fill="none"/>',girlFallback);
+// 祭品三件：第七只纸偶 / 木梳 / 盐罐（第七只纸偶复用 dollImg 精灵）
+const combFallback=makeSpriteCanvas(24,16,g=>{g.fillStyle='#8a6838';g.fillRect(3,4,18,8);g.fillStyle='#5a4020';for(let i=0;i<7;i++)g.fillRect(4+i*2.4,12,1.2,3);});
+const combImg=svgSprite(48,30,'<defs><linearGradient id="cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b08a4a"/><stop offset="1" stop-color="#6a4a22"/></linearGradient></defs><ellipse cx="24" cy="27" rx="14" ry="2.4" fill="rgba(0,0,0,0.35)"/><rect x="6" y="6" width="36" height="12" rx="4" fill="url(#cb)" stroke="#4a3010" stroke-width="1.3"/><g stroke="#3a260e" stroke-width="1.6">'+[0,1,2,3,4,5,6,7,8].map(i=>'<line x1="'+(10+i*3.2)+'" y1="18" x2="'+(10+i*3.2)+'" y2="25"/>').join('')+'</g><path d="M10 9 q7 3 14 0 q7 -3 14 0" stroke="#d8b878" stroke-width="1.4" fill="none" opacity="0.75"/>',combFallback);
+const saltFallback=makeSpriteCanvas(18,22,g=>{g.fillStyle='#b8b4a8';g.fillRect(4,6,10,13);g.fillStyle='#888478';g.fillRect(4,6,10,3);});
+const saltImg=svgSprite(34,42,'<defs><linearGradient id="sl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d8d4c8"/><stop offset="0.5" stop-color="#aea894"/><stop offset="1" stop-color="#8a8474"/></linearGradient></defs><ellipse cx="17" cy="39" rx="10" ry="2.4" fill="rgba(0,0,0,0.4)"/><path d="M6 12 Q4 24 7 34 Q11 40 17 40 Q23 40 27 34 Q30 24 28 12 Z" fill="url(#sl)" stroke="#6a6454" stroke-width="1.2"/><rect x="10" y="6" width="14" height="7" rx="2" fill="#98927e"/><text x="17" y="27" font-size="11" text-anchor="middle" fill="#5a5442" font-family="serif">鹽</text>',saltFallback);
+const bucketImg=svgSprite(36,34,'<defs><linearGradient id="bk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a3c20"/><stop offset="0.5" stop-color="#7c5630"/><stop offset="1" stop-color="#3c2812"/></linearGradient></defs><ellipse cx="18" cy="31" rx="13" ry="2.6" fill="rgba(0,0,0,0.45)"/><path d="M4 10 L7 29 Q18 33 29 29 L32 10 Z" fill="url(#bk)" stroke="#241608" stroke-width="1.3"/><ellipse cx="18" cy="10" rx="14" ry="3.4" fill="#2c1c0c"/><ellipse cx="18" cy="10" rx="11" ry="2.4" fill="#101820"/><path d="M6 10 Q18 -2 30 10" fill="none" stroke="#6a4a28" stroke-width="2"/>');
+
 const decor=[
 {x:3.5,y:7.5,lvl:0,img:wellImg,scale:1.35},
 {x:11.5,y:7.5,lvl:0,img:altarImg,scale:1.15,glow:0.3},
@@ -732,8 +794,16 @@ decor.push(
 {x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},                 // 屋檐下的水缸
 {x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}                // 空竹匾（装饰）
 );
+// ---- 终章 · 夜魇村庄陈设：封石掀开的老井 + 掀翻的石板 + 冷灯笼 ----
+decor.push(
+{x:11.5,y:2.6,lvl:5,img:wellImg,scale:1.5},                // 夜井（还愿仪式目标）
+{x:13.3,y:3.0,lvl:5,img:steleImg,scale:0.8},               // 掀翻在井边的封石
+{x:8.5,y:10.5,lvl:5,img:skeletonImg,scale:1.15},           // 晒场骸骨
+{x:12.5,y:16.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true},   // 出生点冷灯笼
+{x:11.5,y:6.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true}    // 井路中途灯笼
+);
 
-const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.5,y:17.5}];   // 第〇章出生在南院晒场
+const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.5,y:17.5},{x:12.5,y:17.5}];   // 终章与第〇章同一南院出生点
 
 // ---- 第〇章 · 夏日：帮阿婆做三件事，最后去村口老井打水 ----
 const WELL_X=11.5,WELL_Y=2.6;      // 村口老井
@@ -780,8 +850,8 @@ function tryPickupNote(){
   }
   return false;
 }
-const reachableByLevel=[[],[],[],[],[]];
-for(let L=0;L<5;L++){
+const reachableByLevel=[[],[],[],[],[],[]];
+for(let L=0;L<6;L++){
   const sx=Math.floor(spawns[L].x),sy=Math.floor(spawns[L].y);
   const t=tiles[L];
   const seen=new Set([sx+','+sy]);
@@ -1020,7 +1090,7 @@ const RITUAL_LINES=[
 '最后一具。现在——点燃堂前之火。'];
 
 function bfsPath(sx,sy,tx,ty,L){
-  const lv=L===undefined?2:L;
+  const lv=L===undefined?lvl:L;   // 默认跟随当前层（原硬编码 2 会让终章 lvl5 误查第二章地图）
   const t=tiles[lv],W=t[0].length,H=t.length;
   if(sx<0||sy<0||tx<0||ty<0||sx>=W||sy>=H||tx>=W||ty>=H)return null;
   const passable=(x,y)=>{const c=t[y][x];return !(c==='#'||c==='S'||c==='J'||c==='B'||c==='C'||c==='X'||c==='D');};
@@ -1101,6 +1171,30 @@ function catchPlayer(){
   if(document.pointerLockElement)document.exitPointerLock();
 }
 
+// ---- 抓捕容错：前两次被抓住=挣脱弹开（怨灵硬直+扣精神），第三次才死 ----
+function hurtByGrab(sx,sy){
+  if(grabGrace>0||seq)return false;
+  grabs++;
+  if(grabs>=3){catchPlayer();return true;}
+  grabGrace=2.8;
+  sanity=Math.max(0,sanity-30);
+  shriek(0.9);flashRed=1;
+  // 挣脱：沿远离方向弹开，怨灵被甩开硬直
+  const dx=player.x-sx,dy=player.y-sy,d=Math.hypot(dx,dy)||1;
+  const nx=player.x+dx/d*1.15,ny=player.y+dy/d*1.15;
+  if(!solidAt(nx,player.y))player.x=nx;
+  if(!solidAt(player.x,ny))player.y=ny;
+  if(ghost){ghost.stunT=2.6;ghost.state='SEARCH';ghost.searchT=5;ghost.path=[];}
+  paperDazeT=2.6;
+  const L=chapter===3
+    ?['纸人贴上你的后颈——你把它甩开了！\n（还能承受 2 次）','纸人掐住了你的手腕……挣脱！\n（还能承受 1 次）']
+    :(chapter===4
+      ?['她攥住了你的手腕——你挣脱了！\n（还能承受 2 次）','她的指甲陷进你的手臂……挣脱！\n（还能承受 1 次）']
+      :['它攥住了你——你挣脱了！\n（还能承受 2 次）','又被抓住了！冰冷的指尖……\n（还能承受 1 次）']);
+  toastMsg(L[grabs-1]);
+  return false;
+}
+
 function updateGhost(dt){
   const g=ghost;if(!g)return;
   const pd=Math.hypot(player.x-g.x,player.y-g.y);
@@ -1110,12 +1204,12 @@ function updateGhost(dt){
   const roamSpd=1.15+0.07*n,chaseSpd=1.95+0.07*n;   // 调低：追击≈玩家 72%，随进度缓慢回升
   // ---- 视觉（躲藏时怨灵无法看见） ----
   if(!hiding&&!seq){
-    if(pd<0.55){catchPlayer();return;}
+    if(pd<0.55){hurtByGrab(g.x,g.y);return;}
     const tx=player.x-g.x,ty=player.y-g.y;
     const fdot=(tx*g.dirX+ty*g.dirY)/(pd||1);
     const seen=pd<8&&(pd<1.4||fdot>0.6)&&(pd<1.4||losClear(g.x,g.y,player.x,player.y));
     if(seen){
-      if(g.state!=='CHASE'){g.state='CHASE';shriek(1.1);toastMsg('它看见你了——跑！');}
+      if(g.state!=='CHASE'){g.state='CHASE';shriek(1.1);toastMsg(chapter===4?'她看见你了——跑！':'它看见你了——跑！');}
       g.lastSeen={x:player.x,y:player.y};g.lostT=0;
       g.repathT-=dt;
       if(g.repathT<=0){g.repathT=0.35;g.path=bfsPath(Math.floor(g.x),Math.floor(g.y),Math.floor(player.x),Math.floor(player.y))||[];}
@@ -1130,14 +1224,14 @@ function updateGhost(dt){
   // ---- 听觉：玩家移动噪声（跑步 7 格/走路 3.5 格，随进度 +0.4n；隔墙衰减） ----
   const moving=!hiding&&!seq&&(keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight||joy.f||joy.s);
   if(moving&&g.state!=='CHASE'){
-    const hear=(3.5+0.4*n)+(losClear(g.x,g.y,player.x,player.y)?3.5:0);
+    const hear=(3.5+0.4*n)+(losClear(g.x,g.y,player.x,player.y)?3.5:0)+(chapter===4&&songActive>0?3:0);   // 井歌期间听觉更锐
     if(pd<hear){g.state='INVESTIGATE';g.path=bfsPath(Math.floor(g.x),Math.floor(g.y),Math.floor(player.x),Math.floor(player.y))||[];}
   }
   // ---- 状态机动 ----
   switch(g.state){
     case 'ROAM':{
       if(!g.path.length){
-        const cells=reachableByLevel[2];
+        const cells=reachableByLevel[lvl];   // 跟随当前层（原硬编码 [2]，终章复用时游荡在错地图）
         const p=cells[(Math.random()*cells.length)|0];
         g.path=bfsPath(Math.floor(g.x),Math.floor(g.y),Math.floor(p.x),Math.floor(p.y))||[];
       }
@@ -1168,8 +1262,8 @@ function updateGhost(dt){
 
 // ---- 躲藏 ----
 function enterHide(){
-  // 进入 CHASE 且距离 <2.2 → 目睹你躲藏，直接拽出杀死
-  if(ghost&&ghost.state==='CHASE'&&Math.hypot(player.x-ghost.x,player.y-ghost.y)<2.2){catchPlayer();return;}
+  // 进入 CHASE 且距离 <2.2 → 目睹你躲藏：被拽出（同样走三次挣扎，不再秒杀）
+  if(ghost&&ghost.state==='CHASE'&&Math.hypot(player.x-ghost.x,player.y-ghost.y)<2.2){toastMsg('它一直看着你——柜门被拽开了！');hurtByGrab(ghost.x,ghost.y);return;}
   hiding=true;
   creak();
   toastMsg('你屏住呼吸，缩进衣柜深处……');
@@ -1235,19 +1329,13 @@ function paperRustle(){
   s.connect(bp);bp.connect(g);g.connect(master);s.start(t);
 }
 
-function paperCatch(){
-  if(seq)return;
-  seq={mode:'death',t:0};
-  shriek(1.2);deathSound();flashRed=1;
-  if(document.pointerLockElement)document.exitPointerLock();
-}
-
 function updatePapers(dt){
+  if(paperDazeT>0){paperDazeT-=dt;return;}   // 被挣脱后纸人呆滞片刻
   const spd=(oil<25?1.2:0.85)+tabsPlaced*0.08;   // 灯油将尽/牌位渐安 → 纸人愈发大胆
   let anyNear=false;
   for(const p of papers){
     const dx=p.x-player.x,dy=p.y-player.y,d=Math.hypot(dx,dy);
-    if(d<0.62){paperCatch();return;}
+    if(d<0.62){hurtByGrab(p.x,p.y);return;}
     // 冻结判定：在视野锥内 + 视线通畅 + 灯油足够 + 没有灯火摇曳
     const fdot=(dx*player.dirX+dy*player.dirY)/(d||1);
     const seen=oil>12&&fdot>0.66&&losClear(player.x,player.y,p.x,p.y)&&flickerEvent<=0;
@@ -1270,9 +1358,60 @@ function updatePapers(dt){
 }
 // ==================== 第三章系统结束 ====================
 
+// ==================== 终章「封井」系统：还愿仪式 / 井中少女 / 井歌 ====================
+const CARRY_NAMES={doll:'第七只纸人偶',comb:'阿婆的木梳',salt:'私盐罐子'};
+const offerings=[
+  {kind:'doll',x:17.5,y:2.5,taken:false,img:dollImg,scale:1.0,hint:'E 拾起第七只纸人偶',pickMsg:'第七只纸人偶……炭笔画了一半的那个。\n轻得像一声叹息。'},
+  {kind:'comb',x:3.5,y:17.5,taken:false,img:combImg,scale:0.8,hint:'E 拾起阿婆的木梳',pickMsg:'阿婆的木梳。齿间缠着一根长长的白发。\n她一定找了它很多年。'},
+  {kind:'salt',x:19.5,y:12.5,taken:false,img:saltImg,scale:0.75,hint:'E 拿起私盐罐子',pickMsg:'没入过公账的私盐。罐底压着字条：\n「给娘。」'},
+];
+let carried=[],offerSunk=0,bucketSpawned=false,songActive=0,nextSongAt=1e9;
+const SINK_LINES=[
+'纸偶沉进黑水里。井底传来细细的一声笑。',
+'木梳沉下去了。歌声停了一拍——然后，贴得更近了。',
+'盐罐沉下去了。井底很轻很轻地说：「……还有我。」'];
+function resetCh4State(){
+  oil=100;offerSunk=0;bucketSpawned=false;songActive=0;nextSongAt=timeSec+16;oilOutWarned=false;
+  carried=[];
+  for(const o of offerings)o.taken=false;
+  for(const j of oilJars)if(j.lvl===5)j.taken=false;
+}
+function wellSong(){   // 井中歌：五声音阶下行 + 微差拍，像从水底渗上来
+  const t=at();
+  [784,659,587,523,392].forEach((f,i)=>{
+    const st=t+i*0.55;
+    const o=AC.createOscillator();o.type='sine';o.frequency.value=f;
+    const g=AC.createGain();
+    g.gain.setValueAtTime(0.0001,st);
+    g.gain.linearRampToValueAtTime(0.05,st+0.2);
+    g.gain.exponentialRampToValueAtTime(0.0001,st+1.1);
+    o.connect(g);g.connect(master);o.start(st);o.stop(st+1.15);
+    const o2=AC.createOscillator();o2.type='sine';o2.frequency.value=f*2.006;
+    const g2=AC.createGain();
+    g2.gain.setValueAtTime(0.0001,st);
+    g2.gain.linearRampToValueAtTime(0.02,st+0.2);
+    g2.gain.exponentialRampToValueAtTime(0.0001,st+0.95);
+    o2.connect(g2);g2.connect(master);o2.start(st);o2.stop(st+1.0);
+  });
+}
+function sinkOffering(){
+  carried.pop();
+  offerSunk++;ritualN++;   // ritualN 复用为怨灵成长系数（与第二章同一曲线）
+  bell(392,0,0.2);bell(330,0.2,0.16);bell(262,0.4,0.26);   // 沉井的闷钟
+  flashWhite=0.2;lastScareAt=timeSec;
+  if(ghost){
+    ghost.stunT=3.5;shriek(0.8);
+    if(ghost.state!=='CHASE'){ghost.state='INVESTIGATE';ghost.path=bfsPath(Math.floor(ghost.x),Math.floor(ghost.y),Math.floor(WELL_X),Math.floor(WELL_Y))||[];}
+  }
+  toastMsg(SINK_LINES[Math.min(offerSunk-1,SINK_LINES.length-1)]);
+  if(offerSunk>=3){bucketSpawned=true;setTimeout(()=>{if(state==='playing')toastMsg('井台边，浮起一只小小的木桶。');},2600);}
+}
+// ==================== 终章系统结束 ====================
+
 let state='title';
 let seq=null,timeSec=0,sanity=100,startTime=0;
 let dollsTaken=0,hasKey=false;
+let grabs=0,grabGrace=0,paperDazeT=0;   // 抓捕容错：3 次内可挣脱；grabGrace=挣脱无敌窗口；paperDazeT=纸人呆滞
 let ritualN=0,ghost=null,hiding=false,hideLockT=0;   // 第二章：仪式进度/怨灵/躲藏
 let fireSpawned=false,hideFear=0,groanNodes=null;    // 第二章：堂前之火/柜内心跳恐惧/呻吟循环
 let toast={text:'',t:0};
@@ -1355,6 +1494,17 @@ function interact(){
     if(fireSpawned&&Math.hypot(player.x-FIRE_X,player.y-FIRE_Y)<1.5){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
     return;
   }
+  // ---- 终章：收灯油 / 拾祭品 / 井台沉愿 / 送归 ----
+  if(chapter===4){
+    for(const j of oilJars){if(j.lvl===5&&!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<0.85){j.taken=true;oil=Math.min(100,oil+45);oilPickup();return;}}
+    for(const o of offerings){if(!o.taken&&Math.hypot(o.x-player.x,o.y-player.y)<0.9){o.taken=true;carried.push(o.kind);dollPickup();flashWhite=0.1;lastScareAt=timeSec;toastMsg(o.pickMsg);return;}}
+    if(Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.8){
+      if(bucketSpawned){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
+      if(carried.length>0){sinkOffering();return;}
+      if(offerSunk<3)toastMsg('井里的水声催促着……还差祭品 ('+offerSunk+'/3)');
+    }
+    return;
+  }
   const fx=Math.floor(player.x+player.dirX*0.55),fy=Math.floor(player.y+player.dirY*0.55);
   const ft=tile(fx,fy);
   if(ft==='D'){
@@ -1398,7 +1548,7 @@ function update(dt){
   if(seq){
     seq.t+=dt;
     if(seq.mode==='scare'&&seq.t>1.1){seq=null;}
-    else if(seq.mode==='death'&&seq.t>3.2){state='dead';document.getElementById('deadMsg').textContent=chapter===2?'它记得你的气味。':(chapter===3?'纸人们，把你留在了义庄。':'这栋宅子，不会放你离开。');document.getElementById('dead').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();if(groanNodes)groanNodes.g.gain.setTargetAtTime(0,at(),0.4);}
+    else if(seq.mode==='death'&&seq.t>3.2){state='dead';document.getElementById('deadMsg').textContent=chapter===2?'它记得你的气味。':(chapter===3?'纸人们，把你留在了义庄。':(chapter===4?'她把你拉进了井里。':'这栋宅子，不会放你离开。'));document.getElementById('dead').style.display='flex';if(document.pointerLockElement)document.exitPointerLock();if(groanNodes)groanNodes.g.gain.setTargetAtTime(0,at(),0.4);}
     else if(seq.mode==='win'&&seq.t>2.6){
       state='win';
       const m=(timeSec-startTime)/60|0,ss=(timeSec-startTime)%60|0;
@@ -1414,6 +1564,13 @@ function update(dt){
       }else if(chapter===3){
         h1.textContent='天 明';
         document.getElementById('winstats').textContent='三块牌位归位，长明灯次第亮起。走出义庄时，天刚蒙蒙亮。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒';
+      }else if(chapter===4){
+        // 终章双结局：集齐 12 张纸条 → 真结局「安魂」（知道她的名字，才能真正送她走）
+        const allNotes=notesFound.length>=NOTES.length;
+        h1.textContent=allNotes?'安 魂':'封 井';
+        document.getElementById('winstats').textContent=allNotes
+          ?'你说出了她的名字。井水一寸一寸静了下来，歌声停在半空。  木桶提上来——这一次，只有清水。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒'
+          :'木桶沉下去，井口无声地合上了。天亮了，你没有回头。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒  （手记 '+notesFound.length+'/'+NOTES.length+'：集齐散落的纸条，也许还有别的结局……）';
       }else{
         h1.textContent='咒 终';
         document.getElementById('winstats').textContent='火光里，人偶蜷曲成灰。身后的尖啸渐渐远去。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒';
@@ -1425,6 +1582,7 @@ function update(dt){
     move(dt);
     if(ePressed){ePressed=false;interact();}
     if(hideLockT>0)hideLockT-=dt;
+    if(grabGrace>0)grabGrace-=dt;
     if(chapter===2){
       if(ghost&&!seq)updateGhost(dt);
       if(hiding&&ghost&&!seq){
@@ -1440,8 +1598,18 @@ function update(dt){
     }else if(chapter===3&&MAPS.length>3){
       oil=Math.max(0,oil-dt*(flickerEvent>0?1.7:1.05));   // 灯油：满油约烧 95 秒，灯火摇曳时更费
       if(!seq)updatePapers(dt);
+    }else if(chapter===4&&MAPS.length>5){
+      // 终章：灯油（提灯夜行）+ 井中少女追杀 + 井歌轮替
+      oil=Math.max(0,oil-dt*(flickerEvent>0?1.7:1.05));
+      if(ghost&&!seq)updateGhost(dt);
+      songActive=Math.max(0,songActive-dt);
+      if(!seq&&songActive<=0&&timeSec>=nextSongAt){
+        songActive=8;nextSongAt=timeSec+24+Math.random()*14;
+        wellSong();whisper();
+        toastMsg('……井里有人在唱歌。\n别应声。压低脚步。');
+      }
     }
-    if(chapter!==2&&groanNodes)groanNodes.g.gain.setTargetAtTime(0,at(),0.4);
+    if(chapter!==2&&chapter!==4&&groanNodes)groanNodes.g.gain.setTargetAtTime(0,at(),0.4);
     if(lvl===1&&timeSec-lastScareAt>4)sanity=Math.max(0,sanity-0.8*dt);
     if(timeSec-lastScareAt>10&&sanity<100)sanity=Math.min(100,sanity+2.5*dt);
     if(sanity<70&&timeSec>=nextHeart){nextHeart=timeSec+0.55+0.85*(sanity/70);beat();}
@@ -1481,6 +1649,10 @@ function floorStyle(x,y){
     if(iy>=14)return hashInt(ix*3,iy*11)%13===0?'G':'W';
     return hashInt(ix*5,iy*7)%11===0?'W':'T';
   }
+  if(lvl===5){   // 终章：夜村荒草 + 一条通往老井的土路（中央引导线）
+    if((ix===11||ix===12)&&iy>=2&&iy<=16)return 'p';
+    return hashInt(ix*3,iy*11)%17===0?'W':'G';
+  }
   if(iy>=6&&iy<=10&&ix>=1&&ix<=6)return 'G';
   if(iy>=12&&iy<=18&&ix>=8&&ix<=15)return 'S';
   if(iy<=5&&ix>=10&&ix<=18)return 'W';
@@ -1499,6 +1671,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     }
     else if(lvl===2){const v=(5+26*tt)|0;buf32.fill(pack((v*0.75)|0,(v*0.92)|0,Math.min(255,(v*1.35+8)|0)),y*VW,y*VW+VW);}   // 第二章：冷青夜色
     else if(lvl===3){const v=(6+22*tt)|0;buf32.fill(pack(Math.min(255,(v*1.05)|0),(v*1.02)|0,(v*0.8)|0),y*VW,y*VW+VW);} // 第三章：灰绿朽败
+    else if(lvl===5){const v=(4+20*tt)|0;buf32.fill(pack((v*0.82)|0,(v*1.02)|0,Math.min(255,(v*1.5+6)|0)),y*VW,y*VW+VW);} // 终章：深水蓝黑夜空
     else{const v=(7+32*tt)|0;buf32.fill(pack(v,v,Math.min(255,v+6)),y*VW,y*VW+VW);}
   }
   for(let y=horizon;y<VH;y++){
@@ -1524,7 +1697,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     }
   }
   // 每帧常量外提（性能：避免列循环内重复分配数组）
-  const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:[9,10,15]));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾（已提亮）
+  const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾 / 终章深水雾（已提亮）
   const fogDenom=lvl===1?12:(lvl===4?20:15);
   const hits=[];
   for(let x=0;x<VW;x++){
@@ -1608,6 +1781,13 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     // 阿婆的三件差事：未完成的才显示（收走/喂完即消失）
     for(const t of ch0Tasks){if(!t.done)sprites.push({x:t.x,y:t.y,img:t.img,scale:t.scale,bob:t.img===chickImg,phase:2.1});}
   }
+  if(chapter===4&&lvl===5){
+    // 井中少女（追杀者）+ 三件祭品 + 灯油坛 + 还愿木桶
+    if(ghost)sprites.push({x:ghost.x,y:ghost.y,img:girlImg,scale:1.08,bob:true,phase:0,alpha:0.95,squash:ghost.state==='CHASE'?0.84:1});
+    for(const o of offerings){if(!o.taken)sprites.push({x:o.x,y:o.y,img:o.img,scale:o.scale,bob:true,phase:o.x});}
+    for(const j of oilJars){if(j.lvl===5&&!j.taken)sprites.push({x:j.x,y:j.y,img:jarImg,scale:0.8});}
+    if(bucketSpawned)sprites.push({x:WELL_X,y:WELL_Y+1.15,img:bucketImg,scale:0.8,bob:true,phase:1});
+  }
   if(faceFar)sprites.push({x:faceFar.x,y:faceFar.y,img:faceImg(),scale:1.7,alpha:0.8+0.2*Math.sin(tSec*8)});
   sprites.sort((a,b)=>(Math.pow(b.x-player.x,2)+Math.pow(b.y-player.y,2))-(Math.pow(a.x-player.x,2)+Math.pow(a.y-player.y,2)));
   const invDet=1/(player.planeX*player.dirY-player.dirX*player.planeY);
@@ -1632,7 +1812,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       ctx.save();
       ctx.globalCompositeOperation='lighter';
       const gc=s.coldGlow?'170,225,255':'255,200,120';   // 第二章灯笼=幽蓝鬼火
-      const gf=chapter===3?(0.25+0.75*oil/100):1;        // 第三章：灯光随灯油减弱
+      const gf=(chapter===3||chapter===4)?(0.25+0.75*oil/100):1;    // 第三章/终章：灯光随灯油减弱
       const gr=ctx.createRadialGradient(sx,VH/2-hh/2+bobY+yOff,2,sx,VH/2-hh/2+bobY+yOff,hh*1.1);
       gr.addColorStop(0,'rgba('+gc+','+(0.28*s.glow*fog*gf).toFixed(3)+')');
       gr.addColorStop(1,'rgba('+gc+',0)');
@@ -1667,6 +1847,11 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   }else if(lvl===3){
     ctx.globalCompositeOperation='multiply';
     ctx.fillStyle='rgb(214,219,206)';   // 提亮：灰绿朽败
+    ctx.fillRect(0,0,VW,VH);
+    ctx.globalCompositeOperation='source-over';
+  }else if(lvl===5){
+    ctx.globalCompositeOperation='multiply';
+    ctx.fillStyle='rgb(186,203,214)';   // 终章：月下深水蓝
     ctx.fillRect(0,0,VW,VH);
     ctx.globalCompositeOperation='source-over';
   }
@@ -1730,12 +1915,17 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   }
   ctx.fillStyle=vgCache;ctx.fillRect(0,0,VW,VH);
 
-  // ---- 第二章：追击警示红晕 / 柜缝遮罩 / 屏息脉动 ----
-  if(chapter===2&&ghost&&ghost.state==='CHASE'&&state==='playing'){
+  // ---- 第二章/终章：追击警示红晕 ----
+  if((chapter===2||chapter===4)&&ghost&&ghost.state==='CHASE'&&state==='playing'){
     const a=(0.16+0.08*Math.sin(tSec*7))*1;
     const cg=ctx.createRadialGradient(VW/2,VH/2,VH*0.25,VW/2,VH/2,VH*0.85);
     cg.addColorStop(0,'rgba(120,10,10,0)');cg.addColorStop(1,'rgba(120,10,10,'+a.toFixed(3)+')');
     ctx.fillStyle=cg;ctx.fillRect(0,0,VW,VH);
+  }
+  // ---- 终章：井歌期间的水色脉动 ----
+  if(chapter===4&&songActive>0&&state==='playing'){
+    const sa=Math.min(1,songActive)*(0.05+0.035*Math.sin(tSec*2.1));
+    ctx.fillStyle='rgba(26,74,96,'+Math.max(0,sa).toFixed(3)+')';ctx.fillRect(0,0,VW,VH);
   }
   if(hiding){
     ctx.fillStyle='rgba(4,2,1,0.96)';
@@ -1754,7 +1944,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     const a=(1-sanity/45)*0.5*(0.6+0.4*Math.sin(tSec*6));
     ctx.fillStyle='rgba(140,10,10,'+a.toFixed(3)+')';ctx.fillRect(0,0,VW,VH);
   }
-  if(chapter===3&&state==='playing'){
+  if((chapter===3||chapter===4)&&state==='playing'){
     // 灯油将尽 → 世界随之暗下去
     const dk=(1-oil/100)*0.62;
     if(dk>0.01){ctx.fillStyle='rgba(2,2,1,'+dk.toFixed(3)+')';ctx.fillRect(0,0,VW,VH);}
@@ -1790,11 +1980,15 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         ctx.fillText('老家 · 村口老井在北面',12,18);
       }else if(chapter===2){
         ctx.fillText('送还　'+ritualN+' / 6',28,VH-20);
-        ctx.fillText('旧宅 · 大堂在中央',12,18);
+        ctx.fillText('旧宅 · 大堂在中央'+(grabs>0?' · 余 '+(3-grabs):''),12,18);
       }else if(chapter===3){
         ctx.fillText('灯油　'+Math.round(oil)+' %',28,VH-20);
         ctx.fillText('牌位　'+(tabsPlaced+tabsCarried)+' / 3'+(tabsCarried>0?'（怀中 '+tabsCarried+'）':''),28,VH-40);
-        ctx.fillText('义庄 · 纸人畏目',12,18);
+        ctx.fillText('义庄 · 纸人畏目'+(grabs>0?' · 余 '+(3-grabs):''),12,18);
+      }else if(chapter===4){
+        ctx.fillText('沉愿　'+offerSunk+' / 3',28,VH-20);
+        ctx.fillText('灯油　'+Math.round(oil)+' %',28,VH-40);
+        ctx.fillText((songActive>0?'夜村 · 井里在唱歌……':'夜村 · 井在北面')+(grabs>0?' · 余 '+(3-grabs):''),12,18);
       }else{
         ctx.fillText('纸人偶  '+dollsTaken+' / 6',28,VH-20);
         ctx.fillText('钥匙　'+(hasKey?'有':'无'),28,VH-40);
@@ -1839,6 +2033,16 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
           else if(fireSpawned&&Math.hypot(player.x-FIRE_X,player.y-FIRE_Y)<1.5)hint='E 点燃堂前之火';
         }
       }
+      else if(chapter===4){
+        const nw=Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.8;
+        if(bucketSpawned&&nw)hint='E 把木桶沉入井底';
+        else if(carried.length&&nw)hint='E 沉下「'+CARRY_NAMES[carried[carried.length-1]]+'」';
+        else{
+          for(const o of offerings){if(!o.taken&&Math.hypot(o.x-player.x,o.y-player.y)<1.3){hint=o.hint;break;}}
+          if(!hint)for(const j of oilJars){if(j.lvl===5&&!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<1.3){hint='E 收起灯油';break;}}
+          if(!hint)hint=carried.length?('带着祭品去井台（北面）· 怀中 '+carried.length+' 件'):('找齐三件祭品 ('+offerSunk+'/3)· 别让灯灭了');
+        }
+      }
       else if(ft==='D')hint=!hasKey?'大门锁着……需要钥匙':(dollsTaken>=6?'E 打开大门':'大门锁着……纸人偶未找齐 ('+dollsTaken+'/6)');
       else if(ft==='U')hint=lvl===0?'E 进入地下室':'E 回到一层';
       else if(!keyItem.taken&&keyItem.lvl===lvl&&Math.hypot(keyItem.x-player.x,keyItem.y-player.y)<1.4)hint='E 捡起钥匙';
@@ -1863,11 +2067,12 @@ function updateHud(){
   const mh=document.getElementById('mobileHud');
   if(state!=='playing'||paused){mh.style.display='none';return;}
   mh.style.display='flex';
-  const isCh0=chapter===0,isCh2=chapter===2,isCh3=chapter===3;
-  document.getElementById('hudLevel').textContent=isCh0?'老家':(isCh2?'旧宅':(isCh3?'义庄':(lvl===0?'一层':'地下室')));
-  document.getElementById('hudDolls').textContent=isCh0?'差事 '+errands+'/3':(isCh2?'送还 '+ritualN+'/6':(isCh3?'牌位 '+(tabsPlaced+tabsCarried)+'/3':'纸人偶 '+dollsTaken+'/6'));
+  const isCh0=chapter===0,isCh2=chapter===2,isCh3=chapter===3,isCh4=chapter===4;
+  document.getElementById('hudLevel').textContent=isCh0?'老家':(isCh2?'旧宅':(isCh3?'义庄':(isCh4?'夜村':(lvl===0?'一层':'地下室'))));
+  const gl=grabs>0?' · 余'+(3-grabs):'';   // 移动端：剩余挣扎次数
+  document.getElementById('hudDolls').textContent=isCh0?'差事 '+errands+'/3':(isCh2?'送还 '+ritualN+'/6'+gl:(isCh3?'牌位 '+(tabsPlaced+tabsCarried)+'/3'+gl:(isCh4?'沉愿 '+offerSunk+'/3'+gl:'纸人偶 '+dollsTaken+'/6')));
   const hk=document.getElementById('hudKey');
-  hk.textContent=isCh3?('灯油 '+Math.round(oil)+'%'):('钥匙 '+(hasKey?'有':'无'));
+  hk.textContent=(isCh3||isCh4)?('灯油 '+Math.round(oil)+'%'):('钥匙 '+(hasKey?'有':'无'));
   hk.style.display=(isCh2)?'none':'';
   document.getElementById('hudSanity').style.width=clamp(sanity,0,100)+'%';
 }
@@ -1905,9 +2110,11 @@ function resetChapterState(){
   keyItem.taken=false;
   for(const d of dolls)d.taken=false;
   ritualN=0;ghost=null;hiding=false;hideLockT=0;fireSpawned=false;hideFear=0;
-  lvl=chapter===0?4:(chapter===1?0:(chapter===2?2:3));
+  grabs=0;grabGrace=0;paperDazeT=0;
+  lvl=chapter===0?4:(chapter===1?0:(chapter===2?2:(chapter===4?5:3)));
   if(chapter===2&&MAPS.length>2)spawnGhost();
   if(chapter===3&&MAPS.length>3)resetCh3State();
+  if(chapter===4&&MAPS.length>5){resetCh4State();spawnGhost();}
   if(chapter===0){errands=0;for(const t of ch0Tasks)t.done=false;nextBird=timeSec+1.2;}
   const s=spawns[lvl]||spawns[0];
   player.x=s.x;player.y=s.y;player.dirX=0;player.dirY=-1;player.planeX=0.66;player.planeY=0;
@@ -1920,7 +2127,9 @@ function beginPlay(){
   document.getElementById('title').style.display='none';
   document.getElementById('dead').style.display='none';   // 第二章原地重开：必须收起结算层，否则会挡住全部点击
   document.getElementById('win').style.display='none';
+  document.getElementById('intro4').style.display='none';
   if(chapter===2)setTimeout(()=>{if(state==='playing')toastMsg('推开门——这里不是你的家。是那栋老宅。');},400);
+  if(chapter===4)setTimeout(()=>{if(state==='playing')toastMsg('村子还是那个村子。只是夜太静了——\n静得能听见井里的水声。');},400);
   document.getElementById('intro3').style.display='none';
   showLookHint();
   canvas.focus();
@@ -1931,7 +2140,7 @@ function startChapter(ch,silent){
   if(AC&&AC.state==='suspended')AC.resume();
   chapter=ch;
   resetChapterState();
-  const iv=document.getElementById(chapter===0?'intro0':(ch===3?'intro3':'intro2'));
+  const iv=document.getElementById(chapter===0?'intro0':(chapter===4?'intro4':(chapter===3?'intro3':'intro2')));
   if((ch===0||ch>1)&&MAPS.length>ch&&!silent){
     // 第二/三章：先播开场字幕，点击后开始
     state='intro';
@@ -1946,6 +2155,8 @@ document.getElementById('ch0Btn').addEventListener('click',e=>{e.stopPropagation
 document.getElementById('intro0').addEventListener('click',()=>{if(state==='intro')beginPlay();});
 document.getElementById('ch2Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(2);});
 document.getElementById('ch3Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(3);});
+document.getElementById('ch4Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(4);});
+document.getElementById('intro4').addEventListener('click',()=>{if(state==='intro')beginPlay();});
 document.getElementById('intro3').addEventListener('click',()=>{if(state==='intro')beginPlay();});
 document.getElementById('intro2').addEventListener('click',()=>{if(state==='intro')beginPlay();});
 document.getElementById('pause').addEventListener('click',e=>{
@@ -1953,13 +2164,15 @@ document.getElementById('pause').addEventListener('click',e=>{
   closePause();
 });
 // ---- 暂停菜单：打开时填充进度与手记 ----
-const CH_NAMES={1:'第一章 · 生还',2:'第二章 · 归宅',3:'第三章 · 义庄'};
+const CH_NAMES={0:'第〇章 · 夏日',1:'第一章 · 生还',2:'第二章 · 归宅',3:'第三章 · 义庄',4:'终章 · 封井'};
 function chProgressText(){
   const m=Math.floor((timeSec-startTime)/60),ss=Math.floor((timeSec-startTime)%60);
   let goal='';
   if(chapter===1)goal='纸人偶 <b>'+dollsTaken+' / 6</b>　·　钥匙 <b>'+(hasKey?'已到手':'未找到')+'</b>';
   else if(chapter===2)goal='送还人偶 <b>'+ritualN+' / 6</b>'+(fireSpawned?'　·　<b>堂前之火已现</b>':'');
-  else goal='牌位安放 <b>'+tabsPlaced+' / 3</b>'+(tabsCarried>0?'（怀中 '+tabsCarried+'）':'')+'　·　灯油 <b>'+Math.round(oil)+'%</b>';
+  else if(chapter===3)goal='牌位安放 <b>'+tabsPlaced+' / 3</b>'+(tabsCarried>0?'（怀中 '+tabsCarried+'）':'')+'　·　灯油 <b>'+Math.round(oil)+'%</b>';
+  else if(chapter===4)goal='沉愿 <b>'+offerSunk+' / 3</b>'+(carried.length>0?'（怀中 '+carried.length+' 件）':'')+(bucketSpawned?'　·　<b>木桶已现</b>':'')+'　·　灯油 <b>'+Math.round(oil)+'%</b>';
+  else goal='差事 <b>'+errands+' / 3</b>'+(errands>=3?'　·　<b>去村口老井</b>':'');
   return '当前：<b>'+CH_NAMES[chapter]+'</b><br>目标：'+goal+'<br>本局用时 <b>'+m+'分'+('0'+ss).slice(-2)+'秒</b>';
 }
 function refreshJournal(){
