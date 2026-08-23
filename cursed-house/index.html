@@ -24,7 +24,7 @@
 <style>
 html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:none;font-family:"Microsoft YaHei","Noto Sans SC","PingFang SC","Hiragino Sans GB","Heiti SC","Noto Serif CJK SC",sans-serif;}
 body{display:flex;align-items:center;justify-content:center;}
-#c{image-rendering:pixelated;position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;outline:none;}
+#c{image-rendering:pixelated;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;touch-action:none;outline:none;}
 .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfcfcf;z-index:10;text-align:center;user-select:none;}
 .scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
 .overlay>*{position:relative;z-index:1;}
@@ -81,6 +81,7 @@ body{display:flex;align-items:center;justify-content:center;}
 #mobileHud .bar{width:130px;height:11px;border:1px solid rgba(225,225,225,0.5);border-radius:6px;overflow:hidden;background:rgba(0,0,0,0.5);}
 #mobileHud .bar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,rgb(70,150,70),rgb(190,150,60),rgb(190,50,45));transition:width .2s;}
 #stick{position:fixed;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.12),rgba(255,255,255,0.03));border:2px solid rgba(255,255,255,0.2);transform:translate(-50%,-50%);display:none;pointer-events:none;}
+#touch::after{content:'';position:absolute;left:calc(26px + env(safe-area-inset-left));bottom:calc(96px + env(safe-area-inset-bottom));width:112px;height:112px;border-radius:50%;border:2px dashed rgba(255,255,255,0.16);pointer-events:none;}
 #stickKnob{position:fixed;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,rgba(225,225,225,0.55),rgba(170,170,170,0.25));transform:translate(-50%,-50%);display:none;pointer-events:none;}
 .tbtn{position:fixed;z-index:7;pointer-events:auto;width:66px;height:66px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,0.28);background:rgba(18,18,20,0.55);color:#ececec;font-size:13px;line-height:1.15;font-family:inherit;display:flex;align-items:center;justify-content:center;text-align:center;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
 .tbtn:active,.tbtn.on{background:rgba(120,24,24,0.7);transform:scale(0.94);}
@@ -106,6 +107,7 @@ body{display:flex;align-items:center;justify-content:center;}
 #ch1Btn{--ac:#c98a3a;--ac-glow:rgba(201,138,58,0.35);}    /* 第一章 · 烛火 */
 #ch2Btn{--ac:#8fb6d9;--ac-glow:rgba(143,182,217,0.35);}   /* 第二章 · 月青 */
 #ch3Btn{--ac:#93a87e;--ac-glow:rgba(147,168,126,0.35);}   /* 第三章 · 荒草 */
+#ch0Btn{--ac:#e0b04a;--ac-glow:rgba(240,205,95,0.42);}    /* 第〇章 · 盛夏 */
 #intro2{background:#000;}
 #intro2 p{max-width:34em;}
 .goCh2{cursor:pointer;display:inline-block;padding:9px 22px;border:1px solid rgba(232,216,176,0.55);color:#e8d8b0;font-size:min(3.4vw,16px);letter-spacing:0.3em;background:rgba(20,14,8,0.6);user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
@@ -199,11 +201,21 @@ body{display:flex;align-items:center;justify-content:center;}
   雨夜，你被困在一栋被诅咒的老宅里。<br>找到出路逃出去。小心……<span style="color:#a01212">它</span>也在找你。</p>
   <p class="pickHint">—— 择 一 章 · 入 局 ——</p>
   <div class="chapters">
+    <div class="chbtn" id="ch0Btn"><span class="num">第〇章</span><span class="name">夏日</span><small>前传 · 风和日丽<br>帮阿婆做三件事</small></div>
     <div class="chbtn" id="ch1Btn"><span class="num">第壹章</span><span class="name">生还</span><small>老宅 · 探索收集<br>集齐纸人偶 寻钥逃生</small></div>
     <div class="chbtn" id="ch2Btn"><span class="num">第贰章</span><span class="name">归宅</span><small>旧宅 · 潜行仪式<br>送还人偶 点燃堂前之火</small></div>
     <div class="chbtn" id="ch3Btn"><span class="num">第叁章</span><span class="name">义庄</span><small>废墟 · 灯油纸人<br>请回牌位 天明前离开</small></div>
   </div>
   <p id="ctrlHint" style="margin-top:22px;font-size:min(2.6vw,12px);color:#6f6a60;">WASD 移动 / 鼠标 视角 / E 互动 / M 静音</p>
+</div>
+
+<div id="intro0" class="overlay hidden" style="background:linear-gradient(180deg,#9ecff0 0%,#c8e4ee 46%,#eaf2d8 100%);">
+  <h2 style="color:#6a5a2a;">第 〇 章</h2>
+  <h1 style="font-size:min(9vw,60px);letter-spacing:0.4em;color:#d88a20;text-shadow:0 2px 22px rgba(255,225,130,0.95),0 0 60px rgba(255,200,80,0.5);">夏 日</h1>
+  <p style="color:#3e4434;text-shadow:none;">数年前的七月，你回乡下的老家过暑假。<br>天蓝得发亮，蝉声把整个村子填得满满的。<br>阿婆在院里晒梅子，鸡在墙根下刨土，风里都是盐和青草的味道。</p>
+  <p style="color:#6a5628;text-shadow:none;">阿婆说：「帮我做三件事——收梅子、喂鸡、<br>把晾着的纸人偶收进屋。做完就准你去村口玩。」</p>
+  <p style="color:#7a7040;text-shadow:none;">晾衣绳上挂着几只纸人偶，在日头底下轻轻晃。<br>……为什么要晒纸人偶？你没有多想。</p>
+  <p class="blink" style="color:#8a6418;text-shadow:none;">点击开始</p>
 </div>
 
 <div id="intro2" class="overlay hidden">
@@ -320,13 +332,21 @@ function computeSize(){
   const w=window.innerWidth||document.documentElement.clientWidth||480;
   const h=window.innerHeight||document.documentElement.clientHeight||300;
   const aspect=w/h;
+  // 短边基准（横屏压高度、竖屏压宽度），再按精确比例展开——不截断边长，绝不变形
   let vw,vh;
-  if(aspect>=1){vh=300;vw=Math.round(300*aspect);if(vw>640)vw=640;}
-  else{vw=360;vh=Math.round(vw/aspect);if(vh>780)vh=780;}
-  return [vw,vh];
+  if(aspect>=1){vh=290;vw=290*aspect;}
+  else{vw=340;vh=340/aspect;}
+  // 像素预算上限：超出时整体等比缩小（手机性能友好），比例保持不变
+  const coarse=(navigator.maxTouchPoints>0)||('ontouchstart' in window);
+  const budget=coarse?220000:190000;
+  const px=vw*vh;
+  if(px>budget){const k=Math.sqrt(budget/px);vw*=k;vh*=k;}
+  return [Math.max(180,Math.round(vw)),Math.max(140,Math.round(vh))];
 }
 function setupBuffers(){
-  [VW,VH]=computeSize();
+  const nw=computeSize();
+  if(nw[0]===VW&&nw[1]===VH&&imgData)return;   // 尺寸没变就不重建（移动端地址栏伸缩会狂发 resize）
+  VW=nw[0];VH=nw[1];
   canvas.width=VW;canvas.height=VH;
   world.width=VW;world.height=VH;
   imgData=wctx.createImageData(VW,VH);
@@ -424,6 +444,29 @@ const MAPS=[
 "#.......B........B.......#",
 "##########################",
 ],
+// 第〇章 · 夏日：老家村子，开阔晒场，J=篱笆/晾绳架，## = 厢房与棚屋
+[
+"########################",
+"#.......##........##...#",
+"#.......##........##...#",
+"#......................#",
+"#..JJ..............JJ..#",
+"#......................#",
+"#...##............##...#",
+"#...##............##...#",
+"#......................#",
+"#.......JJ......JJ.....#",
+"#......................#",
+"#..##...............##.#",
+"#..##...............##.#",
+"#......................#",
+"#.........JJ..........#",
+"#......................#",
+"#...##............##...#",
+"#...##............##...#",
+"#......................#",
+"########################",
+],
 ];
 
 let lvl=0;
@@ -452,6 +495,20 @@ const darkwood=genTex((x,y)=>{
   if(plank===1){v+=10;}
   if(snoise(x*1.4,y*3.2)>0.8){v+=12;}
   return pack(clamp(v*0.9,0,255),clamp(v*0.75,0,255),clamp(v*0.6,0,255));
+});
+// 第〇章 · 夏日材质：米黄土墙 / 浅色木板
+const sunPlaster=genTex((x,y)=>{
+  let v=176+snoise(x*0.18,y*0.22)*44;
+  if(hashInt(x*11,y*7)%37===0)v-=14;               // 小孔洞/砂粒
+  if(y%64<2||x%64<2)v*=0.94;                        // 淡淡的夯层缝
+  return pack(clamp(v,0,255),clamp(v*0.93,0,255),clamp(v*0.76,0,255));
+});
+const sunWood=genTex((x,y)=>{
+  const plank=y%16;
+  let v=148+snoise(x*0.2,y*0.8)*46+(snoise(x*1.3,y*2.1)-0.5)*20;
+  if(plank===0||plank===15){v*=0.72;}
+  else if(plank===1||plank===14){v+=10;}
+  return pack(clamp(v,0,255),clamp(v*0.82,0,255),clamp(v*0.6,0,255));
 });
 const shoji=genTex((x,y)=>{
   const d=Math.hypot(x-32,y-28)/46;
@@ -560,6 +617,7 @@ case 'B':return book;
 case 'C':return wardrobe;
 case 'X':return bloodTex;
 default:{const h=(x*7+y*13+(x*y)%5)%100;
+  if(lvl===4)return h<38?sunPlaster:h<56?sunWood:h<72?shoji:h<88?sunPlaster:sunWood;   // 第〇章：干净土墙+浅木，阳光味
   if(lvl===2)return h<14?wood:h<44?darkwood:h<58?shoji:h<72?redwood:h<80?bloodTex:h<92?stone:redwood;   // 第二章：破败混色
   if(lvl===3)return h<30?stone:h<46?darkwood:h<60?bloodTex:h<72?shoji:h<86?redwood:stone;              // 第三章：义庄石木朽败
   return h<55?wood:h<78?darkwood:h<92?shoji:redwood;}}}
@@ -666,8 +724,25 @@ const decor=[
 {x:16.9,y:12.5,lvl:3,img:skeletonImg,scale:1.15},
 {x:2.6,y:10.5,lvl:3,img:skeletonImg,scale:1.25},
 ];
+// ---- 第〇章 · 夏日陈设（先声明图，再并入 decor）----
+const trayImg=svgSprite(44,18,'<defs><linearGradient id="ty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8bc82"/><stop offset="1" stop-color="#a8863e"/></linearGradient></defs><ellipse cx="22" cy="15" rx="20" ry="4" fill="#7c6228"/><ellipse cx="22" cy="12.5" rx="20" ry="5.5" fill="url(#ty)"/><ellipse cx="22" cy="12.5" rx="14.5" ry="3.8" fill="none" stroke="#8a6c30" stroke-width="1"/><circle cx="15" cy="11" r="2.6" fill="#b03826"/><circle cx="21" cy="10.2" r="2.6" fill="#9a2818"/><circle cx="27" cy="11.2" r="2.6" fill="#c04838"/><circle cx="24" cy="12.6" r="2.4" fill="#a03020"/><circle cx="17.5" cy="12.8" r="2.4" fill="#b84030"/>');
+const chickImg=svgSprite(36,34,'<ellipse cx="18" cy="31" rx="12" ry="2.6" fill="rgba(60,50,20,0.35)"/><path d="M9 26 Q6 16 13 13 Q12 7 18 8 L19 12 Q27 10 29 17 Q31 25 25 28 Z" fill="#f2ecdc" stroke="#c8ba9a" stroke-width="1"/><circle cx="17" cy="11" r="1.2" fill="#241c10"/><path d="M12.5 9 l-4 1.6 4 1.6 Z" fill="#e0a028"/><path d="M13 6 q2 -3 4.5 -1 l-1.5 3.5 Z" fill="#c03828"/><path d="M23 28 l3 4 M20 28.5 l2 4" stroke="#e0a028" stroke-width="2"/>');
+decor.push(
+{x:11.5,y:2.6,lvl:4,img:wellImg,scale:1.35},               // 村口老井（结局点）
+{x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},                 // 屋檐下的水缸
+{x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}                // 空竹匾（装饰）
+);
 
-const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5}];   // 第三章出生在西大门内
+const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.5,y:17.5}];   // 第〇章出生在南院晒场
+
+// ---- 第〇章 · 夏日：帮阿婆做三件事，最后去村口老井打水 ----
+const WELL_X=11.5,WELL_Y=2.6;      // 村口老井
+let errands=0,nextBird=0;
+const ch0Tasks=[
+  {x:5.5,y:8.5,img:trayImg,scale:0.75,hint:'E 收起竹匾里晒着的梅子',msg:'梅子收进屋了。\n阿婆在檐下笑：「好孩子。」',done:false},
+  {x:18.5,y:12.5,img:chickImg,scale:0.85,hint:'E 撒一把谷子喂鸡',msg:'鸡群咕咕地围上来啄食。\n日头晒在背上，暖烘烘的。',done:false},
+  {x:7.5,y:15.5,img:dollImg,scale:1.05,hint:'E 把晾着的纸人偶收进屋',msg:'纸人偶轻得不对劲……像里面什么都没有。\n袖口拂过你的手背，凉凉的。',done:false},
+];
 
 // ---- 剧情纸条（拾取后进入暂停菜单「手记」，localStorage 持久化）----
 const noteImg=svgSprite(30,22,'<ellipse cx="15" cy="19.5" rx="9" ry="2" fill="rgba(0,0,0,0.35)"/><path d="M4 4 L26 3 L25 17 L3 18 Z" fill="#e6ddc4" stroke="#b8ac8c" stroke-width="1"/><path d="M7 8 h14 M7 11 h14 M7 14 h9" stroke="#8a7f66" stroke-width="1" opacity="0.8"/><circle cx="23" cy="15" r="2.2" fill="#a01212" opacity="0.85"/>');
@@ -683,7 +758,11 @@ const NOTES=[
 // 第三章 · 义庄（lvl 3）
 {lvl:3,x:11.5,y:11.5,title:'停尸堂 · 点名簿',text:'七月十二，收无名女尸一具，约六岁，溺亡。报官候领。至九月，无人来认。'},
 {lvl:3,x:4.5,y:16.5,title:'西厢 · 守灯人手记',text:'长明灯不可灭。灯灭则纸人夜行。纸人畏目——你看着它们，它们便只是纸。'},
-{lvl:3,x:19.5,y:15.5,title:'东厢 · 石碑拓片',text:'阖村具名：井是我们害的。盐是我们的错。愿以六偶为替，代代守灯，换孩子归家。'}
+{lvl:3,x:19.5,y:15.5,title:'东厢 · 石碑拓片',text:'阖村具名：井是我们害的。盐是我们的错。愿以六偶为替，代代守灯，换孩子归家。'},
+// 第〇章 · 夏日（lvl 4）—— 一切的开始
+{lvl:4,x:17.5,y:7.5,title:'墙根 · 炭笔涂鸦',text:'六个纸人偶手拉手排排坐。第七个只画了一半，炭笔就断在地上——像被人一把拽走了。'},
+{lvl:4,x:6.5,y:12.5,title:'屋檐 · 晒偶的规矩',text:'晒偶要晒足三日，日头越毒越好。纸偶吃光，吃够了一百个日头，就能替人受灾。'},
+{lvl:4,x:14.5,y:16.5,title:'村口老井 · 木牌',text:'井水敬神。不可投石，不可照影，不可应声。——若听见井里有歌，那不是唱歌的人。'}
 ];
 NOTES.forEach((n,i)=>n.i=i);
 let notesFound=[];
@@ -701,8 +780,8 @@ function tryPickupNote(){
   }
   return false;
 }
-const reachableByLevel=[[],[],[],[]];
-for(let L=0;L<4;L++){
+const reachableByLevel=[[],[],[],[],[]];
+for(let L=0;L<5;L++){
   const sx=Math.floor(spawns[L].x),sy=Math.floor(spawns[L].y);
   const t=tiles[L];
   const seen=new Set([sx+','+sy]);
@@ -884,6 +963,18 @@ function at(){return AC.currentTime;}
 function noiseDur(dur){const s=AC.createBufferSource();s.buffer=noiseBuf;s.start(at()+0.01,Math.random(),dur);return s;}
 function footstep(){const t=at();const s=noiseDur(0.11);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=300;const g=AC.createGain();g.gain.setValueAtTime(0.001,t);g.gain.linearRampToValueAtTime(0.22,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);s.connect(lp);lp.connect(g);g.connect(master);s.start(t);const o=AC.createOscillator();o.frequency.value=65+Math.random()*10;o.type='sine';const og=AC.createGain();og.gain.setValueAtTime(0.0001,t);og.gain.linearRampToValueAtTime(0.08,t+0.01);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);o.connect(og);og.connect(master);o.start(t);o.stop(t+0.12);}
 function beat(){const t=at();for(let i=0;i<2;i++){const tt=t+i*0.32;const o=AC.createOscillator();o.frequency.value=52;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.5,tt+0.015);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.16);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.2);}}
+function birdChirp(){const t=at();   // 第〇章：麻雀两三声，明亮跳跃
+  const base=2400+Math.random()*900;
+  for(let i=0;i<2+((Math.random()*2)|0);i++){
+    const tt=t+i*(0.09+Math.random()*0.06);
+    const o=AC.createOscillator();o.type='sine';
+    o.frequency.setValueAtTime(base+Math.random()*500,tt);
+    o.frequency.exponentialRampToValueAtTime(base*1.3,tt+0.05);
+    const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);
+    g.gain.linearRampToValueAtTime(0.05,tt+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,tt+0.09);
+    o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.12);
+  }}
 function cricket(){const t=at();for(let i=0;i<3;i++){const tt=t+i*0.11;const o=AC.createOscillator();o.frequency.value=4200+Math.random()*600;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.03,tt+0.012);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.05);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.07);}}
 function whisper(){const t=at();const s=noiseDur(2.4);const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1900;bp.Q.value=7;const g=AC.createGain();const tr=AC.createOscillator();tr.frequency.value=11;const tg=AC.createGain();tg.gain.value=0.05;tr.connect(tg);tg.connect(g.gain);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.14,t+0.25);g.gain.setValueAtTime(0.14,t+1.5);g.gain.exponentialRampToValueAtTime(0.0001,t+2.4);s.connect(bp);bp.connect(g);if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=rand(-0.7,0.7);g.connect(p);p.connect(master);}else{g.connect(master);}s.start(t);tr.start(t);tr.stop(t+2.5);}
 function knock(){const t=at();for(let i=0;i<3;i++){const tt=t+i*0.24;const o=AC.createOscillator();o.frequency.value=72;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.42,tt+0.008);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.12);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.14);const s=noiseDur(0.08);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=480;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,tt);sg.gain.linearRampToValueAtTime(0.3,tt+0.006);sg.gain.exponentialRampToValueAtTime(0.0001,tt+0.09);s.connect(lp);lp.connect(sg);sg.connect(master);s.start(tt);}}
@@ -1216,6 +1307,25 @@ function switchLevel(){
 
 function interact(){
   if(tryPickupNote())return;   // 纸条拾取：所有章节通用，最高优先级
+  // ---- 第〇章：帮阿婆做三件事 → 村口老井打水（结局） ----
+  if(chapter===0){
+    for(const t of ch0Tasks){
+      if(!t.done&&Math.hypot(t.x-player.x,t.y-player.y)<1.15){
+        t.done=true;errands++;
+        dollPickup();flashWhite=0.12;lastScareAt=timeSec;
+        toastMsg(t.msg);
+        if(errands>=3)setTimeout(()=>{if(state==='playing')toastMsg('三件事都做完了。阿婆说：去村口老井打一桶水回来吧。');},2600);
+        return;
+      }
+    }
+    if(errands>=3&&Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.7){
+      // 先扬后抑：晴日井边，井底轻轻回握
+      whisper();
+      seq={mode:'win',t:0};winSound();
+      return;
+    }
+    return;
+  }
   // ---- 第三章：请牌位 / 收灯油 / 神龛安放 / 大门 ----
   if(chapter===3){
     const fx3=Math.floor(player.x+player.dirX*0.55),fy3=Math.floor(player.y+player.dirY*0.55);
@@ -1294,7 +1404,10 @@ function update(dt){
       const m=(timeSec-startTime)/60|0,ss=(timeSec-startTime)%60|0;
       const winEl=document.getElementById('win'),h1=winEl.querySelector('h1');
       document.getElementById('goCh2').classList.toggle('hidden',chapter!==1);
-      if(chapter===1){
+      if(chapter===0){
+        h1.textContent='夏 终';
+        document.getElementById('winstats').textContent='水桶沉下去的一瞬，井底有什么轻轻回握了一下你的手。 ——那年夏天之后，你再没回过村子。';
+      }else if(chapter===1){
         h1.textContent='生 还';
         document.getElementById('winstats').textContent='你冲出了大门。  用时 '+m+'分'+('0'+ss).slice(-2)+'秒  纸人偶 '+dollsTaken+' 体';
         saveUnlock();refreshChBtns();
@@ -1333,7 +1446,13 @@ function update(dt){
     if(timeSec-lastScareAt>10&&sanity<100)sanity=Math.min(100,sanity+2.5*dt);
     if(sanity<70&&timeSec>=nextHeart){nextHeart=timeSec+0.55+0.85*(sanity/70);beat();}
     if(timeSec>=nextCricket){nextCricket=timeSec+1.8+Math.random()*3.5;cricket();}
-    if(timeSec>=nextEventAt){nextEventAt=timeSec+3.5+Math.random()*6.5*(1.15-tension());fireEvent();}
+    if(chapter===0){
+      // 第〇章：只有鸟鸣与蝉声，没有惊吓事件
+      if(timeSec>=nextBird){nextBird=timeSec+2.5+Math.random()*4;birdChirp();}
+      if(timeSec-lastScareAt>10&&sanity<100)sanity=100;
+    }else{
+      if(timeSec>=nextEventAt){nextEventAt=timeSec+3.5+Math.random()*6.5*(1.15-tension());fireEvent();}
+    }
   }
   if(faceFar){faceFar.t-=dt;if(faceFar.t<=0)faceFar=null;}
   if(flickerEvent>0)flickerEvent-=dt;
@@ -1344,9 +1463,14 @@ function update(dt){
   if(toast.t>0)toast.t-=dt;
 }
 
-const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34]};
+const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34],g:[158,176,92],p:[198,172,122]};   // g/p：第〇章草地/土路
 function floorStyle(x,y){
   const ix=Math.floor(x),iy=Math.floor(y);
+  if(lvl===4){   // 第〇章：青草晒场 + 中央土路
+    if(Math.abs(ix-11.5)<=1)return 'p';
+    if(iy>=3&&iy<=16&&hashInt(ix*13,iy*29)%23===0)return 'p';
+    return 'g';
+  }
   if(lvl===1)return hashInt(ix*2,iy*3)%9===0?'D':'S';
   if(lvl===2){   // 第二章：大堂铺石板，其余木地板
     if(ix>=8&&ix<=17&&iy>=9&&iy<=14)return 'S';
@@ -1364,12 +1488,16 @@ function floorStyle(x,y){
 }
 
 function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度，基线提亮；随机抖动减到 0.02
-  const flicker=(0.95+0.045*Math.sin(tSec*4.1)+Math.random()*0.02)*(flickerEvent>0?0.55:1)*(lvl===1?0.93:1);
+  const flicker=lvl===4?1:(0.95+0.045*Math.sin(tSec*4.1)+Math.random()*0.02)*(flickerEvent>0?0.55:1)*(lvl===1?0.93:1);   // 第〇章白昼恒亮
   const horizon=VH>>1;
   const hw=VH/2;
   const tl=tiles[lvl],tlW=tl[0].length,tlH=tl.length;
   for(let y=0;y<horizon;y++){const tt=y/horizon;
-    if(lvl===2){const v=(5+26*tt)|0;buf32.fill(pack((v*0.75)|0,(v*0.92)|0,Math.min(255,(v*1.35+8)|0)),y*VW,y*VW+VW);}   // 第二章：冷青夜色
+    if(lvl===4){   // 第〇章：盛夏晴空，湛蓝→地平线暖白
+      const r=(120+115*tt)|0,g=(185+52*tt)|0,b=(235+(255-235)*tt)|0;
+      buf32.fill(pack(r,g,Math.min(255,b)),y*VW,y*VW+VW);
+    }
+    else if(lvl===2){const v=(5+26*tt)|0;buf32.fill(pack((v*0.75)|0,(v*0.92)|0,Math.min(255,(v*1.35+8)|0)),y*VW,y*VW+VW);}   // 第二章：冷青夜色
     else if(lvl===3){const v=(6+22*tt)|0;buf32.fill(pack(Math.min(255,(v*1.05)|0),(v*1.02)|0,(v*0.8)|0),y*VW,y*VW+VW);} // 第三章：灰绿朽败
     else{const v=(7+32*tt)|0;buf32.fill(pack(v,v,Math.min(255,v+6)),y*VW,y*VW+VW);}
   }
@@ -1383,8 +1511,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       const ix=Math.floor(fx),iy=Math.floor(fy);
       const c=FLOOR_COLORS[floorStyle(fx,fy)];
       const n=hashInt(fx*31,fy*57)%15-7;
-      const fog=Math.min(1,rowDist/14);   // 提亮：雾推远
-      const fk=1-fog*0.78;
+      const fog=lvl===4?Math.min(1,rowDist/24):Math.min(1,rowDist/14);   // 第〇章：白昼远景几乎无雾
+      const fk=1-fog*(lvl===4?0.25:0.78);
       const ex=fx-ix,ey=fy-iy;
       const edge=Math.min(ex,1-ex,ey,1-ey);
       const m=edge<0.035?0.8:1;
@@ -1396,8 +1524,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     }
   }
   // 每帧常量外提（性能：避免列循环内重复分配数组）
-  const fC=lvl===2?[6,13,26]:(lvl===3?[11,15,10]:[9,10,15]);   // 第二章冷蓝雾 / 第三章灰绿雾（已提亮）
-  const fogDenom=lvl===1?12:15;
+  const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:[9,10,15]));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾（已提亮）
+  const fogDenom=lvl===1?12:(lvl===4?20:15);
   const hits=[];
   for(let x=0;x<VW;x++){
     const cam=2*x/VW-1;
@@ -1475,6 +1603,10 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     for(const tb of tablets){if(!tb.taken)sprites.push({x:tb.x,y:tb.y,img:tabletImg,scale:0.85,bob:true,phase:tb.x});}
     for(const j of oilJars){if(!j.taken)sprites.push({x:j.x,y:j.y,img:jarImg,scale:0.8});}
     if(tabsPlaced>0){const tp=[[12.15,1.5],[12.5,1.44],[12.85,1.52]];for(let i=0;i<tabsPlaced&&i<3;i++){const o=tp[i];sprites.push({x:o[0],y:o[1],img:tabletImg,scale:0.55});}}
+  }
+  if(chapter===0&&lvl===4){
+    // 阿婆的三件差事：未完成的才显示（收走/喂完即消失）
+    for(const t of ch0Tasks){if(!t.done)sprites.push({x:t.x,y:t.y,img:t.img,scale:t.scale,bob:t.img===chickImg,phase:2.1});}
   }
   if(faceFar)sprites.push({x:faceFar.x,y:faceFar.y,img:faceImg(),scale:1.7,alpha:0.8+0.2*Math.sin(tSec*8)});
   sprites.sort((a,b)=>(Math.pow(b.x-player.x,2)+Math.pow(b.y-player.y,2))-(Math.pow(a.x-player.x,2)+Math.pow(a.y-player.y,2)));
@@ -1588,11 +1720,12 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     }
   }
 
-  // 暗角：按尺寸缓存渐变（性能），且整体减淡提亮
-  const vkey=VW+'x'+VH;
+  // 暗角：按尺寸缓存渐变（性能），整体减淡提亮；第〇章白昼几乎无暗角
+  const vkey=VW+'x'+VH+'c'+chapter;
   if(vgKey!==vkey){
     vgCache=ctx.createRadialGradient(VW/2,VH/2,VH*0.42,VW/2,VH/2,VH*1.05);
-    vgCache.addColorStop(0,'rgba(0,0,0,0)');vgCache.addColorStop(1,'rgba(0,0,0,0.55)');
+    vgCache.addColorStop(0,'rgba(0,0,0,0)');
+    vgCache.addColorStop(1,chapter===0?'rgba(0,0,0,0.14)':'rgba(0,0,0,0.55)');
     vgKey=vkey;
   }
   ctx.fillStyle=vgCache;ctx.fillRect(0,0,VW,VH);
@@ -1652,7 +1785,10 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       ctx.font='15px '+GAME_FONT;
       ctx.textAlign='left';
       ctx.fillStyle='rgba(220,220,220,0.85)';
-      if(chapter===2){
+      if(chapter===0){
+        ctx.fillText('差事　'+errands+' / 3',28,VH-20);
+        ctx.fillText('老家 · 村口老井在北面',12,18);
+      }else if(chapter===2){
         ctx.fillText('送还　'+ritualN+' / 6',28,VH-20);
         ctx.fillText('旧宅 · 大堂在中央',12,18);
       }else if(chapter===3){
@@ -1678,7 +1814,15 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       const fx=Math.floor(player.x+player.dirX*0.55),fy=Math.floor(player.y+player.dirY*0.55);
       const ft=tile(fx,fy);
       let hint='';
-      if(chapter===3){
+      if(chapter===0){
+        if(errands>=3&&Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.9)hint='E 放下木桶，打一桶井水';
+        else if(errands>=3)hint='差事都完成了 · 去村口老井（北面）';
+        else{
+          for(const t of ch0Tasks){if(!t.done&&Math.hypot(t.x-player.x,t.y-player.y)<1.5){hint=t.hint;break;}}
+          if(!hint)hint='帮阿婆做三件事 ('+errands+'/3)';
+        }
+      }
+      else if(chapter===3){
         if(tabsPlaced>=3&&tile(Math.floor(player.x+player.dirX*0.55),Math.floor(player.y+player.dirY*0.55))==='D')hint='E 推开大门，离开义庄';
         else{
           for(const j of oilJars){if(!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<1.4){hint='E 收起灯油';break;}}
@@ -1719,9 +1863,9 @@ function updateHud(){
   const mh=document.getElementById('mobileHud');
   if(state!=='playing'||paused){mh.style.display='none';return;}
   mh.style.display='flex';
-  const isCh2=chapter===2,isCh3=chapter===3;
-  document.getElementById('hudLevel').textContent=isCh2?'旧宅':(isCh3?'义庄':(lvl===0?'一层':'地下室'));
-  document.getElementById('hudDolls').textContent=isCh2?'送还 '+ritualN+'/6':(isCh3?'牌位 '+(tabsPlaced+tabsCarried)+'/3':'纸人偶 '+dollsTaken+'/6');
+  const isCh0=chapter===0,isCh2=chapter===2,isCh3=chapter===3;
+  document.getElementById('hudLevel').textContent=isCh0?'老家':(isCh2?'旧宅':(isCh3?'义庄':(lvl===0?'一层':'地下室')));
+  document.getElementById('hudDolls').textContent=isCh0?'差事 '+errands+'/3':(isCh2?'送还 '+ritualN+'/6':(isCh3?'牌位 '+(tabsPlaced+tabsCarried)+'/3':'纸人偶 '+dollsTaken+'/6'));
   const hk=document.getElementById('hudKey');
   hk.textContent=isCh3?('灯油 '+Math.round(oil)+'%'):('钥匙 '+(hasKey?'有':'无'));
   hk.style.display=(isCh2)?'none':'';
@@ -1761,9 +1905,10 @@ function resetChapterState(){
   keyItem.taken=false;
   for(const d of dolls)d.taken=false;
   ritualN=0;ghost=null;hiding=false;hideLockT=0;fireSpawned=false;hideFear=0;
-  lvl=chapter===1?0:(chapter===2?2:3);
+  lvl=chapter===0?4:(chapter===1?0:(chapter===2?2:3));
   if(chapter===2&&MAPS.length>2)spawnGhost();
   if(chapter===3&&MAPS.length>3)resetCh3State();
+  if(chapter===0){errands=0;for(const t of ch0Tasks)t.done=false;nextBird=timeSec+1.2;}
   const s=spawns[lvl]||spawns[0];
   player.x=s.x;player.y=s.y;player.dirX=0;player.dirY=-1;player.planeX=0.66;player.planeY=0;
   mouseDX=0;ePressed=false;startTime=timeSec;
@@ -1771,6 +1916,7 @@ function resetChapterState(){
 function beginPlay(){
   state='playing';paused=false;
   document.getElementById('intro2').style.display='none';
+  document.getElementById('intro0').style.display='none';
   document.getElementById('title').style.display='none';
   document.getElementById('dead').style.display='none';   // 第二章原地重开：必须收起结算层，否则会挡住全部点击
   document.getElementById('win').style.display='none';
@@ -1785,8 +1931,8 @@ function startChapter(ch,silent){
   if(AC&&AC.state==='suspended')AC.resume();
   chapter=ch;
   resetChapterState();
-  const iv=document.getElementById(ch===3?'intro3':'intro2');
-  if(ch>1&&MAPS.length>ch&&!silent){
+  const iv=document.getElementById(chapter===0?'intro0':(ch===3?'intro3':'intro2'));
+  if((ch===0||ch>1)&&MAPS.length>ch&&!silent){
     // 第二/三章：先播开场字幕，点击后开始
     state='intro';
     iv.style.display='flex';
@@ -1796,6 +1942,8 @@ function startChapter(ch,silent){
   }
 }
 document.getElementById('ch1Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(1);});
+document.getElementById('ch0Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(0);});
+document.getElementById('intro0').addEventListener('click',()=>{if(state==='intro')beginPlay();});
 document.getElementById('ch2Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(2);});
 document.getElementById('ch3Btn').addEventListener('click',e=>{e.stopPropagation();startChapter(3);});
 document.getElementById('intro3').addEventListener('click',()=>{if(state==='intro')beginPlay();});
@@ -1892,6 +2040,10 @@ function loop(ts){
 }
 requestAnimationFrame(loop);
 window.addEventListener('resize',()=>{setupBuffers();});
+window.addEventListener('orientationchange',()=>setTimeout(setupBuffers,120));
+if(window.visualViewport)visualViewport.addEventListener('resize',()=>setupBuffers());
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());   // iOS 双指捏合
 window.addEventListener('orientationchange',()=>{setTimeout(setupBuffers,250);});
 </script>
 </body>

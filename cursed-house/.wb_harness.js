@@ -134,7 +134,7 @@ async function tryChapter(btnId) {
     for (let i = 0; i < 5 && rafQ.length; i++) { const q = rafQ; rafQ = []; q.forEach(f => f(performance.now() + 16)); }
     // click the intro overlay to begin
     const introId = sandbox.state === 'intro' ? null : 'n/a';
-    for (const id of ['intro2', 'intro3']) {
+    for (const id of ['intro0', 'intro2', 'intro3']) {
       const iv = elements.get(id);
       if (iv && iv.style.display === 'flex') { iv.click(); break; }
     }
@@ -166,6 +166,17 @@ async function tryChapter(btnId) {
     console.log('volume applied OK');
   } catch (e) {
     console.error('PAUSE_NOTE_ERROR:', e.stack ? e.stack.split('\n').slice(0, 6).join('\n') : e);
+  }
+  await tryChapter('ch0Btn');
+  // 第〇章：差事交互 + 井边结局触发链
+  try {
+    vm.runInContext('state="playing";paused=false;chapter=0;lvl=4;', sandbox);
+    const t1 = vm.runInContext('(function(){const t=ch0Tasks[0];player.x=t.x-0.3;player.y=t.y;interact();return {errands,done:t.done};})()', sandbox);
+    console.log('ch0Task1:', JSON.stringify(t1));
+    const well = vm.runInContext('(function(){ch0Tasks.forEach(t=>t.done=true);errands=3;player.x=WELL_X-0.3;player.y=WELL_Y+0.3;interact();return {seq:seq&&seq.mode};})()', sandbox);
+    console.log('ch0WellEnding:', JSON.stringify(well));
+  } catch (e) {
+    console.error('CH0_ERROR:', e.stack ? e.stack.split('\n').slice(0, 6).join('\n') : e);
   }
   await tryChapter('ch2Btn');
   await tryChapter('ch3Btn');
