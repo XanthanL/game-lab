@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexa Sort × 国际象棋 微信小游戏 · 技术与可行性分析</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --muted:#5b6470; --line:#e6e8ec;
+    --accent:#2f6df0; --accent-soft:#eaf1fe; --green:#1a8a4a; --green-soft:#e7f6ee;
+    --amber:#b7791f; --amber-soft:#fdf3e2; --red:#c0392b; --red-soft:#fdecea;
+    --card:#fafbfc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.65;font-size:15px}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:8px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:14px}
+  h2{font-size:20px;margin:38px 0 12px;padding-left:11px;border-left:4px solid var(--accent)}
+  h3{font-size:16px;margin:22px 0 8px;color:#222}
+  p{margin:10px 0}
+  .lead{background:var(--accent-soft);border-radius:10px;padding:16px 18px;margin:18px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--card);font-weight:600}
+  tr:nth-child(even) td{background:#fcfcfd}
+  .tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;font-weight:600;white-space:nowrap}
+  .t-green{background:var(--green-soft);color:var(--green)}
+  .t-amber{background:var(--amber-soft);color:var(--amber)}
+  .t-red{background:var(--red-soft);color:var(--red)}
+  .t-blue{background:var(--accent-soft);color:var(--accent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .note{font-size:13px;color:var(--muted)}
+  .callout{border-radius:10px;padding:14px 16px;margin:16px 0}
+  .c-green{background:var(--green-soft);border:1px solid #bfe6cd}
+  .c-amber{background:var(--amber-soft);border:1px solid #f0dcb4}
+  .c-red{background:var(--red-soft);border:1px solid #f3c4bd}
+  .code{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;overflow:auto}
+  .step{display:flex;gap:12px;align-items:flex-start;margin:10px 0}
+  .step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+  @media(max-width:680px){.verdict{grid-template-columns:1fr}}
+  .vbox{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
+  .vbox .big{font-size:30px;font-weight:800;margin:6px 0}
+  footer{margin-top:50px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Hexa Sort × 国际象棋 · 微信小游戏技术与可行性分析</h1>
+  <div class="sub">面向「零微信小程序/小游戏开发与上架经验」的立项参考 · 报告日期 2026-08-18 · 基于 2025–2026 微信平台现行规则</div>
+</header>
+
+<div class="lead">
+  <strong>一句话结论：</strong>这个想法技术上完全可行，且最适合做成<strong>「单机 + 广告变现 + 休闲益智类目」</strong>的微信<strong>小游戏</strong>（不是普通小程序）。核心玩法用 2D 拖拽排序就能实现，你已有的 Three.js / TypeScript 编码能力足够覆盖；上架的最大变量是<strong>资质与版号</strong>——只要不做内购、不做联机对战、不碰棋牌类目，就可以<strong>免版号</strong>上线，个人用「个体工商户」主体最稳妥。真正的风险不在技术，而在对平台合规边界的判断。
+</div>
+
+<h2>一、先厘清一个关键分叉：你要做的是「小游戏」不是「小程序」</h2>
+<p>你口头说的「微信小程序游戏」，在微信平台上有两条完全不同的通道，规则和门槛天差地别：</p>
+<table>
+  <tr><th>维度</th><th>微信小程序（普通）</th><th>微信小游戏（游戏专用）</th></tr>
+  <tr><td>注册类目</td><td>工具/电商/内容等</td><td>必须选 <strong>「游戏」</strong> 一级类目</td></tr>
+  <tr><td>技术底座</td><td>WXML/WXSS/JS + 组件</td><td>Canvas/WebGL + 微信小游戏 API（wx.*），可接引擎</td></tr>
+  <tr><td>适合的玩法</td><td>偏工具/展示，跑不动重度游戏</td><td>休闲、消除、解谜、棋牌等游戏</td></tr>
+  <tr><td>商业化</td><td>小程序支付</td><td>流量主广告（IAA）/ 虚拟支付（IAP，需版号）</td></tr>
+  <tr><td>备案</td><td>需小程序备案</td><td>需小游戏备案（同体系）</td></tr>
+</table>
+<div class="callout c-amber">
+  <strong>决策：本游戏必须走「微信小游戏」通道。</strong>后续所有资质、框架、上架流程都按小游戏来规划。注册入口在 mp.weixin.qq.com，选「小程序」注册后<strong>类目选游戏</strong>，拿到的是「小游戏 AppID」（与普通小程序 AppID 不通用）。
+</div>
+
+<h2>二、资质与上架路径：决定你「能不能上」的不是技术</h2>
+<p>微信对游戏的主体类型有严格区分。下面是当前（2026）三种主体的真实权限对比：</p>
+<table>
+  <tr><th>能力</th><th>个人主体</th><th>个体工商户</th><th>企业主体</th></tr>
+  <tr><td>注册并发小游戏</td><td><span class="tag t-green">支持</span></td><td><span class="tag t-green">支持</span></td><td><span class="tag t-green">支持</span></td></tr>
+  <tr><td>广告变现（IAA）</td><td><span class="tag t-green">支持</span></td><td><span class="tag t-green">支持</span></td><td><span class="tag t-green">支持</span></td></tr>
+  <tr><td>内购/虚拟支付（IAP）</td><td><span class="tag t-red">不支持</span></td><td><span class="tag t-amber">需版号</span></td><td><span class="tag t-amber">需版号</span></td></tr>
+  <tr><td>软著（必备）</td><td><span class="tag t-amber">必需</span></td><td><span class="tag t-amber">必需</span></td><td><span class="tag t-amber">必需</span></td></tr>
+  <tr><td>版号需求</td><td>无（仅广告）</td><td>仅内购时需要</td><td>免费也建议备 / 内购必须</td></tr>
+  <tr><td>棋牌/牌类类目</td><td><span class="tag t-red">不可选</span></td><td><span class="tag t-red">不可选</span></td><td>需版号+网文证+ICP</td></tr>
+  <tr><td>联机对战（实时匹配）</td><td><span class="tag t-red">不可</span></td><td><span class="tag t-red">需版号</span></td><td>需版号</td></tr>
+</table>
+
+<div class="callout c-green">
+  <strong>最稳妥的个人路线（强烈推荐 MVP 采用）：</strong>注册一个<strong>个体工商户</strong>（营业执照，成本极低、可认缴、无需 100 万注册资本），主体认证 300 元/年。做<strong>纯广告变现的休闲益智小游戏</strong>：只需 <strong>软著 + 游戏自审自查报告 + 小游戏备案</strong>，<strong>无需版号</strong>。这完美覆盖「Hexa Sort × 国际象棋（单机解谜）」的形态。
+</div>
+
+<h3>关于「版号」你必须知道的三条铁律</h3>
+<ul>
+  <li><strong>要不要版号，唯一判定标准是「是否开通虚拟支付（内购）」。</strong>免费 + 广告变现 → 通常免版号；一旦卖道具/皮肤/关卡 → 版号是硬门槛，没有豁免。</li>
+  <li><strong>个人/个体无法自行申请版号。</strong>版号申请主体仅限「内资企业法人」，前置条件含注册资本≥100万、ICP证、网文证等，全流程 8 个月起，费用数万。所以 MVP 阶段请彻底放弃内购念头。</li>
+  <li><strong>棋牌、捕鱼、竞技对战类无论是否收费都要版号。</strong>「国际象棋」本身若做成单机解谜排序，落在<strong>休闲益智</strong>类目是安全的；但若做「真人实时对战」，立刻触发版号——MVP 务必做成<strong>单机</strong>。</li>
+</ul>
+
+<div class="callout c-amber">
+  <strong>一个需要你在注册时实测的灰色点：</strong>微信开放社区有文档称「个人主体账号无法进行游戏类目备案」，但大量个人开发者实测已能发布纯广告休闲小游戏。鉴于政策时有收紧，<strong>不要赌个人主体</strong>，直接用「个体工商户」注册最保险，备案流程顺畅、且未来想加内购也能平滑升级为企业。
+</div>
+
+<h3>备案与上架流程（时间线）</h3>
+<div class="step"><div class="n">1</div><div>注册小游戏账号 → 选「游戏 / 休闲益智」类目 → 完成主体认证，拿到 AppID。</div></div>
+<div class="step"><div class="n">2</div><div>开发调试（微信开发者工具）。主包 ≤4MB，超出走分包。</div></div>
+<div class="step"><div class="n">3</div><div>准备资质：软著（自办约1–2月 / 代办约800–1500元，也可先用电版权认证加速）、自审自查报告。</div></div>
+<div class="step"><div class="n">4</div><div>提交<strong>小游戏备案</strong>：填责任书、游戏安全声明、内容介绍；部分情况需打印承诺书手写签名。周期约 2–5 周。</div></div>
+<div class="step"><div class="n">5</div><div>提审代码 → 平台做资质/代码/内容审查 → 通过后<strong>手动点发布</strong>才上线。</div></div>
+<div class="step"><div class="n">6</div><div>广告开通：累计独立访客(UV)≥500、无违规后，在「流量主」开通 Banner / 激励视频 / 插屏。</div></div>
+
+<h2>三、游戏概念设计：三种「融合」方案与 MVP 推荐</h2>
+<p>先明确 Hexa Sort 的原型：六边形色块从顶部落下/可拖动，玩家把它们放进 hexagonal 容器（tube），<strong>把同色块堆叠填满一个容器即消除/过关</strong>。国际象棋怎么融进去？三个层级：</p>
+
+<div class="grid3">
+  <div class="card">
+    <h3>方案 A · 棋魂换皮（推荐 MVP）</h3>
+    <p>保留 Hexa Sort 100% 核心机制，仅把「色块」替换为<strong>六种颜色的棋子图标</strong>（♟♞♝♛♚♙）。容器是「棋盘格凹槽」，填满同色即「召唤」该棋子。纯排序，零规则复杂度。</p>
+    <p class="note">风险最低、开发最快、最贴合原作手感。</p>
+  </div>
+  <div class="card">
+    <h3>方案 B · 走子受约束排序</h3>
+    <p>在六边形棋盘上，每个棋子<strong>只能按其在国际象棋中的走法移动</strong>（象走斜线、车走直线、马走日），玩家借此把同色棋子归位排序。真正「融合」机制。</p>
+    <p class="note">新颖但需路径判定/走法校验，复杂度高 2–3 倍。</p>
+  </div>
+  <div class="card">
+    <h3>方案 C · 六角棋局还原</h3>
+    <p>每关给出一个目标棋子布局，玩家通过排序/走子把散落棋子还原成目标阵型（类「华容道+棋」）。</p>
+    <p class="note">趣味性高，但关卡设计与求解器开发成本高。</p>
+  </div>
+</div>
+
+<div class="callout c-green">
+  <strong>MVP 推荐：方案 A 为内核 + 一层轻量棋味包装。</strong>即机制是纯 Hexa Sort 排序，但加入「完成一个容器 = 点亮一枚对应棋子，集齐一套即触发『将杀(checkmate)』通关特效」作为目标感。这样既有辨识度（不是单纯换皮），又不引入方案 B/C 的算法负担，最快验证玩法与留存。方案 B 作为 1.0 之后的差异化迭代。
+</div>
+
+<h2>四、技术架构方案</h2>
+
+<h3>4.1 引擎/框架选型对比</h3>
+<table>
+  <tr><th>方案</th><th>适合度</th><th>优点</th><th>成本/风险</th></tr>
+  <tr>
+    <td><strong>原生 微信小游戏（Canvas 2D + TypeScript）</strong></td>
+    <td><span class="tag t-blue">推荐（控权派）</span></td>
+    <td>零引擎依赖、包体最小、逻辑全可控；你熟悉 TS，上手是直接写游戏循环与触摸事件</td>
+    <td>拖拽/吸附/动画需手写，但本玩法量级小，完全可控</td>
+  </tr>
+  <tr>
+    <td><strong>Cocos Creator</strong></td>
+    <td><span class="tag t-blue">推荐（提效派）</span></td>
+    <td>可视化场景编辑器、Tween 动画、输入系统、一键导出微信小游戏；国内文档/社区最全</td>
+    <td>编辑器偏重、包体略大、需学 Cocos 自身 API（约 1 周 ramp）</td>
+  </tr>
+  <tr>
+    <td>LayaAir</td>
+    <td><span class="tag t-amber">备选</span></td>
+    <td>TS 原生、性能强、小游戏适配早</td>
+    <td>编辑器弱、3D 不熟，本 2D 项目优势不明显</td>
+  </tr>
+  <tr>
+    <td>Unity / Three.js WebGL</td>
+    <td><span class="tag t-red">不推荐</span></td>
+    <td>你熟 Three.js</td>
+    <td>包体大（常 &gt;20MB）、加载慢、小游戏不友好；本玩法 2D 足矣</td>
+  </tr>
+</table>
+<div class="callout c-amber">
+  <strong>选哪个？</strong>如果你想要「所见即所得、少写底层」→ 用 <strong>Cocos Creator</strong>；如果你想要「最小依赖、完全掌控、最快包体」且不怕手写游戏循环 → 用 <strong>原生 Canvas 2D 小游戏 + TypeScript</strong>。以你现在 Three.js 的工程能力，两条路都在 1–2 周内可进入实质开发。本报告后续架构按「原生小游戏」描述（最通用，Cocos 只是把其中渲染/输入换成引擎 API）。
+</div>
+
+<h3>4.2 模块拆分</h3>
+<div class="grid2">
+  <div class="card">
+    <h3>核心玩法</h3>
+    <ul>
+      <li>六边形网格坐标系统（axial/cube 坐标）</li>
+      <li>拖拽：wx.onTouchStart/Move/End → 画布坐标命中检测</li>
+      <li>吸附：松手时就近对齐到容器槽位</li>
+      <li>排序规则：同色入同容器，满格消除</li>
+      <li>关卡数据：JSON 驱动（布局/颜色/步数）</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>支撑系统</h3>
+    <ul>
+      <li>存档：wx.setStorageSync 本地 + 云开发跨设备</li>
+      <li>音效：wx.createInnerAudioContext</li>
+      <li>分享：wx.shareAppMessage（好友/群）</li>
+      <li>排行榜：微信开放数据域 + 云开发数据库</li>
+      <li>广告：流量主 Banner / 激励视频（复活、提示）</li>
+    </ul>
+  </div>
+</div>
+
+<h3>4.3 后端与排行榜（零运维方案）</h3>
+<p>单机游戏本不需要服务器。若做「好友排行/全网排行」，用<strong>微信云开发（CloudBase）</strong>：免服务器备案、按量计费、无流量可缩容到 0（≈不花钱）。这是个人/个体开发者最低成本的跨设备方案，避免自购服务器带来的 ICP 备案麻烦。</p>
+
+<h3>4.4 美术与音频资源</h3>
+<ul>
+  <li>棋子图标：用 SVG/PNG 矢量绘制 6 类棋子 × 配色，体积小、清晰；避免直接搬运商用棋类 IP。</li>
+  <li>主包 ≤4MB：图片走压缩（tinypng）、音频用短循环；超量资源放<strong>分包</strong>或远端 CDN（需配置 request 合法域名）。</li>
+  <li>性能：目标中端机 60fps，棋子用对象池复用，减少 draw call。</li>
+</ul>
+
+<h2>五、可行性结论</h2>
+<div class="verdict">
+  <div class="vbox">
+    <div class="tag t-green">高</div>
+    <div class="big" style="color:var(--green)">技术可行</div>
+    <p class="note">2D 休闲解谜，性能与复杂度均在微信小游戏舒适区；你的编码底子足够。</p>
+  </div>
+  <div class="vbox">
+    <div class="tag t-green">高</div>
+    <div class="big" style="color:var(--green)">上架可行</div>
+    <p class="note">单机+广告+休闲益智+个体户 = 免版号路径，合规边界清晰。</p>
+  </div>
+  <div class="vbox">
+    <div class="tag t-amber">中</div>
+    <div class="big" style="color:var(--amber)">商业可行</div>
+    <p class="note">休闲+棋类偏小众，靠广告收益有限；更适合作品集/兴趣验证，不宜预期暴利。</p>
+  </div>
+</div>
+
+<h2>六、主要风险与规避</h2>
+<table>
+  <tr><th>风险</th><th>等级</th><th>规避方法</th></tr>
+  <tr><td>误做内购触发版号硬性要求</td><td><span class="tag t-red">高</span></td><td>MVP 锁死「纯广告」，任何付费点都推到企业+版号之后</td></tr>
+  <tr><td>个人主体备案被卡</td><td><span class="tag t-amber">中</span></td><td>直接注册个体工商户，不赌个人通道</td></tr>
+  <tr><td>内容审核红线（血腥/宗教/暴力文案）</td><td><span class="tag t-amber">中</span></td><td>棋子中「主教(bishop)」注意表述中性；不用国旗/宗教符号；文案避免「杀/斩/投降」</td></tr>
+  <tr><td>包体超限 / 低端机卡顿</td><td><span class="tag t-amber">中</span></td><td>主包压到 4MB 内，资源分包，对象池，关掉非必要特效</td></tr>
+  <tr><td>广告占比过高 / 诱导分享被罚</td><td><span class="tag t-amber">中</span></td><td>广告不遮挡核心玩法、占比≤50%；不强制分享才能玩</td></tr>
+  <tr><td>软著名称与游戏名不一致</td><td><span class="tag t-amber">低</span></td><td>及早定名，软著/自审/备案三者名称保持一致</td></tr>
+</table>
+
+<h2>七、落地路线（建议里程碑）</h2>
+<div class="step"><div class="n">M0</div><div><strong>立项准备（1 周）：</strong>注册个体工商户 + 小游戏账号（选休闲益智类目）；确定游戏名；用草图/纸面验证方案 A 手感。</div></div>
+<div class="step"><div class="n">M1</div><div><strong>技术验证（1–2 周）：</strong>搭小游戏空工程跑通 wx API；实现六边形网格 + 拖拽吸附 + 同色消除的最小闭环 demo。</div></div>
+<div class="step"><div class="n">M2</div><div><strong>内容填充（2–3 周）：</strong>做 20–40 关 JSON 关卡、棋子美术、音效、过关「将杀」包装；本地存档。</div></div>
+<div class="step"><div class="n">M3</div><div><strong>社交与变现（1–2 周）：</strong>接云开发排行榜、分享、激励视频（复活/提示）；打磨新手引导。</div></div>
+<div class="step"><div class="n">M4</div><div><strong>资质与上线（2–5 周）：</strong>申请软著（可同步用电版权认证）、写自审报告、完成小游戏备案、提审、发布；UV 过 500 后开流量主。</div></div>
+<div class="step"><div class="n">M5</div><div><strong>迭代（可选）：</strong>验证留存后，再考虑方案 B「走法约束排序」作为差异化大版本（仍保持单机免版号）。</div></div>
+
+<div class="callout c-green">
+  <strong>总计预估：</strong>从零到上线约 <strong>2–3 个月</strong>（含等备案/软著的时间），纯开发约 6–8 周。最大时间开销在「等资质/备案」而非写代码。
+</div>
+
+<h2>八、给你的下一步建议</h2>
+<ul>
+  <li><strong>今天就能做的：</strong>去 mp.weixin.qq.com 用个体工商户注册小游戏账号，下载微信开发者工具，跑一个官方「小游戏示例」模板，熟悉 <code>game.js</code> / <code>wx.*</code> API。</li>
+  <li><strong>需要你拍板的两件事：</strong>① 主体用「个体工商户」（推荐）还是先试个人；② MVP 用「原生 Canvas2D」还是「Cocos Creator」。</li>
+  <li><strong>我可以继续帮你的：</strong>确定框架后，我可以直接搭一个可运行的 Hexa Sort 核心 demo 工程（六边形网格 + 拖拽吸附 + 同色消除），让你先摸到手感再决定美术与关卡。</li>
+</ul>
+
+<footer>
+  本报告基于 2025–2026 年微信开放平台公开规则与个人/个体开发者实测经验整理，平台政策可能动态调整，关键资质与类目请以注册时微信公众平台后台实时要求为准。本报告为技术与可行性分析，不构成法律意见；涉及版号、ICP、软著等具体办理请以主管部门最新规定为准。
+</footer>
+
+</div>
+</body>
+</html>

@@ -10,6 +10,7 @@
 - 缩略图：竖版 600×800 PNG，与首页 canvas poster 同配色，用 `.workbuddy/gen_thumbs.py`（Pillow）生成。
 - 缩略图位置：**不要把 FPS Vampire 的图放进 `dist/`**，因为 `dist/` 是构建产物会被重建清空；放在 `FPS Vampire/og.png` 才安全。
 - 缩略图清单：`assets/og-gamelab.png`(主站) + `cursed-house/og.png`、`PVZ/og.png`、`forcing-mars/og.png`、`FPS Vampire/og.png`。
+- cursed-house：单文件 raycaster 恐怖游戏，SPEC 见 `cursed-house/SPEC-LEVEL2.md`。第一章「生还」+ 第二章「归宅」（怨灵 BFS 状态机 AI + 衣柜躲藏 + 送还仪式×6 + 堂前之火）均已实现，零依赖程序化音效，双端可玩；死亡仅重置当前章。
 - 首页 2026-08-10 重构为「卡片网格」：`GAMES[].thumb` 即 `og.png` 作为封面；hover 时封面缓推缩放 + 渐变遮罩 + 标题上移 + 详情(简介/技术栈/进入)滑入，**已移除原先的 canvas 悬浮海报**。Hero 右侧为自动轮播封面预览（Ken Burns + 交叉淡入），另有滚动揭示、自定义光标高光、跑马灯等技术标签条。`prefers-reduced-motion` 与触屏下自动降级。
 
 ## 字体（缩略图生成用）

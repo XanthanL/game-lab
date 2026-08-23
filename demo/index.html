@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>六边智将 · 像素风·可旋转立体棋盘试玩</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #222; overflow: hidden; }
+    #game { display: block; touch-action: none; }
+    #hint { position: fixed; left: 8px; bottom: 8px; color: #aaa; font: 12px sans-serif; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="hint">浏览器试玩版 · 拖动棋盘空白处可旋转视角</div>
+  <script src="dist/web.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "hexa-chess-sort",
+  "version": "0.1.0",
+  "description": "六边智将 - 微信小游戏 (Hexa Sort × 国际象棋) MVP",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --format=cjs --outfile=game.js",
+    "build:web": "esbuild src/web.ts --bundle --format=iife --outfile=dist/web.js",
+    "watch": "esbuild src/main.ts --bundle --format=cjs --outfile=game.js --watch",
+    "test": "esbuild test/logic.test.ts --bundle --platform=node --outfile=dist/test.cjs && node dist/test.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
