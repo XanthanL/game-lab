@@ -273,9 +273,7 @@
       },
       play(name, opts) {
         try {
-          const step = opts?.step ?? 0;
-          if (name === "merge") map.merge(step);
-          else map[name]();
+          map[name](opts?.step ?? 0);
         } catch {
         }
       }
@@ -978,10 +976,12 @@
 
   // src/logic/rules.ts
   function receivable(st, cell) {
+    if (cell < 0 || cell >= st.stacks.length) return false;
     return st.stacks[cell].length === 0 && !st.locked[cell] && !st.obstacle[cell];
   }
   function movePlan(st, from, to) {
     if (from === to) return null;
+    if (from < 0 || to < 0 || from >= st.stacks.length || to >= st.stacks.length) return null;
     const a = st.stacks[from];
     const b = st.stacks[to];
     if (!a.length || !b.length) return null;
@@ -1876,6 +1876,10 @@
       this.armedHammer = false;
       this.autoplay = null;
       this.layerH = 10;
+      // 首帧之前也要有布局可用：主循环是「先 update 再 render」，
+      // 而 update 里可能立刻产生事件并需要格子坐标
+      this.vw = 390;
+      this.vh = 700;
     }
     enter(arg) {
       const level = arg || this.host.levelAt(this.host.save.unlocked) || this.host.levelAt(1);
@@ -1920,6 +1924,7 @@
       return hslice(this.areas.tray, 3, 10);
     }
     update(dt) {
+      if (!this.boardLayout) this.relayout(this.vw, this.vh);
       this.time += dt;
       this.lockT = Math.max(0, this.lockT - dt);
       this.toastT = Math.max(0, this.toastT - dt);
@@ -1965,6 +1970,8 @@
     render(ctx, w, h) {
       const hits = this.host.hits;
       hits.clear();
+      this.vw = w;
+      this.vh = h;
       this.relayout(w, h);
       ctx.save();
       ctx.fillStyle = COLOR.bg;
@@ -2115,7 +2122,7 @@
       this.drag = null;
       this.dragFrom = null;
       if (!drag || !from) return;
-      if (cell == null) {
+      if (cell == null || cell < 0) {
         this.host.audio.play("bounce");
         return;
       }

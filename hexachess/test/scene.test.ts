@@ -89,14 +89,16 @@ for (const [W, H] of [[390, 700], [420, 900], [860, 520], [320, 640]]) {
   assert(ids.some((i) => i.indexOf('tray:') === 0), `${W}×${H} 托盘槽位可命中`);
 }
 {
-  const host = makeHost();
-  const m = new MenuScene(host);
-  m.render(mockCtx(), 390, 700);
-  const l = new LevelsScene(host);
-  l.render(mockCtx(), 390, 700);
-  const ids = host.hits.items.map((i) => i.id);
-  assert(ids.includes('btn.play') && ids.includes('btn.levels'), '菜单按钮可命中');
-  assert(ids.filter((i) => i.indexOf('lv:') === 0).length === 1, '未通关时选关里只有第 1 关可点');
+  const mh = makeHost();
+  new MenuScene(mh).render(mockCtx(), 390, 700);
+  const mids = mh.hits.items.map((i) => i.id);
+  assert(mids.includes('btn.play') && mids.includes('btn.levels') && mids.includes('btn.lang'), '菜单按钮可命中');
+
+  const lh = makeHost();
+  new LevelsScene(lh).render(mockCtx(), 390, 700);
+  const lids = lh.hits.items.map((i) => i.id);
+  assert(lids.filter((i) => i.indexOf('lv:') === 0).length === 1, '未通关时选关里只有第 1 关可点');
+  assert(lids.includes('btn.back'), '选关页有返回按钮');
 }
 {
   const host = makeHost(Object.assign(freshSave(), { unlocked: 12 }));
