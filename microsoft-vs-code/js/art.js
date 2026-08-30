@@ -199,24 +199,24 @@ ART.p.pad = (c, t, e) => {
 /* ================= 微软方 ================= */
 ART.z.clippy = (c, t, e) => {
   zbody2(c, t, e, { sc: 0.9, shirt: '#cfcfcf' });
-  const bob = Math.sin(t * 3 + e.seed) * 2;
-  c.save(); c.translate(0, bob - 4); c.rotate(Math.sin(t * 1.6 + e.seed) * 0.06);
+  const bob = Math.sin(t * 3 + e.seed) * 1.5;
+  c.save(); c.translate(0, bob - 2); c.rotate(Math.sin(t * 1.6 + e.seed) * 0.05);
   c.strokeStyle = '#d7d7d7'; c.lineWidth = 5; c.lineCap = 'round';
-  rr(c, -12, -62, 24, 40, 12); c.stroke();
+  rr(c, -12, -54, 24, 42, 12); c.stroke();
   c.strokeStyle = '#bdbdbd';
-  c.beginPath(); c.moveTo(-5, -56); c.lineTo(-5, -30); c.quadraticCurveTo(-5, -25, 0, -25); c.quadraticCurveTo(5, -25, 5, -30); c.lineTo(5, -50); c.stroke();
+  c.beginPath(); c.moveTo(-5, -48); c.lineTo(-5, -22); c.quadraticCurveTo(-5, -17, 0, -17); c.quadraticCurveTo(5, -17, 5, -22); c.lineTo(5, -42); c.stroke();
   c.lineCap = 'butt';
   c.fillStyle = '#fff'; c.strokeStyle = OUT; c.lineWidth = 2;
-  circ(c, -6, -48, 6); c.fill(); c.stroke(); circ(c, 6, -48, 6); c.fill(); c.stroke();
+  circ(c, -6, -41, 6); c.fill(); c.stroke(); circ(c, 6, -41, 6); c.fill(); c.stroke();
   const lk = Math.sin(t * 0.9 + e.seed) * 1.6;
-  c.fillStyle = OUT; circ(c, -7 + lk, -48, 2.3); c.fill(); circ(c, 5 + lk, -48, 2.3); c.fill();
+  c.fillStyle = OUT; circ(c, -7 + lk, -41, 2.3); c.fill(); circ(c, 5 + lk, -41, 2.3); c.fill();
   c.strokeStyle = OUT; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(-11, -57); c.lineTo(-3, -55.5); c.moveTo(11, -57); c.lineTo(3, -55.5); c.stroke();
+  c.beginPath(); c.moveTo(-11, -49); c.lineTo(-3, -47.5); c.moveTo(11, -49); c.lineTo(3, -47.5); c.stroke();
   c.restore();
 };
 ART.z.ie = (c, t, e) => {
   zbody2(c, t, e, { sc: 0.95, wf: 0.55, shirt: '#b8b8a8', hunch: 0.16, tie: '#7a7a55' });
-  c.save(); c.translate(0, -44);
+  c.save(); c.translate(0, -30);
   const ring = Math.sin(t * 1.2 + e.seed);
   c.strokeStyle = '#f7d038'; c.lineWidth = 3;
   c.beginPath(); c.ellipse(0, 2, 18, 4 + Math.abs(ring) * 5, ring * 0.5, 0, 7); c.stroke();
@@ -231,7 +231,7 @@ ART.z.ie = (c, t, e) => {
 };
 ART.z.edge = (c, t, e) => {
   zbody2(c, t, e, { sc: 0.9, wf: 2, shirt: '#d8d8d8', hunch: 0.14 });
-  c.save(); c.translate(0, -46); c.rotate(Math.sin(t * 6 + e.seed) * 0.08);
+  c.save(); c.translate(0, -31); c.rotate(Math.sin(t * 6 + e.seed) * 0.08);
   c.fillStyle = '#e8e8e8'; c.strokeStyle = OUT; c.lineWidth = 3;
   rr(c, -15, -14, 30, 28, 4); c.fill(); c.stroke();
   c.fillStyle = '#b5b5b5'; rr(c, -15, -14, 30, 7, 4); c.fill();
@@ -246,8 +246,8 @@ ART.z.edge = (c, t, e) => {
 };
 ART.z.update = (c, t, e) => {
   zbody2(c, t, e, { sc: 1.05, wf: 0.8, shirt: '#c8c8c8' });
-  zhead(c, 0, -38, 12);
-  c.save(); c.translate(0, -56);
+  zhead(c, 0, -27, 12);
+  c.save(); c.translate(0, -45);
   c.strokeStyle = 'rgba(126,217,87,.25)'; c.lineWidth = 5;
   c.beginPath(); c.arc(0, 0, 13, 0, 7); c.stroke();
   c.strokeStyle = '#7ed957';
@@ -264,7 +264,7 @@ ART.z.update = (c, t, e) => {
 };
 ART.z.bsod = (c, t, e) => {
   zbody2(c, t, e, { sc: 1.1, wf: 0.6, shirt: '#b0b0b0', hunch: 0.14 });
-  zhead(c, 6, -40, 11);
+  zhead(c, 6, -28, 11);
   c.save(); c.translate(-2, Math.sin(t * 2 + e.seed) * 1.5);
   c.fillStyle = '#0078d7'; c.strokeStyle = '#003a66'; c.lineWidth = 3;
   rr(c, -34, -60, 24, 84, 3); c.fill(); c.stroke();
@@ -300,20 +300,20 @@ ART.z.garg = (c, t, e) => {
 };
 ART.z.telemetry = (c, t, e) => {
   zbody2(c, t, e, { sc: 0.88, wf: 1.25, shirt: '#6f7b8a', skin: '#9aa8b5', hunch: 0.1 });
-  zhead(c, 0, -40, 10, '#9aa8b5');
+  zhead(c, 0, -26, 10, '#9aa8b5');
   c.strokeStyle = '#c8d2dc'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(0, -50); c.lineTo(0, -58); c.stroke();
-  c.fillStyle = '#d1695c'; circ(c, 0, -60, 2.5); c.fill();
+  c.beginPath(); c.moveTo(0, -36); c.lineTo(0, -44); c.stroke();
+  c.fillStyle = '#d1695c'; circ(c, 0, -46, 2.5); c.fill();
   for (let i = 0; i < 3; i++) {
     const ph = (t * 1.5 + i * 0.33 + e.seed) % 1;
     c.strokeStyle = 'rgba(209,105,92,' + (0.6 * (1 - ph)) + ')'; c.lineWidth = 1.5;
-    c.beginPath(); c.arc(0, -60, 4 + ph * 14, -2.4, -0.7); c.stroke();
-    c.beginPath(); c.arc(0, -60, 4 + ph * 14, 0.7, 2.4); c.stroke();
+    c.beginPath(); c.arc(0, -46, 4 + ph * 14, -2.4, -0.7); c.stroke();
+    c.beginPath(); c.arc(0, -46, 4 + ph * 14, 0.7, 2.4); c.stroke();
   }
 };
 ART.z.teams = (c, t, e) => {
   zbody2(c, t, e, { sc: 1, wf: 0.75, shirt: '#5b5fc7' });
-  c.save(); c.translate(0, -46);
+  c.save(); c.translate(0, -31);
   c.fillStyle = '#1b1a38'; c.strokeStyle = OUT; c.lineWidth = 3;
   rr(c, -16, -14, 32, 28, 4); c.fill(); c.stroke();
   c.fillStyle = '#3d3f7a'; rr(c, -13, -11, 13, 11, 2); c.fill(); rr(c, 1, -11, 13, 11, 2); c.fill();
@@ -330,22 +330,22 @@ ART.z.teams = (c, t, e) => {
 ART.z.popup = (c, t, e) => {
   zbody2(c, t, e, { sc: 0.55, wf: 2.6, shirt: '#e8e8e8', hunch: 0.18 });
   c.fillStyle = '#e04b4b'; c.strokeStyle = OUT; c.lineWidth = 2.5;
-  circ(c, 0, -42, 9); c.fill(); c.stroke();
-  c.fillStyle = '#fff'; c.font = 'bold 9px monospace'; c.textAlign = 'center'; c.fillText('1', 0, -39);
+  circ(c, 0, -20, 9); c.fill(); c.stroke();
+  c.fillStyle = '#fff'; c.font = 'bold 9px monospace'; c.textAlign = 'center'; c.fillText('1', 0, -17);
 };
 ART.z.balloon = (c, t, e) => {
   const wob = Math.sin(t * 2.4 + e.seed) * 0.1;
   if (e.land) {
     zbody2(c, t, e, { sc: 0.7, wf: 1.8, shirt: '#d8b8b8' });
-    zhead(c, 0, -40, 10);
+    zhead(c, 0, -24, 10);
     return;
   }
   c.save(); c.rotate(wob * 0.4);
   zbody2(c, t, e, { sc: 0.7, wf: 1.8, shirt: '#d8b8b8', hunch: 0.02, arms: 20 });
-  zhead(c, 0, -40, 10);
+  zhead(c, 0, -24, 10);
   c.strokeStyle = '#999'; c.lineWidth = 1.5;
-  c.beginPath(); c.moveTo(-16, -12); c.quadraticCurveTo(-22, -34, -18, -52); c.stroke();
-  c.save(); c.translate(-18, -68); c.rotate(wob);
+  c.beginPath(); c.moveTo(-14, -8); c.quadraticCurveTo(-24, -26, -20, -40); c.stroke();
+  c.save(); c.translate(-20, -56); c.rotate(wob);
   const g = c.createRadialGradient(-5, -6, 3, 0, 0, 17);
   g.addColorStop(0, '#ff8080'); g.addColorStop(1, '#c03030');
   c.fillStyle = g; c.strokeStyle = OUT; c.lineWidth = 2.5;
@@ -358,8 +358,8 @@ ART.z.balloon = (c, t, e) => {
 ART.z.dotnet = (c, t, e) => {
   const compat = e.compat;
   zbody2(c, t, e, { sc: 1.25, wf: 0.45, shirt: compat ? '#5a3a6a' : '#4a3a5a', hunch: 0.18, tie: '#b48ee0' });
-  zhead(c, 0, -42, 13);
-  c.save(); c.translate(0, -58);
+  zhead(c, 0, -30, 13);
+  c.save(); c.translate(0, -45);
   c.fillStyle = '#2d1b3d'; c.strokeStyle = OUT; c.lineWidth = 2.5;
   rr(c, -13, -4, 26, 6, 2); c.fill(); c.stroke();
   rr(c, -8, -18, 16, 15, 2); c.fill(); c.stroke();
@@ -369,7 +369,7 @@ ART.z.dotnet = (c, t, e) => {
   c.fillText('.NET', 0, 2);
   if (compat) {
     c.fillStyle = 'rgba(255,64,64,' + (0.35 + 0.2 * Math.sin(t * 6)) + ')';
-    c.font = 'bold 8px monospace'; c.fillText('兼容模式', 0, -74);
+    c.font = 'bold 8px monospace'; c.fillText('兼容模式', 0, -58);
   }
 };
 
@@ -406,4 +406,114 @@ function drawWater(c, t, y0, h) {
   }
   c.fillStyle = 'rgba(120,200,255,.05)';
   c.fillRect(LAWN_X, y0, COLS * CELL_W, h);
+}
+
+/* ================= meta：BUG 投掷器 / star / 屋顶 / 雾 / 花园 / 鸭店主 ================= */
+ART.p.bug = (c, t, e) => {
+  const lean = e.fireT > 0 ? -0.25 : 0;
+  c.save(); c.rotate(lean);
+  c.fillStyle = '#3a3f46'; c.strokeStyle = OUT; c.lineWidth = 3;
+  rr(c, -22, -2, 40, 26, 6); c.fill(); c.stroke();
+  c.fillStyle = '#2b2f35'; rr(c, -18, -26, 26, 26, 5); c.fill(); c.stroke();
+  c.fillStyle = '#d1695c'; rr(c, -15, -22, 20, 16, 3); c.fill();
+  c.fillStyle = '#fff'; c.font = 'bold 9px monospace'; c.textAlign = 'center'; c.fillText('BUG', -5, -10);
+  c.strokeStyle = '#555'; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(18, 10); c.lineTo(26, 22); c.stroke(); c.lineCap = 'butt';
+  c.restore();
+  c.fillStyle = '#22222a'; rr(c, -24, 24, 12, 6, 3); c.fill(); rr(c, 8, 24, 12, 6, 3); c.fill();
+};
+function drawStar(c, x, y, s, glow) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  if (glow) { c.shadowColor = 'rgba(255,220,120,.9)'; c.shadowBlur = 12; }
+  const g = c.createLinearGradient(0, -10, 0, 10);
+  g.addColorStop(0, '#ffe28a'); g.addColorStop(1, '#e8a63c');
+  c.fillStyle = g; c.strokeStyle = '#8a5a1a'; c.lineWidth = 1.6;
+  c.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 10 : 4.4, a = -Math.PI / 2 + i * Math.PI / 5;
+    c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  c.closePath(); c.fill(); c.stroke();
+  c.restore();
+}
+function drawRoof(c, t) {
+  for (let r = 0; r < ROWS; r++) {
+    ctxShingles(c, LAWN_Y + r * CELL_H, r);
+  }
+  function ctxShingles(cc, y0, row) {
+    cc.fillStyle = row % 2 ? '#5a3038' : '#66363f';
+    cc.fillRect(LAWN_X, y0, COLS * CELL_W, CELL_H);
+    cc.strokeStyle = 'rgba(0,0,0,.28)'; cc.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      const yy = y0 + 12 + i * 22;
+      cc.beginPath(); cc.moveTo(LAWN_X, yy); cc.lineTo(LAWN_R, yy); cc.stroke();
+      const off = i % 2 ? 29 : 0;
+      for (let x = LAWN_X + off; x < LAWN_R; x += 59) { cc.beginPath(); cc.moveTo(x, yy); cc.lineTo(x, yy + 22); cc.stroke(); }
+    }
+  }
+  /* 兼容性深渊：左 5 列是空洞 */
+  c.fillStyle = 'rgba(8,8,12,.78)'; c.fillRect(LAWN_X, LAWN_Y, 5 * CELL_W, ROWS * CELL_H);
+  c.strokeStyle = 'rgba(209,105,92,.5)'; c.lineWidth = 2; c.setLineDash([7, 7]);
+  c.strokeRect(LAWN_X + 3, LAWN_Y + 3, 5 * CELL_W - 6, ROWS * CELL_H - 6);
+  c.setLineDash([]);
+  c.fillStyle = 'rgba(209,105,92,.75)'; c.font = 'bold 13px monospace'; c.textAlign = 'center';
+  c.save(); c.translate(LAWN_X + 2.5 * CELL_W, LAWN_Y + ROWS * CELL_H / 2); c.rotate(-0.12);
+  c.fillText('compatibility abyss', 0, 0);
+  c.font = '10px monospace'; c.fillStyle = 'rgba(209,105,92,.5)';
+  c.fillText('（此处禁止施工）', 0, 16);
+  c.restore();
+}
+function drawFog(c, t) {
+  const x0 = LAWN_X + 5 * CELL_W;
+  const g = c.createLinearGradient(x0 - 60, 0, W, 0);
+  g.addColorStop(0, 'rgba(150,160,170,0)'); g.addColorStop(0.35, 'rgba(150,160,170,.5)'); g.addColorStop(1, 'rgba(140,150,160,.72)');
+  c.fillStyle = g; c.fillRect(x0 - 60, LAWN_Y, W - x0 + 60, ROWS * CELL_H);
+  c.fillStyle = 'rgba(200,210,220,.14)';
+  for (let i = 0; i < 5; i++) {
+    const fx = x0 + ((t * 14 + i * 210) % (W - x0 + 120)) - 60;
+    const fy = LAWN_Y + 40 + i * 105 + Math.sin(t * 0.6 + i) * 12;
+    c.beginPath(); c.ellipse(fx, fy, 90, 26, 0, 0, 7); c.fill();
+  }
+  c.fillStyle = 'rgba(220,220,170,.3)'; c.font = '10px monospace'; c.textAlign = 'left';
+  const todos = ['// TODO: fix later', '// 谁写的？', '// DO NOT TOUCH', '// temp 2019'];
+  for (let i = 0; i < 4; i++) {
+    const fx = x0 + 30 + ((t * 9 + i * 260) % (W - x0 + 80));
+    c.fillText(todos[i], fx, LAWN_Y + 60 + i * 128);
+  }
+}
+function drawGardenPot(c, kind, stage, t) {
+  c.fillStyle = '#7a4a2a'; c.strokeStyle = OUT; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(-16, 10); c.lineTo(16, 10); c.lineTo(12, 28); c.lineTo(-12, 28); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#3a2a1a'; c.fillRect(-14, 8, 28, 5);
+  const grow = (stage + 1) / 6;
+  if (kind === 'ossl') {
+    c.strokeStyle = '#3f7a3f'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(0, 8); c.lineTo(0, 8 - 30 * grow); c.stroke();
+    c.fillStyle = '#4e9e4e';
+    for (let i = 0; i < 3 + stage; i++) {
+      const a = -Math.PI / 2 + (i - (2 + stage) / 2) * 0.55;
+      c.beginPath(); c.ellipse(Math.cos(a) * 12 * grow, 8 - 30 * grow + Math.sin(a) * 8, 7 * grow + 2, 3.5 * grow + 1, a, 0, 7); c.fill();
+    }
+    if (stage >= 5) { c.fillStyle = '#dcdcaa'; c.font = 'bold 9px monospace'; c.textAlign = 'center'; c.fillText('v1.0', 0, -30); }
+  } else {
+    c.strokeStyle = '#6a9955'; c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(0, 8); c.quadraticCurveTo(4, -6 * grow, 0, -16 * grow); c.stroke();
+    c.fillStyle = '#8ecf6f';
+    c.beginPath(); c.ellipse(-6, -8 * grow, 7 * grow, 3.5 * grow, -0.6, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(6, -11 * grow, 7 * grow, 3.5 * grow, 0.6, 0, 7); c.fill();
+    if (stage >= 3) { c.fillStyle = '#ffd94a'; circ(c, 0, -18 * grow, 4); c.fill(); }
+  }
+}
+function drawDuckShop(c, t) {
+  c.fillStyle = '#ffd94a'; c.strokeStyle = OUT; c.lineWidth = 3;
+  circ(c, 0, 10, 26); c.fill(); c.stroke();
+  circ(c, 10, -20, 16); c.fill(); c.stroke();
+  c.fillStyle = '#f28c28'; c.beginPath(); c.moveTo(24, -24); c.lineTo(40, -19); c.lineTo(24, -14); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = OUT; circ(c, 13, -24, 3); c.fill();
+  c.strokeStyle = '#d9a92a'; c.lineWidth = 3; c.beginPath(); c.arc(-5, 10, 13, 0.5, 2.6); c.stroke();
+  c.fillStyle = '#2d2d2d'; c.strokeStyle = OUT; c.lineWidth = 2.5;
+  rr(c, -30, -46, 26, 16, 3); c.fill(); c.stroke();
+  c.fillStyle = '#7ed957'; c.font = 'bold 9px monospace'; c.textAlign = 'center'; c.fillText('npm', -17, -34);
+  c.fillStyle = '#dcdcaa'; c.font = 'bold 8px monospace';
+  c.fillText('~quack~ 要装点什么？', 6, 44);
 }
