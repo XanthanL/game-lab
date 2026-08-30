@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>debug</title></head>
+<body>
+<div id="cvTop-holder"><canvas id="cvTop" width="256" height="192"></canvas></div>
+<div id="menu"><div id="actList"></div></div>
+<div id="stage" class="hidden">
+  <span id="actName"></span><span id="actCount"></span>
+  <div id="lineBox"><div id="speaker"></div><div id="lineText"></div></div>
+  <div id="progressBar"></div>
+  <button id="btnMenu"></button><button id="btnPause"></button><button id="btnPrev"></button>
+  <button id="btnNext"></button><button id="btnSound"></button>
+</div>
+<div id="scriptView" class="hidden"><div id="scriptBody"></div><button id="btnBack"></button></div>
+<button id="btnStart"></button><button id="btnScript"></button>
+<span id="powerLed"></span>
+<script>
+window.__errs = [];
+window.addEventListener('error', function (e) {
+  window.__errs.push('ERROR: ' + (e.message || '') + ' @ ' + (e.filename || '').split('/').pop() + ':' + (e.lineno || '') + ':' + (e.colno || '') + ' || stack: ' + ((e.error && e.error.stack) || 'no stack').split('\n').slice(0, 4).join(' | '));
+});
+</script>
+<script src="js/audio.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/script.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>

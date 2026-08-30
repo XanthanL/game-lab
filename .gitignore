@@ -1,21 +1,33 @@
-# ============ 非 Web 项目（不适合 git / 不部署到 Pages）============
-# Minecraft 是 Fabric Java Mod 项目；Protocol Extract 是 Godot 项目
-# 二者均包含大体积二进制（引擎、存档、jar、mca），且无法在浏览器运行
+# ============ 不上线的本地项目 ============
+# local-only/ 专门收「跑不进浏览器、也不推到 GitHub」的工程：
+# 目前放着 Godot 项目 Protocol Extract（含引擎 exe 与美术二进制，约 326MB）。
+# 这里的任何东西都不进仓库、不部署 Pages、也不出现在首页上。
+/local-only/
 /Minecraft/
-/Protocol Extract/
 
-# ============ 依赖与编译产物 ============
+# ============ 依赖与构建缓存 ============
 node_modules/
+**/.next/
+*.tsbuildinfo
 **/.gradle/
 **/build/libs/
 **/build/devlibs/
 **/build/tmp/
 **/build/loom-cache/
 
-# FPS Vampire 构建中间产物（dist 保留用于部署）
-/FPS Vampire/node_modules/
+# 注意：ARH/dist、XanthanLMusic/dist、golden-wind/out、hexachess/dist 是**有意入库**的
+# —— Pages 工作流直接发布整棵仓库树，构建产物不入库就 404。
+# 改这几个项目的源码后必须重新 build 再提交。
 
-# forcing-mars 本地开发服务器无构建产物，无需处理
+# ============ Agent / 工具本地状态 ============
+**/.workbuddy/
+**/.wb_*
+**/.chrome-headless/
+**/.reasonix/
+**/.trae/
+**/.claude/
+**/.aider*
+**/.server*
 
 # ============ 运行时目录（含存档、日志、敏感数据）============
 **/run/
@@ -28,21 +40,40 @@ node_modules/
 **/.godot/
 *.exe
 
-# ============ 编译产物 ============
+# ============ Java 编译产物 ============
 *.jar
 *.class
 
-# ============ 备份 ============
+# ============ 备份与临时 ============
 **/dist_backup_*/
+*.tmp
+*.log
+*.bak
+*.backup
 
-# ============ 系统/编辑器杂项 ============
+# ============ 系统 / 编辑器 ============
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-*.log
-*.tmp
 
 # ============ 本地环境 ============
 .env
 .env.local
+.env.*
+!.env.example
+*.local
+
+# npm test 会重新生成，不入库
+hexachess/dist/test.cjs
+
+# ============ 隐私加固：可能带本机路径或凭据的文件 ============
+# sourcemap 会内嵌开发机的绝对源码路径（含用户名）
+*.map
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+id_ed25519
+desktop.ini

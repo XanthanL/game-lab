@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三体 · 像素歌剧 | THE THREE-BODY OPERA</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="theater">
+  <!-- 舞台拱框 -->
+  <div id="proscenium">
+    <div id="screen-wrap">
+      <canvas id="stage" width="480" height="270"></canvas>
+      <div id="vignette"></div>
+      <div id="flash"></div>
+
+      <!-- 开幕界面 -->
+      <div id="overture">
+        <div class="ov-frame">
+          <div class="ov-top">PIXEL OPERA · 像素歌剧</div>
+          <h1 class="ov-title">三<span>·</span>体</h1>
+          <div class="ov-en">THE THREE-BODY PROBLEM</div>
+          <div class="ov-desc">七幕歌剧 · 像素伪3D · 程序化交响配乐</div>
+          <button id="btnStart">拉 开 序 幕</button>
+          <div class="ov-hint">建议佩戴耳机观赏 · 约八分钟</div>
+        </div>
+      </div>
+
+      <!-- 幕间标题卡 -->
+      <div id="actcard" class="hidden">
+        <div class="ac-num" id="actNum"></div>
+        <div class="ac-rule"></div>
+        <div class="ac-title" id="actTitle"></div>
+        <div class="ac-sub" id="actSub"></div>
+      </div>
+
+      <!-- 歌剧字幕 -->
+      <div id="subtitle" class="hidden">
+        <span id="speaker"></span><span id="line"></span>
+      </div>
+    </div>
+
+    <!-- 幕布 -->
+    <div class="curtain left" id="curtainL"></div>
+    <div class="curtain right" id="curtainR"></div>
+    <div id="valance"></div>
+    <!-- 脚灯 -->
+    <div id="footlights"></div>
+  </div>
+
+  <!-- 控制台 -->
+  <div id="controls">
+    <div class="ctl-left">
+      <button id="btnPrev" title="上一幕">&#9204;</button>
+      <button id="btnPlay" title="暂停 / 继续">&#10074;&#10074;</button>
+      <button id="btnNext" title="下一幕">&#9205;</button>
+      <button id="btnMute" title="静音 / 恢复">&#9836;</button>
+    </div>
+    <div id="actlist"></div>
+    <div class="ctl-right">三体 · 像素歌剧</div>
+  </div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/acts.js"></script>
+<script src="js/acts2.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

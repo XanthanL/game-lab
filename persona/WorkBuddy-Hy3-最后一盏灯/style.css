@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════
+   《最后一盏灯》像素舞台剧 — 剧院外壳样式
+   暖色夜景主题：红绒幕布 + 木质金边戏台 + 节目单
+   ═══════════════════════════════════════════════ */
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+html, body { height:100%; }
+body {
+  background:
+    radial-gradient(ellipse at 50% 20%, #1c2333 0%, #0a0d15 70%);
+  color:#e8dcc2;
+  font-family:'SimSun','Songti SC','Noto Serif SC',serif;
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; overflow:auto;
+}
+.house { padding:18px; width:100%; display:flex; justify-content:center; }
+
+/* ── 戏台外框 ── */
+.theatre {
+  width:min(96vw, 660px);
+  background:linear-gradient(#3a2418, #2a1810 55%, #1f120b);
+  border:3px solid #6b4a2a;
+  border-radius:14px;
+  padding:14px 16px 12px;
+  box-shadow:0 18px 50px rgba(0,0,0,.7), inset 0 2px 4px rgba(255,210,150,.18);
+}
+
+/* ── 牌匾 ── */
+.marquee {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  background:linear-gradient(#1d120a, #120b06);
+  border:2px solid #8a5e30; border-radius:8px;
+  padding:8px 10px; margin-bottom:12px;
+  box-shadow:inset 0 0 14px rgba(255,180,90,.12);
+  position:relative;
+}
+.led { width:9px; height:9px; border-radius:50%; background:#ffcf6a;
+  box-shadow:0 0 9px #ffcf6a; flex:none; }
+.led.off { background:#4a3a22; box-shadow:none; }
+.marquee-title { font-size:22px; letter-spacing:8px; color:#ffd98a;
+  text-shadow:0 0 14px rgba(255,180,90,.5); font-weight:bold; }
+.marquee-sub { font-size:11px; letter-spacing:4px; color:#c9a36a; }
+
+/* ── 舞台（幕布 + 屏幕）── */
+.proscenium { position:relative; padding:0 26px; }
+.curtain {
+  position:absolute; top:0; bottom:0; width:30px; z-index:4; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg, #6e1f1f 0 6px, #8e2b2b 6px 12px);
+  box-shadow:inset 0 0 18px rgba(0,0,0,.6);
+  border-radius:4px;
+}
+.curtain.left { left:0; border-radius:0 4px 4px 0; }
+.curtain.right { right:0; border-radius:4px 0 0 4px;
+  background:repeating-linear-gradient(90deg, #8e2b2b 0 6px, #6e1f1f 6px 12px); }
+.valance {
+  position:absolute; top:0; left:0; right:0; height:16px; z-index:5; pointer-events:none;
+  background:repeating-linear-gradient(90deg, #7a2222 0 14px, #963030 14px 28px);
+  border-radius:0 0 8px 8px;
+  box-shadow:0 3px 6px rgba(0,0,0,.5), inset 0 -3px 6px rgba(0,0,0,.4);
+}
+
+.screen-wrap { position:relative; width:100%; aspect-ratio:4/3; background:#000;
+  border-radius:6px; overflow:hidden; box-shadow:0 0 0 3px #1a120b, inset 0 0 18px #000; }
+#stage { width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges;
+  display:block; cursor:pointer; }
+.scanlines { position:absolute; inset:0; pointer-events:none; opacity:.28;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+/* 脚灯：一排暖色灯泡 */
+.footlights { position:absolute; left:0; right:0; bottom:0; height:8px; pointer-events:none;
+  background:linear-gradient(0deg, rgba(255,180,90,.35), transparent);
+  display:flex; justify-content:space-around; align-items:flex-end; padding:0 6px; }
+.footlights::before { content:''; }
+
+/* ── 节目单 / 台词区 ── */
+.panel-area {
+  margin-top:12px; background:linear-gradient(#f3ead2, #e7d9b8);
+  border:2px solid #b79a64; border-radius:8px; padding:10px 12px;
+  color:#2a1f12; min-height:148px;
+  box-shadow:inset 0 2px 6px rgba(255,255,255,.5), 0 6px 16px rgba(0,0,0,.4);
+}
+.hidden { display:none !important; }
+.panel { display:flex; flex-direction:column; height:100%; min-height:128px; }
+
+.panel-title { text-align:center; font-size:16px; letter-spacing:10px; font-weight:bold;
+  color:#5a3a18; margin-bottom:8px; border-bottom:2px solid #c9ad74; padding-bottom:5px; }
+.panel-tip { text-align:center; font-size:10px; color:#8a6a3a; margin-top:7px; letter-spacing:1px; }
+
+.act-list { flex:1; display:flex; flex-direction:column; gap:5px; }
+.act-item { display:flex; gap:8px; align-items:baseline; background:#fbf4e0;
+  border:2px solid #b79a64; border-radius:4px; padding:4px 9px; cursor:pointer;
+  box-shadow:1px 1px 0 #9a7d4a; transition:background .1s; }
+.act-item:hover { background:#fffaf0; }
+.act-item:active { box-shadow:0 0 0 #9a7d4a; transform:translate(1px,1px); }
+.act-item .no { font-family:'Courier New',monospace; font-weight:bold; color:#b3402a; font-size:13px; }
+.act-item .nm { flex:1; }
+.act-item .tm { font-family:'Courier New',monospace; color:#8a6a3a; font-size:11px; }
+
+.panel-btns { display:flex; gap:8px; margin-top:8px; }
+
+/* 戏院按钮 */
+.tbtn { flex:1; background:linear-gradient(#f7eecb, #d8c290); border:2px solid #9a7d4a;
+  border-radius:4px; font-family:inherit; font-size:13px; padding:6px 0; cursor:pointer;
+  box-shadow:1px 2px 0 #6e5526; color:#3a2a12; letter-spacing:2px; }
+.tbtn:active { box-shadow:0 0 0 #6e5526; transform:translate(1px,2px); }
+.tbtn.primary { background:linear-gradient(#ffe9b0, #f0b46a); border-color:#a06a24;
+  color:#5a3208; font-weight:bold; }
+.tbtn.muted { color:#a06a3a; opacity:.7; }
+
+/* 演出面板 */
+.stage-head { display:flex; justify-content:space-between; align-items:center;
+  padding:1px 3px 5px; border-bottom:2px solid #c9ad74; }
+.act-name { font-weight:bold; letter-spacing:2px; font-size:14px; color:#5a3a18; }
+.act-count { font-family:'Courier New',monospace; font-size:11px; color:#8a6a3a; }
+.line-box { flex:1; display:flex; flex-direction:column; justify-content:center;
+  padding:6px 8px; min-height:0; cursor:pointer; }
+.speaker { font-weight:bold; color:#b3402a; margin-bottom:3px; min-height:16px; letter-spacing:1px; }
+.speaker.dir { color:#5c6b7a; }
+.line-text { font-size:14px; line-height:1.6; color:#241a0e; white-space:pre-wrap; min-height:46px;
+  font-family:'KaiTi','STKaiti','SimSun',serif; }
+.line-text .cursor { display:inline-block; width:7px; height:14px; background:#241a0e;
+  vertical-align:-2px; animation:blink .7s steps(1) infinite; margin-left:2px; }
+@keyframes blink { 50% { opacity:0 } }
+
+.progress { height:6px; background:#d8c79c; border-radius:3px; overflow:hidden;
+  margin:5px 2px; border:1px solid #c9ad74; }
+.progress-bar { height:100%; width:0%; background:linear-gradient(90deg,#c75b3f,#e0a14a); transition:width .25s linear; }
+.ctrl { display:flex; gap:6px; }
+.ctrl .tbtn { font-size:14px; padding:4px 0; }
+
+/* 剧本浏览 */
+.script-body { flex:1; overflow-y:auto; font-size:12px; line-height:1.7; padding:4px 6px;
+  white-space:pre-wrap; background:#fbf4e0; border:1px solid #c9ad74; border-radius:3px;
+  scrollbar-width:thin; max-height:300px; }
+.script-body .act-h { font-weight:bold; color:#5a3a18; margin-top:6px; letter-spacing:2px; }
+.script-body .sd { color:#6b5630; }
+.script-body .sp { color:#b3402a; font-weight:bold; }
+
+.hint { font-size:11px; color:#6b5740; letter-spacing:1px; text-align:center; margin-top:10px; }

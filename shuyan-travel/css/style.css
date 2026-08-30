@@ -1,0 +1,504 @@
+/* 
+ * 树言·旅记 - 经典美术风格回归
+ * 设计理念：文学报刊、极简、纸墨感
+ */
+
+:root {
+    --color-earth: #8B7355;
+    --color-dark-earth: #5D4037;
+    --color-light-earth: #D7CCC8;
+    --color-paper: #FFF8E1;
+    --color-ink: #2C1810; /* 更深一点的墨水色 */
+    --color-accent: #795548;
+    --color-bg: #FFF8E1;
+    --color-border: rgba(139, 115, 85, 0.2);
+    
+    --font-serif: "Noto Serif SC", "Source Han Serif SC", "STSong", serif;
+    --font-sans: "Inter", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+    
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-xxl: 80px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-serif);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    line-height: 1.8;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 86c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm66-3c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM37 7c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm41 13c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM15 46c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm32 52c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm39-1c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm-8-71c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM25 26c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm52 66c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM21 19c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm19 2c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm57 44c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-33 31c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM22 76c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm33-81c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM33 18c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-6 31c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm66 33c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-49-17c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-40 4c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm71 7c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-18-71c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM3 27c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm86 52c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-17-7c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM28 34c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm62-13c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-4 33c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM34 61c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM2 54c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm91-13c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM52 7c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm28 25c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM6 71c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM42 82c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm47 9c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-21-27c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM20 9c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm41 73c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1z' fill='%238b7355' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+/* ===== Header & Nav ===== */
+.site-header {
+    text-align: center;
+    padding: var(--space-xxl) 0 var(--space-xl);
+}
+
+.site-title {
+    font-size: 3.5rem;
+    font-weight: normal;
+    color: var(--color-dark-earth);
+    margin-bottom: 5px;
+    letter-spacing: 0.15em;
+}
+
+.site-subtitle {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    color: var(--color-earth);
+    letter-spacing: 0.4em;
+    opacity: 0.8;
+}
+
+.site-nav {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: var(--space-xxl);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 20px 0;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: var(--color-earth);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    transition: color 0.3s;
+    position: relative;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--color-ink);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: var(--color-ink);
+}
+
+/* ===== Stories List (Classic Editorial Style) ===== */
+.main-content {
+    margin-bottom: var(--space-xxl);
+}
+
+/* ===== Stories Timeline（紧凑标题式时间线） ===== */
+.timeline {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.timeline-year {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    letter-spacing: 0.25em;
+    color: var(--color-dark-earth);
+    margin: 55px 0 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.timeline-year:first-child {
+    margin-top: 10px;
+}
+
+.timeline-year-count {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--color-earth);
+    opacity: 0.7;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    padding: 13px 6px;
+    text-decoration: none;
+    border-bottom: 1px dashed var(--color-border);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.8s ease, transform 0.8s ease, background 0.25s;
+}
+
+.timeline-item:hover {
+    background: rgba(139, 115, 85, 0.06);
+}
+
+.timeline-item.visible,
+.timeline-year.visible {
+    opacity: 1;
+    transform: none;
+}
+
+.timeline-date {
+    flex: 0 0 46px;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--color-earth);
+    letter-spacing: 0.08em;
+}
+
+.timeline-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.timeline-title {
+    font-size: 1.1rem;
+    color: var(--color-dark-earth);
+    white-space: nowrap;
+    transition: color 0.25s;
+}
+
+.timeline-item:hover .timeline-title {
+    color: var(--color-ink);
+}
+
+.timeline-subtitle {
+    font-size: 0.85rem;
+    color: var(--color-earth);
+    opacity: 0.8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.timeline-location {
+    flex: 0 0 auto;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--color-earth);
+    letter-spacing: 0.05em;
+}
+
+.story-meta {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--color-earth);
+    letter-spacing: 0.1em;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.story-excerpt {
+    font-size: 1.1rem;
+    color: var(--color-ink);
+    line-height: 2;
+    text-align: justify;
+    margin-bottom: 30px;
+}
+
+.read-more {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s;
+}
+
+.read-more:hover {
+    color: var(--color-dark-earth);
+    border-bottom-color: var(--color-dark-earth);
+}
+
+/* ===== Sections (Map Preview, About) ===== */
+.map-preview {
+    margin: var(--space-xxl) 0;
+    padding: 60px 40px;
+    border: 1px solid var(--color-border);
+    text-align: center;
+}
+
+.map-title {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--color-dark-earth);
+}
+
+.about-section {
+    padding: var(--space-xxl) 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.about-title {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-align: center;
+    color: var(--color-dark-earth);
+}
+
+.about-content {
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 1.1rem;
+    line-height: 2;
+    text-align: justify;
+}
+
+/* ===== Marginalia (文学旁注) ===== */
+.has-note {
+    position: relative;
+    border-bottom: 1px dotted var(--color-light-earth);
+    cursor: help;
+    color: var(--color-dark-earth);
+    transition: all 0.3s;
+    display: inline; /* 确保不影响行内排版 */
+}
+
+.has-note:hover {
+    background-color: rgba(139, 115, 85, 0.08);
+}
+
+.side-note-content {
+    position: absolute;
+    left: calc(100% + 50px); /* 桌面端右移 */
+    top: 0;
+    width: 260px;
+    font-size: 0.95rem; /* 字号微调 */
+    line-height: 1.6;
+    color: var(--color-ink);
+    background-color: var(--color-paper); /* 使用纸张背景色 */
+    box-shadow: 10px 10px 30px rgba(44, 24, 16, 0.05); /* 极轻微的阴影 */
+    font-style: italic;
+    font-family: var(--font-serif);
+    font-weight: normal;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(15px);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    display: block;
+    border-left: 2px solid var(--color-dark-earth);
+    padding: 15px 20px;
+    z-index: 200;
+}
+
+/* 仅在悬停时显现 */
+.has-note:hover .side-note-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* 布局调整：为大屏幕侧注预留空间 */
+@media (min-width: 1400px) {
+    .story-detail-container, .about-page {
+        margin-left: calc(50% - 630px); /* 进一步左偏，留出 260px+ 空间 */
+        max-width: 750px;
+    }
+}
+
+/* 响应式：中等屏幕和移动端处理 */
+@media (max-width: 1399px) {
+    .has-note {
+        border-bottom-style: dashed;
+    }
+    
+    .side-note-content {
+        position: relative;
+        left: 0;
+        width: 100%;
+        margin: 15px 0 25px 0;
+        display: none; 
+        background: rgba(139, 115, 85, 0.07);
+        padding: 15px 20px;
+        border-left: 3px solid var(--color-dark-earth);
+        border-right: none;
+        border-top: none;
+        border-bottom: none;
+        transform: none;
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+        box-shadow: none;
+    }
+    
+    .has-note.active .side-note-content {
+        display: block;
+    }
+}
+
+/* ===== Reading Progress Bar ===== */
+.progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: transparent;
+    z-index: 1000;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--color-dark-earth);
+    width: 0%;
+    transition: width 0.1s ease-out;
+}
+
+/* ===== Typography Enhancement ===== */
+.story-excerpt, .story-content p, .about-content p, .section-content p {
+    font-size: 1.15rem;
+    line-height: 2.2; /* 增加行间距 */
+    letter-spacing: 0.05em; /* 增加字间距 */
+    margin-bottom: 2rem;
+    opacity: 0; /* 默认隐藏，用于动效 */
+    transform: translateY(15px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+/* 已经可见的类：终态用 none 而非 translateY(0)，
+   避免 transform 让每个段落各自形成层叠上下文，
+   导致旁注便签盖住上一段却被下一段文字压住 */
+.story-excerpt.revealed, .story-content p.revealed, .about-content p.revealed, .section-content p.revealed {
+    opacity: 1;
+    transform: none;
+}
+
+.story-content blockquote {
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 50px 20px;
+    margin: 80px auto;
+    font-size: 1.4rem;
+    line-height: 1.8;
+    text-align: center;
+    font-style: italic;
+    color: var(--color-dark-earth);
+    position: relative;
+    max-width: 90%;
+}
+
+.story-content blockquote::before {
+    content: "❝";
+    font-size: 4rem;
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--color-border);
+    font-family: serif;
+}
+
+/* 排除旅行笔记部分，使其直接可见 */
+.travel-note, .travel-note h4, .travel-note p {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+/* ===== Story Detail Page Specifics ===== */
+.story-detail-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--space-xl) 0;
+}
+
+.drop-cap::first-letter {
+    float: left;
+    font-size: 4.5rem;
+    line-height: 1;
+    padding-right: 12px;
+    color: var(--color-dark-earth);
+}
+
+.story-content blockquote {
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 40px 0;
+    margin: 60px auto;
+    font-size: 1.3rem;
+    text-align: center;
+    font-style: italic;
+}
+
+.site-footer {
+    text-align: center;
+    padding: var(--space-xxl) 0;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-earth);
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+}
+
+/* ===== 徒步进度条（首页时间线顶部） ===== */
+.walk-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin: 30px auto 10px;
+    padding: 14px 20px;
+    border-top: 1px dashed var(--color-border);
+    border-bottom: 1px dashed var(--color-border);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--color-earth);
+    letter-spacing: 0.08em;
+}
+
+.walk-status-tag {
+    color: #BF360C;
+    border: 1px solid rgba(191, 54, 12, 0.35);
+    border-radius: 3px;
+    padding: 2px 10px;
+}
+
+.walk-status-route {
+    color: var(--color-ink);
+}
+
+.walk-status-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-accent);
+    transition: opacity 0.2s;
+}
+
+.walk-status-link:hover {
+    opacity: 0.7;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .site-title { font-size: 2.5rem; }
+    .site-nav { gap: 30px; }
+    .timeline-subtitle { display: none; }
+    .timeline-item { gap: 12px; }
+    .container { padding: 0 20px; }
+}

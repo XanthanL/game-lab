@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故事详情 - 树言·旅记</title>
+    <meta name="description" content="在零下三十度的松花江上听见冰裂，在大漠深处触碰千年壁画。记录那些带有体温、裂痕与泥土味的真实生活。">
+    <meta name="theme-color" content="#FFF8E1">
+    
+    <!-- Favicon / 网页图标 -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+    
+    <!-- Open Graph / 微信分享元数据 -->
+    <meta property="og:title" content="树言·旅记 | 路上的故事">
+    <meta property="og:description" content="在零下三十度的松花江上听见冰裂，在大漠深处触碰千年壁画。记录那些带有体温、裂痕与泥土味的真实生活。">
+    <meta property="og:image" content="https://xanthanl.github.io/game-lab/shuyan-travel/assets/android-chrome-512x512.png">
+    <meta property="og:url" content="https://xanthanl.github.io/game-lab/shuyan-travel/story.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="树言·旅记">
+    <link rel="canonical" href="https://xanthanl.github.io/game-lab/shuyan-travel/story.html">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 故事详情页面专用样式 */
+        .story-detail-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--space-xl) var(--space-md);
+        }
+        
+        .story-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: var(--space-xl);
+            color: var(--color-earth);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        
+        .story-back-link:hover {
+            color: var(--color-dark-earth);
+        }
+        
+        .story-header {
+            margin-bottom: var(--space-xxl);
+            text-align: center;
+        }
+        
+        .story-meta {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-md);
+            color: var(--color-earth);
+            font-size: 0.95rem;
+            font-family: var(--font-sans);
+        }
+        
+        .story-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .story-title {
+            font-size: 3rem;
+            line-height: 1.2;
+            margin: 0 0 var(--space-md) 0;
+            color: var(--color-dark-earth);
+        }
+        
+        .story-subtitle {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            color: var(--color-earth);
+            margin: 0 0 var(--space-xl) 0;
+            font-weight: normal;
+            font-style: italic;
+        }
+        
+        .story-content {
+            line-height: 2.2;
+            font-size: 1.15rem;
+            color: var(--color-ink);
+            text-align: justify;
+        }
+        
+        .story-content p {
+            margin-bottom: var(--space-xl);
+        }
+
+        /* 首字下沉 */
+        .drop-cap::first-letter {
+            float: left;
+            font-size: 3.5rem;
+            line-height: 1;
+            padding-top: 4px;
+            padding-right: 8px;
+            padding-left: 3px;
+            color: var(--color-dark-earth);
+            font-family: var(--font-serif);
+        }
+        
+        .story-content blockquote {
+            border-top: 1px solid var(--color-light-earth);
+            border-bottom: 1px solid var(--color-light-earth);
+            padding: var(--space-lg) 0;
+            margin: var(--space-xxl) auto;
+            max-width: 90%;
+            font-style: italic;
+            color: var(--color-earth);
+            font-size: 1.25rem;
+            text-align: center;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .story-content blockquote::before {
+            content: '❧';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            color: var(--color-light-earth);
+            background: var(--color-paper);
+            padding: 0 15px;
+        }
+        
+        .travel-note {
+            background-color: rgba(139, 115, 85, 0.05);
+            border: 1px dashed var(--color-earth);
+            padding: var(--space-lg);
+            margin: var(--space-xxl) 0;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .travel-note h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-dark-earth);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .travel-note p {
+            margin-bottom: 0;
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--color-earth);
+        }
+        
+        .story-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--space-xl);
+            padding: var(--space-xl) 0;
+            border-top: 1px solid var(--color-light-earth);
+        }
+        
+        .story-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--color-earth);
+            text-decoration: none;
+            transition: all 0.3s;
+            max-width: 48%;
+        }
+        
+        .story-nav-link:hover {
+            color: var(--color-dark-earth);
+            transform: translateY(-2px);
+        }
+        
+        .story-nav-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .story-nav-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+        }
+        
+        .story-nav-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="site-header">
+            <h1 class="site-title"><a href="index.html" style="text-decoration: none; color: inherit;">树言·旅记</a></h1>
+            <p class="site-subtitle">路上的故事，时间的痕迹</p>
+        </header>
+
+        <nav class="site-nav">
+            <a href="index.html" class="nav-link">时间线</a>
+            <a href="map.html" class="nav-link">旅行地图</a>
+            <a href="about.html" class="nav-link">关于树言</a>
+        </nav>
+
+        <!-- 详情容器 -->
+        <div class="story-detail-container">
+            <a href="index.html" class="story-back-link">
+                ← 返回时间线
+            </a>
+            
+            <header class="story-header">
+                <div class="story-meta">
+                    <span class="story-meta-item"><span id="story-date">加载中...</span></span>
+                    <span class="story-meta-item"><span id="story-location">加载中...</span></span>
+                </div>
+                
+                <h1 class="story-title" id="story-title">正在开启旅途...</h1>
+                <p class="story-subtitle" id="story-subtitle"></p>
+            </header>
+            
+            <article class="story-content" id="story-content">
+                <p style="text-align: center; padding: 40px;">正在翻开日记...</p>
+            </article>
+
+            <nav class="story-navigation">
+                <a href="#" class="story-nav-link prev" id="prev-story" style="display: none;">
+                    <span aria-hidden="true">←</span>
+                    <div class="story-nav-info">
+                        <span class="story-nav-label">前一篇</span>
+                        <span class="story-nav-title"></span>
+                    </div>
+                </a>
+                
+                <a href="#" class="story-nav-link next" id="next-story" style="display: none;">
+                    <div class="story-nav-info">
+                        <span class="story-nav-label">后一篇</span>
+                        <span class="story-nav-title"></span>
+                    </div>
+                    <span aria-hidden="true">→</span>
+                </a>
+            </nav>
+        </div>
+        
+        <footer class="site-footer">
+            <p>© 2018-2027 树言·旅记 | 记录每一次出发</p>
+        </footer>
+    </div>
+    
+    <!-- 依赖脚本 -->
+    <script src="js/stories.js"></script>
+    <script src="js/stories-walk.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/story-detail.js"></script>
+</body>
+</html>

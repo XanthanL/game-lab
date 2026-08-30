@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最后一盏灯 · 像素舞台剧</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="house">
+  <div class="theatre">
+
+    <!-- 剧院牌匾 -->
+    <div class="marquee">
+      <span class="led" id="powerLed"></span>
+      <span class="marquee-title">最 后 一 盏 灯</span>
+      <span class="marquee-sub">像 素 舞 台 剧</span>
+    </div>
+
+    <!-- 舞台（上屏：像素演出） -->
+    <div class="proscenium">
+      <div class="curtain left"></div>
+      <div class="curtain right"></div>
+      <div class="valance"></div>
+      <div class="screen-wrap">
+        <canvas id="stage" width="256" height="192"></canvas>
+        <div class="scanlines"></div>
+        <div class="footlights"></div>
+      </div>
+    </div>
+
+    <!-- 节目单 / 台词 / 剧本（下屏） -->
+    <div class="panel-area">
+
+      <!-- 节目单 -->
+      <div id="menu" class="panel">
+        <div class="panel-title">节 目 单</div>
+        <div id="actList" class="act-list"></div>
+        <div class="panel-btns">
+          <button id="btnScript" class="tbtn">完 整 剧 本</button>
+          <button id="btnStart" class="tbtn primary">▶ 开 始 演 出</button>
+        </div>
+        <div class="panel-tip">点击舞台 = 推进台词 · 点击任意一幕可直接演出</div>
+      </div>
+
+      <!-- 演出 -->
+      <div id="stagePanel" class="panel hidden">
+        <div class="stage-head">
+          <span id="actName" class="act-name"></span>
+          <span id="actCount" class="act-count"></span>
+        </div>
+        <div id="lineBox" class="line-box">
+          <div id="speaker" class="speaker"></div>
+          <div id="lineText" class="line-text"></div>
+        </div>
+        <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+        <div class="ctrl">
+          <button id="btnMenu" class="tbtn" title="节目单">☰</button>
+          <button id="btnPause" class="tbtn" title="暂停/继续">⏸</button>
+          <button id="btnPrev" class="tbtn" title="上一幕">◀幕</button>
+          <button id="btnNext" class="tbtn" title="下一幕">幕▶</button>
+          <button id="btnSound" class="tbtn" title="声音开关">♪</button>
+        </div>
+      </div>
+
+      <!-- 完整剧本 -->
+      <div id="scriptView" class="panel hidden">
+        <div class="panel-title">完 整 剧 本</div>
+        <div id="scriptBody" class="script-body"></div>
+        <button id="btnBack" class="tbtn">← 返 回 节 目 单</button>
+      </div>
+
+    </div>
+
+    <p class="hint">空格/点击 = 推进台词 · ← → = 切换幕次 · 空格暂停 · M 静音 · S 剧本 · Esc 节目单</p>
+  </div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/script.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>

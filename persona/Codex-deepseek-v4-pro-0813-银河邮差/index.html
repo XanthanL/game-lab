@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>银河邮差 · 像素舞台剧</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="theater">
+
+    <header class="marquee">
+      <h1>银河邮差</h1>
+      <p class="subtitle">寄往星星的一封信 · 像素舞台剧</p>
+    </header>
+
+    <main class="stage-area">
+      <div class="curtain curtain-left"><i></i><i></i><i></i><i></i></div>
+      <div class="curtain curtain-right"><i></i><i></i><i></i><i></i></div>
+      <div class="curtain-top"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+      <div class="proscenium">
+        <canvas id="stage" width="256" height="192" aria-label="舞台"></canvas>
+        <div class="scanlines"></div>
+      </div>
+
+      <div class="stage-floor">
+        <div class="footlights">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </main>
+
+    <section class="panel">
+      <nav class="tabs">
+        <button class="tab is-active" data-tab="program">节目单</button>
+        <button class="tab" data-tab="dialog">台词</button>
+        <button class="tab" data-tab="script">剧本</button>
+      </nav>
+
+      <div class="tab-body">
+        <div class="tab-pane is-active" id="program"></div>
+
+        <div class="tab-pane" id="dialog">
+          <div class="dialog-scene" id="dialog-scene"></div>
+          <div class="dialog-speaker" id="dialog-speaker"></div>
+          <p class="dialog-text" id="dialog-text"></p>
+          <div class="dialog-hint">点击舞台 / 回车 推进台词 · 空格 暂停 / 继续</div>
+        </div>
+
+        <div class="tab-pane" id="script"></div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-prev" title="上一幕（←）">◀</button>
+        <button id="btn-play" title="暂停 / 继续（空格演出中）">⏸</button>
+        <button id="btn-sound" title="声音开关（M）">♪</button>
+        <button id="btn-menu" title="节目单（Esc）">☰</button>
+        <button id="btn-script" title="完整剧本（S）">≡</button>
+        <button id="btn-next" title="下一幕（→）">▶</button>
+      </div>
+    </section>
+
+    <footer class="credits">Codex · GPT-5 · 像素舞台剧 · 零依赖零构建</footer>
+  </div>
+
+  <script src="js/sprites.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/scenes.js"></script>
+  <script src="js/engine.js"></script>
+</body>
+</html>

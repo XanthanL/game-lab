@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>树言·旅记 - 时间线</title>
+    <meta name="description" content="一位行走者的旅途：前八年从故宫红墙坐车到梅里雪山；之后从雨崩徒步斜穿版图，两年零一个月走到鹤岗，对角线画完了。记录那些带有体温、裂痕与泥土味的真实生活。">
+    <meta name="theme-color" content="#FFF8E1">
+    <link rel="canonical" href="https://xanthanl.github.io/game-lab/shuyan-travel/index.html">
+
+    <!-- Favicon / 网页图标 -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+    
+    <!-- Open Graph / 微信分享元数据 -->
+    <meta property="og:title" content="树言·旅记 | 记录每一次出发">
+    <meta property="og:description" content="前八年坐车：从故宫红墙到梅里雪山。之后把铝杖换成木杖，从雨崩徒步斜穿版图——两年零一个月，对角线在鹤岗收笔。记录那些带有体温、裂痕与泥土味的真实生活。">
+    <meta property="og:image" content="https://xanthanl.github.io/game-lab/shuyan-travel/assets/android-chrome-512x512.png">
+    <meta property="og:url" content="https://xanthanl.github.io/game-lab/shuyan-travel/index.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="树言·旅记">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="site-header">
+            <h1 class="site-title">树言·旅记</h1>
+        </header>
+        
+        <nav class="site-nav">
+            <a href="index.html" class="nav-link active">时间线</a>
+            <a href="map.html" class="nav-link">旅行地图</a>
+            <a href="about.html" class="nav-link">关于树言</a>
+        </nav>
+
+        <!-- 徒步进度条：对角线状态 -->
+        <div class="walk-status">
+            <span class="walk-status-tag">以足为笔，斜贯山河</span>
+            <span class="walk-status-route">雨崩 → 鹤岗 ｜ 两年零一个月，木杖磨短了一拃多</span>
+            <a class="walk-status-link" href="map.html">看全程轨迹 →</a>
+        </div>
+        
+        <main class="main-content" id="stories-container">
+            <!-- 故事卡片将由 JavaScript 动态生成 -->
+            <div class="loading-placeholder text-center">
+                <p>正在打捞路上的故事...</p>
+            </div>
+        </main>
+        
+        <!-- 地图预览 -->
+        <div class="map-preview">
+            <div class="map-title">旅行足迹</div>
+            <div class="map-placeholder">
+                <a href="map.html" class="read-more" style="border: none;">
+                    查看交互式旅行地图 →
+                </a>
+            </div>
+        </div>
+        
+        <footer class="site-footer">
+            <p>© 2018-2027 树言·旅记 | 记录每一次出发</p>
+        </footer>
+    </div>
+    
+    <!-- 引入脚本 -->
+    <script src="js/stories.js"></script>
+    <script src="js/stories-walk.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

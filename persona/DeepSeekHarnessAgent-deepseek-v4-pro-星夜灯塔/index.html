@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星夜灯塔 · 像素舞台剧</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0912 radial-gradient(circle at 50% 0%, #171226 0%, #0b0912 60%);color:#e8e6dd;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC","Segoe UI",sans-serif;min-height:100vh;padding:20px 12px 40px;}
+#wrap{max-width:1000px;margin:0 auto;text-align:center;}
+header h1{font-size:34px;letter-spacing:10px;color:#f2c14e;text-shadow:3px 3px 0 #7a2e12, 6px 6px 0 rgba(0,0,0,.5);margin-bottom:6px;}
+header .sub{color:#9aa3b5;font-size:13px;letter-spacing:2px;margin-bottom:18px;}
+#theater{position:relative;width:min(960px,100%);margin:0 auto;background:#000;border:10px solid #3a2618;outline:4px solid #8a6a2f;outline-offset:-2px;box-shadow:0 0 0 6px #241407, 0 18px 60px rgba(0,0,0,.8);cursor:pointer;user-select:none;}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;}
+#theater::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,.42));z-index:1;}
+#theater::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 3px);z-index:4;}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;}
+.hidden{display:none!important;}
+#startOverlay{background:rgba(5,6,12,.55);z-index:7;}
+#startBtn{background:#c9a24a;color:#241407;border:3px solid #7a5a1f;padding:14px 30px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:6px 6px 0 rgba(0,0,0,.7);letter-spacing:4px;font-family:inherit;}
+#startBtn:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,.7);}
+.card{background:rgba(23,17,38,.92);border:3px solid #c9a24a;padding:26px 40px;box-shadow:6px 6px 0 rgba(0,0,0,.6);max-width:92%;}
+#titleBig{font-size:40px;color:#f2c14e;letter-spacing:8px;text-shadow:3px 3px 0 #7a2e12;}
+#titleSub{color:#c9c4b8;margin-top:12px;font-size:15px;letter-spacing:1px;}
+.tap{margin-top:18px;color:#8a8f9e;font-size:12px;animation:blink 1.2s infinite;}
+.dbox{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:88%;background:rgba(10,12,24,.88);border:2px solid #8a6a2f;padding:8px 16px;font-size:14px;color:#cbd5e1;box-shadow:4px 4px 0 rgba(0,0,0,.5);}
+.dbox::before{content:"✦ 舞台提示 ";color:#d9a441;font-weight:bold;}
+.bbox{background:rgba(5,6,12,.55);padding:14px 30px;border:2px solid #8a6a2f;}
+#bannerText{font-size:26px;color:#f2c14e;letter-spacing:6px;text-shadow:2px 2px 0 #000;}
+.pbox,.ebox{background:rgba(10,12,24,.9);border:3px solid #8a6a2f;padding:18px 34px;font-size:20px;color:#e8e6dd;letter-spacing:2px;box-shadow:6px 6px 0 rgba(0,0,0,.6);}
+.ebox span{display:block;font-size:13px;color:#8a8f9e;margin-top:8px;letter-spacing:1px;}
+#dialog{display:flex;gap:12px;align-items:flex-start;width:min(960px,100%);margin:14px auto 10px;text-align:left;background:#151021;border:3px solid #2a2240;padding:12px 14px;cursor:pointer;min-height:64px;}
+#speaker{flex:0 0 auto;padding:4px 12px;border:2px solid currentColor;font-weight:bold;font-size:14px;margin-top:2px;box-shadow:3px 3px 0 rgba(0,0,0,.5);white-space:nowrap;}
+.s-旁白{color:#94a3b8;border-color:#475569;}
+.s-老马{color:#7fb3ff;border-color:#3b6fb5;}
+.s-小星{color:#ffd94a;border-color:#b58a1f;}
+#text{flex:1;font-size:16px;line-height:1.7;color:#e8e6dd;}
+#cursor{animation:blink .8s infinite;color:#f2c14e;}
+#hint{display:inline-block;margin-left:14px;color:#6d7488;font-size:12px;vertical-align:2px;}
+@keyframes blink{50%{opacity:.25}}
+#controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 14px;}
+button{background:#241b3a;color:#e8e6dd;border:2px solid #4a3d78;padding:8px 16px;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:3px 3px 0 #0a0716;transition:transform .06s;}
+button:hover{background:#2f2450;transform:translate(-1px,-1px);box-shadow:4px 4px 0 #0a0716;}
+button:active{transform:translate(2px,2px);box-shadow:0 0 0 #0a0716;}
+button.on{background:#6b4a1f;border-color:#c9a24a;color:#ffe9b0;}
+#bReplay{background:#3a1f1f;border-color:#8a4a3a;}
+select{background:#241b3a;color:#e8e6dd;border:2px solid #4a3d78;padding:8px 10px;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:3px 3px 0 #0a0716;}
+#scriptPanel{width:min(960px,100%);margin:0 auto 18px;background:#151021;border:3px solid #2a2240;padding:14px 18px;text-align:left;max-height:320px;overflow:auto;font-size:14px;}
+#scriptPanel h3{color:#f2c14e;letter-spacing:4px;font-size:15px;margin-bottom:6px;}
+.script-sec{color:#f2c14e;font-weight:bold;margin:12px 0 4px;cursor:pointer;letter-spacing:2px;}
+.script-sec:hover{text-decoration:underline;}
+.script-line{margin:6px 0 6px 8px;cursor:pointer;color:#c9c4b8;line-height:1.6;}
+.script-line b{margin-right:6px;}
+.script-line:hover{color:#fff;}
+.script-dir{margin:6px 0 6px 16px;color:#7d8598;font-style:italic;cursor:pointer;font-size:13px;}
+.script-fx{margin:6px 0 6px 16px;color:#d9a441;cursor:pointer;font-size:13px;}
+footer{margin-top:16px;color:#5d6378;font-size:12px;letter-spacing:1px;line-height:1.8;}
+@media (max-width:600px){ #titleBig{font-size:28px;} #bannerText{font-size:19px;} }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>星 夜 灯 塔</h1>
+    <div class="sub">THE STAR LIGHTHOUSE —— 一部完全由前端实现的像素舞台剧</div>
+  </header>
+
+  <div id="theater">
+    <canvas id="cv" width="480" height="270"></canvas>
+
+    <div id="startOverlay" class="overlay">
+      <button id="startBtn">▶ 点击开始演出</button>
+    </div>
+    <div id="titleCard" class="overlay hidden">
+      <div class="card">
+        <div id="titleBig">星夜灯塔</div>
+        <div id="titleSub">—— 一部完全由前端演出的像素舞台剧 ——</div>
+        <div class="tap">点击继续 ▾</div>
+      </div>
+    </div>
+    <div id="direction" class="overlay hidden">
+      <div class="dbox"><span id="dirText"></span></div>
+    </div>
+    <div id="banner" class="overlay hidden">
+      <div class="bbox"><span id="bannerText"></span></div>
+    </div>
+    <div id="pauseOverlay" class="overlay hidden"><div class="pbox">⏸ 已暂停 · 点击继续</div></div>
+    <div id="endOverlay" class="overlay hidden"><div class="ebox">🎬 剧终 · 感谢观看<br><span>点击任意处重新演出</span></div></div>
+  </div>
+
+  <div id="dialog">
+    <div id="speaker" class="s-旁白">旁白</div>
+    <div id="text"><span id="typed"></span><span id="cursor">▍</span><span id="hint"></span></div>
+  </div>
+
+  <div id="controls">
+    <button id="bNext">▶ 继续</button>
+    <button id="bPause">⏸ 暂停</button>
+    <button id="bAuto">▶▶ 自动演出</button>
+    <button id="bSound">🔊 声音</button>
+    <button id="bScript">📜 剧本</button>
+    <select id="speedSel" title="字幕速度">
+      <option value="45">字幕 · 慢</option>
+      <option value="26" selected>字幕 · 中</option>
+      <option value="13">字幕 · 快</option>
+    </select>
+    <button id="bReplay">↺ 重演</button>
+  </div>
+
+  <div id="scriptPanel" class="hidden">
+    <h3>📜 《星夜灯塔》剧本（点击任意一行跳转到该幕）</h3>
+    <div id="scriptInner"></div>
+  </div>
+
+  <footer>
+    本剧的剧本、像素美术、动画与芯片音乐均由前端代码实时生成，无任何外部素材。<br>
+    DeepSeek Harness Agent × deepseek-v4-pro 出品
+  </footer>
+</div>
+
+<script>
+(()=>{ 'use strict';
+/* ============================================================
+ * 《星夜灯塔》 —— 像素舞台剧引擎
+ * 剧本数据(SCRIPT)驱动演出：幕、旁白、台词、舞台提示、特效、配乐
+ * 全部由前端实时生成：Canvas 像素美术 + Web Audio 芯片音乐
+ * ============================================================ */
+
+const $=s=>document.querySelector(s);
+const cv=$('#cv'), ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+
+/* ---------- 常量 ---------- */
+const W=480,H=270;                 // 舞台设计分辨率
+const OX=70,OY=30,OW=340,OH=170;   // 台口（画面开口）
+const FLOOR=192;                   // 演员站立线
+
+const PAL={
+  ma:{k:'#274a86',h:'#e8e9ed',s:'#e9bd8c',e:'#262c36',m:'#a05a44',r:'#c97e5e',c:'#2b4f96',d:'#20407a',y:'#f2c14e',p:'#43485a',b:'#262a33'},
+  xing:{y:'#ffd94a',e:'#262c36'}
+};
+const NIGHT=['#04081c','#081026','#0e1b3d','#14294f','#1c3a66'];
+const STORM=['#07090f','#0b0e16','#10141e','#151a26','#1b2130'];
+const DAWN =['#241a4a','#3d2a5e','#7a3d66','#c06562','#f2a25c'];
+const NIGHT_SEA=['#0c2440','#103058','#173f70','#1e5188','#2a6aa0','#3180b4','#3a8fc0'];
+const STORM_SEA=['#0a1420','#0e1b2c','#122438','#172c44','#1d3450','#23405e','#2a4c6c'];
+const DAWN_SEA =['#2a3a6a','#3d4a80','#7a5670','#c07066','#e89a5e','#f0b070','#f6c88a'];
+
+/* ---------- 全局演出状态 ---------- */
+const st={
+  started:false,ended:false,paused:false,auto:false,muted:false,
+  bi:-1,cur:null,clickWait:false,
+  typing:false,typeI:0,typeT:0,typeLen:0,typeDelay:26,lineChars:[],
+  timer:null,timerT:0,timerDur:0,timerDone:null,autoTimer:null,
+  scene:'night',sceneT:0,section:0,
+  curtain:0,curtainTarget:0,
+  fx:null,flash:0,shake:0,thunderT:5,rainFade:1,waveRough:0.35,
+  lighthouse:{lit:true},heroStar:false,
+  ma:{vis:false,x:250,y:FLOOR,state:'idle',walkT:0,walkFrom:0,walkTo:0,walkDur:1,arrow:false,lantern:true},
+  xing:{vis:false,x:330,y:185,bright:false,arrow:false},
+  boat:{vis:false,x:330},
+  parts:[],stars:[],rain:[],clouds:[]
+};
+
+/* ---------- 工具 ---------- */
+const lerp=(a,b,k)=>a+(b-a)*k;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function easeInOut(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+function easeOutBounce(t){const n1=7.5625,d1=2.75;if(t<1/d1)return n1*t*t;if(t<2/d1)return n1*(t-=1.5/d1)*t+.75;if(t<2.5/d1)return n1*(t-=2.25/d1)*t+.9375;return n1*(t-=2.625/d1)*t+.984375;}
+function hexLerp(a,b,k){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);
+  const r=Math.round(((pa>>16)&255)+(((pb>>16)&255)-((pa>>16)&255))*k);
+  const g=Math.round(((pa>>8)&255)+(((pb>>8)&255)-((pa>>8)&255))*k);
+  const bl=Math.round((pa&255)+((pb&255)-(pa&255))*k);
+  return `rgb(${r},${g},${bl})`;}
+function glow(x,y,r,c,a){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();}
+function spawnParts(x,y,n,col){for(let i=0;i<n;i++){st.parts.push({x,y,vx:(Math.random()-.5)*70,vy:-25-Math.random()*45,life:.5+Math.random()*.5,col});}}
+function drawGrid(rows,pal,x,y,c){rows.forEach((row,ry)=>{for(let rx=0;rx<row.length;rx++){const ch=row[rx];if(ch==='.'||ch===' ')continue;const col=pal[ch];if(!col)continue;ctx.fillStyle=col;ctx.fillRect(Math.round(x+rx*c),Math.round(y+ry*c),c,c);}});}
+
+/* ---------- 像素角色 ---------- */
+function maRows(cap,eyes,legB){
+  const r=[];
+  r.push(cap?"...kkkkkk...":"...hhhhhh...");
+  r.push(cap?"..kkkkkkkk..":"..hhhhhhhh..");
+  r.push(cap?".kkkkkkkkkk.":".hhhhhhhhhh.");
+  r.push(".hhsssssshh.");
+  r.push(".hssssssssh.");
+  r.push(eyes?".hssssssssh.":".hseesseesh.");
+  r.push(".hssssssssh.");
+  r.push(".hssssrsssh.");
+  r.push(".hssmmssssh.");
+  r.push(".hhhhhhhhhh.");
+  r.push(".hhhhhhhhhh.");
+  r.push(".hhhhhhhhhh.");
+  r.push("..hhhhhhhh..");
+  r.push("...hhhhhh...");
+  r.push("..cccccccc..");
+  r.push(".ccyyyycccc.");
+  r.push(".cccccccccc.");
+  r.push(".cccccccccc.");
+  r.push(".dddcccddd..");
+  r.push(".ddpppppdd..");
+  r.push("..cpppppc...");
+  r.push("...ppppp....");
+  if(legB){r.push("..bb..bb....");r.push("..bb..bb....");}
+  else   {r.push("...bbbbbb...");r.push("...bb.bb....");}
+  return r;
+}
+function xingRows(blink){
+  return ["....y....","....y....","...yyy...","..yyyyy..","yyyyyyyyy","..yyyyy..",
+          blink?".yyyyyyy.":".yyeyeyy.","...yyy...","....y...."];
+}
+
+/* ---------- 剧本（数据驱动演出） ---------- */
+const FX_DESC={
+  shooting:'一颗流星划过夜空',starfall:'小星坠落在海滩上',lightup:'灯塔之光重新点亮小星',
+  boatguide:'小星飞向海面，为渔船引路',calm:'风浪渐息，海面重归平静',
+  starRise:'小星缓缓升起，回到夜空',bow:'全体演员谢幕鞠躬'
+};
+function sceneNight(){st.scene='night';st.waveRough=.35;st.rainFade=0;audio.setAmb(.07);audio.setRain(0);}
+function sceneStorm(){st.scene='storm';st.waveRough=1.4;st.rainFade=1;st.thunderT=3;audio.setAmb(.2);audio.setRain(.12);}
+function sceneDawn(){st.scene='dawn';st.waveRough=.35;st.rainFade=0;audio.setAmb(.05);audio.setRain(0);}
+
+const SECTIONS=[
+ {name:'开场',setup(){sceneNight();st.curtain=0;st.curtainTarget=0;st.ma.vis=false;st.xing.vis=false;st.boat.vis=false;st.lighthouse.lit=true;st.heroStar=false;st.fx=null;},
+  beats:[
+   {t:'title',big:'星夜灯塔',sub:'—— 一部完全由前端演出的像素舞台剧 ——'},
+   {t:'curtain',open:true,dur:3.2},
+   {t:'music',track:'calm'},
+  ]},
+ {name:'第一场 · 孤灯',setup(){sceneNight();st.curtain=1;st.curtainTarget=1;st.ma.vis=false;st.ma.x=58;st.ma.state='idle';st.xing.vis=false;st.boat.vis=false;st.lighthouse.lit=true;st.heroStar=false;st.fx=null;},
+  beats:[
+   {t:'banner',text:'第一场 · 孤灯',dur:2.2},
+   {t:'stage',text:'幕启。夜海辽阔，一座旧灯塔立在礁石上，浪声隐约。'},
+   {t:'walk',who:'ma',x:250,dur:2.2},
+   {t:'line',speaker:'旁白',text:'在最远的海角上，立着一座旧灯塔。'},
+   {t:'line',speaker:'旁白',text:'守灯人老马，在这里守了四十年。今晚，是他退休前的最后一夜。'},
+   {t:'line',speaker:'老马',text:'（擦拭着灯罩，轻声）老朋友，今晚，也请好好亮着。'},
+   {t:'fx',id:'shooting',dur:2.0},
+   {t:'line',speaker:'老马',text:'哦？流星！……许个愿吧。愿海上的人，都能找到回家的路。'},
+   {t:'fx',id:'starfall',dur:2.4},
+   {t:'line',speaker:'小星',text:'（晃晃悠悠）哎哟……头好晕。这是哪儿？天空怎么这么矮？'},
+   {t:'line',speaker:'老马',text:'（提起提灯，凑近）你是谁家的小家伙？'},
+   {t:'line',speaker:'小星',text:'我是天上的星星呀！刚才打了个盹儿，就从天上掉下来了。'},
+   {t:'line',speaker:'老马',text:'这可糟了。天一亮，星星就再也回不去了。'},
+   {t:'line',speaker:'小星',text:'（急得直跳）我的光也快用完啦，飞都飞不起来……呜……'},
+   {t:'line',speaker:'老马',text:'（沉吟片刻）灯塔的灯油，能把你的光重新点亮。'},
+   {t:'line',speaker:'小星',text:'真的吗？！'},
+   {t:'line',speaker:'老马',text:'可灯油只够照亮一夜的海路。给了你，灯塔就要熄一整夜。'},
+   {t:'line',speaker:'小星',text:'那我把光分给海上的船！你借我一点光，我替灯塔值班，天亮前，我再升回天上！'},
+   {t:'line',speaker:'老马',text:'（笑）成交。今晚，我们两个一起值班。'},
+   {t:'fx',id:'lightup',dur:2.6},
+  ]},
+ {name:'第二场 · 风暴',setup(){sceneStorm();st.curtain=1;st.curtainTarget=1;st.ma.vis=true;st.ma.x=150;st.ma.state='idle';st.xing.vis=true;st.xing.bright=true;st.xing.x=300;st.xing.y=185;st.boat.vis=true;st.boat.x=330;st.lighthouse.lit=false;st.heroStar=false;st.fx=null;},
+  beats:[
+   {t:'banner',text:'第二场 · 风暴',dur:2.2},
+   {t:'music',track:'storm'},
+   {t:'stage',text:'午夜。乌云压海，风暴骤起，渔船在浪里打转。'},
+   {t:'line',speaker:'旁白',text:'海面上，有一艘渔船，正在浪里打转。'},
+   {t:'line',speaker:'老马',text:'不好——他们找不到航向！'},
+   {t:'line',speaker:'小星',text:'别怕！我去当海上的灯！'},
+   {t:'fx',id:'boatguide',dur:7.0},
+   {t:'line',speaker:'旁白',text:'风浪里，那一点金光忽明忽暗，却一直亮着，像一颗不肯熄灭的心。'},
+   {t:'line',speaker:'老马',text:'（朝海上喊）再坚持一下——！'},
+   {t:'fx',id:'calm',dur:2.8},
+  ]},
+ {name:'第三场 · 黎明',setup(){sceneDawn();st.curtain=1;st.curtainTarget=1;st.ma.vis=true;st.ma.x=225;st.ma.state='idle';st.xing.vis=true;st.xing.bright=false;st.xing.x=320;st.xing.y=185;st.boat.vis=false;st.lighthouse.lit=false;st.heroStar=false;st.fx=null;},
+  beats:[
+   {t:'banner',text:'第三场 · 黎明',dur:2.2},
+   {t:'music',track:'dawn'},
+   {t:'line',speaker:'小星',text:'（虚弱地）老马，天快亮了。谢谢你，借给我的光。'},
+   {t:'line',speaker:'老马',text:'该说谢谢的是我。今晚，你是海上最亮的灯塔。'},
+   {t:'line',speaker:'小星',text:'我要回去啦。你要常抬头看星星——天上最会眨眼的那一颗，就是我！'},
+   {t:'fx',id:'starRise',dur:5.2},
+   {t:'line',speaker:'旁白',text:'从此，老马每晚抬头，都能看见那颗星。'},
+   {t:'line',speaker:'旁白',text:'它总是第一个亮起来，为晚归的船，指着回家的路。'},
+   {t:'curtain',open:false,dur:2.8},
+  ]},
+ {name:'谢幕',setup(){sceneNight();st.curtain=0;st.curtainTarget=0;st.ma.vis=true;st.ma.x=235;st.ma.state='idle';st.xing.vis=true;st.xing.bright=true;st.xing.x=305;st.xing.y=185;st.boat.vis=false;st.lighthouse.lit=true;st.fx=null;},
+  beats:[
+   {t:'title',big:'—— 谢幕 ——',sub:'《星夜灯塔》全体演员向您鞠躬'},
+   {t:'music',track:'finale'},
+   {t:'curtain',open:true,dur:2.4},
+   {t:'fx',id:'bow',dur:4.2},
+   {t:'title',big:'剧 终',sub:'感谢观看 · 点击屏幕，演出谢幕'},
+  ]},
+];
+const beats=[],sectionStart=[];
+SECTIONS.forEach(sec=>{sectionStart.push(beats.length);beats.push({t:'setup',fn:sec.setup});sec.beats.forEach(b=>beats.push(b));});
+
+/* ---------- 音频（Web Audio 芯片音乐，全部实时合成） ---------- */
+const audio={
+  ctx:null,master:null,musicG:null,sfxG:null,ambG:null,rainG:null,noiseBuf:null,
+  track:null,timer:null,step:0,nextT:0,
+  init(){if(this.ctx)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+    this.ctx=new C();
+    this.master=this.ctx.createGain();this.master.gain.value=st.muted?0:.9;this.master.connect(this.ctx.destination);
+    this.musicG=this.ctx.createGain();this.musicG.gain.value=.85;this.musicG.connect(this.master);
+    this.sfxG=this.ctx.createGain();this.sfxG.gain.value=.9;this.sfxG.connect(this.master);
+    this.ambG=this.ctx.createGain();this.ambG.gain.value=0;this.ambG.connect(this.master);
+    const len=this.ctx.sampleRate*2;this.noiseBuf=this.ctx.createBuffer(1,len,this.ctx.sampleRate);
+    const d=this.noiseBuf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+    const src=this.ctx.createBufferSource();src.buffer=this.noiseBuf;src.loop=true;
+    const lp=this.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=380;lp.Q.value=.7;
+    src.connect(lp);lp.connect(this.ambG);src.start();
+    const rs=this.ctx.createBufferSource();rs.buffer=this.noiseBuf;rs.loop=true;
+    const hp=this.ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=900;
+    this.rainG=this.ctx.createGain();this.rainG.gain.value=0;
+    rs.connect(hp);hp.connect(this.rainG);this.rainG.connect(this.master);
+  },
+  setAmb(v){if(!this.ctx)return;this.ambG.gain.setTargetAtTime(v,this.ctx.currentTime,.4);},
+  setRain(v){if(!this.ctx||!this.rainG)return;this.rainG.gain.setTargetAtTime(v,this.ctx.currentTime,.5);},
+  tone(o){if(!this.ctx)return;const t=o.at||this.ctx.currentTime;
+    const osc=this.ctx.createOscillator();osc.type=o.type||'sine';
+    osc.frequency.setValueAtTime(o.f,t);
+    if(o.to)osc.frequency.exponentialRampToValueAtTime(Math.max(1,o.to),t+o.dur);
+    const g=this.ctx.createGain();g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(o.v||.2,t+(o.a||.01));
+    g.gain.exponentialRampToValueAtTime(.001,t+o.dur);
+    osc.connect(g);g.connect(this.sfxG);osc.start(t);osc.stop(t+o.dur+.05);
+  },
+  noise(o){if(!this.ctx)return;const t=o.at||this.ctx.currentTime;
+    const src=this.ctx.createBufferSource();src.buffer=this.noiseBuf;
+    const f=this.ctx.createBiquadFilter();f.type=o.hp?'highpass':'lowpass';
+    f.frequency.setValueAtTime(o.f,t);
+    if(o.to)f.frequency.exponentialRampToValueAtTime(o.to,t+o.dur);
+    const g=this.ctx.createGain();g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(o.v||.2,t+(o.a||.01));
+    g.gain.exponentialRampToValueAtTime(.001,t+o.dur);
+    src.connect(f);f.connect(g);g.connect(this.sfxG);src.start(t);src.stop(t+o.dur+.05);
+  },
+  playTrack(name){if(!this.ctx)return;this.stopTrack();const tr=TRACKS[name];if(!tr)return;
+    this.track=tr;this.step=0;this.nextT=this.ctx.currentTime+.12;
+    this.timer=setInterval(()=>{if(st.paused){this.nextT+=.05;return;}
+      const spb=60/tr.bpm/2;
+      while(this.nextT<this.ctx.currentTime+.35){this.sched(this.step,this.nextT,tr,spb);this.step=(this.step+1)%32;this.nextT+=spb;}
+    },80);
+  },
+  stopTrack(){if(this.timer){clearInterval(this.timer);this.timer=null;}},
+  sched(s,t,tr,spb){tr.pat[s].forEach(n=>{if(!n.f)return;
+    const f=440*Math.pow(2,(n.f-69)/12);
+    const o=this.ctx.createOscillator();o.type=n.w||'triangle';o.frequency.value=f;
+    const g=this.ctx.createGain();g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(n.v||.1,t+.02);
+    g.gain.exponentialRampToValueAtTime(.001,t+spb*.92);
+    o.connect(g);g.connect(this.musicG);o.start(t);o.stop(t+spb);
+  });}
+};
+function mkPat(bars,lead,opts){const P=[];
+  for(let i=0;i<32;i++){const arr=[];const bar=Math.floor(i/8);const b=bars[bar][i%8];
+    if(b)arr.push({f:b,w:'sine',v:(opts&&opts.bv)||.2});
+    const l=lead[i];
+    if(l)arr.push({f:l,w:(opts&&opts.lw)||'triangle',v:(opts&&opts.lv)||.1});
+    P.push(arr);}
+  return P;}
+const TRACKS={
+  calm:{bpm:88,pat:mkPat(
+    [[48,0,55,0,48,0,55,0],[45,0,52,0,45,0,52,0],[41,0,48,0,41,0,48,0],[43,0,50,0,43,0,50,0]],
+    [0,72,0,0,76,0,72,0, 0,71,0,0,69,0,67,0, 0,69,0,72,0,76,0,72, 0,74,0,0,71,0,67,0])},
+  storm:{bpm:132,pat:mkPat(
+    [[45,45,45,45,45,45,45,45],[41,41,41,41,41,41,41,41],[43,43,43,43,43,43,43,43],[40,40,40,40,40,40,40,40]],
+    [0,69,0,0,0,72,0,0, 0,69,0,0,0,65,0,0, 0,67,0,0,0,71,0,0, 0,64,0,0,0,67,0,0],
+    {lw:'square',lv:.05,bv:.15})},
+  dawn:{bpm:92,pat:mkPat(
+    [[41,0,48,0,41,0,48,0],[48,0,55,0,48,0,55,0],[45,0,52,0,45,0,52,0],[46,0,53,0,46,0,53,0]],
+    [69,0,72,0,76,0,72,0, 67,0,71,0,76,0,71,0, 65,0,69,0,72,0,69,0, 65,0,69,0,74,0,72,0],
+    {lv:.12})},
+  finale:{bpm:112,pat:mkPat(
+    [[48,0,48,0,55,0,48,0],[43,0,43,0,50,0,43,0],[45,0,45,0,52,0,45,0],[41,0,41,0,48,0,41,0]],
+    [72,0,76,0,79,0,76,0, 71,0,74,0,79,0,74,0, 69,0,72,0,76,0,72,0, 65,0,69,0,72,0,69,0],
+    {lw:'square',lv:.06})}
+};
+const sfx={
+  click(){audio.tone({f:900,type:'square',dur:.04,v:.05});},
+  shoot(){audio.tone({f:1500,to:260,dur:.9,type:'sine',v:.16});},
+  crash(){audio.noise({f:900,to:200,dur:.5,v:.35});audio.tone({f:90,to:40,dur:.5,type:'sine',v:.3});},
+  chime(){[880,1109,1319,1760].forEach((f,i)=>audio.tone({f,type:'sine',dur:.5,v:.14,at:(audio.ctx?audio.ctx.currentTime:0)+i*.09}));},
+  thunder(){audio.noise({f:150,to:40,dur:1.1,v:.4});audio.tone({f:60,to:30,dur:1.0,type:'sine',v:.25});},
+  rise(){audio.tone({f:440,to:1320,dur:1.8,type:'sine',v:.15});},
+  curtain(){audio.noise({f:500,to:250,dur:.6,v:.1});},
+  whoosh(){audio.noise({f:300,to:900,dur:.8,v:.15,hp:true});}
+};
+
+/* ---------- UI ---------- */
+const ui={
+  el:{title:$('#titleCard'),tbig:$('#titleBig'),tsub:$('#titleSub'),
+      dir:$('#direction'),dtext:$('#dirText'),banner:$('#banner'),btext:$('#bannerText'),
+      speaker:$('#speaker'),typed:$('#typed'),cursor:$('#cursor'),hint:$('#hint'),
+      start:$('#startOverlay'),pause:$('#pauseOverlay'),end:$('#endOverlay')},
+  hideAll(){this.el.title.classList.add('hidden');this.el.dir.classList.add('hidden');this.el.banner.classList.add('hidden');},
+  title(b){this.hideAll();this.el.tbig.textContent=b.big;this.el.tsub.textContent=b.sub||'';this.el.title.classList.remove('hidden');this.setHint('点击继续 ▾');},
+  direction(t){this.hideAll();this.el.dtext.textContent=t;this.el.dir.classList.remove('hidden');this.setHint('点击继续 ▾');},
+  banner(t){this.hideAll();this.el.btext.textContent='★ '+t+' ★';this.el.banner.classList.remove('hidden');this.setHint('');},
+  line(sp){this.hideAll();this.el.speaker.textContent=sp;this.el.speaker.className='s-'+sp;this.el.typed.textContent='';this.el.cursor.classList.remove('hidden');this.setHint('');},
+  typeUpdate(){this.el.typed.textContent=st.lineChars.slice(0,st.typeI).join('');},
+  cursorHide(){this.el.cursor.classList.add('hidden');},
+  setHint(t){this.el.hint.textContent=t;},
+  showEnd(){this.el.end.classList.remove('hidden');this.setHint('—— 剧终 ——');}
+};
+
+/* ---------- 导演引擎（节拍状态机） ---------- */
+function runTimer(dur,done){st.timerT=0;st.timerDur=dur;st.timerDone=done;st.timer=true;}
+function cancelAuto(){if(st.autoTimer){clearTimeout(st.autoTimer);st.autoTimer=null;}}
+function scheduleAuto(ms){if(!st.auto)return;cancelAuto();
+  st.autoTimer=setTimeout(()=>{st.autoTimer=null;if(st.paused){scheduleAuto(600);return;}if(st.typing)return;advance();},ms);}
+function startBeat(b){
+  st.cur=b;st.clickWait=false;ui.hideAll();
+  st.ma.arrow=false;st.xing.arrow=false;
+  switch(b.t){
+    case 'title':ui.title(b);st.clickWait=true;if(st.auto)scheduleAuto(2800);break;
+    case 'stage':ui.direction(b.text);st.clickWait=true;if(st.auto)scheduleAuto(1900+b.text.length*45);break;
+    case 'line':
+      st.typing=true;st.typeI=0;st.typeT=0;st.lineChars=Array.from(b.text);st.typeLen=st.lineChars.length;
+      ui.line(b.speaker);
+      if(b.speaker==='老马')st.ma.arrow=true;else if(b.speaker==='小星')st.xing.arrow=true;
+      break;
+    case 'curtain':st.curtainTarget=b.open?1:0;sfx.curtain();
+      runTimer(b.dur,()=>{st.curtain=st.curtainTarget;next();});
+      ui.setHint('演出中 · 点击可跳过 ▸▸');break;
+    case 'music':audio.playTrack(b.track);next();break;
+    case 'walk':walkTo(b);ui.setHint('演出中 · 点击可跳过 ▸▸');break;
+    case 'fx':startFx(b);
+      if(b.dur)runTimer(b.dur,()=>{finalizeFx();next();});else next();
+      ui.setHint(b.dur?'演出中 · 点击可跳过 ▸▸':'');break;
+    case 'banner':ui.banner(b.text);runTimer(b.dur||2,()=>next());break;
+    case 'setup':b.fn();next();break;
+  }
+}
+function next(){cancelAuto();st.bi++;
+  if(st.bi>=beats.length){st.ended=true;ui.showEnd();return;}
+  startBeat(beats[st.bi]);}
+function advance(){
+  if(!st.started||st.paused||st.ended)return;
+  sfx.click();
+  if(st.typing){st.typeI=st.typeLen;ui.typeUpdate();st.typing=false;st.clickWait=true;ui.cursorHide();
+    if(st.auto)scheduleAuto(1100+Math.min(st.typeLen*28,1600));else ui.setHint('点击继续 ▾');
+    return;}
+  if(st.timer){const f=st.timerDone;st.timer=null;st.timerDone=null;f&&f();return;}
+  if(st.clickWait){st.clickWait=false;next();}
+}
+function walkTo(b){const m=st.ma;m.vis=true;m.state='walk';m.walkT=0;m.walkFrom=m.x;m.walkTo=b.x;m.walkDur=b.dur;
+  runTimer(b.dur,()=>{m.x=m.walkTo;m.state='idle';next();});}
+
+/* ---------- 特效 ---------- */
+function startFx(b){
+  st.fx={id:b.id,t:0,dur:b.dur||0,landed:false,done:false};
+  switch(b.id){
+    case 'shooting':sfx.shoot();break;
+    case 'starfall':st.xing.vis=true;st.xing.bright=false;st.xing.x=330;st.xing.y=-10;sfx.shoot();break;
+    case 'lightup':st.xing.bright=true;st.lighthouse.lit=false;sfx.chime();st.flash=.5;
+      spawnParts(st.xing.x,st.xing.y,26,'#ffd94a');st.shake=.3;break;
+    case 'boatguide':st.boat.vis=true;st.boat.x=330;sfx.whoosh();audio.setAmb(.24);audio.setRain(.14);break;
+    case 'calm':audio.setRain(0);audio.setAmb(.08);break;
+    case 'starRise':sfx.rise();break;
+    case 'bow':st.ma.state='bow';break;
+  }
+}
+function finalizeFx(){const f=st.fx;if(!f)return;
+  switch(f.id){
+    case 'boatguide':st.boat.vis=false;st.xing.x=320;st.xing.y=185;break;
+    case 'starRise':st.xing.vis=false;st.heroStar=true;break;
+    case 'calm':st.rainFade=0;st.waveRough=.35;break;
+    case 'bow':st.ma.state='idle';break;
+  }
+  st.fx=null;}
+function updateFx(dt){
+  const f=st.fx;if(!f)return;
+  f.t+=dt;
+  switch(f.id){
+    case 'starfall':{
+      const kk=Math.min(f.t/1.8,1);
+      st.xing.y=20+(185-20)*easeOutBounce(kk);
+      st.xing.x=330-Math.sin(kk*Math.PI)*40;
+      if(kk>=1&&!f.landed){f.landed=true;sfx.crash();spawnParts(330,185,22,'#ffd94a');spawnParts(330,185,10,'#8b93a7');st.shake=.5;}
+      break;}
+    case 'boatguide':{
+      const kk=Math.min(f.t/7,1);
+      st.boat.x=330-190*easeInOut(kk);
+      if(kk<.15){const q=f.t/1.05;st.xing.x=lerp(300,st.boat.x+16,q);st.xing.y=lerp(185,142,q);}
+      else{st.xing.x=st.boat.x+16;st.xing.y=142+Math.sin(f.t*3)*5;}
+      if(kk>=1&&!f.done){f.done=true;st.boat.vis=false;st.xing.x=320;st.xing.y=185;}
+      break;}
+    case 'calm':{const kk=Math.min(f.t/2.8,1);st.rainFade=1-kk;st.waveRough=lerp(1.4,.35,kk);break;}
+    case 'starRise':{
+      const kk=Math.min(f.t/5.2,1);
+      const e=easeInOut(kk);
+      st.xing.x=lerp(320,200,e);st.xing.y=lerp(185,74,e)+Math.sin(f.t*2)*4;
+      if(kk>.4)st.xing.bright=true;
+      if(kk<.95&&Math.random()<.35)spawnParts(st.xing.x,st.xing.y+8,1,'#fff7c0');
+      if(kk>=1&&!f.done){f.done=true;st.xing.vis=false;st.heroStar=true;}
+      break;}
+  }
+}
+
+/* ---------- 绘制：剧场 ---------- */
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(st.shake>0){ctx.translate((Math.random()*2-1)*st.shake*4,(Math.random()*2-1)*st.shake*4);st.shake=Math.max(0,st.shake-.02);}
+  drawWall();
+  drawScene();
+  drawApron();
+  drawValance();
+  drawCurtains();
+  ctx.restore();
+  if(st.flash>0){st.flash=Math.max(0,st.flash-.025);ctx.fillStyle=`rgba(255,244,214,${st.flash*.3})`;ctx.fillRect(OX,OY,OW,OH);}
+}
+function drawWall(){
+  ctx.fillStyle='#150f1e';
+  ctx.fillRect(0,0,W,OY);ctx.fillRect(0,OY,OX,H-OY);ctx.fillRect(OX+OW,OY,W-OX-OW,H-OY);
+  ctx.fillStyle='rgba(255,255,255,.03)';
+  for(let i=0;i<40;i++){const x=(i*53)%W,y=(i*37)%H;if(y<OY||x<OX||x>OX+OW)ctx.fillRect(x,y,2,2);}
+  ctx.fillStyle='#8a6a2f';
+  ctx.fillRect(OX,OY-12,OW,12);
+  ctx.fillRect(OX-14,OY,14,H-OY);ctx.fillRect(OX+OW,OY,14,H-OY);
+  ctx.fillStyle='#a8833f';ctx.fillRect(OX+OW/2-8,OY-18,16,8);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(OX,OY-8,OW,4);
+  ctx.fillStyle='#a8833f';ctx.fillRect(OX-18,OY-16,22,8);ctx.fillRect(OX+OW-4,OY-16,22,8);
+  ctx.fillStyle='#6b5023';ctx.fillRect(OX-14,OY,14,4);ctx.fillRect(OX+OW,OY,14,4);
+  glow(OX-7,90,4,'#f2c14e',.35);ctx.fillStyle='#f2c14e';ctx.fillRect(OX-9,89,4,4);
+  glow(OX+OW+7,90,4,'#f2c14e',.35);ctx.fillRect(OX+OW+5,89,4,4);
+  ctx.fillStyle='#8a6a2f';ctx.font='bold 9px "Courier New",monospace';ctx.textAlign='center';
+  ctx.fillText('★ THE STAR LIGHTHOUSE ★',W/2,8);
+}
+function drawValance(){
+  ctx.fillStyle='#8f1d1d';ctx.fillRect(OX,OY-12,OW,18);
+  ctx.fillStyle='rgba(0,0,0,.28)';for(let x=OX+4;x<OX+OW;x+=12)ctx.fillRect(x,OY-12,3,18);
+  for(let x=OX;x<OX+OW;x+=14){ctx.beginPath();ctx.arc(x+7,OY+6,7,0,Math.PI);ctx.fillStyle='#8f1d1d';ctx.fill();}
+  ctx.fillStyle='#c9a24a';ctx.fillRect(OX,OY-12,OW,2);ctx.fillRect(OX,OY+4,OW,2);
+}
+function drawCurtains(){
+  const c=st.curtain;
+  drawPanel(6,lerp(240,OX,c));
+  drawPanel(lerp(240,OX+OW,c),W-6);
+}
+function drawPanel(x0,x1){
+  if(x1-x0<4)return;
+  const w=x1-x0;
+  ctx.fillStyle='#7f1d1d';ctx.fillRect(x0,20,w,180);
+  ctx.fillStyle='rgba(0,0,0,.25)';for(let x=x0+3;x<x1;x+=12)ctx.fillRect(x,20,3,180);
+  ctx.fillStyle='rgba(255,130,90,.10)';for(let x=x0+8;x<x1;x+=12)ctx.fillRect(x,20,3,180);
+  ctx.fillStyle='#7f1d1d';
+  for(let x=x0;x<x1;x+=16){const ww=Math.min(16,x1-x);ctx.fillRect(x,196,ww,4);ctx.beginPath();ctx.arc(x+ww/2,200,ww/2,0,Math.PI);ctx.fill();}
+}
+function drawApron(){
+  ctx.fillStyle='#3a2a1e';ctx.fillRect(0,200,W,70);
+  ctx.fillStyle='#2e2118';
+  for(let x=10;x<W;x+=26){ctx.beginPath();ctx.moveTo(x,200);ctx.lineTo(x+8,270);ctx.lineTo(x+10,270);ctx.lineTo(x+2,200);ctx.fill();}
+  ctx.fillStyle='#33251a';ctx.fillRect(0,216,W,3);ctx.fillRect(0,238,W,3);ctx.fillRect(0,260,W,3);
+  ctx.fillStyle='#1f150d';ctx.fillRect(0,264,W,6);
+  for(let x=86;x<400;x+=16){glow(x,206,4,'#f2c14e',.22);ctx.fillStyle='#f2c14e';ctx.fillRect(x-2,204,4,4);ctx.fillStyle='#6b5023';ctx.fillRect(x-3,208,6,2);}
+}
+
+/* ---------- 绘制：场景 ---------- */
+function dawnK(){return clamp(st.sceneT/12,0,1);}
+function drawScene(){
+  ctx.save();
+  ctx.beginPath();ctx.rect(OX,OY,OW,OH);ctx.clip();
+  const scene=st.scene;
+  let cols;
+  if(scene==='night')cols=NIGHT;
+  else if(scene==='storm')cols=STORM;
+  else{const k=dawnK();cols=NIGHT.map((c,i)=>hexLerp(c,DAWN[i],k));}
+  cols.forEach((c,i)=>{ctx.fillStyle=c;ctx.fillRect(OX,OY+i*24,OW,24);});
+  if(scene==='dawn'){const k=dawnK();
+    if(k>.01){ctx.save();ctx.globalCompositeOperation='lighter';
+      ctx.fillStyle=`rgba(255,200,130,${.4*k})`;ctx.beginPath();ctx.arc(OX+235,OY+118,30,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=`rgba(255,240,190,${.5*k})`;ctx.beginPath();ctx.arc(OX+235,OY+118,15,0,Math.PI*2);ctx.fill();
+      ctx.restore();}}
+  if(scene==='storm'){
+    ctx.fillStyle='rgba(255,255,255,.12)';
+    st.stars.forEach(s=>{if((s.x+s.y)%5===0)ctx.fillRect(OX+s.x,OY+s.y,1,1);});
+  }else{
+    const k=scene==='dawn'?dawnK():0;
+    st.stars.forEach(s=>{const a=(.35+.65*Math.abs(Math.sin(st.sceneT*s.sp+s.ph)))*(1-k*.9);
+      ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(OX+s.x,OY+s.y,s.s,s.s);});
+  }
+  if(scene==='night'){
+    glow(OX+285,OY+26,16,'#dce1f0',.10);
+    ctx.fillStyle='#e9e4c4';ctx.beginPath();ctx.arc(OX+285,OY+26,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#081026';ctx.beginPath();ctx.arc(OX+289,OY+24,8,0,Math.PI*2);ctx.fill();
+  }
+  if(st.heroStar){
+    const hx=OX+130,hy=OY+44,s=1+.35*Math.sin(st.sceneT*3);
+    glow(hx,hy,10*s,'#fff0b4',.25);
+    ctx.fillStyle='#fff7c0';
+    ctx.fillRect(hx-2,hy-2,4,4);
+    ctx.fillRect(hx-6,hy-1,2,2);ctx.fillRect(hx+4,hy-1,2,2);
+    ctx.fillRect(hx-1,hy-6,2,2);ctx.fillRect(hx-1,hy+4,2,2);
+  }
+  if(scene==='storm'){
+    st.clouds.forEach(c=>{const x=OX+(((c.x-st.sceneT*c.sp)%(OW+100))+(OW+100))%(OW+100)-50;
+      ctx.fillStyle='#20273a';ctx.fillRect(x,c.y,c.w,10);ctx.fillRect(x+8,c.y+7,c.w+16,9);
+      ctx.fillStyle='#171c2b';ctx.fillRect(x,c.y+10,c.w,5);});
+  }
+  drawSea();
+  drawLighthouse();
+  drawBeach();
+  drawBoat();
+  drawMa();
+  drawXing();
+  drawFx();
+  st.parts.forEach(p=>{ctx.globalAlpha=clamp(p.life,0,1);ctx.fillStyle=p.col;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);});
+  ctx.globalAlpha=1;
+  if(scene==='storm'&&st.rainFade>.01){
+    ctx.globalAlpha=st.rainFade*.35;ctx.fillStyle='#9db4d8';
+    st.rain.forEach(r=>{
+      const x=OX+(((r.x-st.sceneT*r.sp*95)%(OW+24))+(OW+24))%(OW+24)-12;
+      const y=OY+((r.y+st.sceneT*r.fall)%(OH+8));
+      ctx.fillRect(Math.round(x),Math.round(y),1,3);});
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+function drawSea(){
+  const scene=st.scene,rough=st.waveRough;
+  let seaCols;
+  if(scene==='night')seaCols=NIGHT_SEA;
+  else if(scene==='storm')seaCols=STORM_SEA;
+  else{const k=dawnK();seaCols=NIGHT_SEA.map((c,i)=>hexLerp(c,DAWN_SEA[i],k));}
+  const n=seaCols.length;
+  for(let i=0;i<n;i++){
+    const y=150+i*7+Math.sin(st.sceneT*1.4+i*1.7)*rough*1.6;
+    ctx.fillStyle=seaCols[i];ctx.fillRect(OX,Math.round(y),OW,9);
+    const cc=scene==='storm'?'#c8d4ea':(scene==='dawn'?hexLerp('#2a6aa0','#f2b26a',dawnK()):'#2a6aa0');
+    const speed=18+i*4;
+    for(let x=-30;x<OW+40;x+=30){
+      const px=OX+((x+st.sceneT*speed+i*17)%(OW+60));
+      if(px>OX-4&&px<OX+OW){ctx.fillStyle=cc;ctx.fillRect(Math.round(px),Math.round(y),7,2);}
+    }
+  }
+}
+function drawLighthouse(){
+  const lit=st.lighthouse.lit;
+  ctx.fillStyle='#d7d9dd';ctx.fillRect(120,78,26,102);
+  ctx.fillStyle='#b23a3a';ctx.fillRect(120,100,26,12);ctx.fillRect(120,140,26,12);
+  ctx.fillStyle='rgba(0,0,0,.16)';ctx.fillRect(140,78,6,102);
+  ctx.fillStyle='#9aa0a8';ctx.fillRect(116,176,34,6);
+  ctx.fillStyle='#232936';ctx.fillRect(114,60,38,20);
+  ctx.fillStyle=lit?'#ffd94a':'#3a465c';ctx.fillRect(118,65,30,9);
+  ctx.fillStyle='#232936';ctx.fillRect(110,54,46,8);ctx.fillRect(124,46,18,8);
+  if(lit){
+    ctx.save();ctx.translate(133,70);ctx.rotate(.15+Math.sin(st.sceneT*.45)*.42);
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(255,233,168,.07)';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(125,-14);ctx.lineTo(125,14);ctx.fill();
+    ctx.fillStyle='rgba(255,233,168,.08)';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(75,-7);ctx.lineTo(75,7);ctx.fill();
+    ctx.restore();
+    glow(133,70,9,'#ffe9a8',.35);
+  }
+}
+function drawBeach(){
+  ctx.fillStyle='#0f1524';ctx.fillRect(OX,191,OW,9);
+  ctx.fillStyle='#131b30';ctx.fillRect(OX,191,OW,2);
+  ctx.fillStyle='#0f1524';
+  ctx.beginPath();ctx.arc(OX+35,192,7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(OX+110,193,5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(OX+230,192,6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a212e';
+  ctx.beginPath();ctx.moveTo(96,196);ctx.lineTo(164,196);ctx.lineTo(172,184);ctx.lineTo(152,177);ctx.lineTo(120,178);ctx.lineTo(102,185);ctx.fill();
+  ctx.fillStyle='#232c3c';ctx.fillRect(118,178,24,2);
+  ctx.fillStyle='#141b2c';ctx.fillRect(352,190,58,9);
+  ctx.beginPath();ctx.arc(356,190,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(404,190,5,0,Math.PI*2);ctx.fill();
+}
+function drawBoat(){
+  if(!st.boat.vis)return;
+  const x=st.boat.x,y=158+Math.sin(st.sceneT*2.2)*2.5;
+  ctx.fillStyle='#5a3b26';ctx.fillRect(x,y,34,4);
+  ctx.fillStyle='#6b4a2f';ctx.fillRect(x,y-1,34,2);
+  ctx.fillStyle='#40291b';ctx.fillRect(x+3,y+4,28,3);ctx.fillRect(x+6,y+7,22,2);
+  ctx.fillStyle='#2e2620';ctx.fillRect(x+16,y-5,2,5);
+  ctx.fillStyle='#d8d4c8';ctx.beginPath();ctx.moveTo(x+18,y-5);ctx.lineTo(x+18,y-1);ctx.lineTo(x+29,y-2);ctx.fill();
+  ctx.fillStyle='#ffd94a';ctx.fillRect(x+30,y-4,2,2);
+  glow(x+31,y-3,6,'#ffd94a',.3);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  ctx.fillStyle='rgba(255,217,74,.12)';ctx.beginPath();ctx.ellipse(x+17,y+12,22,5,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawMa(){
+  const m=st.ma;if(!m.vis)return;
+  let bob=0,legB=0,eyes=false,cap=true,bow=0;
+  if(m.state==='walk'){bob=Math.abs(Math.sin(m.walkT*9))*2.5;legB=Math.floor(m.walkT*7)%2;}
+  else if(m.state==='idle'){bob=Math.sin(st.sceneT*2+m.x)*.8;eyes=(st.sceneT%3.4)>3.28;}
+  else if(m.state==='bow'){bow=Math.abs(Math.sin(st.sceneT*2.4))*7;eyes=true;cap=false;}
+  const x=m.x-18,y=m.y-72+bob+bow;
+  drawGrid(maRows(cap,eyes,legB),PAL.ma,x,y,3);
+  if(m.lantern){
+    glow(x+30,y+40,9,'#ffd94a',.3);
+    ctx.fillStyle='#232936';ctx.fillRect(x+24,y+30,12,13);
+    ctx.fillStyle='#ffd94a';ctx.fillRect(x+27,y+33,6,7);
+    ctx.fillStyle='#7c8394';ctx.fillRect(x+29,y+43,2,9);
+    ctx.fillStyle='#232936';ctx.fillRect(x+23,y+27,14,4);
+  }
+  if(m.arrow){const ay=y-16+Math.sin(st.sceneT*6)*2;
+    ctx.fillStyle='#ffd94a';ctx.beginPath();ctx.moveTo(x+14,ay);ctx.lineTo(x+22,ay);ctx.lineTo(x+18,ay+7);ctx.fill();}
+}
+function drawXing(){
+  const xg=st.xing;if(!xg.vis)return;
+  const bob=Math.sin(st.sceneT*2.6)*1.2;
+  const blink=(st.sceneT%2.8)>2.7;
+  const x=xg.x-13.5,y=xg.y-13.5+bob;
+  if(xg.bright){
+    glow(xg.x,y+13,16,'#ffd94a',.22);
+    glow(xg.x,y+13,24,'#ffd94a',.12);
+  }else{
+    glow(xg.x,y+13,12,'#c8b46a',.10);
+  }
+  drawGrid(xingRows(blink),PAL.xing,x,y,3);
+  if(xg.arrow){const ay=y-8+Math.sin(st.sceneT*6)*2;
+    ctx.fillStyle='#ffd94a';ctx.beginPath();ctx.moveTo(xg.x-5,ay);ctx.lineTo(xg.x+5,ay);ctx.lineTo(xg.x,ay+6);ctx.fill();}
+}
+function drawFx(){
+  const f=st.fx;if(!f)return;
+  if(f.id==='shooting'){
+    const k=Math.min(f.t/1.6,1),e=easeInOut(k);
+    const x=lerp(370,150,e),y=lerp(64,104,e);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<9;i++){
+      ctx.fillStyle=`rgba(255,251,232,${.5*(1-i/9)})`;
+      ctx.fillRect(Math.round(x-27.5*i),Math.round(y+5*i),3,3);
+    }
+    glow(x,y,5,'#fffbe8',.5);
+    ctx.restore();
+  }
+  if(f.id==='starfall'){
+    const k=Math.min(f.t/1.8,1);
+    if(k<1){
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      ctx.strokeStyle='rgba(255,240,180,.5)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(st.xing.x,st.xing.y-30);ctx.lineTo(st.xing.x,st.xing.y);ctx.stroke();
+      ctx.restore();
+    }
+  }
+  if(f.id==='lightup'){
+    const k=Math.min(f.t/2.6,1),r=10+k*70,a=(1-k)*.6;
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(255,217,74,${a})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(st.xing.x,st.xing.y-6,r,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle=`rgba(255,217,74,${a*.6})`;ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(st.xing.x,st.xing.y-6,r*.7,0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<8;i++){const ang=i/8*Math.PI*2;
+      ctx.fillStyle=`rgba(255,217,74,${a*.5})`;
+      ctx.fillRect(st.xing.x+Math.cos(ang)*r-1,st.xing.y-6+Math.sin(ang)*r-1,2,2);}
+    ctx.restore();
+    if(f.t<.5){ctx.fillStyle=`rgba(255,217,74,${.25*(1-f.t/.5)})`;ctx.fillRect(OX,OY,OW,OH);}
+  }
+  if(f.id==='boatguide'&&st.boat.vis){
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle='rgba(255,220,120,.28)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(st.xing.x,st.xing.y);ctx.lineTo(st.boat.x+12,158);ctx.stroke();
+    ctx.fillStyle='rgba(255,220,120,.12)';
+    ctx.beginPath();ctx.ellipse(st.boat.x+12,163,20,6,0,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ---------- 主循环 ---------- */
+function update(dt){
+  st.sceneT+=dt;
+  st.curtain+=(st.curtainTarget-st.curtain)*Math.min(1,dt*1.6);
+  if(st.timer){st.timerT+=dt;if(st.timerT>=st.timerDur){const f=st.timerDone;st.timer=null;st.timerDone=null;f&&f();}}
+  if(st.typing){
+    st.typeT+=dt;
+    while(st.typeT>=st.typeDelay&&st.typeI<st.typeLen){st.typeI++;st.typeT-=st.typeDelay;ui.typeUpdate();}
+    if(st.typeI>=st.typeLen){st.typing=false;st.clickWait=true;ui.cursorHide();
+      if(st.auto)scheduleAuto(1200+Math.min(st.typeLen*30,1800));else ui.setHint('点击继续 ▾');}
+  }
+  if(st.ma.state==='walk'){
+    st.ma.walkT+=dt;
+    const k=Math.min(st.ma.walkT/st.ma.walkDur,1);
+    st.ma.x=lerp(st.ma.walkFrom,st.ma.walkTo,k);
+    if(k>=1)st.ma.state='idle';
+  }
+  updateFx(dt);
+  st.parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=35*dt;p.life-=dt;});
+  st.parts=st.parts.filter(p=>p.life>0);
+  if(st.scene==='storm'){
+    st.thunderT-=dt;
+    if(st.thunderT<=0){st.thunderT=3.5+Math.random()*4.5;st.flash=1;setTimeout(()=>sfx.thunder(),300);}
+  }
+}
+let last=performance.now();
+function frame(now){
+  const dt=Math.min((now-last)/1000,.05);last=now;
+  if(st.started&&!st.paused)update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- 交互 ---------- */
+function startShow(){audio.init();st.started=true;ui.el.start.classList.add('hidden');}
+function jumpTo(si){
+  cancelAuto();st.fx=null;st.typing=false;st.clickWait=false;
+  st.timer=null;st.timerDone=null;ui.hideAll();
+  st.ended=false;ui.el.end.classList.add('hidden');
+  st.paused=false;ui.el.pause.classList.add('hidden');
+  if(audio.ctx)audio.ctx.resume();
+  st.ma.arrow=false;st.xing.arrow=false;ui.cursorHide();
+  SECTIONS[si].setup();st.section=si;
+  st.bi=sectionStart[si]-1;
+  next();
+}
+function togglePause(){
+  if(!st.started||st.ended)return;
+  st.paused=!st.paused;
+  ui.el.pause.classList.toggle('hidden',!st.paused);
+  if(st.paused){cancelAuto();if(audio.ctx)audio.ctx.suspend();}
+  else{if(audio.ctx)audio.ctx.resume();if(st.auto&&st.clickWait)scheduleAuto(1200);}
+}
+function toggleAuto(){
+  st.auto=!st.auto;
+  $('#bAuto').classList.toggle('on',st.auto);
+  if(st.auto){if(st.clickWait)scheduleAuto(1200);ui.setHint('自动演出中 ▶▶');}
+  else{cancelAuto();if(st.clickWait)ui.setHint('点击继续 ▾');}
+}
+function toggleMute(){
+  st.muted=!st.muted;
+  $('#bSound').textContent=st.muted?'🔇 静音':'🔊 声音';
+  if(audio.master)audio.master.gain.value=st.muted?0:.9;
+}
+function buildScript(){
+  const inner=$('#scriptInner');inner.innerHTML='';
+  SECTIONS.forEach((sec,si)=>{
+    const h=document.createElement('div');h.className='script-sec';
+    h.textContent='▣ '+sec.name;
+    h.onclick=()=>{jumpTo(si);closeScript();};
+    inner.appendChild(h);
+    sec.beats.forEach(b=>{
+      let el=null;
+      if(b.t==='line'){
+        el=document.createElement('div');el.className='script-line';
+        const sp=document.createElement('b');sp.className='s-'+b.speaker;sp.textContent=b.speaker+'：';
+        el.appendChild(sp);el.appendChild(document.createTextNode(b.text));
+      }else if(b.t==='stage'){
+        el=document.createElement('div');el.className='script-dir';
+        el.textContent='【'+b.text+'】';
+      }else if(b.t==='fx'&&FX_DESC[b.id]){
+        el=document.createElement('div');el.className='script-fx';
+        el.textContent='✦ 特效：'+FX_DESC[b.id];
+      }
+      if(el){el.onclick=()=>{jumpTo(si);closeScript();};inner.appendChild(el);}
+    });
+  });
+}
+function closeScript(){$('#scriptPanel').classList.add('hidden');}
+
+/* 按钮 */
+$('#startBtn').addEventListener('click',e=>{e.stopPropagation();startShow();jumpTo(0);});
+$('#bNext').addEventListener('click',()=>{if(!st.started){startShow();jumpTo(0);return;}advance();});
+$('#bPause').addEventListener('click',togglePause);
+$('#bAuto').addEventListener('click',toggleAuto);
+$('#bSound').addEventListener('click',toggleMute);
+$('#bScript').addEventListener('click',()=>{buildScript();$('#scriptPanel').classList.toggle('hidden');});
+$('#bReplay').addEventListener('click',()=>location.reload());
+$('#speedSel').addEventListener('change',e=>{st.typeDelay=+e.target.value;});
+$('#theater').addEventListener('click',e=>{
+  if(e.target.closest('button'))return;
+  if(!st.started){startShow();jumpTo(0);return;}
+  if(st.paused){togglePause();return;}
+  if(st.ended){location.reload();return;}
+  advance();
+});
+$('#dialog').addEventListener('click',()=>{if(st.started&&!st.paused&&!st.ended)advance();});
+document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>b.blur()));
+document.addEventListener('keydown',e=>{
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='SELECT'||ae.tagName==='BUTTON'))return;
+  if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight'){
+    if(e.code==='Space')e.preventDefault();
+    if(!st.started){startShow();jumpTo(0);return;}
+    if(st.paused){togglePause();return;}
+    advance();
+  }else if(e.code==='KeyM'){toggleMute();}
+  else if(e.code==='KeyA'){toggleAuto();}
+});
+
+/* ---------- 初始化舞台 ---------- */
+function initStage(){
+  st.stars=[];st.rain=[];st.clouds=[];
+  for(let i=0;i<70;i++)st.stars.push({x:2+Math.random()*336,y:2+Math.random()*116,s:Math.random()<.3?2:1,sp:.5+Math.random()*2,ph:Math.random()*6.28});
+  for(let i=0;i<90;i++)st.rain.push({x:Math.random()*360,y:Math.random()*170,sp:.6+Math.random()*.8,fall:150+Math.random()*80});
+  for(let i=0;i<5;i++)st.clouds.push({x:Math.random()*400,y:36+Math.random()*54,w:60+Math.random()*60,sp:6+Math.random()*6});
+}
+initStage();
+SECTIONS[0].setup();
+ui.setHint('点击上方舞台，开始演出');
+
+})();
+</script>
+</body>
+</html>

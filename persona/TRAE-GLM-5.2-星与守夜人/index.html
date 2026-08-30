@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>星与守夜人 · 像素舞台剧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0a12;
+    --paper:#e8e2d0;
+    --gold:#ffd966;
+    --dim:#6b6f8c;
+    --line:#2a2a40;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#05060a;
+    color:var(--paper);
+    font-family:"Press Start 2P","Courier New",monospace;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;
+    overflow:hidden;
+    -webkit-font-smoothing:none;
+  }
+  #stage-wrap{
+    position:relative;
+    width:min(96vw, 1280px);
+    aspect-ratio:16/9;
+    background:#000;
+    border:3px solid var(--line);
+    box-shadow:0 0 0 3px #000, 0 0 40px rgba(255,217,102,.08), 0 20px 60px rgba(0,0,0,.6);
+    overflow:hidden;
+    image-rendering:pixelated;
+  }
+  canvas#scene{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+    display:block;
+  }
+  /* CRT scanlines */
+  #stage-wrap::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 4px);
+    mix-blend-mode:multiply;z-index:5;
+  }
+  #stage-wrap::before{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:6;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
+  }
+
+  /* ---- overlay UI ---- */
+  .overlay{position:absolute;inset:0;z-index:10;pointer-events:none}
+  .overlay *{pointer-events:auto}
+
+  /* act card */
+  #act-card{
+    position:absolute;top:18px;left:0;right:0;
+    text-align:center;color:var(--gold);
+    font-size:clamp(8px,1.5vw,14px);
+    letter-spacing:2px;
+    text-shadow:2px 2px 0 #000, 0 0 8px rgba(255,217,102,.5);
+    opacity:0;transition:opacity .6s ease;
+    padding:6px 10px;
+  }
+  #act-card .sub{display:block;margin-top:6px;color:var(--dim);font-size:.7em;letter-spacing:1px}
+
+  /* dialogue box */
+  #dialogue{
+    position:absolute;left:3%;right:3%;bottom:3%;
+    min-height:22%;
+    background:rgba(8,8,18,.82);
+    border:2px solid var(--paper);
+    box-shadow:0 0 0 2px #000, inset 0 0 0 2px #000, 0 0 18px rgba(0,0,0,.6);
+    padding:14px 18px 22px;
+    color:var(--paper);
+    font-family:"ZCOOL QingKe HuangYou","Press Start 2P",monospace;
+    font-size:clamp(14px,2.4vw,24px);
+    line-height:1.5;
+    letter-spacing:1px;
+    opacity:0;transform:translateY(8px);
+    transition:opacity .25s ease, transform .25s ease;
+    image-rendering:pixelated;
+  }
+  #dialogue.show{opacity:1;transform:translateY(0)}
+  #dialogue .who{
+    display:inline-block;
+    color:var(--ink);
+    background:var(--gold);
+    padding:2px 8px;margin-bottom:8px;
+    font-family:"Press Start 2P",monospace;
+    font-size:clamp(8px,1.3vw,12px);letter-spacing:1px;
+  }
+  #dialogue .who.narrator{background:var(--dim);color:#fff}
+  #dialogue .text{min-height:1.5em}
+  #dialogue .cursor{display:inline-block;width:.6em;background:var(--gold);margin-left:2px;animation:blink 1s steps(1) infinite}
+  #dialogue .hint{
+    position:absolute;right:10px;bottom:6px;
+    font-family:"Press Start 2P",monospace;font-size:8px;color:var(--dim);
+  }
+  @keyframes blink{50%{opacity:0}}
+
+  /* title screen */
+  #title-screen{
+    position:absolute;inset:0;z-index:20;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(10,10,24,.4), rgba(0,0,0,.85));
+    text-align:center;gap:18px;
+    transition:opacity .6s ease;
+  }
+  #title-screen.hidden{opacity:0;pointer-events:none}
+  #title-screen h1{
+    font-family:"ZCOOL QingKe HuangYou",serif;
+    font-size:clamp(28px,7vw,72px);
+    color:var(--gold);
+    letter-spacing:6px;
+    text-shadow:0 0 18px rgba(255,217,102,.6), 4px 4px 0 #000;
+  }
+  #title-screen .latin{font-family:"Press Start 2P",monospace;color:var(--paper);font-size:clamp(8px,1.4vw,14px);letter-spacing:3px;opacity:.7}
+  #title-screen .credit{font-family:"Press Start 2P",monospace;color:var(--dim);font-size:8px;letter-spacing:1px;line-height:1.8}
+  #title-screen .by{color:var(--gold)}
+  .btn{
+    font-family:"Press Start 2P",monospace;
+    font-size:clamp(10px,1.6vw,14px);
+    color:var(--ink);background:var(--gold);
+    border:none;padding:14px 26px;cursor:pointer;
+    box-shadow:4px 4px 0 #000;
+    letter-spacing:2px;
+    transition:transform .08s, box-shadow .08s;
+  }
+  .btn:hover{background:#ffe690}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #000}
+  .btn.ghost{background:transparent;color:var(--paper);border:2px solid var(--paper);box-shadow:3px 3px 0 #000}
+  .btn.ghost:hover{background:rgba(255,255,255,.08)}
+
+  /* controls bar */
+  #controls{
+    position:absolute;top:10px;right:10px;z-index:12;
+    display:flex;gap:6px;
+  }
+  #controls button{
+    font-family:"Press Start 2P",monospace;font-size:9px;
+    background:rgba(8,8,18,.8);color:var(--paper);
+    border:1px solid var(--paper);padding:7px 9px;cursor:pointer;
+    letter-spacing:1px;
+  }
+  #controls button:hover{background:var(--gold);color:var(--ink)}
+
+  /* progress dots */
+  #progress{
+    position:absolute;top:12px;left:10px;z-index:12;
+    display:flex;gap:5px;
+  }
+  #progress i{
+    width:8px;height:8px;background:#2a2a40;border:1px solid var(--dim);
+    display:block;
+  }
+  #progress i.done{background:var(--gold);border-color:var(--gold)}
+  #progress i.cur{background:var(--paper);border-color:var(--paper);box-shadow:0 0 6px var(--paper)}
+
+  /* ending */
+  #end-screen{
+    position:absolute;inset:0;z-index:20;
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.88);text-align:center;gap:14px;
+  }
+  #end-screen.show{display:flex}
+  #end-screen h2{font-family:"ZCOOL QingKe HuangYou",serif;color:var(--gold);font-size:clamp(22px,5vw,48px);letter-spacing:4px;text-shadow:0 0 14px rgba(255,217,102,.5),3px 3px 0 #000}
+  #end-screen p{font-family:"Press Start 2P",monospace;color:var(--dim);font-size:9px;line-height:2;letter-spacing:1px}
+
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+  <div id="stage-wrap">
+    <canvas id="scene" width="256" height="144"></canvas>
+
+    <div id="progress"></div>
+    <div id="controls">
+      <button id="btn-mute" title="静音">♪</button>
+      <button id="btn-pause" title="暂停">‖</button>
+      <button id="btn-restart" title="重演">↺</button>
+    </div>
+
+    <div class="overlay">
+      <div id="act-card"></div>
+      <div id="dialogue">
+        <span class="who"></span>
+        <div class="text"></div>
+        <span class="hint">点击继续</span>
+      </div>
+    </div>
+
+    <div id="title-screen">
+      <div class="latin">A PIXEL STAGE PLAY</div>
+      <h1>星与守夜人</h1>
+      <div class="latin">THE STAR &amp; THE NIGHT WATCHER</div>
+      <button class="btn" id="btn-start">▶ 开　演</button>
+      <div class="credit">
+        <span class="by">编剧 / 导演 / 舞美</span><br>
+        TRAE × GLM-5.2<br>
+        <span style="opacity:.5">第 壹 幕 至 第 伍 幕 · 约 6 分钟</span>
+      </div>
+    </div>
+
+    <div id="end-screen">
+      <h2>—— 幕　落 ——</h2>
+      <p>感谢观演<br>愿你心中亦有一盏不灭的灯<br><br>编剧 / TRAE × GLM-5.2</p>
+      <button class="btn ghost" id="btn-again">↺ 再演一次</button>
+    </div>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>

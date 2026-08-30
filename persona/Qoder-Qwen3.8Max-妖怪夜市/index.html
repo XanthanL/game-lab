@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>妖怪夜市 · 像素舞台剧</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="theater">
+    <!-- 幕布 -->
+    <div id="curtain-left" class="curtain"></div>
+    <div id="curtain-right" class="curtain"></div>
+
+    <!-- 像素舞台 -->
+    <canvas id="stage" width="480" height="270"></canvas>
+
+    <!-- 字幕 / 台词 -->
+    <div id="subtitle" class="hidden">
+      <span id="speaker"></span>
+      <p id="line"></p>
+      <span id="next-hint">▼ 点击 / 空格继续</span>
+    </div>
+
+    <!-- 幕标题 -->
+    <div id="act-title" class="hidden">
+      <h2 id="act-title-text"></h2>
+      <p id="act-sub-text"></p>
+    </div>
+
+    <!-- 开演按钮（解锁音频） -->
+    <div id="overlay">
+      <div class="overlay-inner">
+        <h1>妖 怪 夜 市</h1>
+        <p class="en">— YO-KAI NIGHT MARKET —</p>
+        <p class="intro">一个像素风格的动画舞台剧<br/>共四幕 · 全程前端演绎</p>
+        <button id="start-btn">✦ 开 演 ✦</button>
+        <p class="tip">建议开启声音 · 空格键推进台词</p>
+      </div>
+    </div>
+
+    <!-- 底部控制条 -->
+    <div id="controls" class="hidden">
+      <span id="act-indicator">序幕</span>
+      <span id="hint">空格 / 点击：下一句 · M：静音 · R：重演</span>
+    </div>
+  </div>
+
+  <script src="js/sprites.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

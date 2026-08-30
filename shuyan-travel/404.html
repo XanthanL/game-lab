@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>迷路了 - 树言·旅记</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#FFF8E1">
+
+    <!-- 404 可能在任意路径下被兜底渲染，资源一律走站点绝对路径 -->
+    <link rel="icon" href="/game-lab/shuyan-travel/assets/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/game-lab/shuyan-travel/css/style.css">
+    <style>
+        .lost-page {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: var(--space-xxl) var(--space-md);
+            text-align: center;
+        }
+
+        .lost-code {
+            font-family: var(--font-serif);
+            font-size: 5rem;
+            color: var(--color-dark-earth);
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-md);
+        }
+
+        .lost-text {
+            color: var(--color-earth);
+            line-height: 2;
+            margin-bottom: var(--space-xl);
+        }
+
+        .lost-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-lg);
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="site-header">
+            <h1 class="site-title">树言·旅记</h1>
+        </header>
+
+        <main class="lost-page">
+            <div class="lost-code">404</div>
+            <p class="lost-text">
+                这条路不在地图上。<br>
+                岔路走错了不要紧，认得回大路的方向就行。
+            </p>
+            <div class="lost-links">
+                <a href="/game-lab/shuyan-travel/index.html" class="read-more">回到时间线 →</a>
+                <a href="/game-lab/shuyan-travel/map.html" class="read-more">看看全程轨迹 →</a>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <p>© 2018-2027 树言·旅记 | 记录每一次出发</p>
+        </footer>
+    </div>
+</body>
+</html>

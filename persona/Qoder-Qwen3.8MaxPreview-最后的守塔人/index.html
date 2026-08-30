@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最后的守塔人 | 像素舞台剧</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="stage-container">
+        <!-- 标题画面 -->
+        <div id="title-screen">
+            <div class="title-pixels">
+                <h1 class="pixel-title">最后的守塔人</h1>
+                <p class="pixel-subtitle">THE LAST LIGHTHOUSE KEEPER</p>
+            </div>
+            <div class="title-menu">
+                <button id="btn-start" class="pixel-btn">▶ 开始演出</button>
+                <button id="btn-auto" class="pixel-btn">⟳ 自动播放</button>
+            </div>
+            <p class="title-hint">— 一部像素风动画舞台剧 —</p>
+        </div>
+
+        <!-- 演出画布 -->
+        <canvas id="stage-canvas" width="640" height="360"></canvas>
+
+        <!-- 对话框 -->
+        <div id="dialogue-box" class="hidden">
+            <div id="speaker-name"></div>
+            <div id="dialogue-text"></div>
+            <div id="dialogue-indicator">▼</div>
+        </div>
+
+        <!-- 幕间标题 -->
+        <div id="act-title" class="hidden">
+            <div class="act-number"></div>
+            <div class="act-name"></div>
+        </div>
+
+        <!-- 控制栏 -->
+        <div id="controls" class="hidden">
+            <button id="btn-prev" class="ctrl-btn" title="上一句">◀</button>
+            <button id="btn-next" class="ctrl-btn" title="下一句">▶</button>
+            <button id="btn-auto-toggle" class="ctrl-btn" title="自动播放">⏵</button>
+            <button id="btn-sound" class="ctrl-btn" title="音效开关">♪</button>
+        </div>
+
+        <!-- 进度条 -->
+        <div id="progress-bar" class="hidden">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script src="js/sprites.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

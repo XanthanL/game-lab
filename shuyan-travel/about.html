@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于树言 - 树言·旅记</title>
+    <meta name="description" content="我叫树言，大地叙事者·尘埃收集者。八年前从北京的格子间里走出来，在去“找自己”的路上，不小心看清了大地。">
+    <meta name="theme-color" content="#FFF8E1">
+    <link rel="canonical" href="https://xanthanl.github.io/game-lab/shuyan-travel/about.html">
+    
+    <!-- Favicon / 网页图标 -->
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+    
+    <!-- Open Graph / 微信分享元数据 -->
+    <meta property="og:title" content="关于树言 - 树言·旅记">
+    <meta property="og:description" content="一位行走者的旅途：前八年坐车看大地，之后从雨崩换上木杖，徒步斜穿版图走到鹤岗。记录那些带有体温、裂痕与泥土味的真实生活。">
+    <meta property="og:image" content="https://xanthanl.github.io/game-lab/shuyan-travel/assets/android-chrome-512x512.png">
+    <meta property="og:url" content="https://xanthanl.github.io/game-lab/shuyan-travel/about.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="树言·旅记">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .about-page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--space-xl) 0;
+        }
+        
+        /* 英雄区域 */
+        .about-hero {
+            text-align: center;
+            margin-bottom: 80px;
+            padding-bottom: 60px;
+            position: relative;
+        }
+
+        .about-hero::after {
+            content: '···';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--color-border);
+            letter-spacing: 1em;
+            font-size: 0.8rem;
+        }
+        
+        .about-name {
+            font-size: 4rem;
+            font-weight: normal;
+            color: var(--color-dark-earth);
+            margin-bottom: 15px;
+            letter-spacing: 0.3em;
+            font-family: var(--font-serif);
+        }
+        
+        .about-title {
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            color: var(--color-earth);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+        
+        .about-quote {
+            font-size: 1.6rem;
+            line-height: 2;
+            max-width: 650px;
+            margin: 0 auto;
+            color: var(--color-ink);
+            position: relative;
+            padding: 0 40px;
+            font-style: italic;
+        }
+
+        .about-quote::before, .about-quote::after {
+            font-family: var(--font-serif);
+            font-size: 4rem;
+            color: var(--color-light-earth);
+            position: absolute;
+            opacity: 0.5;
+            line-height: 1;
+        }
+
+        .about-quote::before {
+            content: '“';
+            top: -20px;
+            left: -10px;
+        }
+
+        .about-quote::after {
+            content: '”';
+            bottom: -60px;
+            right: -10px;
+        }
+
+        /* 章节通用样式 */
+        .about-section {
+            margin-bottom: 60px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: normal;
+            color: var(--color-dark-earth);
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+        }
+        
+        .section-content {
+            font-size: 1.15rem;
+            line-height: 2.2;
+            color: var(--color-ink);
+            text-align: justify;
+        }
+        
+        .section-content p {
+            margin-bottom: 30px;
+        }
+
+        /* 首字下沉样式 */
+        .drop-cap::first-letter {
+            float: left;
+            font-size: 4rem;
+            line-height: 1;
+            padding-top: 4px;
+            padding-right: 12px;
+            color: var(--color-dark-earth);
+            font-family: var(--font-serif);
+        }
+
+        /* 结语 */
+        .final-words {
+            text-align: center;
+            margin-top: 80px;
+            padding: 60px 40px;
+            border-top: 1px solid var(--color-border);
+            position: relative;
+        }
+
+        .final-words p {
+            font-style: italic;
+            color: var(--color-earth);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .final-signature {
+            margin-top: 40px;
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            color: var(--color-dark-earth);
+            letter-spacing: 0.2em;
+        }
+
+        @media (max-width: 768px) {
+            .about-name { font-size: 3rem; }
+            .about-quote { font-size: 1.3rem; }
+            .about-page { padding: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="site-header">
+            <h1 class="site-title"><a href="index.html" style="text-decoration: none; color: inherit;">树言·旅记</a></h1>
+        </header>
+        
+        <nav class="site-nav">
+            <a href="index.html" class="nav-link">时间线</a>
+            <a href="map.html" class="nav-link">旅行地图</a>
+            <a href="about.html" class="nav-link active">关于树言</a>
+        </nav>
+        
+        <main class="main-content">
+            <div class="about-page">
+                <!-- 英雄区域 -->
+                <div class="about-hero">
+                    <h2 class="about-name">树言</h2>
+                    <p class="about-title">大地叙事者 · 尘埃收集者</p>
+                    <div class="about-quote">
+                        既然这太阳总会准时升起，那我们就没必要急着奔跑。我只是想在一切凝固之前，去看清那些极其具体的真实。
+                    </div>
+                </div>
+                
+                <!-- 核心介绍 -->
+                <section class="about-section">
+                    <div class="section-header">
+                        <h3 class="section-title">行走逻辑</h3>
+                    </div>
+                    <div class="section-content">
+                        <p class="drop-cap">我叫树言。这个名字不是父母给的，而是在某次穿越大兴安岭的暴风雪后，我在冻僵的睫毛下给自己起的。在那片寂静得只能听见血液流动的林子里，我突然意识到，人其实和树一样，只有扎得足够深，才能在风暴来临时不至于被连根拔起。而这种“扎根”，对于我来说，就是不断地行走，不断地去触碰那些带有体温、带有裂痕、甚至带有泥土味的真实生活。</p>
+                        <p>八年前，我从北京的一间格子间里走出来。那时候的我，每天制造着成吨的数字和虚假的情感，却连一粒种子的呼吸都听不见。我发现自己的感官正在退化，变得像办公室的白炽灯一样苍白而机械。于是我买了一张北上的硬座票，把那份体面的合同丢进了垃圾桶。我不是去旅行的，我是在去“找自己”的路上，不小心看清了大地。</p>
+                    </div>
+                </section>
+
+                <!-- 对角线：徒步篇章 -->
+                <section class="about-section">
+                    <div class="section-header">
+                        <h3 class="section-title">对角线</h3>
+                    </div>
+                    <div class="section-content">
+                        <p class="drop-cap">二〇二五年三月，出雨崩的下坡路上，一辆面包车停下来问我去不去德钦。就在那一摆手之间，我做下了决定：不再坐车了。几天后在德钦，一位藏族老人把一根杜鹃木杖递到我手里，用了八年的铝合金登山杖从此收进包底。从雨崩到鹤岗，在地图上拉一根线，正好斜穿整张版图——西南角的雪山，到东北角的煤城。我管它叫对角线。坐车的八年，大地是从车窗外滑过去的；这一次，我想让它一步一步从脚底下过。</p>
+                        <p>两年零一个月，这根线画完了。翻过横断山的垭口，蹚过大凉山的雾，穿过川中丘陵的稻田、秦巴的隧道、关中的麦浪、三晋的沟壑，从华北平原走出山海关，又蹚过关东的雪，二〇二七年四月，走到了鹤岗的市界牌子底下。木杖磨短了一拃多，鞋换到第六双。这条线从来不是为了画完，是为了让每一段都有脚印作证——现在，每一段都有了。</p>
+                    </div>
+                </section>
+                
+                <!-- 结语 -->
+                <div class="final-words">
+                    <p>路还在前头。我还在打捞那些快要被遗忘的、极其具体的瞬间。</p>
+                    <p>如果你路过，愿你也能在那串消失的铃声里，听见自己的心跳。</p>
+                    <div class="final-signature">树言 · 二〇二七年春 · 鹤岗</div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="site-footer">
+            <p>© 2018-2027 树言·旅记 | 记录每一次出发</p>
+        </footer>
+    </div>
+    
+    <script src="js/main.js"></script>
+</body>
+</html>

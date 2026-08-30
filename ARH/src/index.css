@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-slate-900 bg-slate-50;
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+}
+
+/* 首页 Logo 中心定位点的呼吸脉冲：纯装饰，落点在 landing 页（首见频次），用 CSS 动画跑在合成线程 */
+@keyframes arh-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.18); }
+}
+.arh-pulse-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: arh-pulse 3.4s ease-in-out infinite;
+}
+
+/* 无障碍：尊重系统的「减少动态效果」偏好，只关掉位移类动画，保留可读性 */
+@media (prefers-reduced-motion: reduce) {
+  .arh-pulse-dot { animation: none; }
+  .animate-spin { animation-duration: 1.2s; }
+}

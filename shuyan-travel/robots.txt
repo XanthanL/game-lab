@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://xanthanl.github.io/game-lab/shuyan-travel/sitemap.xml

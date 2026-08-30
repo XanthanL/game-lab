@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三体 · NDS像素舞台剧</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="nds-console">
+        <!-- NDS上屏 - 舞台演出区 -->
+        <div class="nds-screen-wrapper top-screen-wrapper">
+            <div class="nds-screen" id="top-screen">
+                <canvas id="stage-canvas" width="256" height="192"></canvas>
+                <div id="act-title" class="act-title hidden"></div>
+                <div id="subtitle-top" class="subtitle-top hidden"></div>
+            </div>
+            <div class="screen-label">STAGE</div>
+        </div>
+
+        <!-- NDS铰链 -->
+        <div class="nds-hinge">
+            <div class="hinge-left"></div>
+            <div class="hinge-center">
+                <span class="power-led" id="power-led"></span>
+            </div>
+            <div class="hinge-right"></div>
+        </div>
+
+        <!-- NDS下屏 - 对话/操作区 -->
+        <div class="nds-screen-wrapper bottom-screen-wrapper">
+            <div class="nds-screen" id="bottom-screen">
+                <canvas id="ui-canvas" width="256" height="192"></canvas>
+                <div id="dialogue-box" class="dialogue-box hidden">
+                    <div id="speaker-name" class="speaker-name"></div>
+                    <div id="dialogue-text" class="dialogue-text"></div>
+                    <div id="dialogue-indicator" class="dialogue-indicator">▼</div>
+                </div>
+                <div id="choices-box" class="choices-box hidden"></div>
+                <div id="narration-box" class="narration-box hidden">
+                    <div id="narration-text" class="narration-text"></div>
+                </div>
+            </div>
+            <div class="screen-label">SCRIPT</div>
+        </div>
+
+        <!-- NDS控制区 -->
+        <div class="nds-controls">
+            <div class="dpad">
+                <div class="dpad-up"></div>
+                <div class="dpad-left"></div>
+                <div class="dpad-center"></div>
+                <div class="dpad-right"></div>
+                <div class="dpad-down"></div>
+            </div>
+            <div class="control-buttons">
+                <button class="btn-ab" id="btn-a">A</button>
+                <button class="btn-ab" id="btn-b">B</button>
+            </div>
+            <div class="start-select">
+                <button class="btn-ss" id="btn-select">SELECT</button>
+                <button class="btn-ss" id="btn-start">START</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标题画面 -->
+    <div id="title-overlay" class="title-overlay">
+        <div class="title-content">
+            <div class="title-stars" id="title-stars"></div>
+            <h1 class="game-title">三 体</h1>
+            <p class="game-subtitle">NDS PIXEL STAGE PLAY</p>
+            <p class="game-credit">基于刘慈欣《三体》改编</p>
+            <p class="press-start blink" id="press-start">— 按 A 或 点击 开始 —</p>
+        </div>
+    </div>
+
+    <script src="js/audio.js"></script>
+    <script src="js/sprites.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

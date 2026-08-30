@@ -1,0 +1,5 @@
+.aider*
+node_modules
+.DS_Store
+*.local
+# dist/ 有意提交：Pages 直接发布仓库树，产物（含 music/*.mp3）需入库

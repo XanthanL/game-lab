@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 字体：display 用 Cormorant Garamond(数字/拉丁衬线)，serif 用系统宋体(中文衬线)，sans 用系统无衬线 */
+  --font-cormorant: 'Cormorant Garamond', 'EB Garamond', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-display: var(--font-cormorant);
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', ui-serif, serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* 日间：宣纸米白艺术风 */
+  --bg: #f7f4ed;
+  --bg-elevated: #fffefb;
+  --fg: #1c1917;
+  --fg-muted: #6b6358;
+  --fg-subtle: #a8a095;
+  --accent: #9a7b1f;
+  --accent-soft: #c9a961;
+  --line: #e3dccb;
+  --up: #b91c1c;
+  --down: #4d7c5f;
+  --status-open-bg: rgba(77, 124, 95, 0.12);
+  --status-closed-bg: var(--line);
+  --shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.03);
+
+  /* 缓动令牌：统一驱动按压 / 入场 / 指示线动画（强 ease-out，优于内置 ease） */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.dark {
+  /* 夜间：墨色 */
+  --bg: #0e0d0b;
+  --bg-elevated: #16140f;
+  --fg: #ede6d6;
+  --fg-muted: #9a9388;
+  --fg-subtle: #6b6358;
+  --accent: #c9a961;
+  --accent-soft: #d4b872;
+  --line: #2a2620;
+  --up: #dc4848;
+  --down: #5ba374;
+  --status-open-bg: rgba(91, 163, 116, 0.15);
+  --status-closed-bg: var(--line);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* 衬线标题/数字 */
+.font-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'lnum', 'tnum';
+}
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* 卡片：细边框 + 轻阴影，艺术风克制 */
+.card {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+/* 按压反馈：物理感的瞬时回弹，scale 连带内部文字/图标一起下沉 */
+.press {
+  transition: transform 160ms var(--ease-out), color 160ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+}
+.press:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .press {
+    transition: color 160ms ease, opacity 160ms ease;
+  }
+  .press:active {
+    transform: none;
+  }
+}
+
+/* 细金线分隔 */
+.hairline {
+  border-color: var(--line);
+}
+
+/* 去除 lightweight-charts 默认外边框 */
+#tv-attr-logo,
+#tv-attr-attribution-container {
+  opacity: 0.5;
+}

@@ -1,0 +1,211 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: radial-gradient(ellipse at 50% 20%, #2a2118 0%, #17110c 55%, #0c0906 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Consolas", "Courier New", monospace;
+  color: #8a8278;
+  padding: 24px 12px;
+  overflow-x: hidden;
+}
+
+.desk { text-align: center; }
+
+.cartridge-title {
+  font-size: 15px;
+  letter-spacing: 4px;
+  color: #6f675e;
+  margin-bottom: 12px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.05);
+}
+.cartridge-title span { color: #c9a44a; }
+
+/* ---------- NDS 主机 ---------- */
+#nds {
+  width: 596px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #d5d9de 0%, #b6bac0 42%, #989ca2 68%, #8d9197 100%);
+  border-radius: 30px 30px 64px 64px;
+  padding: 24px 22px 18px;
+  box-shadow:
+    0 24px 54px rgba(0,0,0,0.62),
+    0 2px 0 rgba(255,255,255,0.55) inset,
+    0 -3px 0 rgba(0,0,0,0.22) inset;
+  position: relative;
+}
+
+.screen-wrap {
+  width: 512px;
+  margin: 0 auto;
+  background: #16181d;
+  border: 7px solid #25272e;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.7),
+    inset 0 0 22px rgba(0,0,0,0.85);
+  position: relative;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: pointer;
+}
+
+.gloss {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 32%, rgba(255,255,255,0) 46%);
+  border-radius: 5px;
+}
+
+#middle {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 44px;
+}
+
+#brand {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #4e525a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+
+#mic {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3a3e46;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.22);
+}
+
+#led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #3fae5a;
+  box-shadow: 0 0 8px 1px rgba(63,174,90,0.85);
+  animation: led-pulse 2.4s ease-in-out infinite;
+}
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ---------- 按键区 ---------- */
+#controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 0 6px;
+}
+
+.dpad {
+  width: 108px;
+  height: 108px;
+  position: relative;
+}
+.dpad-btn {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #33363d, #1d2026);
+  color: #7c848f;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 3px 0 #101217, 0 5px 8px rgba(0,0,0,0.35);
+  cursor: pointer;
+  user-select: none;
+}
+.dpad-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #101217; }
+.dpad-btn.up   { left: 37px;  top: 0; }
+.dpad-btn.left { left: 0;     top: 37px; }
+.dpad-btn.right{ left: 74px;  top: 37px; }
+.dpad-btn.down { left: 37px;  top: 74px; }
+
+.abxy {
+  width: 118px;
+  height: 108px;
+  position: relative;
+}
+.ab {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: inherit;
+  color: rgba(255,255,255,0.95);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.38), 0 6px 10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+  cursor: pointer;
+  user-select: none;
+}
+.ab:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.38); }
+.ab-a { right: 0;   top: 8px;  background: radial-gradient(circle at 35% 30%, #5fc96f, #2c8f4a); }
+.ab-b { right: 0;   top: 62px; background: radial-gradient(circle at 35% 30%, #f08a5a, #c04a2c); }
+.ab-x { left: 0;    top: 62px; background: radial-gradient(circle at 35% 30%, #7aa8e8, #3a68b8); }
+.ab-y { left: 0;    top: 8px;  background: radial-gradient(circle at 35% 30%, #f0d05a, #c09a2c); }
+
+.start-select {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+}
+.start-select button {
+  width: 88px;
+  height: 22px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #4a4e56, #2e3138);
+  color: #b6bdc8;
+  font-size: 10px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  box-shadow: 0 3px 0 #171a1f, 0 5px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+  user-select: none;
+}
+.start-select button:active { transform: translateY(2px); box-shadow: 0 1px 0 #171a1f; }
+
+.speaker {
+  position: absolute;
+  right: 20px;
+  bottom: 36px;
+  display: flex;
+  gap: 5px;
+}
+.speaker span {
+  width: 4px;
+  height: 26px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.28), rgba(255,255,255,0.16));
+}
+
+.foot-note {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #5c554d;
+}
+
+@media (max-width: 640px) {
+  body { padding: 10px; }
+  #nds { transform: scale(0.72); transform-origin: top center; margin-bottom: -190px; }
+}

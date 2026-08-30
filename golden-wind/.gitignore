@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+
+# out/ 有意提交：Pages 直接发布仓库树，静态导出产物需入库
+# （改源码后 npm run build；next.config.mjs 的 basePath 必须与 Pages 实际路径一致）
+
+# production
+build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env
+.env
+.env.local
+.env*.local
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN"
+      data-title-zh="像素舞台剧 · 十一部 — GAME LAB"
+      data-title-en="Eleven Pixel Stage Plays — GAME LAB"
+      data-desc-zh="同一句话发给 11 个不同的 coding agent：用前端做一部像素风动画舞台剧。这里是 11 份答案。"
+      data-desc-en="One brief sent to 11 coding agents: build a pixel-art stage play entirely in the frontend. These are the 11 answers.">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>像素舞台剧 · 十一部 — GAME LAB</title>
+<meta name="description" content="同一句话发给 11 个不同的 coding agent：用前端做一部像素风动画舞台剧，从剧本到演出全部由前端实现。这里是 11 份答案。" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="GAME LAB" />
+<meta property="og:title" content="像素舞台剧 · 十一部 — GAME LAB" />
+<meta property="og:description" content="同一个题目发给 11 个 coding agent，得到 11 部零依赖的像素风动画舞台剧。" />
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/persona/" />
+<link rel="stylesheet" href="../assets/index.css" />
+<style>
+  .epigraph {
+    margin-top: 40px; padding: 22px 26px; border-left: 2px solid var(--accent);
+    max-width: 62ch;
+  }
+  .epigraph p { font-family: var(--serif); font-size: 17px; line-height: 1.85; color: var(--ink); }
+  .epigraph .who { display: block; margin-top: 12px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+  .group { margin-top: 46px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: baseline; gap: 12px; }
+  .group::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .credit { display: block; margin-top: 10px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .back { display: inline-flex; gap: 10px; align-items: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div><a href="../" style="color:inherit;text-decoration:none">GAME LAB</a> / PERSONA</div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a>
+      <button id="langToggle" class="lang-toggle" type="button">EN</button>
+    </div>
+  </div>
+
+  <header class="hero" style="padding-bottom:0">
+    <div class="eyebrow"><span data-zh="同一个题目 · 11 个 Agent · 11 份答案" data-en="One brief · 11 agents · 11 answers">同一个题目 · 11 个 Agent · 11 份答案</span></div>
+    <h1 style="font-size:clamp(40px,8vw,86px)">像素舞台剧<span class="i"> · 十一部</span></h1>
+    <div class="epigraph">
+      <p data-zh="「创建子目录，用前端实现像素风格的动画舞台剧，题目自拟，从剧本到演出，均由前端实现。文件名为 [你的Agent名称]-[你的模型名称]-[作品名]。」"
+         data-en="&ldquo;Create a subfolder and implement a pixel-art animated stage play in the frontend — subject is yours to pick, and everything from script to performance must be frontend. Name the folder [your agent]-[your model]-[title].&rdquo;">「创建子目录，用前端实现像素风格的动画舞台剧，题目自拟，从剧本到演出，均由前端实现。文件名为 [你的Agent名称]-[你的模型名称]-[作品名]。」</p>
+      <span class="who" data-zh="这是发给每个 Agent 的原话，一字未改" data-en="The brief as issued — verbatim">这是发给每个 Agent 的原话，一字未改</span>
+    </div>
+    <p class="lede" style="max-width:64ch">
+      <span data-zh="11 部作品全部零依赖、零构建，打开即开演，代码量从 892 行到 2219 行。放在一起看，最有意思的不是谁画得更好，而是同一个题目下完全不同的讲法：5 部去改编《三体》，5 部不约而同把一盏灯放在黑夜里，1 部去赶了妖怪的夜市。"
+            data-en="Eleven plays, zero dependencies, zero build — open one and the show starts. Between 892 and 2,219 lines each. The interesting part is not who drew better but how differently they told it: five reached for Three-Body, five independently put a single lamp in the dark, one went to a monster night market."></span>
+    </p>
+    <a class="btn btn-ghost back" href="../"><span data-zh="返回 GAME LAB" data-en="Back to GAME LAB">返回 GAME LAB</span> <span class="ar">←</span></a>
+  </header>
+
+  <!-- ============ 三体 ============ -->
+  <section class="sec" style="padding-top:56px">
+    <div class="group">01 — <span data-zh="改编《三体》· 五部" data-en="Three-Body adaptations · 5">改编《三体》· 五部</span></div>
+
+    <a class="row reveal" href="./Claude-Code-deepseek-v4-flash-三体像素舞台剧/Claude-Code-deepseek-v4-flash-三体像素舞台剧.html">
+      <span class="row-num">01</span>
+      <span>
+        <span class="row-title">三体 · 像素舞台剧</span>
+        <span class="credit">Claude Code × deepseek-v4-flash · NDS 双屏 · 1727 行单文件</span>
+        <span class="row-desc" data-zh="把「给岁月以文明」压进一台 NDS：上屏叙事、下屏演出。也是唯一一份把入口文件写成中文名的作品。" data-en="Three-Body folded into an NDS: story on the top screen, performance below. Also the only entry whose filename is in Chinese."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">NDS</span><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./Codex-deepseek-v4-flash-三体-给岁月以文明/">
+      <span class="row-num">02</span>
+      <span>
+        <span class="row-title">三体 · 给岁月以文明</span>
+        <span class="credit">Codex × deepseek-v4-flash · NDS · 6 文件 1890 行</span>
+        <span class="row-desc" data-zh="engine / play / script 三层分离，把剧本当作数据来排练。同一题目下结构最清楚的一份。" data-en="engine / play / script kept in three layers, with the script treated as data to rehearse. The clearest structure of the set."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">NDS</span><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./HermesAgent-DeepSeekV4Flash-三体像素舞台剧/">
+      <span class="row-num">03</span>
+      <span>
+        <span class="row-title">三体 · 像素舞台剧</span>
+        <span class="credit">Hermes Agent × DeepSeek-V4-Flash · NDS 双屏 · 1336 行</span>
+        <span class="row-desc" data-zh="audio / sprites / scenes 分工，另留了一个 debug.html 可以逐帧检查演出——唯一自带调试台的作品。" data-en="audio / sprites / scenes each in their own file, plus a debug.html for frame-by-frame inspection — the only one that shipped a rehearsal room."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">NDS + debug</span><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./Qoder-Qwen3.8MaxPreview-three-body-pixel-opera/">
+      <span class="row-num">04</span>
+      <span>
+        <span class="row-title">三体 · NDS 像素舞台剧</span>
+        <span class="credit">Qoder × Qwen3.8Max Preview · 7 文件 2219 行</span>
+        <span class="row-desc" data-zh="十一部里最长的一份，场景与演出调度都堆到了最大规模。" data-en="The longest of the eleven, with scene count and stage direction pushed furthest."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">2219 <span data-zh="行 · 最长" data-en="lines · longest">行 · 最长</span></span><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./TRAE-GLM-5.2-three-body-opera/">
+      <span class="row-num">05</span>
+      <span>
+        <span class="row-title">三体 · 像素歌剧</span>
+        <span class="credit">TRAE × GLM-5.2 · 8 文件 2061 行</span>
+        <span class="row-desc" data-zh="唯一自称「歌剧」的一份，8 个文件把幕次、唱段与配器分开写。" data-en="The only one calling itself an opera: eight files separating acts, arias and orchestration."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">Opera</span><span class="row-go">→</span></span>
+    </a>
+  </section>
+
+  <!-- ============ 夜与光 ============ -->
+  <section class="sec">
+    <div class="group">02 — <span data-zh="夜与光 · 五部" data-en="Night &amp; light · 5">夜与光 · 五部</span></div>
+
+    <a class="row reveal" href="./DeepSeekHarnessAgent-deepseek-v4-pro-星夜灯塔/">
+      <span class="row-num">06</span>
+      <span>
+        <span class="row-title">星夜灯塔</span>
+        <span class="credit">DeepSeek Harness Agent × deepseek-v4-pro · 892 行单文件</span>
+        <span class="row-desc" data-zh="全部演出一只塞进一个 892 行的 index.html，十一部里最小的一份，也是唯一没有附属文件的。" data-en="The entire play inside a single 892-line index.html — the smallest of the eleven and the only one with nothing beside it."></span>
+      </span>
+      <span class="row-side"><span class="row-stat">892 <span data-zh="行 · 最小" data-en="lines · smallest">行 · 最小</span></span><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./Codex-deepseek-v4-pro-0813-银河邮差/">
+      <span class="row-num">07</span>
+      <span>
+        <span class="row-title">银河邮差</span>
+        <span class="credit">Codex × deepseek-v4-pro · 8 文件 1462 行</span>
+        <span class="row-desc" data-zh="往最亮的那颗星送信。audio / engine / scenes / script / sprites 五件套齐全，是这一组里唯一没有落在「守灯」上的故事。" data-en="A letter carried to the brightest star. A complete audio / engine / scenes / script / sprites set — the only story here that isn't about keeping a light lit."></span>
+      </span>
+      <span class="row-side"><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./Qoder-Qwen3.8MaxPreview-最后的守塔人/">
+      <span class="row-num">08</span>
+      <span>
+        <span class="row-title">最后的守塔人</span>
+        <span class="credit">Qoder × Qwen3.8Max Preview · 7 文件 1730 行</span>
+        <span class="row-desc" data-zh="灯塔熄灭之前的一夜。同一模型的另一份答案选了《三体》，两相对照能看出题目本身的影响有多大。" data-en="The night before the lighthouse goes dark. The same model chose Three-Body for its other entry — put them side by side to see how much the brief matters."></span>
+      </span>
+      <span class="row-side"><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./TRAE-GLM-5.2-星与守夜人/">
+      <span class="row-num">09</span>
+      <span>
+        <span class="row-title">星与守夜人</span>
+        <span class="credit">TRAE × GLM-5.2 · 单文件 + script.js 1084 行</span>
+        <span class="row-desc" data-zh="同一个模型的第二份答案：把守夜写成了两个人与一片星空，调度比它的《歌剧》收敛得多。" data-en="The same model's second answer: the nightwatch reduced to two people and a sky, staged far more sparely than its opera."></span>
+      </span>
+      <span class="row-side"><span class="row-go">→</span></span>
+    </a>
+
+    <a class="row reveal" href="./WorkBuddy-Hy3-最后一盏灯/">
+      <span class="row-num">10</span>
+      <span>
+        <span class="row-title">最后一盏灯</span>
+        <span class="credit">WorkBuddy × Hy3 · 8 文件 1380 行</span>
+        <span class="row-desc" data-zh="十一部里最安静的一份，8 个文件带 README，讲全城熄灯后还剩一盏。" data-en="The quietest of the eleven: eight files with a README, about the last lamp left after a city goes dark."></span>
+      </span>
+      <span class="row-side"><span class="row-go">→</span></span>
+    </a>
+  </section>
+
+  <!-- ============ 志怪 ============ -->
+  <section class="sec">
+    <div class="group">03 — <span data-zh="志怪 · 一部" data-en="Strange tales · 1">志怪 · 一部</span></div>
+
+    <a class="row reveal" href="./Qoder-Qwen3.8Max-妖怪夜市/">
+      <span class="row-num">11</span>
+      <span>
+        <span class="row-title">妖怪夜市</span>
+        <span class="credit">Qoder × Qwen3.8Max · 7 文件 1413 行</span>
+        <span class="row-desc" data-zh="只有它没去碰星空：一座入夜才开张的集市，人和妖怪做买卖。目录里还留着 4 张自检截图。" data-en="The only one that ignored the sky: a market that opens after dusk and trades between humans and yōkai. Four self-check screenshots are still in the folder."></span>
+      </span>
+      <span class="row-side"><span class="row-go">→</span></span>
+    </a>
+  </section>
+
+  <footer>
+    <div class="foot-in">
+      <div class="foot-word" style="font-size:clamp(28px,6vw,54px)">PERSONA</div>
+      <div class="foot-meta">
+        <div data-zh="© 2026 XanthanL" data-en="© 2026 XanthanL">© 2026 XanthanL</div>
+        <div><a href="../"><span data-zh="返回 GAME LAB" data-en="Back to GAME LAB">返回 GAME LAB</span></a></div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script src="../assets/i18n.js"></script>
+</body>
+</html>
