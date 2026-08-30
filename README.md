@@ -22,7 +22,7 @@ same one-line brief.
 | **咒 · 怨宅**<br>*JYU / Cursed House* | First-person Chinese horror. 5 chapters / 6 maps, a DDA raycaster, and a ghost with BFS pathfinding, view cones and hearing that sharpens as the ritual progresses. Wardrobe hiding, breath-holding, procedural WebAudio. Ships with touch controls. | [`/cursed-house/`](https://xanthanl.github.io/game-lab/cursed-house/) |
 | **强渡火星**<br>*Forcing Mars* | Slay-the-Spire-like deckbuilder: 30 cards, 12 relics, 6 potions, 4 classes, descending 3 layers from the Martian surface to a 2,000 m core. Real ending, bilingual. | [`/forcing-mars/`](https://xanthanl.github.io/game-lab/forcing-mars/) |
 | **植物大战僵尸**<br>*Plants vs Zombies* | Full recreation: 23 levels, 6 worlds, 26 plants, 17 zombies, 2 bosses, sun economy and wave pacing. Every sprite is drawn in vector code — not one game image in the folder. | [`/PVZ/`](https://xanthanl.github.io/game-lab/PVZ/) |
-| **微软大战代码**<br>*Microsoft vs. Code* | A meme-born PvZ-shaped parody: defend a code-editor lawn with console.log, rubber ducks and `rm -rf` against Clippy, IE and forced Windows updates. Coffee economy, a git-revert shovel that refunds half, and enemies that force-reboot your units. | [`/microsoft-vs-code/`](https://xanthanl.github.io/game-lab/microsoft-vs-code/) |
+| **微软大战代码**<br>*Microsoft vs. Code* | A meme-born PvZ-shaped parody in 5 levels: defend a code-editor lawn with console.log, rubber ducks and `rm -rf` (10 cards) against Clippy, IE, Teams popups and forced Windows updates (11 enemies), across day, night, a merge-conflict waterway and a boss finale. Coffee economy, a git-revert shovel that refunds half, enemies that force-reboot your units. | [`/microsoft-vs-code/`](https://xanthanl.github.io/game-lab/microsoft-vs-code/) |
 | **Vampire 2D** | Top-down auto-attacking survival: 5 weapons, 6 passives, choose-one-on-level-up, bosses from 180 s and a Blood Frenzy event, 220 enemies on screen. A 45 KB single file; keyboard + mouse. | [`/Vampire-2D/`](https://xanthanl.github.io/game-lab/Vampire-2D/) |
 | **六边智将**<br>*Hexachess* | Hexa Sort mechanics wearing chess: 50 levels on 19/37/61-cell hex boards, locked cells and decoys unlocking gradually, and a board you can spin by dragging empty space. One TypeScript core builds both the browser demo and a WeChat mini-game; 80 unit tests. | [`/hexachess/`](https://xanthanl.github.io/game-lab/hexachess/) |
 
@@ -161,7 +161,7 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 | 玩得 | **咒 · 怨宅** | 第一人称中式恐怖，5 章 6 张地图，单文件里的 DDA 光线投射 + 会听会寻路的怨灵，手机可玩 |
 | 玩得 | **强渡火星** | 杀戮尖塔式卡牌构筑，30 卡 / 12 遗物 / 4 职业，从火星地表下潜到 2000 米地核，有结局 |
 | 玩得 | **植物大战僵尸** | 完整复刻：23 关 6 世界、26 植物 17 僵尸 2 Boss，美术全部矢量代码绘制，没有一张图片 |
-| 玩得 | **微软大战代码** | 梗图改编的恶搞塔防：console.log / 橡胶鸭 / rm -rf 守编辑器，对抗 Clippy 与强制更新，咖啡经济 + git revert 铲子 |
+| 玩得 | **微软大战代码** | 梗图改编的恶搞塔防，5 关：console.log / 橡胶鸭 / rm -rf 守编辑器（10 卡），对抗 Clippy、Teams 弹窗与强制更新（11 敌），咖啡经济 + git revert 铲子 |
 | 玩得 | **Vampire 2D** | 顶视角自动攻击生存，5 武器 6 被动，180 秒起出 Boss，同屏 220 只，45KB 单文件（键鼠） |
 | 玩得 | **六边智将** | Hexa Sort 内核 + 国际象棋包装，50 关可旋转六边形棋盘，同一份 TS 逻辑出网页与微信小游戏 |
 | 看得 | **像素舞台剧 · 十一部** | 同一句话发给 11 个 coding agent 得到的 11 部像素舞台剧，5 部三体、5 部黑夜与灯、1 部妖怪夜市 |

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>微软大战代码 — Microsoft vs. Code</title>
-<meta name="description" content="梗图改编的恶搞塔防：用 console.log 与橡胶鸭守住编辑器，抵御 Clippy 与强制更新的全家桶大军。" />
+<meta name="description" content="梗图改编的恶搞塔防：用 console.log 与橡胶鸭守住编辑器，抵御 Clippy 与强制更新的全家桶大军。5 关，全矢量美术。" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="GAME LAB" />
 <meta property="og:title" content="微软大战代码 — Microsoft vs. Code" />
@@ -27,7 +27,7 @@
         <span class="lg-code">CODE</span>
       </div>
       <h1 class="zh-title">微软大战代码</h1>
-      <p class="lede">微软全家桶大军压境，要把你的电脑装成全家桶。<br>而你的武器，是一个代码编辑器和几杯咖啡。</p>
+      <p class="lede">微软全家桶大军压境，要把你的电脑装成全家桶。<br>而你的武器，是一个代码编辑器和几杯咖啡。5 关，从白天防守一路打到红盟决战。</p>
 
       <div class="roster">
         <div class="side">
@@ -41,11 +41,23 @@
       </div>
 
       <p class="hint">
-        点卡片再点格子种植 · 点掉落的咖啡收集 · 数字键 1-7 选卡<br>
-        铲子是 <b>git revert</b>：移除单位并返还一半咖啡 · ESC 暂停
+        点卡片再点格子种植 · 点掉落的咖啡收集 · 数字键 1-0 选卡<br>
+        铲子是 <b>git revert</b>：移除单位并返还一半咖啡 · ESC 暂停 · 通关进度自动保存
       </p>
       <div class="actions">
         <button class="btn" id="btnStart" type="button">开始加班</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 选关 ============ -->
+  <div class="ov hidden" id="ovLevels">
+    <div class="panel">
+      <div class="kicker">SELECT LEVEL · 编辑器多标签</div>
+      <h2 class="zh-title small">选择关卡</h2>
+      <div class="lv-grid" id="lvGrid"></div>
+      <div class="actions" style="margin-top:18px">
+        <button class="btn ghost" id="btnLevelsBack" type="button">返回</button>
       </div>
     </div>
   </div>
@@ -58,6 +70,7 @@
       <div class="actions col">
         <button class="btn" id="btnResume" type="button">继续加班</button>
         <button class="btn ghost" id="btnRestart1" type="button">重新开始</button>
+        <button class="btn ghost" id="btnLevels1" type="button">选择关卡</button>
         <a class="btn ghost" href="../">回合集首页</a>
       </div>
     </div>
@@ -71,13 +84,17 @@
       <div class="term" id="endTerm"></div>
       <div class="stats" id="endStats"></div>
       <div class="actions col">
+        <button class="btn" id="btnNext" type="button">下一关 →</button>
         <button class="btn" id="btnAgain" type="button">再来一次</button>
+        <button class="btn ghost" id="btnLevels2" type="button">选择关卡</button>
         <a class="btn ghost" href="../">回合集首页</a>
       </div>
     </div>
   </div>
 </div>
 
-<script src="./game.js"></script>
+<script src="./js/config.js"></script>
+<script src="./js/art.js"></script>
+<script src="./js/main.js"></script>
 </body>
 </html>

@@ -204,3 +204,46 @@ canvas {
   margin-bottom: 18px;
   letter-spacing: 0.06em;
 }
+
+/* ---------- level select ---------- */
+.lv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 10px;
+  text-align: left;
+}
+.lv-card {
+  position: relative;
+  display: block;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-top: 3px solid #4ec9b0;
+  border-radius: 6px 6px 6px 6px;
+  padding: 12px 12px 10px;
+  color: #d4d4d4;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.12s, background 0.12s;
+}
+.lv-card:hover { background: #2d2d30; transform: translateY(-2px); border-color: #5a5a5a; }
+.lv-card.locked { opacity: 0.45; cursor: not-allowed; border-top-color: #555; }
+.lv-card .lv-n {
+  font-size: 10px;
+  color: #6a9955;
+  letter-spacing: 0.18em;
+  margin-bottom: 6px;
+}
+.lv-card .lv-name { font-size: 15px; font-weight: 700; color: #e8e8e8; margin-bottom: 3px; }
+.lv-card .lv-file { font-size: 10px; color: #569cd6; margin-bottom: 8px; }
+.lv-card .lv-brief { font-size: 10.5px; color: #8a8a8a; line-height: 1.6; }
+.lv-card .lv-tag {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #0e2c40;
+  border: 1px solid #2a6a80;
+  color: #7ed0f0;
+}
+.lv-card .lv-tag + .lv-tag { top: 28px; background: #231c2e; border-color: #5a4a7a; color: #b48ee0; }
