@@ -58,7 +58,7 @@ function createAudioEngine(getCtx: () => AnyCtx): AudioEngine {
     freqs.forEach((f, i) => tone({ freq: f, start: start + i * step, dur, type, peak }));
   }
 
-  const map: Record<SfxName, () => void> = {
+  const map: Record<SfxName, (step?: number) => void> = {
     // 抓取：短促低音，给出「拿起」反馈
     pick: () => tone({ freq: 330, start: 0, dur: 0.07, type: 'sine', peak: 0.15 }),
     // 放入将营：清脆小三度回落，给出「对上了」的满足感
@@ -95,6 +95,11 @@ function createAudioEngine(getCtx: () => AnyCtx): AudioEngine {
   },
   // 倒计时滴答：短促高频轻点（限时关最后 5s）
   tick: () => tone({ freq: 1250, start: 0, dur: 0.045, type: 'square', peak: 0.07 }),
+  // 判负：低频三连下行，明确「这局堵死了」但不刺耳
+  fail: () => {
+    tone({ freq: 220, start: 0, dur: 0.16, type: 'sine', peak: 0.16, slideTo: 165 });
+    tone({ freq: 165, start: 0.15, dur: 0.22, type: 'sine', peak: 0.13, slideTo: 110 });
+  },
 };
 
   return {
@@ -113,9 +118,7 @@ function createAudioEngine(getCtx: () => AnyCtx): AudioEngine {
     },
     play(name: SfxName, opts?: { step?: number }) {
       try {
-        const step = opts?.step ?? 0;
-        if (name === 'merge') map.merge(step);
-        else map[name]();
+        map[name](opts?.step ?? 0);
       } catch {
         /* 音频失败不应影响游戏 */
       }

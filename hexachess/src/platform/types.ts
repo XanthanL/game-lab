@@ -20,7 +20,8 @@ export type SfxName =
   | 'win' // 关卡完成
   | 'hint' // 提示
   | 'merge' // 合并时每颗棋子落叠的"咔哒"声（随层数升调）
-  | 'tick'; // 限时关最后几秒的倒计时滴答
+  | 'tick' // 限时关最后几秒的倒计时滴答
+  | 'fail'; // 判负：低频下行
 
 // 音频引擎：浏览器用 AudioContext，微信用 wx.createWebAudioContext，接口统一。
 export interface AudioEngine {
@@ -68,6 +69,8 @@ export interface Platform {
   // 创建离屏画布（像素管线用）：浏览器 document.createElement('canvas')，微信 wx.createCanvas()
   createCanvas(w: number, h: number): any;
   getDpr(): number;
+  // 系统「减少动态效果」偏好：true 时关掉屏震与粒子
+  prefersReducedMotion?: () => boolean;
   getScreenSize(): { width: number; height: number };
   onPointerDown(cb: (p: Pointer) => void): void;
   onPointerMove(cb: (p: Pointer) => void): void;

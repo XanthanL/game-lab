@@ -40,6 +40,8 @@ export function createWxPlatform(): Platform {
       return c;
     },
     getDpr: () => dpr,
+    // 小游戏没有公开的「减少动态效果」开关，恒报 false
+    prefersReducedMotion: () => false,
     getScreenSize: () => ({ width: screenW, height: screenH }),
     onPointerDown: (cb) => { downCb = cb; },
     onPointerMove: (cb) => { moveCb = cb; },

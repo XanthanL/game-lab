@@ -51,6 +51,9 @@ export function createDomPlatform(canvas: any): Platform {
       return c;
     },
     getDpr: () => dpr,
+    prefersReducedMotion: () => {
+      try { return !!window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+    },
     getScreenSize: () => ({ width: window.innerWidth, height: window.innerHeight }),
     onPointerDown: (cb) => { downCb = cb; },
     onPointerMove: (cb) => { moveCb = cb; },
