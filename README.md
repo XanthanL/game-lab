@@ -31,7 +31,7 @@ same one-line brief.
 | | What it is | Path |
 |---|---|---|
 | **像素舞台剧 · 十一部**<br>*Persona* | One brief issued verbatim to 11 coding agents — *"create a subfolder and implement a pixel-art animated stage play in the frontend, script to performance, entirely frontend"* — and 11 answers: 5 adapt *Three-Body*, 5 independently put a lamp in the dark, 1 goes to a monster night market. 892 to 2,219 lines each. | [`/persona/`](https://xanthanl.github.io/game-lab/persona/) |
-| **ASCII ∴ LAB** | A studio for turning Chinese or Latin text into ASCII art: 8 CJK fonts, 6 character sets (blocks, dots, brush strokes, braille), export to PNG / TXT — plus 14 animated scenes from the spinning donut to Mandelbrot. | [`/ascii-art/`](https://xanthanl.github.io/game-lab/ascii-art/) |
+| **ASCII ∴ LAB** | Turns Chinese or Latin text into ASCII art: 6 fonts (incl. CJK faces), 4 glyph styles, 6 stroke sets (classic ramp, blocks, brush strokes, braille), with adjustable output width, gamma and threshold. Copy as image, save PNG, or copy plain text. | [`/ascii-art/`](https://xanthanl.github.io/game-lab/ascii-art/) |
 
 ## Use
 
@@ -165,7 +165,7 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 | 玩得 | **Vampire 2D** | 顶视角自动攻击生存，5 武器 6 被动，180 秒起出 Boss，同屏 220 只，45KB 单文件（键鼠） |
 | 玩得 | **六边智将** | Hexa Sort 内核 + 国际象棋包装，50 关可旋转六边形棋盘，同一份 TS 逻辑出网页与微信小游戏 |
 | 看得 | **像素舞台剧 · 十一部** | 同一句话发给 11 个 coding agent 得到的 11 部像素舞台剧，5 部三体、5 部黑夜与灯、1 部妖怪夜市 |
-| 看得 | **ASCII ∴ LAB** | 把汉字写成 ASCII 图的工坊，6 套字符集、可导出 PNG/TXT，另附 14 个动画场景 |
+| 看得 | **ASCII ∴ LAB** | 把汉字或英文写成 ASCII 图的工坊：6 种字体、4 种字形、6 套笔触，宽度与对比可调，可复制图片或存 PNG |
 | 用得 | **树言 · 旅记** | 53 篇旅行札记与 53 个地点，八年驾车之后两年多徒步走完西南—东北对角线，本地 Leaflet 画轨迹 |
 | 用得 | **Electric Mirage** | 以 XanthanL 名义发的 5 首曲子，站内流式播放；另有 numpy 从零合成的《静电合唱团》与配套可视化 |
 | 用得 | **金价观象台** | Next.js 静态导出的金价看板，实时报价 + 均线 + 金叉死叉 |
@@ -173,8 +173,8 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 本地预览要从**仓库的上一级**起服务，这样 URL 才会和 Pages 一样带上 `/game-lab/` 段：
 `cd .. && python -m http.server 8000`，然后开 `http://localhost:8000/game-lab/`。
 在仓库根直接起服务会坑在金价看板上——它的产物里写死了 `/game-lab/golden-wind/out/_next/...`，
-样式和脚本会整批 404，页面能开但像坏了。咒·怨宅、Vampire 2D、ASCII ∴ LAB 这几个单文件的
-没有外部依赖，双击 `index.html` 用 `file://` 打开就能玩。
+样式和脚本会整批 404，页面能开但像坏了。咒·怨宅与 Vampire 2D 是单文件，ASCII ∴ LAB 也只依赖
+自己的 css/js，这三者双击 `index.html` 用 `file://` 打开就能用。
 
 关于部署有三条规矩不能破，否则子项目上线就是 404：
 **构建产物有意入库**（`ARH/dist`、`XanthanLMusic/dist`、`golden-wind/out`，改了源码要重新 build 再提交）；

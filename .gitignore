@@ -64,8 +64,10 @@ Thumbs.db
 !.env.example
 *.local
 
-# npm test 会重新生成，不入库
-hexachess/dist/test.cjs
+# hexachess/dist 里唯一要发布的产物是 web.js（Pages 直接发布仓库树）；
+# npm test / gen:levels 产生的临时 bundle 一律不入库
+hexachess/dist/*
+!hexachess/dist/web.js
 
 # ============ 隐私加固：可能带本机路径或凭据的文件 ============
 # sourcemap 会内嵌开发机的绝对源码路径（含用户名）

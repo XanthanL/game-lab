@@ -4,164 +4,120 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASCII ∴ LAB — 文字工坊</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="description" content="把中文或英文变成 ASCII 字符画：6 套字体、6 种字符集、可调宽度与对比，一键复制或导出 PNG。纯前端，无依赖。">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="scanlines"></div>
-  <div id="vignette"></div>
+<div class="wrap">
 
-  <header class="topbar">
+  <header class="head">
     <div class="brand">
-      <span class="logo" title="XanthanL" aria-label="XanthanL">XL</span>
-      <div class="brand-text">
-        <h1>ASCII&nbsp;<em>LAB</em></h1>
-        <p class="tagline">by XanthanL · 把文字变成字符艺术</p>
-      </div>
+      <h1>ASCII <em>∴</em> LAB</h1>
+      <p>文字 → 字符画</p>
     </div>
-    <div class="clock" id="clock">--:--:--</div>
+    <a class="back" href="../">← GAME LAB</a>
   </header>
 
-  <main class="stage">
-    <section class="screen-wrap">
-      <div class="bezel">
-        <pre id="screen" class="screen" aria-live="polite"></pre>
-      </div>
-      <div class="hud">
-        <span class="hud-item">模式 <b id="hudScene">文字工坊</b></span>
-        <span class="hud-item">FPS <b id="hudFps">0</b></span>
-        <span class="hud-item">分辨率 <b id="hudRes">0×0</b></span>
-        <span class="hud-item">帧 <b id="hudFrame">0</b></span>
-      </div>
-
-      <!-- ===== 创意特效实验室（次要功能, 默认收起） ===== -->
-      <details class="fx-drawer" id="fxDrawer">
-        <summary>
-          <span class="fx-caret">▸</span>
-          创意特效实验室
-          <span class="fx-sub">3D · 数字雨 · 等离子 · 图像转字符 …</span>
-        </summary>
-        <div class="fx-body">
-          <div class="fx-tabs" id="fxTabs"><!-- injected --></div>
-          <div class="fx-controls">
-            <button class="btn" id="btnPlay">⏸ 暂停</button>
-            <button class="btn" id="btnStep">⏭ 单帧</button>
-            <button class="btn" id="btnShuffle">🎲 随机</button>
-            <label class="mini-ctl">速度 <span id="speedVal">1.0×</span>
-              <input type="range" id="speed" min="0.1" max="3" step="0.1" value="1"></label>
-            <label class="mini-ctl">密度 <span id="scaleVal">100%</span>
-              <input type="range" id="scale" min="50" max="180" step="5" value="100"></label>
-            <button class="btn" id="btnBackText">↩ 返回文字工坊</button>
-          </div>
-          <div class="fx-extra" id="imageCtl" hidden>
-            <label class="ctl-label">图像转 ASCII</label>
-            <input type="file" id="imgInput" accept="image/*">
-            <p class="hint">选择或把图片拖到屏幕上，实时转为字符画。</p>
-          </div>
-        </div>
-      </details>
+  <main class="grid">
+    <section class="out">
+      <pre id="out" class="out-pre"></pre>
+      <div class="out-meta"><span id="meta">—</span><span id="tip" class="tip"></span></div>
     </section>
 
-    <!-- ===== 文字工坊：主功能面板 ===== -->
-    <aside class="panel">
-      <h2 class="panel-title">✎ 文字工坊 <span class="badge-main">主功能</span></h2>
+    <form class="panel" id="panel" autocomplete="off" onsubmit="return false">
+      <label class="f">
+        <span class="k">文字<em id="count">0 / 240</em></span>
+        <textarea id="text" rows="3" maxlength="240" placeholder="输入中文或英文，可多行"></textarea>
+      </label>
 
-      <div class="ctl-group">
-        <label class="ctl-label">文字内容 <span id="charCount">0 / 120</span></label>
-        <textarea id="text" class="text-input" rows="4" maxlength="120"
-          placeholder="输入文字，支持中文、多行…&#10;例如：你好世界"></textarea>
-        <p class="hint">支持中文与多行（回车换行），最多 120 字。</p>
-      </div>
+      <label class="f">
+        <span class="k">宽度<em id="colsV">60 列</em></span>
+        <input type="range" id="cols" min="16" max="200" step="2" value="60">
+      </label>
 
-      <div class="ctl-group">
-        <label class="ctl-label">字体</label>
-        <select id="font">
-          <option value="hei">黑体（默认）</option>
-          <option value="song">宋体</option>
-          <option value="kai">楷体</option>
-          <option value="yuan">圆体</option>
-          <option value="sans">无衬线 Sans</option>
-          <option value="serif">衬线 Serif</option>
-          <option value="mono">等宽 Mono</option>
-          <option value="impact">粗黑 Impact</option>
-        </select>
-      </div>
-
-      <div class="ctl-group">
-        <label class="ctl-label">字形</label>
-        <div class="btn-row">
-          <button class="toggle active" id="tgBold"><b>B</b> 粗体</button>
-          <button class="toggle" id="tgItalic"><i>I</i> 斜体</button>
+      <div class="f">
+        <span class="k">字体</span>
+        <div class="seg" data-group="font">
+          <button type="button" data-v="hei" class="on">黑体</button>
+          <button type="button" data-v="song">宋体</button>
+          <button type="button" data-v="kai">楷体</button>
+          <button type="button" data-v="sans">无衬线</button>
+          <button type="button" data-v="serif">衬线</button>
+          <button type="button" data-v="impact">粗黑</button>
         </div>
       </div>
 
-      <div class="ctl-group">
-        <label class="ctl-label">文字样式</label>
-        <div class="btn-row wrap" id="styleRow">
-          <button class="chip active" data-style="solid">实心</button>
-          <button class="chip" data-style="outline">空心</button>
-          <button class="chip" data-style="gradient">渐变</button>
-          <button class="chip" data-style="shadow">立体</button>
-          <button class="chip" data-style="double">双线</button>
+      <div class="f">
+        <span class="k">字形</span>
+        <div class="seg" data-group="style">
+          <button type="button" data-v="solid" class="on">实心</button>
+          <button type="button" data-v="outline">空心</button>
+          <button type="button" data-v="gradient">渐变</button>
+          <button type="button" data-v="shadow">立体</button>
         </div>
       </div>
 
-      <div class="ctl-group">
-        <label class="ctl-label">对齐</label>
-        <div class="btn-row" id="alignRow">
-          <button class="chip" data-align="left">左</button>
-          <button class="chip active" data-align="center">中</button>
-          <button class="chip" data-align="right">右</button>
+      <div class="row2">
+        <div class="f">
+          <span class="k">笔触</span>
+          <div class="seg" data-group="ramp">
+            <button type="button" data-v="classic" class="on">经典</button>
+            <button type="button" data-v="fine">精细</button>
+            <button type="button" data-v="block">方块</button>
+            <button type="button" data-v="dots">圆点</button>
+            <button type="button" data-v="cjk">汉字</button>
+            <button type="button" data-v="braille">盲文</button>
+          </div>
+        </div>
+        <div class="f">
+          <span class="k">颜色</span>
+          <div class="seg" data-group="palette">
+            <button type="button" data-v="green" class="on">磷光</button>
+            <button type="button" data-v="amber">琥珀</button>
+            <button type="button" data-v="ice">冰蓝</button>
+            <button type="button" data-v="magma">熔岩</button>
+            <button type="button" data-v="mono">纯白</button>
+          </div>
         </div>
       </div>
 
-      <div class="ctl-group">
-        <label class="ctl-label">字符集（笔触）</label>
-        <select id="ramp">
-          <option value=" .:-=+*#%@">经典 10 阶</option>
-          <option value=" .'`^&quot;,:;Il!i&gt;&lt;~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&amp;8%B@$">精细 70 阶</option>
-          <option value=" ░▒▓█">方块 5 阶</option>
-          <option value=" .oO0">圆点</option>
-          <option value=" 一二三十王田">汉字笔画</option>
-          <option value=" ⠁⠃⠇⠧⠷⠿⡿⣿">盲文点阵</option>
-        </select>
+      <div class="row2">
+        <label class="f">
+          <span class="k">对比<em id="gammaV">1.00</em></span>
+          <input type="range" id="gamma" min="0.4" max="2.4" step="0.05" value="1">
+        </label>
+        <label class="f">
+          <span class="k">阈值<em id="thrV">0.10</em></span>
+          <input type="range" id="threshold" min="0" max="0.5" step="0.02" value="0.1">
+        </label>
       </div>
 
-      <div class="ctl-group">
-        <label class="ctl-label">调色</label>
-        <div class="btn-row wrap" id="themeRow">
-          <button class="chip" data-theme="green">磷光绿</button>
-          <button class="chip" data-theme="amber">琥珀</button>
-          <button class="chip" data-theme="ice">冰蓝</button>
-          <button class="chip" data-theme="magma">熔岩</button>
-          <button class="chip" data-theme="mono">纯白</button>
-          <button class="chip" data-theme="rainbow">彩虹</button>
+      <div class="f">
+        <span class="k">修饰</span>
+        <div class="seg">
+          <button type="button" id="bold" class="tog on"><b>B</b> 粗体</button>
+          <button type="button" id="italic" class="tog"><i>I</i> 斜体</button>
+          <span class="spacer"></span>
+          <div class="seg inner" data-group="align">
+            <button type="button" data-v="left">左</button>
+            <button type="button" data-v="center" class="on">中</button>
+            <button type="button" data-v="right">右</button>
+          </div>
         </div>
       </div>
 
-      <div class="ctl-group">
-        <label class="ctl-label">导出 <span>发微信建议用图片</span></label>
-        <div class="btn-row wrap">
-          <button class="btn btn-accent" id="btnCopyImg">🖼 复制图片</button>
-          <button class="btn" id="btnSaveImg">💾 存图 PNG</button>
-          <button class="btn" id="btnCopy">📋 复制文本</button>
-          <button class="btn" id="btnSave">📄 存 .txt</button>
-          <button class="btn" id="btnFull">⛶ 全屏</button>
-        </div>
-        <p class="hint">微信 / QQ 用非等宽字体，纯文本会错位；发<b>图片</b>最稳。</p>
+      <div class="f acts">
+        <button type="button" id="copyImg" class="pri">复制图片</button>
+        <button type="button" id="saveImg">存 PNG</button>
+        <button type="button" id="copyTxt">复制文本</button>
       </div>
-    </aside>
+      <p class="note">微信 / QQ 用非等宽字体，粘纯文本会错位 —— 发图片最稳。</p>
+    </form>
   </main>
 
-  <footer class="footer">
-    <span>ASCII LAB · 文字工坊 · 纯前端无依赖</span>
-    <span class="sig">by <b>XanthanL</b> · crafted <span class="heart">▓</span> character by character</span>
-  </footer>
-
-  <script src="js/engine.js"></script>
-  <script src="js/scenes.js"></script>
-  <script src="js/gallery.js"></script>
-  <script src="js/textart.js"></script>
-  <script src="js/main.js"></script>
+  <footer>ASCII ∴ LAB · 纯前端零依赖 · <a href="../">GAME LAB</a></footer>
+</div>
+<script src="js/studio.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
