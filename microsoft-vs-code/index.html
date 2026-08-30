@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>微软大战代码 — Microsoft vs. Code</title>
+<meta name="description" content="梗图改编的恶搞塔防：用 console.log 与橡胶鸭守住编辑器，抵御 Clippy 与强制更新的全家桶大军。" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="GAME LAB" />
+<meta property="og:title" content="微软大战代码 — Microsoft vs. Code" />
+<meta property="og:description" content="梗图改编的恶搞塔防：守住你的编辑器，拒绝全家桶。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="game" width="1280" height="720"></canvas>
+
+  <!-- ============ 开始 ============ -->
+  <div class="ov" id="ovStart">
+    <div class="panel">
+      <div class="kicker">A PARODY TOWER DEFENSE · 致敬（抄袭）植物大战僵尸</div>
+      <div class="logo" aria-label="Microsoft vs. Code">
+        <span class="lg-ms">MICROSOFT</span>
+        <span class="lg-vs">VS.</span>
+        <span class="lg-code">CODE</span>
+      </div>
+      <h1 class="zh-title">微软大战代码</h1>
+      <p class="lede">微软全家桶大军压境，要把你的电脑装成全家桶。<br>而你的武器，是一个代码编辑器和几杯咖啡。</p>
+
+      <div class="roster">
+        <div class="side">
+          <div class="side-title you">代码方 · 你</div>
+          <div class="units" id="rosterYou"></div>
+        </div>
+        <div class="side">
+          <div class="side-title foe">微软方 · 敌</div>
+          <div class="units" id="rosterFoe"></div>
+        </div>
+      </div>
+
+      <p class="hint">
+        点卡片再点格子种植 · 点掉落的咖啡收集 · 数字键 1-7 选卡<br>
+        铲子是 <b>git revert</b>：移除单位并返还一半咖啡 · ESC 暂停
+      </p>
+      <div class="actions">
+        <button class="btn" id="btnStart" type="button">开始加班</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 暂停 ============ -->
+  <div class="ov hidden" id="ovPause">
+    <div class="panel slim">
+      <div class="kicker">PAUSED</div>
+      <h2 class="zh-title small">摸鱼时间</h2>
+      <div class="actions col">
+        <button class="btn" id="btnResume" type="button">继续加班</button>
+        <button class="btn ghost" id="btnRestart1" type="button">重新开始</button>
+        <a class="btn ghost" href="../">回合集首页</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 结算 ============ -->
+  <div class="ov hidden" id="ovEnd">
+    <div class="panel slim">
+      <div class="kicker" id="endKicker">BUILD FAILED</div>
+      <h2 class="zh-title small" id="endTitle">你的电脑被装满了全家桶</h2>
+      <div class="term" id="endTerm"></div>
+      <div class="stats" id="endStats"></div>
+      <div class="actions col">
+        <button class="btn" id="btnAgain" type="button">再来一次</button>
+        <a class="btn ghost" href="../">回合集首页</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./game.js"></script>
+</body>
+</html>
