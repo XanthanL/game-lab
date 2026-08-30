@@ -260,6 +260,7 @@ body{display:flex;align-items:center;justify-content:center;}
         <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8" aria-label="音量">
         <div class="pbtnRow">
           <span class="pbtn" id="muteBtn">静音开/关</span>
+          <span class="pbtn" id="titleBtn">回到主菜单</span>
           <span class="pbtn pbtnGo" id="resumeBtn">继 续 ▸</span>
         </div>
         <p class="ptip">ESC 继续 · M 静音</p>
@@ -337,7 +338,7 @@ const GAME_FONT='"Microsoft YaHei","Noto Sans SC","PingFang SC","Hiragino Sans G
 let VW=480,VH=300;
 const world=document.createElement('canvas');
 const wctx=world.getContext('2d');
-let imgData,buf32,zBuffer;
+let imgData,buf32,zBuffer,vzBuf;
 let vgCache=null,vgKey='';   // 暗角渐变缓存（性能）
 function computeSize(){
   const w=window.innerWidth||document.documentElement.clientWidth||480;
@@ -363,6 +364,7 @@ function setupBuffers(){
   imgData=wctx.createImageData(VW,VH);
   buf32=new Uint32Array(imgData.data.buffer);
   zBuffer=new Float32Array(VW);
+  vzBuf=new Float32Array(VH);      // 实体几何逐列深度缓冲（井亭/坛体互相遮挡时用）
 }
 setupBuffers();
 ctx.imageSmoothingEnabled=false;
@@ -471,10 +473,10 @@ const MAPS=[
 "#..##...............##.#",
 "#..##...............##.#",
 "#......................#",
-"#.........JJ..........#",
+"#.........JJ...........#",
 "#......................#",
-"#...##............##...#",
-"#...##............##...#",
+"#...###...........##...#",
+"#...###...........##...#",
 "#......................#",
 "########################",
 ],
@@ -496,8 +498,8 @@ const MAPS=[
 "#......................#",
 "#.........JJ...........#",
 "#..........X...........#",
-"#...##............##...#",
-"#...##............##...#",
+"#...###...........##...#",
+"#...###...........##...#",
 "#......................#",
 "########################",
 ],
@@ -507,99 +509,157 @@ let lvl=0;
 const tiles=MAPS.map(m=>m.map(r=>r.split('')));
 function tile(x,y){const t=tiles[lvl];if(x<0||y<0||x>=t[0].length||y>=t.length)return '#';return t[y][x];}
 function solid(x,y){const t=tile(x,y);return t==='#'||t==='S'||t==='J'||t==='B'||t==='C'||t==='X'||t==='D';}
+
+// ==================== 建筑系统：把成片的墙格升级为「有屋顶的真正房屋」 ====================
+// 之前的村庄只是裸墙贴图块（看不见屋顶、读不出是房子）。这里给每个建筑登记矩形轮廓，
+// 渲染时在墙顶之上再画一段坡屋顶：屋脊压顶 / 瓦垄 / 檐口暗边 / 石基，山墙面呈三角。
+// rise=屋脊相对墙顶的高度(墙高=1)，eave=檐口相对墙顶的高度，axis=屋脊走向。
+const BUILDINGS=[
+  // ---- 第〇章 · 老家村子（lvl 4）----
+  {lvl:4,x0:8, y0:1, x1:9, y1:2,  axis:'y',rise:0.66,eave:0.15,night:false},   // 北厢房（收窄一格，给村口井亭让位）
+  {lvl:4,x0:18,y0:1, x1:19,y1:2,  axis:'y',rise:0.52,eave:0.13,night:false},   // 北仓
+  {lvl:4,x0:4, y0:6, x1:5, y1:7,  axis:'y',rise:0.48,eave:0.12,night:false},   // 西棚屋
+  {lvl:4,x0:18,y0:6, x1:19,y1:7,  axis:'y',rise:0.48,eave:0.12,night:false},   // 东棚屋
+  {lvl:4,x0:3, y0:11,x1:4, y1:12, axis:'y',rise:0.50,eave:0.13,night:false},   // 西仓
+  {lvl:4,x0:20,y0:11,x1:21,y1:12, axis:'y',rise:0.50,eave:0.13,night:false},   // 东仓
+  {lvl:4,x0:4, y0:16,x1:6, y1:17, axis:'y',rise:0.72,eave:0.15,night:false},   // 老家主屋
+  {lvl:4,x0:18,y0:16,x1:19,y1:17, axis:'y',rise:0.50,eave:0.13,night:false},   // 南仓
+  // ---- 终章 · 夜魇村庄（lvl 5）：同一座村子，湿冷的夜色版 ----
+  {lvl:5,x0:8, y0:1, x1:9, y1:2,  axis:'y',rise:0.66,eave:0.15,night:true},
+  {lvl:5,x0:18,y0:1, x1:19,y1:2,  axis:'y',rise:0.52,eave:0.13,night:true},
+  {lvl:5,x0:4, y0:6, x1:5, y1:7,  axis:'y',rise:0.48,eave:0.12,night:true},
+  {lvl:5,x0:18,y0:6, x1:19,y1:7,  axis:'y',rise:0.48,eave:0.12,night:true},
+  {lvl:5,x0:3, y0:11,x1:4, y1:12, axis:'y',rise:0.50,eave:0.13,night:true},
+  {lvl:5,x0:20,y0:11,x1:21,y1:12, axis:'y',rise:0.50,eave:0.13,night:true},
+  {lvl:5,x0:4, y0:16,x1:6, y1:17, axis:'y',rise:0.72,eave:0.15,night:true},
+  {lvl:5,x0:18,y0:16,x1:19,y1:17, axis:'y',rise:0.50,eave:0.13,night:true},
+];
+// 每层的建筑索引表（-1 = 非建筑），渲染列循环里 O(1) 查询
+const bldIndex=MAPS.map(()=>null);
+BUILDINGS.forEach((b,bi)=>{
+  const t=MAPS[b.lvl];if(!t)return;
+  const W=t[0].length,H=t.length;
+  if(!bldIndex[b.lvl])bldIndex[b.lvl]=new Int16Array(W*H).fill(-1);
+  for(let y=Math.max(0,b.y0);y<=Math.min(H-1,b.y1);y++)
+    for(let x=Math.max(0,b.x0);x<=Math.min(W-1,b.x1);x++)bldIndex[b.lvl][x+y*W]=bi;
+});
+function buildingAt(x,y){
+  const m=bldIndex[lvl];if(!m)return null;
+  const t=tiles[lvl];
+  if(x<0||y<0||x>=t[0].length||y>=t.length)return null;
+  const i=m[x+y*t[0].length];
+  return i<0?null:BUILDINGS[i];
+}
+
 function hashInt(x,y){x|=0;y|=0;let h=(x*73856093)^(y*19349663);h^=h>>>13;h=(h*1274126177)>>>0;return h&255;}
 function snoise(x,y){const fx=x&63,fy=y&63;const a=hashInt(fx,fy)%256,b=hashInt(fx+1,fy)%256,c=hashInt(fx,fy+1)%256,d=hashInt(fx+1,fy+1)%256;const u=fx*0.015625,v=fy*0.015625;const uu=u*u*(3-2*u),vv=v*v*(3-2*v);return (a+(b-a)*uu+(c-a)*vv+(a-b-c+d)*uu*vv)/255;}
 
 function genTex(fn){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const d=g.createImageData(64,64);const u=new Uint32Array(d.data.buffer);for(let y=0;y<64;y++)for(let x=0;x<64;x++)u[y*64+x]=fn(x,y);g.putImageData(d,0,0);c.u32=u;return c;}
 function finishTex(c){c.u32=new Uint32Array(c.getContext('2d').getImageData(0,0,64,64).data.buffer);return c;}
 
-const wood=genTex((x,y)=>{
-  const plank=y%16;
-  let v=70+snoise(x*0.22,y*0.8)*40+(snoise(x*1.3,y*2.1)-0.5)*26;
-  if(plank===0||plank===15){v*=0.4;}
-  else if(plank===1||plank===14){v+=14;}
-  if(snoise(x*0.5,y*0.5)>0.88&&plank>2&&plank<13){v-=24;}
-  if(hashInt(x*3,y*5)%120===0){v+=16;}
-  return pack(clamp(v,0,255),clamp(v*0.72,0,255),clamp(v*0.52,0,255));
-});
-const darkwood=genTex((x,y)=>{
-  const plank=y%16;
-  let v=24+snoise(x*0.3,y*0.9)*16;
-  if(plank===0||plank===15){v*=0.55;}
-  if(plank===1){v+=10;}
-  if(snoise(x*1.4,y*3.2)>0.8){v+=12;}
-  return pack(clamp(v*0.9,0,255),clamp(v*0.75,0,255),clamp(v*0.6,0,255));
-});
-// 第〇章 · 夏日材质：米黄土墙 / 浅色木板
+// ==================== 体素墙贴图：墙面由凸出的体素方木/砖块砌成（顶棱受光、右棱落影、缝为暗沟） ====================
+// 竖向方木柱墙：四根 16px 木柱，柱面木纹顺纹，柱间 2px 暗缝
+function voxPlankTex(base,grain,pr,pg){
+  return genTex((x,y)=>{
+    const col=x>>4,px=x&15;
+    let v=base+(hashInt(col*31,col*57)%19-9)+snoise(x*0.9+col*17,y*0.13)*grain;
+    if(px===0)v*=0.42;
+    else if(px===1)v*=1.28;
+    else if(px===2)v*=1.08;
+    else if(px===15)v*=0.64;
+    else if(px===14)v*=0.82;
+    if(hashInt(x*5,y*3)%97===0)v-=22;               // 木节
+    if(hashInt(x*3+col*7,y*11)%211===0)v+=14;
+    return pack(clamp(v,0,255),clamp(v*pr,0,255),clamp(v*pg,0,255));
+  });
+}
+const wood=voxPlankTex(78,30,0.72,0.52);
+const darkwood=voxPlankTex(30,14,0.75,0.6);
+const redwood=voxPlankTex(96,22,0.42,0.35);
+const sunWood=voxPlankTex(150,26,0.82,0.6);
+// 第〇章 · 夏日材质：米黄土坯砖（大块夯土，错缝）
 const sunPlaster=genTex((x,y)=>{
-  let v=176+snoise(x*0.18,y*0.22)*44;
-  if(hashInt(x*11,y*7)%37===0)v-=14;               // 小孔洞/砂粒
-  if(y%64<2||x%64<2)v*=0.94;                        // 淡淡的夯层缝
+  const row=y>>4,off=(row&1)?16:0;
+  const bx=((x+off)>>5)+row*7,px=(x+off)&31,py=y&15;
+  let v=176+(hashInt(bx*11,bx*3)%13-6)+snoise(x*0.18,y*0.22)*26;
+  if(py===0)v*=0.82;else if(py===1)v*=1.1;else if(py===15)v*=0.7;
+  if(px===0)v*=0.9;else if(px===31)v*=0.94;
+  if(hashInt(x*11,y*7)%37===0)v-=14;                // 砂粒孔洞
   return pack(clamp(v,0,255),clamp(v*0.93,0,255),clamp(v*0.76,0,255));
 });
-const sunWood=genTex((x,y)=>{
-  const plank=y%16;
-  let v=148+snoise(x*0.2,y*0.8)*46+(snoise(x*1.3,y*2.1)-0.5)*20;
-  if(plank===0||plank===15){v*=0.72;}
-  else if(plank===1||plank===14){v+=10;}
-  return pack(clamp(v,0,255),clamp(v*0.82,0,255),clamp(v*0.6,0,255));
-});
+// 障子：体素木格框 + 糊纸
 const shoji=genTex((x,y)=>{
+  const px=x&31,py=y&31;
+  const fx=Math.min(px,31-px),fy=Math.min(py,31-py);
+  if(fx<5||fy<5){                                   // 格框（方木棱）
+    let v=150+snoise(x*0.3,y*0.3)*18;
+    const f=Math.min(fx,fy);
+    if(f===0)v*=0.5;else if(f===1)v*=1.28;else if(f===2)v*=1.1;else if(f===4)v*=0.85;
+    return pack(clamp(v,0,255),clamp(v*0.8,0,255),clamp(v*0.58,0,255));
+  }
+  if(Math.abs(px-15.5)<1.5){                        // 中棂
+    let v=142+snoise(x*0.3,y*0.3)*14;
+    if(Math.abs(px-16)<0.5)v*=0.5;
+    return pack(clamp(v,0,255),clamp(v*0.8,0,255),clamp(v*0.58,0,255));
+  }
   const d=Math.hypot(x-32,y-28)/46;
   let v=200-snoise(x*0.5,y*0.5)*9+24*Math.max(0,1-d);
-  const gx=x%16,gy=y%16;
-  if(gx===0||gy===0){v*=0.8;}
-  if(gx===15||gy===15){v*=0.92;}
-  if(y>52){v*=0.8;}
+  if(y>52)v*=0.8;
   return pack(clamp(v,0,255),clamp(v*0.97,0,255),clamp(v*0.88,0,255));
 });
-const redwood=genTex((x,y)=>{
-  const plank=y%16;
-  let v=92+snoise(x*0.25,y*0.9)*30;
-  if(plank===0||plank===15){v*=0.5;}
-  if(plank===1||plank===14){v+=12;}
-  return pack(clamp(v*0.95,0,255),clamp(v*0.42,0,255),clamp(v*0.35,0,255));
-});
+// 石墙：错缝体素砖
 const stone=genTex((x,y)=>{
-  const bx=Math.floor(x/16),by=Math.floor(y/16);
-  const sx=x%16,sy=y%16;
-  const base=50+hashInt(bx*7,by*13)%22;
-  let v=base+snoise(x*0.8,y*0.8)*14-7;
-  if(sx===0||sy===0||sx===15||sy===15){v*=0.55;}
-  if(sx===1||sy===1||sx===14||sy===14){v+=8;}
-  if(snoise(x*0.4,y*0.4)>0.9){v-=20;}
+  const row=y>>3,off=(row&1)?8:0;
+  const bx=((x+off)>>4),px=(x+off)&15,py=y&7;
+  let v=50+(hashInt(bx*7+row*13,bx*5)%22)+snoise(x*0.8,y*0.8)*12-6;
+  if(py===0)v*=0.5;else if(py===1)v*=1.24;else if(py===7)v*=0.78;
+  if(px===0)v*=0.7;else if(px===15)v*=0.88;
+  if(snoise(x*0.4,y*0.4)>0.92)v-=18;
   return pack(clamp(v*0.98,0,255),clamp(v*0.98,0,255),clamp(v*1.03,0,255));
 });
-const book=genTex((x,y)=>{
-  const row=Math.floor(y/10);
-  const ry=y%10;
-  if(ry===9){return pack(60,44,26);}
-  if(ry===8){return pack(36,26,16);}
-  const spines=[[120,44,40],[48,84,120],[122,112,44],[64,52,120],[44,110,74],[96,60,32],[150,148,120]];
-  const c=spines[hashInt(x+row*37,row)%spines.length];
-  let r=c[0],g=c[1],b=c[2];
-  if(hashInt(x*3,y)%7===0){r*=0.5;g*=0.5;b*=0.5;}
-  if(ry<2&&hashInt(x,y*11)%3===0){r+=20;g+=20;b+=14;}
-  return pack(clamp(r,0,255),clamp(g,0,255),clamp(b,0,255));
-});
+// 书架：体素书脊列 + 架板棱
+const book=(()=>{
+  const spines=[[120,44,40],[48,84,120],[122,112,44],[64,52,120],[44,110,74],[96,60,32],[150,148,120],[110,70,90]];
+  const rows=[];
+  for(let r=0;r<4;r++){
+    const row=[];let x=0;
+    while(x<64){const w=3+hashInt(x*13+r*37,r*7)%4;row.push([x,Math.min(64,x+w)]);x+=w;}
+    rows.push(row);
+  }
+  return genTex((x,y)=>{
+    const band=y>>4,by=y&15;
+    if(by>10){                                       // 架板（方木棱）
+      let v=60+(by===11?26:(by===15?-20:0))+snoise(x*0.5,y*0.5)*10;
+      return pack(clamp(v,0,255),clamp(v*0.72,0,255),clamp(v*0.5,0,255));
+    }
+    let b=[0,0,0];
+    for(const q of rows[band]){if(x>=q[0]&&x<q[1]){b=q;break;}}
+    if(!b||hashInt(b[0]*7+band*13,band)%11===0)return pack(16,12,8);   // 缺书空位
+    const c=spines[hashInt(b[0]*7+band*13,band)%spines.length];
+    const lx=x-b[0];
+    let r=c[0],g=c[1],bl=c[2];
+    if(lx===0){r*=0.5;g*=0.5;bl*=0.5;}              // 书缝
+    else if(lx===1){r*=1.22;g*=1.22;bl*=1.22;}      // 书脊棱
+    if(by===0){r*=1.12;g*=1.12;bl*=1.12;}           // 书顶棱
+    if(by===9||by===10){r*=0.66;g*=0.66;bl*=0.66;}  // 插入阴影
+    if(hashInt(x*3,y)%7===0){r*=0.5;g*=0.5;bl*=0.5;}
+    if(by>=3&&by<=6&&hashInt(b[0]*5,band*3)%5===0){r+=34;g+=30;bl+=22;}   // 书签
+    return pack(clamp(r,0,255),clamp(g,0,255),clamp(bl,0,255));
+  });
+})();
+// 衣柜：双门体素框板 + 黄铜把手
 const wardrobe=genTex((x,y)=>{
-  const px=x%32,py=y%32;
-  let v=34+snoise(x*0.5,y*0.5)*10;
-  if(px===0||py===0){v+=16;}
-  if(px===31||py===31){v*=0.7;}
-  if(px===16||px===17){v*=0.45;}
-  if((px===7||px===8||px===24||px===25)&&(py===14||py===15)){return pack(202,178,108);}
-  if(px===4&&py===8){v+=22;}
+  const px=x&31,py=y&31;
+  let v=34+snoise(x*0.5,y*0.5)*12;
+  const d=Math.min(px,31-px,py,31-py);
+  if(d===0)v*=0.5;else if(d===1)v*=1.32;else if(d===2)v*=1.12;else if(d===3)v*=0.88;
+  if(px===15||px===16)v*=0.5;                       // 门缝
+  if((px===11||px===12||px===19||px===20)&&(py>=14&&py<=17))return pack(202,178,108);   // 把手
+  if(px===4&&py===8)v+=22;
   return pack(clamp(v*0.95,0,255),clamp(v*0.78,0,255),clamp(v*0.62,0,255));
 });
 const bloodTex=(()=>{
-  const c=genTex((x,y)=>{
-    const plank=y%16;
-    let v=70+snoise(x*0.22,y*0.8)*30;
-    if(plank===0||plank===15){v*=0.5;}
-    if(hashInt(x*7,y*3)%5===0){v*=0.55;}
-    return pack(clamp(v,0,255),clamp(v*0.6,0,255),clamp(v*0.42,0,255));
-  });
+  const c=voxPlankTex(78,30,0.72,0.52);
   const g=c.getContext('2d');
   const top=g.createLinearGradient(0,0,0,64);
   top.addColorStop(0,'rgba(48,5,5,0.55)');top.addColorStop(0.35,'rgba(48,5,5,0)');
@@ -643,7 +703,76 @@ const doorTex=(()=>{
   return finishTex(c);
 })();
 
-function wallTex(x,y){switch(tile(x,y)){
+// ---- 屋顶瓦：v=0 屋脊压顶（亮厚） / v=1 檐口（落影）。x 方向 = 顺坡的瓦垄 ----
+function roofTexGen(base,r,g,b,mossAmt){
+  return genTex((x,y)=>{
+    const course=y>>3,cy=y&7;
+    const ridge=y<5,eave=y>57;
+    let v=base+(hashInt((x>>2)*17+course*31,course*7)%17-8)+snoise(x*0.2,y*0.7)*9;
+    const cx=x&3;                                  // 瓦垄横断面：垄沟暗、垄背亮
+    if(cx===0)v*=0.66;else if(cx===1)v*=1.18;else if(cx===3)v*=0.84;
+    if(cy===0)v*=1.2;else if(cy===7)v*=0.6;        // 每行瓦的上棱受光 / 搭缝落影
+    if(ridge)v=v*1.24+30;                          // 脊瓦压顶：更亮更厚
+    else if(eave)v*=0.52;                          // 檐口：屋檐下的深影
+    if(mossAmt&&hashInt(x*13,y*29)%100<mossAmt)v=v*0.72+6;   // 苔痕
+    return pack(clamp(v*r,0,255),clamp(v*g,0,255),clamp(v*b,0,255));
+  });
+}
+const roofSun=roofTexGen(104,1.0,0.97,0.9,12);     // 第〇章：晴日灰瓦，微微偏暖
+const roofNight=roofTexGen(56,0.84,0.93,1.14,26);  // 终章：夜湿青瓦，偏冷、多苔
+// ---- 房屋墙面：第〇章白灰真壁（露木构）/ 终章湿木板 ----
+const sunWall=genTex((x,y)=>{
+  let v=180+snoise(x*0.2,y*0.25)*17;
+  if(x<6||x>57)v=92+snoise(x,y*0.3)*17;            // 两侧露出的木柱
+  else if(y<5||y>51)v=86+snoise(x*0.3,y)*15;       // 上下横枋
+  if(hashInt(x*7,y*5)%53===0)v-=22;                // 斑驳剥落
+  if(y>55)v*=0.7;                                  // 墙根返潮
+  return pack(clamp(v,0,255),clamp(v*0.95,0,255),clamp(v*0.83,0,255));
+});
+const nightWall=genTex((x,y)=>{
+  const col=x>>4,px=x&15;
+  let v=52+(hashInt(col*31,col*57)%15-7)+snoise(x*0.9+col*17,y*0.13)*20;
+  if(px===0)v*=0.42;else if(px===1)v*=1.3;else if(px===15)v*=0.6;   // 板缝
+  if(hashInt(x*13,y*7)%61===0)v+=16;               // 苔
+  if(y>54)v*=0.58;
+  return pack(clamp(v,0,255),clamp(v*0.98,0,255),clamp(v*0.9,0,255));
+});
+// ---- 井圈/坛体石材：湿滑青石，横向錾道 + 绳磨凹槽 + 苔痕 ----
+const wellStone=genTex((x,y)=>{
+  const course=y>>4,cy=y&15;
+  let v=104+(hashInt((x>>3)*13+course*29,course*5)%21-10)+snoise(x*0.35,y*0.5)*13;
+  if(cy===0)v*=0.58;else if(cy===1)v*=1.16;else if(cy===15)v*=0.72;   // 石缝错层
+  if((x&15)===0)v*=0.82;
+  if(y>20&&y<27)v*=0.74;                            // 井绳常年磨出的一道凹槽
+  if(y>27&&y<30)v*=1.1;
+  if(hashInt(x*17,y*11)%43===0)v=v*0.7+10;          // 苔斑
+  if(y>56)v*=0.6;                                   // 墙根水渍
+  return pack(clamp(v*0.94,0,255),clamp(v*0.97,0,255),clamp(v*1.0,0,255));
+});
+// ---- 祭台石（香坛/神龛）：暗红砂岩，比井石更沉 ----
+const altarStone=genTex((x,y)=>{
+  const course=y>>4,cy=y&15;
+  let v=86+(hashInt((x>>3)*7+course*23,course*11)%17-8)+snoise(x*0.3,y*0.45)*11;
+  if(cy===0)v*=0.6;else if(cy===1)v*=1.14;else if(cy===15)v*=0.74;
+  if(y<6)v*=1.22;                                   // 台面磨得发亮
+  if(hashInt(x*19,y*13)%67===0)v-=16;               // 香灰熏黑
+  return pack(clamp(v*1.08,0,255),clamp(v*0.86,0,255),clamp(v*0.78,0,255));
+});
+// ---- 碑石：青灰石板，刻痕竖行 ----
+const steleTex=genTex((x,y)=>{
+  let v=78+(hashInt((x>>2)*11,(y>>2)*7)%19-9)+snoise(x*0.6,y*0.9)*10;
+  if(x<4||x>59)v*=0.7;                              // 侧面收边
+  if(y<5)v*=1.15;                                   // 碑首
+  const gx=(x-32);                                  // 竖行刻字（抽象为竖凹槽列）
+  if(Math.abs(((x%14)-7))<1&&y>10&&y<58)v*=0.55;
+  if(hashInt(x*23,y*17)%79===0)v-=18;
+  return pack(clamp(v*0.96,0,255),clamp(v*0.97,0,255),clamp(v*1.0,0,255));
+});
+
+function wallTex(x,y){
+const _b=buildingAt(x,y);
+if(_b)return _b.night?nightWall:sunWall;
+switch(tile(x,y)){
 case 'D':return doorTex;
 case 'J':return shoji;
 case 'S':return stone;
@@ -662,7 +791,6 @@ function makeSpriteCanvas(w,h,fn){const c=document.createElement('canvas');c.wid
 
 // SVG 精灵烘焙：显式声明 width/height（缺失时浏览器会退回 300x150 的默认位图，
 // 导致按 viewBox 尺寸取源矩形时只画出左上一角），再光栅化到固定尺寸的离屏 canvas。
-// 返回的 canvas 引用稳定且 width/height 立即可用，渲染路径无需等待 onload。
 function svgSprite(w,h,body,fb){
   const ss=Math.max(1,Math.min(10,Math.round(320/Math.max(w,h))));
   const c=makeSpriteCanvas(Math.round(w*ss),Math.round(h*ss),()=>{});
@@ -675,26 +803,172 @@ function svgSprite(w,h,body,fb){
   return c;
 }
 
+// ---- 地形/陈设体素建模：体素网格 → 等轴预渲染精灵（东南上方视角，画家算法+邻接面剔除）----
+// 鬼怪类（怨灵/纸人/井中少女）仍用 SVG 贴图，其余场景物全部体素化。
+function voxParse(c){if(typeof c==='string'){const n=parseInt(c.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255];}return c;}
+function vox(){
+  const V={
+    v:[],
+    add(x,y,z,c){V.v.push([x|0,y|0,z|0,voxParse(c)]);},
+    put(x,y,z,c){const k=(x|0)+','+(y|0)+','+(z|0);for(let i=V.v.length-1;i>=0;i--)if(V.v[i][0]+','+V.v[i][1]+','+V.v[i][2]===k)V.v.splice(i,1);V.add(x,y,z,c);},
+    box(x,y,z,w,h,d,c){for(let X=x;X<x+w;X++)for(let Y=y;Y<y+h;Y++)for(let Z=z;Z<z+d;Z++)V.add(X,Y,Z,c);},
+    cyl(x,z,y,h,r,c){for(let X=Math.floor(x-r);X<=Math.ceil(x+r);X++)for(let Z=Math.floor(z-r);Z<=Math.ceil(z+r);Z++){if((X-x)*(X-x)+(Z-z)*(Z-z)<=r*r+0.15)for(let Y=y;Y<y+h;Y++)V.add(X,Y,Z,c);}},
+    disc(x,z,y,r,c){for(let X=Math.floor(x-r);X<=Math.ceil(x+r);X++)for(let Z=Math.floor(z-r);Z<=Math.ceil(z+r);Z++){if((X-x)*(X-x)+(Z-z)*(Z-z)<=r*r+0.15)V.add(X,y,Z,c);}},
+    ring(x,z,y,h,r,c,wd){for(let X=Math.floor(x-r);X<=Math.ceil(x+r);X++)for(let Z=Math.floor(z-r);Z<=Math.ceil(z+r);Z++){const d2=(X-x)*(X-x)+(Z-z)*(Z-z);if(d2<=r*r+0.15&&d2>=(r-wd)*(r-wd))for(let Y=y;Y<y+h;Y++)V.add(X,Y,Z,c);}},
+    sph(x,y,z,r,c){for(let X=Math.floor(x-r);X<=Math.ceil(x+r);X++)for(let Y=Math.floor(y-r);Y<=Math.ceil(y+r);Y++)for(let Z=Math.floor(z-r);Z<=Math.ceil(z+r);Z++){if((X-x)*(X-x)+(Y-y)*(Y-y)+(Z-z)*(Z-z)<=r*r+0.2)V.add(X,Y,Z,c);}},
+  };
+  return V;
+}
+// 等轴投影：sx=(x-z)·ca  sy=(x+z)·sa−y；深度=x+z+0.34y（大者近相机，后画）
+function voxSprite(w,h,build,opt){
+  opt=opt||{};
+  const ss=Math.max(1,Math.min(4,Math.round(320/Math.max(w,h))||2));
+  const W=Math.max(4,Math.round(w*ss)),H=Math.max(4,Math.round(h*ss));
+  const c=makeSpriteCanvas(W,H,()=>{});
+  const g=c.getContext('2d');
+  const ca=0.86,sa=0.44;   // 等轴俯角系数
+  const P=(x,y,z)=>[ (x-z)*ca, (x+z)*sa - y ];
+  const M=vox();
+  build(M);
+  const vs=M.v;
+  if(vs.length){
+    const occ=new Set();
+    let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9,minZ=1e9,maxZ=-1e9;
+    for(const p of vs){
+      occ.add(p[0]+','+p[1]+','+p[2]);
+      if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];
+      if(p[1]<minY)minY=p[1];if(p[1]>maxY)maxY=p[1];
+      if(p[2]<minZ)minZ=p[2];if(p[2]>maxZ)maxZ=p[2];
+    }
+    // 投影包围盒（含体素立方角点）
+    let bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9;
+    for(const cx of [minX,maxX+1])for(const cy of [minY,maxY+1])for(const cz of [minZ,maxZ+1]){
+      const q=P(cx,cy,cz);
+      if(q[0]<bx0)bx0=q[0];if(q[0]>bx1)bx1=q[0];
+      if(q[1]<by0)by0=q[1];if(q[1]>by1)by1=q[1];
+    }
+    const pad=Math.max(2,W*0.04);
+    const s=Math.min((W-2*pad)/(bx1-bx0||1),(H-2*pad)/(by1-by0||1));
+    const ox=W/2-((bx0+bx1)/2)*s, oy=H-pad-((by0+by1)/2)*s+((by1-by0)/2)*s*0;   // 底部对齐
+    const proj=(x,y,z)=>{const q=P(x,y,z);return [ox+q[0]*s, oy+q[1]*s];};
+    // 地面阴影
+    if(opt.shadow!==false){
+      const gcx=(minX+maxX+1)/2,gcz=(minZ+maxZ+1)/2;
+      const g0=proj(gcx,0,gcz);
+      const rad=Math.max((maxX-minX+1),(maxZ-minZ+1))*s*0.62;
+      g.save();g.fillStyle='rgba(0,0,0,0.32)';g.beginPath();
+      g.ellipse(g0[0],g0[1],rad*ca*0.9,rad*sa*0.9+2,0,0,TAU);g.fill();g.restore();
+    }
+    // 画家算法：远→近
+    vs.sort((a,b)=>((a[0]+a[2])*3+a[1])-((b[0]+b[2])*3+b[1]));
+    const lw=Math.max(0.6,s*0.16);
+    g.lineWidth=lw;g.strokeStyle='rgba(0,0,0,0.14)';
+    const quad=(pts,col)=>{
+      g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+      for(let i=1;i<4;i++)g.lineTo(pts[i][0],pts[i][1]);
+      g.closePath();g.fillStyle=col;g.fill();if(lw>0.8)g.stroke();
+    };
+    const shade=(c,f,j)=>'rgb('+clamp(c[0]*f*j,0,255).toFixed(0)+','+clamp(c[1]*f*j,0,255).toFixed(0)+','+clamp(c[2]*f*j,0,255).toFixed(0)+')';
+    for(const p of vs){
+      const x=p[0],y=p[1],z=p[2],c=p[3];
+      const j=0.93+0.14*((hashInt(x*73+y*151+z*31,y*7+x*3)&255)/255);   // 体素间色彩抖动
+      if(!occ.has(x+','+(y+1)+','+z))quad([proj(x,y+1,z),proj(x+1,y+1,z),proj(x+1,y+1,z+1),proj(x,y+1,z+1)],shade(c,1.06,j));      // 顶面
+      if(!occ.has(x+','+y+','+(z+1)))quad([proj(x,y,z+1),proj(x+1,y,z+1),proj(x+1,y+1,z+1),proj(x,y+1,z+1)],shade(c,0.84,j));      // 南面（左前）
+      if(!occ.has((x+1)+','+y+','+z))quad([proj(x+1,y,z),proj(x+1,y,z+1),proj(x+1,y+1,z+1),proj(x+1,y+1,z)],shade(c,0.6,j));       // 东面（右前）
+    }
+  }
+  return c;
+}
+
 const dollFallback=makeSpriteCanvas(16,28,g=>{g.fillStyle='#e8e0d0';g.fillRect(5,6,6,8);g.fillRect(3,14,10,6);g.fillRect(3,20,10,6);g.fillRect(0,26,16,2);g.fillStyle='#7a2a2a';g.fillRect(6,2,4,2);});
-const dollImg=svgSprite(32,56,'<defs><linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5eeda"/><stop offset="1" stop-color="#b3a78e"/></linearGradient></defs><g opacity="0.92"><ellipse cx="16" cy="8.5" rx="6.8" ry="7.8" fill="url(#p)"/><path d="M11 15 h10 l2.5 15 h-15 Z" fill="url(#p)"/><path d="M11 29 h10 l3 12 h-16 Z" fill="url(#p)"/><path d="M10 19 L4 24 L6 30 Z" fill="url(#p)"/><path d="M22 19 L28 24 L26 30 Z" fill="url(#p)"/><path d="M13 40 l6 0 l2.5 14 h-11 Z" fill="url(#p)"/></g><circle cx="16" cy="8.5" r="3.1" fill="#150f0f"/><path d="M16 12.6 q1.4 1.8 3.2 0" stroke="#150f0f" stroke-width="1.2" fill="none"/><path d="M8 22 h5 M8 25 h4 M8 28 h3" stroke="#7a2a2a" stroke-width="1" opacity="0.85"/><path d="M14 43 L9 37 L15 39 Z" fill="#8a2020" opacity="0.8"/>',dollFallback);
+const dollImg=voxSprite(32,56,M=>{
+  M.box(-1,11,0,3,3,2,'#f5eeda');            // 头
+  M.box(-1,13,0,3,1,2,'#1a1414');            // 发顶
+  M.put(-1,12,1,'#150f0f');M.put(1,12,1,'#150f0f');   // 眼
+  M.put(0,11,1,'#8a2020');                    // 唇点
+  M.box(-2,6,0,5,5,2,'#f2ecd8');              // 上身
+  M.box(-2,2,0,5,4,2,'#efe8d4');              // 下摆
+  M.box(-4,8,0,2,1,2,'#f5eeda');M.box(2,8,0,2,1,2,'#f5eeda');   // 平伸手臂
+  M.put(0,7,1,'#8a2020');M.put(0,6,1,'#8a2020');M.put(0,5,1,'#8a2020');   // 朱砂符线
+});
 
 const keyFallback=makeSpriteCanvas(24,14,g=>{g.fillStyle='#d8b24a';g.beginPath();g.arc(5,7,4,0,TAU);g.fill();g.fillRect(9,5,13,3);g.fillRect(17,8,4,3);g.fillRect(14,8,3,4);});
-const keyImg=svgSprite(48,28,'<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.55" stop-color="#d8b24a"/><stop offset="1" stop-color="#8a6814"/></linearGradient></defs><circle cx="9" cy="14" r="6.5" fill="none" stroke="url(#k)" stroke-width="3.2"/><circle cx="9" cy="14" r="2.4" fill="none" stroke="url(#k)" stroke-width="1.8"/><rect x="14" y="11.6" width="24" height="4.8" rx="2.4" fill="url(#k)"/><path d="M28 16.4 v4.6 h5 v-2.6 h2.4 M37.4 16.4 v6 h3.4 v-3 h2.6" fill="none" stroke="url(#k)" stroke-width="3.4"/>',keyFallback);
+const keyImg=voxSprite(48,28,M=>{
+  M.box(-6,1,0,11,1,1,'#d8b24a');            // 锁杆
+  M.box(-9,1,0,1,3,1,'#d8b24a');M.box(-7,1,0,1,3,1,'#d8b24a');M.box(-9,3,0,3,1,1,'#d8b24a');   // 环
+  M.box(3,0,0,1,1,1,'#c8a03c');M.box(5,0,0,1,1,1,'#c8a03c');   // 齿
+  M.put(-5,2,0,'#ffe9a8');M.put(-1,2,0,'#ffe9a8');M.put(2,2,0,'#ffe9a8');   // 高光棱
+});
 
-const wellImg=svgSprite(56,56,'<defs><radialGradient id="wh" cx="0.5" cy="0.35" r="0.65"><stop offset="0" stop-color="#0d1016"/><stop offset="1" stop-color="#000"/></radialGradient><linearGradient id="st" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4c4c52"/><stop offset="0.5" stop-color="#6e6e76"/><stop offset="1" stop-color="#3a3a40"/></linearGradient><linearGradient id="wd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3626"/><stop offset="1" stop-color="#221610"/></linearGradient></defs><ellipse cx="28" cy="37" rx="21" ry="7" fill="rgba(0,0,0,0.55)"/><ellipse cx="28" cy="30" rx="19" ry="8" fill="url(#wh)" stroke="#1c1c1e" stroke-width="1.5"/><ellipse cx="28" cy="30" rx="19" ry="8" fill="none" stroke="#555" stroke-width="4.5"/><rect x="24" y="0" width="8" height="30" fill="url(#wd)"/><rect x="5" y="2" width="46" height="6" rx="2" fill="url(#wd)"/><path d="M5 2 q23 -9 46 2 l0 4 q-23 -9 -46 -2 Z" fill="#3a2a1c"/><path d="M28 6 l0 22" stroke="#7a5a3a" stroke-width="2" opacity="0.85"/><path d="M26 26 l-7 3 M30 26 l7 3" stroke="#6a4a2c" stroke-width="1.4" opacity="0.7"/><ellipse cx="13" cy="25" rx="2.8" ry="1.6" fill="#2e4a2c" opacity="0.85"/><ellipse cx="41" cy="21" rx="3.2" ry="1.8" fill="#2e4a2c" opacity="0.85"/><ellipse cx="34" cy="35" rx="2.2" ry="1.3" fill="#2e4a2c" opacity="0.85"/>');
+const wellImg=voxSprite(56,56,M=>{
+  M.ring(0,0,0,3,5,'#6a6a70',2);                                   // 石砌井身（圆环壁）
+  M.disc(0,0,3,5,'#787880');                                        // 井沿顶圈
+  M.disc(0,0,1,3,'#0a1018');                                        // 井内黑水
+  M.put(-3,3,1,'#2e4a2c');M.put(2,3,-2,'#2e4a2c');M.put(4,3,1,'#3a5a34');M.put(-2,3,3,'#2e4a2c');   // 沿上苔藓
+  M.box(-5,4,-1,1,9,1,'#4a3626');M.box(4,4,-1,1,9,1,'#4a3626');     // 双柱
+  M.box(-5,13,-2,11,1,3,'#3a2a1c');                                 // 顶横梁
+  M.box(-6,14,-2,12,1,3,'#54382a');                                 // 檐板
+  for(let y=5;y<13;y++)M.add(0,y,0,'#8a7a5a');                      // 辘轳绳
+  M.add(-1,5,0,'#3a3a40');M.add(1,5,0,'#3a3a40');                   // 绳结
+});
 
-const altarImg=svgSprite(48,40,'<defs><linearGradient id="ab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2416"/><stop offset="1" stop-color="#1a0e08"/></linearGradient><radialGradient id="fl" cx="0.5" cy="0.4" r="0.5"><stop offset="0" stop-color="#ffe9a0" stop-opacity="0.95"/><stop offset="1" stop-color="#ff8a30" stop-opacity="0"/></radialGradient></defs><rect x="4" y="20" width="40" height="16" rx="1.5" fill="url(#ab)"/><rect x="4" y="20" width="40" height="3" fill="#9a7430"/><rect x="4" y="33" width="40" height="2" fill="#9a7430"/><rect x="12" y="7" width="24" height="14" rx="1" fill="url(#ab)" stroke="#8a6a30" stroke-width="1"/><rect x="21.5" y="0" width="5" height="10" rx="2.5" fill="#e8e0c8"/><circle cx="24" cy="6" r="7" fill="url(#fl)"/><rect x="21" y="3.4" width="6" height="6" rx="3" fill="#ffe9a0"/><rect x="16.5" y="8.5" width="2.4" height="12" fill="#f0ead6" transform="rotate(4 17 14)"/><path d="M16.8 11.5 h2 M16.8 14.5 h2 M16.8 17.5 h2" stroke="#8a2020" stroke-width="0.9"/><rect x="30" y="9" width="2.2" height="11" fill="#ece4cc" transform="rotate(-3 31 14)"/><path d="M30.2 12 h1.8 M30.2 15 h1.8 M30.2 18 h1.8" stroke="#8a2020" stroke-width="0.8"/>');
+const altarImg=voxSprite(48,40,M=>{
+  M.box(-4,0,-2,9,3,4,'#3a2416');            // 坛身
+  M.box(-4,3,-2,9,1,4,'#9a7430');            // 坛面
+  M.box(-2,4,-1,1,3,1,'#e8e0c8');M.box(2,4,-1,1,3,1,'#e8e0c8');   // 双烛
+  M.add(-2,7,-1,'#ffd870');M.add(2,7,-1,'#ffd870');                // 烛火
+  M.box(0,4,1,1,2,1,'#a03028');              // 线香
+  M.add(-1,4,0,'#f0ead6');M.add(1,4,0,'#f0ead6');                 // 符纸角
+});
 
-const lanternImg=svgSprite(24,44,'<defs><linearGradient id="ls" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a3a40"/><stop offset="0.5" stop-color="#6e6e76"/><stop offset="1" stop-color="#2c2c32"/></linearGradient><radialGradient id="lg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffe9a0" stop-opacity="0.95"/><stop offset="1" stop-color="#ff9a40" stop-opacity="0"/></radialGradient></defs><rect x="7" y="38" width="10" height="6" fill="url(#ls)"/><rect x="5" y="10" width="14" height="28" rx="1" fill="url(#ls)"/><rect x="4" y="6" width="16" height="5" rx="1" fill="url(#ls)"/><path d="M5 10 h14 v4 l-14 -4 Z" fill="#28282e"/><rect x="9" y="0" width="6" height="6" rx="2" fill="url(#ls)"/><rect x="7.5" y="14" width="9" height="18" fill="url(#lg)"/><rect x="8" y="15" width="8" height="16" fill="#f0c878" opacity="0.85"/><path d="M8 20 q4 -2 8 0 v2 q-4 -2 -8 0 Z" fill="#1a1a1e" opacity="0.8"/>');
+const lanternImg=voxSprite(24,44,M=>{
+  M.box(-1,0,-1,3,1,3,'#3a3a40');            // 基座
+  M.box(0,1,0,1,7,1,'#4a4a52');              // 灯柱
+  M.box(-1,8,-1,3,4,3,'#f0c878');            // 灯笼体
+  M.put(-1,8,-1,'#6e6e76');M.put(1,8,-1,'#6e6e76');M.put(-1,8,1,'#6e6e76');M.put(1,8,1,'#6e6e76');   // 框角
+  M.put(-1,11,-1,'#6e6e76');M.put(1,11,-1,'#6e6e76');M.put(-1,11,1,'#6e6e76');M.put(1,11,1,'#6e6e76');
+  M.box(-2,12,-2,5,1,5,'#3a3a40');           // 顶盖
+  M.box(-1,13,-1,3,1,3,'#2c2c32');
+  M.add(0,14,0,'#8a8a90');                   // 顶钮
+});
 
-const treeImg=svgSprite(60,80,'<path d="M30 78 C28 60 26 50 27 38 C24 34 20 32 14 32 C18 29 22 28 25 30 C24 24 20 20 16 14 C21 17 25 20 27 25 C28 16 27 10 24 4 C29 8 31 14 31 22 C33 15 35 8 37 3 C36 10 34 17 34 24 C38 20 42 17 47 16 C43 20 39 23 36 27 C42 29 48 29 53 33 C47 34 41 34 37 33 C36 42 36 52 36 60 L38 78 Z" fill="#120d0a"/><path d="M30 78 C28 60 26 50 27 38 C24 34 20 32 14 32" stroke="#2c2018" stroke-width="1.5" fill="none" opacity="0.45"/>');
+const treeImg=voxSprite(60,80,M=>{
+  M.box(-1,0,-1,2,9,2,'#2c2018');            // 树干
+  M.sph(0,13,0,5,'#141f16');                 // 主冠
+  M.sph(-4,10,2,3,'#182619');
+  M.sph(4,11,-2,3,'#182619');
+  M.sph(0,17,0,3,'#1c2e20');
+  M.put(-2,17,2,'#243a28');M.put(3,14,1,'#243a28');M.put(1,9,-3,'#243a28');   // 受光叶簇
+});
 
-const skeletonImg=svgSprite(40,56,'<g fill="#c9c2b4"><circle cx="20" cy="8" r="7"/><circle cx="15" cy="15" r="3.5"/><circle cx="25" cy="15" r="3.5"/><rect x="13" y="18" width="14" height="6" rx="3"/><path d="M15 24 h10 l1 6 h-12 Z"/><path d="M16 30 l2 12 l-1 10 h-4 l0 -8 l-3 6 h-4 Z" opacity="0.85"/><path d="M24 30 l-2 12 l1 10 h4 l0 -8 l3 6 h4 Z" opacity="0.85"/><path d="M15 18 l-4 8 M25 18 l4 8" stroke="#c9c2b4" stroke-width="2.5" fill="none"/></g><circle cx="17.2" cy="7.5" r="1.8" fill="#0c0c0e"/><circle cx="22.8" cy="7.5" r="1.8" fill="#0c0c0e"/><path d="M18.5 11 q1.5 1.6 3 0" stroke="#0c0c0e" stroke-width="1.2" fill="none"/>');
+const skeletonImg=voxSprite(40,56,M=>{
+  M.box(-1,13,-1,3,3,3,'#c9c2b4');           // 颅骨
+  M.put(-1,14,1,'#0c0c0e');M.put(1,14,1,'#0c0c0e');   // 眼窝
+  M.put(0,13,1,'#0c0c0e');                            // 鼻孔
+  M.box(0,12,0,1,1,1,'#c9c2b4');
+  for(let i=0;i<3;i++)M.box(-2,9-i*2,0,5,1,1,'#c9c2b4');   // 肋骨
+  M.box(0,7,0,1,6,1,'#c9c2b4');              // 脊柱
+  M.box(-1,6,0,3,1,1,'#b8b2a4');             // 骨盆
+  M.box(-3,9,0,1,4,1,'#c9c2b4');M.box(3,9,0,1,4,1,'#c9c2b4');   // 臂骨
+  M.box(-1,0,0,1,6,1,'#c9c2b4');M.box(1,0,0,1,6,1,'#c9c2b4');   // 腿骨
+});
 
-const grassImg=svgSprite(24,16,'<g stroke="#2c3a22" stroke-width="2" fill="none" stroke-linecap="round"><path d="M4 15 Q3 10 6 6"/><path d="M8 15 Q9 9 12 5"/><path d="M12 15 Q11 10 14 7"/><path d="M16 15 Q17 9 20 5"/><path d="M19 15 Q19 10 21 8"/></g>');
+const grassImg=voxSprite(24,16,M=>{
+  for(let i=-3;i<=3;i++){
+    const h=1+(hashInt(i*17,i*29)%3);
+    M.box(i,0,(i%3+3)%3-1,1,h,1,i>=0?'#2c3a22':'#25331e');
+    M.put(i,h,(i%3+3)%3-1,'#3a4c2a');
+  }
+});
 
 const stairsFallback=makeSpriteCanvas(28,28,g=>{g.fillStyle='#101218';g.fillRect(3,3,22,22);g.strokeStyle='#3c3c42';g.strokeRect(3.5,3.5,21,21);g.strokeStyle='#5a5a60';for(let i=0;i<4;i++){g.strokeRect(6,6+i*4,16,4);}});
-const stairsImg=svgSprite(32,32,'<defs><linearGradient id="stp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14161c"/><stop offset="0.55" stop-color="#1e2026"/><stop offset="1" stop-color="#06070a"/></linearGradient></defs><ellipse cx="16" cy="18" rx="13" ry="6" fill="rgba(0,0,0,0.5)"/><rect x="5" y="5" width="22" height="23" rx="2" fill="url(#stp)" stroke="#3c3c42" stroke-width="1.3"/><g fill="none" stroke="#6e6e74" stroke-width="1.4"><path d="M8 11 h16 v2 h-16 Z"/><path d="M8 15 h16 v2 h-16 Z"/><path d="M8 19 h16 v2 h-16 Z"/><path d="M8 23 h16 v2 h-16 Z"/></g><path d="M8 11 h16 v2 h-16 Z" fill="rgba(255,255,255,0.05)"/><ellipse cx="16" cy="26" rx="9" ry="2.2" fill="#04050a" opacity="0.8"/>',stairsFallback);
+const stairsImg=voxSprite(32,32,M=>{
+  M.box(-3,0,3,7,1,3,'#4a4a52');
+  M.box(-3,1,1,7,1,3,'#52525a');
+  M.box(-3,2,-1,7,1,3,'#4a4a52');
+  M.box(-3,3,-3,7,1,3,'#52525a');
+  M.put(-3,4,-3,'#6a6a72');M.put(3,4,-3,'#6a6a72');   // 顶棱
+});
 
 const grainImg=makeSpriteCanvas(64,64,g=>{const d=g.createImageData(64,64);const u=new Uint32Array(d.data.buffer);for(let i=0;i<4096;i++){const v=(Math.random()*70)|0;u[i]=pack(v,v,v);}g.putImageData(d,0,0);});
 
@@ -711,9 +985,22 @@ let keyItem={x:11.5,y:17.5,lvl:0,taken:false};
 
 // ---- 第三章精灵图（decor 引用，须先于 decor 声明）----
 const tabletFallback=makeSpriteCanvas(14,22,g=>{g.fillStyle='#6a4a28';g.fillRect(3,2,8,18);g.fillStyle='#2c1c0e';g.fillRect(3,2,8,3);g.fillStyle='#a03020';g.fillRect(5,6,4,10);});
-const tabletImg=svgSprite(28,40,'<defs><linearGradient id="tb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5630"/><stop offset="1" stop-color="#4a3018"/></linearGradient></defs><rect x="6" y="3" width="16" height="34" rx="1.5" fill="url(#tb)" stroke="#2c1c0e" stroke-width="1.4"/><rect x="6" y="3" width="16" height="6" fill="#241608"/><rect x="10" y="12" width="8" height="16" rx="1" fill="#b03826"/><path d="M12 15 h4 M12 19 h4 M12 23 h4" stroke="#f0dcb0" stroke-width="1.2"/><circle cx="14" cy="33" r="1.4" fill="#e8c060"/>',tabletFallback);
+const tabletImg=voxSprite(28,40,M=>{
+  M.box(-1,0,0,3,12,1,'#7a5630');            // 木牌
+  M.box(-1,11,0,3,1,1,'#241608');            // 顶帽
+  M.put(-1,12,0,'#4a3018');M.put(1,12,0,'#4a3018');
+  for(let y=3;y<=8;y++)M.put(0,y,1,'#b03826');   // 朱漆封心
+  M.put(0,1,1,'#e8c060');                    // 铜钉
+});
 
-const jarImg=svgSprite(24,28,'<defs><linearGradient id="jr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a3a20"/><stop offset="0.5" stop-color="#8a5c30"/><stop offset="1" stop-color="#42280f"/></linearGradient></defs><ellipse cx="12" cy="25" rx="9" ry="2.5" fill="rgba(0,0,0,0.45)"/><path d="M6 10 Q3 16 5 21 Q8 26 12 26 Q16 26 19 21 Q21 16 18 10 Z" fill="url(#jr)"/><rect x="8" y="5" width="8" height="5" rx="1.5" fill="#6a4424"/><ellipse cx="12" cy="5.5" rx="4.5" ry="1.6" fill="#2c1a0c"/><path d="M8 13 q-1.5 5 1 9 M16 13 q1.5 5 -1 9" stroke="#3a2410" stroke-width="1.2" fill="none"/>');
+const jarImg=voxSprite(24,28,M=>{
+  M.cyl(0,0,0,6,2.4,'#6a4424');              // 坛腹
+  M.cyl(0,0,6,1,1.7,'#7a5028');              // 坛肩
+  M.cyl(0,0,7,1,1,'#5a3a20');                // 坛颈
+  M.disc(0,0,8,1.2,'#2c1a0c');               // 坛口
+  M.add(0,9,0,'#8a6a30');                    // 盖钮
+  M.put(0,4,2,'#4a2c12');M.put(1,3,1,'#4a2c12');   // 釉纹
+});
 
 const paperFallback=makeSpriteCanvas(18,36,g=>{g.fillStyle='#e8e2d2';g.fillRect(4,8,10,24);g.beginPath();g.arc(9,6,4,0,TAU);g.fill();g.fillStyle='#a03020';g.fillRect(6,2,6,2);g.fillStyle='#111';g.fillRect(7,5,1.5,1.5);g.fillRect(10,5,1.5,1.5);});
 const paperImg=svgSprite(40,80,'<defs><linearGradient id="pp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efe9d8"/><stop offset="1" stop-color="#c8c0aa"/></linearGradient></defs>'+
@@ -727,7 +1014,14 @@ const paperImg=svgSprite(40,80,'<defs><linearGradient id="pp" x1="0" y1="0" x2="
 '<path d="M18 14.5 q2 1 4 0" stroke="#7a2018" stroke-width="1" fill="none"/>'+
 '<path d="M14 32 h12 M14 38 h12" stroke="#c8bca0" stroke-width="1" opacity="0.7"/>',paperFallback);
 
-const steleImg=svgSprite(32,48,'<defs><linearGradient id="stl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#56565e"/><stop offset="0.5" stop-color="#78787e"/><stop offset="1" stop-color="#3e3e44"/></linearGradient></defs><ellipse cx="16" cy="45" rx="12" ry="3" fill="rgba(0,0,0,0.4)"/><rect x="4" y="40" width="24" height="5" rx="1" fill="#4a4a50"/><path d="M7 40 L7 8 Q7 3 12 3 L20 3 Q25 3 25 8 L25 40 Z" fill="url(#stl)"/><path d="M11 12 h10 M11 17 h10 M11 22 h7 M11 27 h10" stroke="#2c2c32" stroke-width="1.6"/><path d="M20 6 l4 -4 M22 8 l5 -5" stroke="#8a2020" stroke-width="1.4" opacity="0.7"/>');
+const steleImg=voxSprite(32,48,M=>{
+  M.box(-3,0,0,7,2,3,'#4a4a50');             // 碑座
+  M.box(-2,2,0,5,12,2,'#6a6a72');            // 碑身
+  M.box(-1,14,0,3,1,2,'#787880');            // 碑顶
+  M.put(-2,12,1,'#2c2c32');M.put(2,12,1,'#2c2c32');
+  for(let y=4;y<=9;y++)M.put(-1,y,1,'#3a3a42');   // 碑文刻痕
+  M.put(1,10,1,'#8a2020');M.put(2,9,1,'#8a2020');   // 朱砂封印
+});
 
 // ---- 终章「封井」精灵（decor 引用，须先于 decor 声明）----
 const girlFallback=makeSpriteCanvas(20,44,g=>{g.fillStyle='#cdd8da';g.fillRect(6,14,8,18);g.beginPath();g.arc(10,9,5,0,TAU);g.fill();g.fillStyle='#1a2226';g.fillRect(2,0,16,12);g.fillStyle='#0a0f12';g.fillRect(7,8,2,2);g.fillRect(12,8,2,2);});
@@ -751,13 +1045,28 @@ const girlImg=svgSprite(44,92,
 '<path d="M22 6 q4 2 5 6" stroke="#a03028" stroke-width="1.3" fill="none"/>',girlFallback);
 // 祭品三件：第七只纸偶 / 木梳 / 盐罐（第七只纸偶复用 dollImg 精灵）
 const combFallback=makeSpriteCanvas(24,16,g=>{g.fillStyle='#8a6838';g.fillRect(3,4,18,8);g.fillStyle='#5a4020';for(let i=0;i<7;i++)g.fillRect(4+i*2.4,12,1.2,3);});
-const combImg=svgSprite(48,30,'<defs><linearGradient id="cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b08a4a"/><stop offset="1" stop-color="#6a4a22"/></linearGradient></defs><ellipse cx="24" cy="27" rx="14" ry="2.4" fill="rgba(0,0,0,0.35)"/><rect x="6" y="6" width="36" height="12" rx="4" fill="url(#cb)" stroke="#4a3010" stroke-width="1.3"/><g stroke="#3a260e" stroke-width="1.6">'+[0,1,2,3,4,5,6,7,8].map(i=>'<line x1="'+(10+i*3.2)+'" y1="18" x2="'+(10+i*3.2)+'" y2="25"/>').join('')+'</g><path d="M10 9 q7 3 14 0 q7 -3 14 0" stroke="#d8b878" stroke-width="1.4" fill="none" opacity="0.75"/>',combFallback);
+const combImg=voxSprite(48,30,M=>{
+  M.box(-6,2,0,13,2,2,'#b08a4a');            // 梳背
+  for(let i=-5;i<=5;i++)M.box(i,0,0,1,2,2,'#8a6a3a');   // 梳齿
+  M.put(-6,3,1,'#d8b878');M.put(0,3,1,'#d8b878');M.put(5,3,1,'#d8b878');   // 高光
+  M.put(-2,3,0,'#e8e0d8');M.put(-1,3,0,'#e8e0d8');   // 缠着的白发
+});
 const saltFallback=makeSpriteCanvas(18,22,g=>{g.fillStyle='#b8b4a8';g.fillRect(4,6,10,13);g.fillStyle='#888478';g.fillRect(4,6,10,3);});
-const saltImg=svgSprite(34,42,'<defs><linearGradient id="sl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d8d4c8"/><stop offset="0.5" stop-color="#aea894"/><stop offset="1" stop-color="#8a8474"/></linearGradient></defs><ellipse cx="17" cy="39" rx="10" ry="2.4" fill="rgba(0,0,0,0.4)"/><path d="M6 12 Q4 24 7 34 Q11 40 17 40 Q23 40 27 34 Q30 24 28 12 Z" fill="url(#sl)" stroke="#6a6454" stroke-width="1.2"/><rect x="10" y="6" width="14" height="7" rx="2" fill="#98927e"/><text x="17" y="27" font-size="11" text-anchor="middle" fill="#5a5442" font-family="serif">鹽</text>',saltFallback);
-const bucketImg=svgSprite(36,34,'<defs><linearGradient id="bk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a3c20"/><stop offset="0.5" stop-color="#7c5630"/><stop offset="1" stop-color="#3c2812"/></linearGradient></defs><ellipse cx="18" cy="31" rx="13" ry="2.6" fill="rgba(0,0,0,0.45)"/><path d="M4 10 L7 29 Q18 33 29 29 L32 10 Z" fill="url(#bk)" stroke="#241608" stroke-width="1.3"/><ellipse cx="18" cy="10" rx="14" ry="3.4" fill="#2c1c0c"/><ellipse cx="18" cy="10" rx="11" ry="2.4" fill="#101820"/><path d="M6 10 Q18 -2 30 10" fill="none" stroke="#6a4a28" stroke-width="2"/>');
+const saltImg=voxSprite(34,42,M=>{
+  M.cyl(0,0,0,8,2.6,'#aea894');              // 盐罐
+  M.disc(0,0,8,2.8,'#98927e');               // 罐盖
+  M.box(-1,9,-1,2,1,2,'#8a8474');            // 盖钮
+  M.put(0,5,2,'#a03028');M.put(-1,5,2,'#a03028');M.put(1,5,2,'#a03028');   // 封印
+  M.put(0,4,2,'#a03028');M.put(0,6,2,'#a03028');
+});
+const bucketImg=voxSprite(36,34,M=>{
+  M.cyl(0,0,0,4,2.6,'#7c5630');              // 桶身
+  M.disc(0,0,4,2.6,'#8a6238');               // 桶沿
+  M.disc(0,0,3,2,'#101820');                 // 桶内水
+  M.add(-2,5,0,'#6a4a28');M.add(-1,6,0,'#6a4a28');M.add(0,6,0,'#6a4a28');M.add(1,6,0,'#6a4a28');M.add(2,5,0,'#6a4a28');   // 提梁
+});
 
 const decor=[
-{x:3.5,y:7.5,lvl:0,img:wellImg,scale:1.35},
 {x:11.5,y:7.5,lvl:0,img:altarImg,scale:1.15,glow:0.3},
 {x:5.5,y:9.5,lvl:0,img:lanternImg,scale:1.0,glow:0.32},
 {x:2.5,y:8.5,lvl:0,img:treeImg,scale:1.9},
@@ -767,40 +1076,41 @@ const decor=[
 {x:7.5,y:11.5,lvl:1,img:skeletonImg,scale:1.2},
 {x:16.5,y:11.5,lvl:1,img:skeletonImg,scale:1.15},
 // ---- 第二章大宅陈设 ----
-{x:12.5,y:11.2,lvl:2,img:altarImg,scale:1.7,glow:0.4},   // 香坛（仪式目标）
 {x:9.3,y:10.3,lvl:2,img:lanternImg,scale:1.1,glow:0.34,coldGlow:true}, // 大堂灯笼（鬼火）
 {x:15.7,y:10.3,lvl:2,img:lanternImg,scale:1.1,glow:0.34,coldGlow:true},
 {x:2.6,y:10.5,lvl:2,img:skeletonImg,scale:1.25},          // 西屋骸骨
-{x:21.5,y:13.4,lvl:2,img:wellImg,scale:1.3},              // 东屋枯井
 {x:6.5,y:16.8,lvl:2,img:lanternImg,scale:1.0,glow:0.28,coldGlow:true},  // 南庭灯笼
 {x:18.5,y:16.8,lvl:2,img:lanternImg,scale:1.0,glow:0.28,coldGlow:true},
 // ---- 第三章义庄陈设 ----
-{x:12.5,y:1.6,lvl:3,img:altarImg,scale:1.55,glow:0.38},   // 神龛（安放牌位）
 {x:10.4,y:1.5,lvl:3,img:lanternImg,scale:1.05,glow:0.3,coldGlow:true},
 {x:14.6,y:1.5,lvl:3,img:lanternImg,scale:1.05,glow:0.3,coldGlow:true},
-{x:2.6,y:15.5,lvl:3,img:steleImg,scale:1.15},             // 西门石碑
-{x:8.5,y:7.5,lvl:3,img:steleImg,scale:1.0},
-{x:17.5,y:7.5,lvl:3,img:steleImg,scale:1.05},
-{x:19.5,y:14.5,lvl:3,img:steleImg,scale:1.1},
 {x:7.5,y:12.5,lvl:3,img:skeletonImg,scale:1.2},           // 停尸堂骸骨
 {x:16.9,y:12.5,lvl:3,img:skeletonImg,scale:1.15},
 {x:2.6,y:10.5,lvl:3,img:skeletonImg,scale:1.25},
 ];
 // ---- 第〇章 · 夏日陈设（先声明图，再并入 decor）----
-const trayImg=svgSprite(44,18,'<defs><linearGradient id="ty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8bc82"/><stop offset="1" stop-color="#a8863e"/></linearGradient></defs><ellipse cx="22" cy="15" rx="20" ry="4" fill="#7c6228"/><ellipse cx="22" cy="12.5" rx="20" ry="5.5" fill="url(#ty)"/><ellipse cx="22" cy="12.5" rx="14.5" ry="3.8" fill="none" stroke="#8a6c30" stroke-width="1"/><circle cx="15" cy="11" r="2.6" fill="#b03826"/><circle cx="21" cy="10.2" r="2.6" fill="#9a2818"/><circle cx="27" cy="11.2" r="2.6" fill="#c04838"/><circle cx="24" cy="12.6" r="2.4" fill="#a03020"/><circle cx="17.5" cy="12.8" r="2.4" fill="#b84030"/>');
-const chickImg=svgSprite(36,34,'<ellipse cx="18" cy="31" rx="12" ry="2.6" fill="rgba(60,50,20,0.35)"/><path d="M9 26 Q6 16 13 13 Q12 7 18 8 L19 12 Q27 10 29 17 Q31 25 25 28 Z" fill="#f2ecdc" stroke="#c8ba9a" stroke-width="1"/><circle cx="17" cy="11" r="1.2" fill="#241c10"/><path d="M12.5 9 l-4 1.6 4 1.6 Z" fill="#e0a028"/><path d="M13 6 q2 -3 4.5 -1 l-1.5 3.5 Z" fill="#c03828"/><path d="M23 28 l3 4 M20 28.5 l2 4" stroke="#e0a028" stroke-width="2"/>');
+const trayImg=voxSprite(44,18,M=>{
+  M.box(-8,0,-3,17,1,7,'#d8bc82');           // 竹匾
+  M.box(-8,1,-3,17,1,1,'#a8863e');M.box(-8,1,3,17,1,1,'#a8863e');   // 匾沿
+  M.sph(-3,2,0,1.1,'#b03826');M.sph(0,2,1,1.1,'#9a2818');M.sph(3,2,-1,1.1,'#c04838');M.sph(0,2,-2,1,'#a03020');   // 梅子
+});
+const chickImg=voxSprite(36,34,M=>{
+  M.sph(0,3,0,2.6,'#f2ecdc');               // 身
+  M.sph(0,6,2,1.8,'#f2ecdc');               // 头
+  M.put(-1,6,3,'#241c10');M.put(1,6,3,'#241c10');   // 眼
+  M.put(0,6,4,'#e0a028');                   // 喙
+  M.put(0,8,2,'#c03828');                   // 冠
+  M.put(-1,0,0,'#e0a028');M.put(1,0,0,'#e0a028');   // 腿
+});
 decor.push(
-{x:11.5,y:2.6,lvl:4,img:wellImg,scale:1.35},               // 村口老井（结局点）
 {x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},                 // 屋檐下的水缸
 {x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}                // 空竹匾（装饰）
 );
 // ---- 终章 · 夜魇村庄陈设：封石掀开的老井 + 掀翻的石板 + 冷灯笼 ----
 decor.push(
-{x:11.5,y:2.6,lvl:5,img:wellImg,scale:1.5},                // 夜井（还愿仪式目标）
-{x:13.3,y:3.0,lvl:5,img:steleImg,scale:0.8},               // 掀翻在井边的封石
 {x:8.5,y:10.5,lvl:5,img:skeletonImg,scale:1.15},           // 晒场骸骨
-{x:12.5,y:16.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true},   // 出生点冷灯笼
-{x:11.5,y:6.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true}    // 井路中途灯笼
+{x:11.7,y:16.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true},   // 出生点冷灯笼（路边，不挡北行井路）
+{x:10.7,y:6.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true}    // 井路中途灯笼（路西侧）
 );
 
 const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.5,y:17.5},{x:12.5,y:17.5}];   // 终章与第〇章同一南院出生点
@@ -816,6 +1126,8 @@ const ch0Tasks=[
 
 // ---- 剧情纸条（拾取后进入暂停菜单「手记」，localStorage 持久化）----
 const noteImg=svgSprite(30,22,'<ellipse cx="15" cy="19.5" rx="9" ry="2" fill="rgba(0,0,0,0.35)"/><path d="M4 4 L26 3 L25 17 L3 18 Z" fill="#e6ddc4" stroke="#b8ac8c" stroke-width="1"/><path d="M7 8 h14 M7 11 h14 M7 14 h9" stroke="#8a7f66" stroke-width="1" opacity="0.8"/><circle cx="23" cy="15" r="2.2" fill="#a01212" opacity="0.85"/>');
+// 纸条拾取半径：提示与交互共用同一常量，杜绝「看到 E 提示却拾不起来」
+const NOTE_R=1.3;
 const NOTES=[
 // 第一章 · 老宅（lvl 0）
 {lvl:0,x:19.5,y:9.5,title:'玄关 · 撕剩半页的日历',text:'七月初七。井封了。村长说往后不许再打水——可我们吃的盐，哪一担不是那口井熬出来的。'},
@@ -841,7 +1153,7 @@ function saveNotes(){try{localStorage.setItem('ch_notes',JSON.stringify(notesFou
 function tryPickupNote(){
   for(const n of NOTES){
     if(n.lvl!==lvl||notesFound.indexOf(n.i)>=0)continue;
-    if(Math.hypot(n.x-player.x,n.y-player.y)<0.85){
+    if(nearGoal(n.x,n.y,NOTE_R)){
       notesFound.push(n.i);saveNotes();dollPickup();
       toastMsg('【'+n.title+'】\n'+n.text);
       lastScareAt=timeSec;
@@ -872,7 +1184,29 @@ for(let L=0;L<6;L++){
 }
 
 const player={x:4.5,y:3.5,dirX:0,dirY:-1,planeX:0.66,planeY:0};
-function solidAt(x,y){const r=0.22;return solid(Math.floor(x-r),Math.floor(y-r))||solid(Math.floor(x+r),Math.floor(y-r))||solid(Math.floor(x-r),Math.floor(y+r))||solid(Math.floor(x+r),Math.floor(y+r));}
+function solidAt(x,y){const r=0.22;return solid(Math.floor(x-r),Math.floor(y-r))||solid(Math.floor(x+r),Math.floor(y-r))||solid(Math.floor(x-r),Math.floor(y+r))||solid(Math.floor(x+r),Math.floor(y+r))||hitProp(x,y);}
+// ---- 关键实体碰撞：井/香坛/堂前之火/石碑/灯笼/可拾取物是真实实体，不可穿过（拾取后碰撞消失）----
+function hitProp(x,y){
+  for(const c of propColliders()){const dx=x-c.x,dy=y-c.y,rr=c.r+0.22;if(dx*dx+dy*dy<rr*rr)return true;}
+  return false;
+}
+function propColliders(){
+  const cs=[];
+  if(lvl===0||lvl===1){for(const d of dolls)if(!d.taken&&d.lvl===lvl)cs.push({x:d.x,y:d.y,r:0.24});}
+  else if(lvl===2){cs.push({x:ALTAR_X,y:ALTAR_Y,r:0.68});if(fireSpawned)cs.push({x:FIRE_X,y:FIRE_Y,r:0.35});}
+  else if(lvl===3){cs.push({x:SHRINE_X,y:SHRINE_Y,r:0.62});
+    for(const tb of tablets)if(!tb.taken)cs.push({x:tb.x,y:tb.y,r:0.26});for(const j of oilJars)if(!j.taken)cs.push({x:j.x,y:j.y,r:0.26});}
+  else if(lvl===4){cs.push({x:WELL_X,y:WELL_Y,r:0.62});for(const t of ch0Tasks)if(!t.done)cs.push({x:t.x,y:t.y,r:0.3});}
+  else if(lvl===5){
+    cs.push({x:WELL_X,y:WELL_Y,r:0.62},{x:13.3,y:3.0,r:0.40},{x:10.7,y:6.4,r:0.3},{x:11.7,y:16.4,r:0.3});
+    // 井亭四柱：让人从四面绕行，但钻不进柱子里
+    for(const _p of [[-0.95,-0.95],[0.95,-0.95],[-0.95,0.95],[0.95,0.95]])cs.push({x:WELL_X+_p[0],y:WELL_Y+_p[1],r:0.15});
+    for(const j of oilJars)if(j.lvl===5&&!j.taken)cs.push({x:j.x,y:j.y,r:0.26});
+    for(const o of offerings)if(!o.taken)cs.push({x:o.x,y:o.y,r:0.24});
+    if(bucketSpawned)cs.push({x:WELL_X,y:WELL_Y+1.15,r:0.26});
+  }
+  return cs;
+}
 
 const keys={};
 let mouseDX=0,ePressed=false;
@@ -1022,14 +1356,14 @@ function initAudio(){
   lfo.connect(lg);lg.connect(wg.gain);
   src.connect(lp);lp.connect(wg);wg.connect(master);
   src.start();lfo.start();
-  ambGains.push(wg);
-  [48,48.7,72.5].forEach(f=>{const o=AC.createOscillator();o.frequency.value=f;o.type='sine';const g=AC.createGain();g.gain.value=f>60?0.008:0.022;o.connect(g);g.connect(master);o.start();ambGains.push(g);});
+  wg._base=0.05;ambGains.push(wg);
+  [48,48.7,72.5].forEach(f=>{const o=AC.createOscillator();o.frequency.value=f;o.type='sine';const g=AC.createGain();g.gain.value=f>60?0.008:0.022;g._base=g.gain.value;o.connect(g);g.connect(master);o.start();ambGains.push(g);});
 }
 let volume=0.8;
 try{const v=parseFloat(localStorage.getItem('ch_vol'));if(v>=0&&v<=1)volume=v;}catch(e){}
 function applyVolume(){if(master)master.gain.value=muted?0:volume;}
 function toggleMute(){muted=!muted;applyVolume();}
-function at(){return AC.currentTime;}
+function at(){return AC?AC.currentTime:0;}
 function noiseDur(dur){const s=AC.createBufferSource();s.buffer=noiseBuf;s.start(at()+0.01,Math.random(),dur);return s;}
 function footstep(){const t=at();const s=noiseDur(0.11);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=300;const g=AC.createGain();g.gain.setValueAtTime(0.001,t);g.gain.linearRampToValueAtTime(0.22,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);s.connect(lp);lp.connect(g);g.connect(master);s.start(t);const o=AC.createOscillator();o.frequency.value=65+Math.random()*10;o.type='sine';const og=AC.createGain();og.gain.setValueAtTime(0.0001,t);og.gain.linearRampToValueAtTime(0.08,t+0.01);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);o.connect(og);og.connect(master);o.start(t);o.stop(t+0.12);}
 function beat(){const t=at();for(let i=0;i<2;i++){const tt=t+i*0.32;const o=AC.createOscillator();o.frequency.value=52;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.5,tt+0.015);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.16);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.2);}}
@@ -1067,15 +1401,22 @@ const ghostImg=svgSprite(44,84,
 '<path d="M22 2 C32 2 36 11 35 25 C35 33 33 39 31 44 L29 30 C28 21 26 17 22 17 C18 17 16 21 15 30 L13 44 C11 39 9 33 9 25 C8 11 12 2 22 2 Z" fill="#14100d"/>'+
 '<path d="M18 15 L17 27 M22 14 L22 28 M26 15 L27 27" stroke="#14100d" stroke-width="2.2"/>',ghostFallback);
 
-const fireImg=svgSprite(48,64,
-'<defs><radialGradient id="fg" cx="0.5" cy="0.72" r="0.62"><stop offset="0" stop-color="#ffd870" stop-opacity="0.85"/><stop offset="1" stop-color="#ff7a20" stop-opacity="0"/></radialGradient>'+
-'<linearGradient id="f1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a10"/><stop offset="1" stop-color="#ffc840"/></linearGradient></defs>'+
-'<ellipse cx="24" cy="57" rx="17" ry="4.5" fill="rgba(255,140,40,0.22)"/>'+
-'<rect x="8" y="51" width="32" height="5" rx="2.5" fill="#3a2414"/>'+
-'<rect x="12" y="47" width="24" height="5" rx="2.5" fill="#4a2e18" transform="rotate(-8 24 49)"/>'+
-'<circle cx="24" cy="34" r="17" fill="url(#fg)"/>'+
-'<path d="M24 8 C30 20 34 26 34 36 C34 47 29 53 24 54 C19 53 14 47 14 36 C14 26 18 20 24 8 Z" fill="url(#f1)"/>'+
-'<path d="M24 24 C27 31 29 34 29 40 C29 46 26 50 24 51 C22 50 19 46 19 40 C19 34 21 31 24 24 Z" fill="#fff0a8" opacity="0.92"/>');
+const fireImg=voxSprite(48,64,M=>{
+  M.box(-4,0,-1,9,2,2,'#3a2414');            // 交叉柴堆
+  M.box(-2,0,-2,5,2,2,'#2c1c10');
+  const cols=['#a82810','#c83810','#e86018','#f89828','#ffd858','#fff0a8'];
+  for(let y=2;y<=12;y++){
+    const t=(y-2)/10;
+    const r=3.6*(1-t*0.82);
+    for(let X=Math.ceil(-r);X<=Math.floor(r);X++)for(let Z=Math.ceil(-r);Z<=Math.floor(r);Z++){
+      if(X*X+Z*Z<=r*r){
+        const edge=(X*X+Z*Z)/(r*r+0.001);
+        const ci=Math.min(cols.length-1,Math.max(0,Math.floor((1-edge*0.7)*t*4+edge*1.2)));
+        if(hashInt(X*13+y*7,Z*17+y*3)%100<(y>10?55:92))M.add(X,y,Z,cols[ci]);
+      }
+    }
+  }
+});
 
 // 香坛上已送还人偶的摆放位（最多 6）
 const ALTAR_DOLL_POS=[[12.12,11.02],[12.42,10.95],[12.72,11.02],[12.98,11.14],[12.26,11.27],[12.56,11.31]];
@@ -1298,20 +1639,83 @@ function doRitual(){
       ghost.path=bfsPath(Math.floor(ghost.x),Math.floor(ghost.y),Math.floor(ALTAR_X),Math.floor(ALTAR_Y))||[];
     }
   }
-  if(ritualN>=6){fireSpawned=true;setTimeout(()=>{if(state==='playing')toastMsg('大堂中央，「堂前之火」出现了。');},2800);}
+  if(ritualN>=6){fireSpawned=true;setTimeout(()=>{if(state==='playing')toastMsg('大堂中央，「堂前之火」出现了。\n走近它——点火。');},2800);}
 }
 // ==================== 第二章系统结束 ====================
 
 // ==================== 第三章系统：义庄 · 灯油 / 纸人 / 牌位 ====================
 // （tabletImg/jarImg/paperImg/steleImg 声明已上移至 decor 之前——decor 引用它们，必须先初始化）
 
-// 灯油坛 ×3 / 牌位 ×3 / 纸人 ×5
-const oilJars=[{x:4.5,y:6.5,lvl:3,taken:false},{x:20.5,y:14.5,lvl:3,taken:false},{x:12.5,y:19.5,lvl:3,taken:false}];
+// 灯油坛 ×3(义庄) + ×2(夜村终章) / 牌位 ×3 / 纸人 ×5
+const oilJars=[{x:2.5,y:6.5,lvl:3,taken:false},{x:20.5,y:14.5,lvl:3,taken:false},{x:12.5,y:19.5,lvl:3,taken:false},{x:6.5,y:13.5,lvl:5,taken:false},{x:17.5,y:7.5,lvl:5,taken:false}];   // 义庄西坛不可堵北屋门口(4,5)
 const tablets=[{x:2.5,y:2.5,lvl:3,taken:false},{x:21.5,y:3.5,lvl:3,taken:false},{x:12.5,y:10.5,lvl:3,taken:false}];
 let tabsCarried=0,tabsPlaced=0,oil=100,oilOutWarned=false;
 const SHRINE_X=12.5,SHRINE_Y=2.6;
+const DOOR_X=1.5,DOOR_Y=15.5;   // 义庄西墙大门（出口邻近判定用）
 const papers=[{x:8.5,y:9.5},{x:15.5,y:9.5},{x:12.5,y:11.5},{x:8.5,y:16.5},{x:17.5,y:16.5}]
   .map(p=>({x:p.x,y:p.y,path:[],repathT:Math.random()*0.6,frozen:false}));
+
+// ==================== 实体几何：把关键「贴图」升级为有体积的真实建筑 ====================
+// 井、香坛、神龛、石碑原先都只是一张平面广告牌——走近会穿帮、也不能绕着看。
+// 这里把它们登记成世界里的立体几何，在 raycast 列循环里作为额外命中渲染：
+//   cyl 圆柱(井圈)   box 方盒(台基/碑身/立柱)   pyr 四角攒尖顶(井亭瓦顶/龛顶)
+// y0/y1 = 世界高度（0=地面，1=标准墙高，视平线在 0.5）
+// 投影约定：世界高度 h 在深度 t 处 -> screenY = horizon + (VH/t)*(0.5-h)
+function wellRing(x,y){return [{k:'cyl',x,y,r:0.42,y0:0,y1:0.44,tex:wellStone,cap:1,hole:0.27}];}
+function wellPavilion(x,y,night){          // 井亭：石井圈 + 四根木柱 + 攒尖瓦顶
+  const wt=night?darkwood:sunWood, rt=night?roofNight:roofSun, p=0.95, ph=0.07;
+  return [
+    {k:'cyl',x,y,r:0.42,y0:0,y1:0.44,tex:wellStone,cap:1,hole:0.27},
+    {k:'box',x:x-p,y:y-p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
+    {k:'box',x:x+p,y:y-p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
+    {k:'box',x:x-p,y:y+p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
+    {k:'box',x:x+p,y:y+p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
+    {k:'pyr',x,y,hw:1.22,hd:1.22,y0:1.00,y1:1.56,tex:rt},
+  ];
+}
+function altarVol(x,y){                    // 香坛：三级收分台基 + 坛身 + 台面
+  return [
+    {k:'box',x,y,hw:0.66,hd:0.46,y0:0,   y1:0.15,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.54,hd:0.38,y0:0.15,y1:0.31,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.48,hd:0.33,y0:0.31,y1:0.74,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.60,hd:0.42,y0:0.74,y1:0.86,tex:altarStone,cap:1},
+  ];
+}
+function shrineVol(x,y){                   // 神龛：须弥座 + 龛身 + 檐枋 + 木龛 + 小屋顶
+  return [
+    {k:'box',x,y,hw:0.72,hd:0.30,y0:0,   y1:0.16,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.60,hd:0.25,y0:0.16,y1:0.92,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.76,hd:0.32,y0:0.92,y1:1.02,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.52,hd:0.20,y0:1.02,y1:1.30,tex:redwood,cap:1},
+    {k:'pyr',x,y,hw:0.84,hd:0.40,y0:1.30,y1:1.58,tex:roofNight},
+  ];
+}
+function steleVol(x,y,s){                  // 石碑：碑座 + 碑身（薄板，可绕行）
+  return [
+    {k:'box',x,y,hw:0.34*s,hd:0.20*s,y0:0,   y1:0.10,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.24*s,hd:0.11*s,y0:0.10,y1:0.34,tex:altarStone,cap:1},
+    {k:'box',x,y,hw:0.30*s,hd:0.075*s,y0:0.34,y1:1.02,tex:steleTex,cap:1},
+  ];
+}
+function volsAt(lv,list){return list.map(v=>{v.lvl=lv;if(v.k!=='cyl'&&v.hd===undefined)v.hd=v.hw;
+  v.rmax=v.k==='cyl'?v.r:Math.hypot(v.hw,v.hd);return v;});}
+const VOLUMES=[
+  ...volsAt(4,wellPavilion(WELL_X,WELL_Y,false)),   // 第〇章 · 村口井亭
+  ...volsAt(5,wellPavilion(WELL_X,WELL_Y,true)),    // 终章 · 夜魇井亭
+  ...volsAt(5,[{k:'box',x:13.3,y:3.0,hw:0.40,hd:0.20,y0:0,y1:0.20,tex:steleTex,cap:1}]),  // 掀翻在井边的封石
+  ...volsAt(0,wellRing(3.5,7.5)),                   // 老宅天井枯井
+  ...volsAt(2,altarVol(ALTAR_X,ALTAR_Y)),           // 第二章 · 香坛
+  ...volsAt(2,wellRing(21.5,13.4)),                 // 第二章 · 东屋枯井
+  ...volsAt(3,shrineVol(SHRINE_X,SHRINE_Y)),        // 第三章 · 神龛
+  ...volsAt(3,steleVol(2.6,15.5,1.15)),
+  ...volsAt(3,steleVol(8.5,7.5,1.0)),
+  ...volsAt(3,steleVol(17.5,7.5,1.05)),
+  ...volsAt(3,steleVol(19.5,14.5,1.1)),
+];
+const volByLvl=MAPS.map(()=>[]);
+VOLUMES.forEach(v=>{if(volByLvl[v.lvl])volByLvl[v.lvl].push(v);});
+// 香坛/神龛原本靠广告牌自带辉光指路；改成实体几何后，用一个全透明精灵只保留那团光
+const blankImg=makeSpriteCanvas(4,4,()=>{});
 
 function resetCh3State(){
   oil=100;tabsCarried=0;tabsPlaced=0;oilOutWarned=false;
@@ -1404,7 +1808,7 @@ function sinkOffering(){
     if(ghost.state!=='CHASE'){ghost.state='INVESTIGATE';ghost.path=bfsPath(Math.floor(ghost.x),Math.floor(ghost.y),Math.floor(WELL_X),Math.floor(WELL_Y))||[];}
   }
   toastMsg(SINK_LINES[Math.min(offerSunk-1,SINK_LINES.length-1)]);
-  if(offerSunk>=3){bucketSpawned=true;setTimeout(()=>{if(state==='playing')toastMsg('井台边，浮起一只小小的木桶。');},2600);}
+  if(offerSunk>=3){bucketSpawned=true;setTimeout(()=>{if(state==='playing')toastMsg('井台边，浮起一只小小的木桶。\n把它沉下去——送她回家。');},2600);}
 }
 // ==================== 终章系统结束 ====================
 
@@ -1444,12 +1848,83 @@ function switchLevel(){
   toastMsg(lvl===0?'回到了一层……':'你进入了地下室……前方楼梯可返回一层');
 }
 
+// ---- 目标点邻近判定：提示出现=按 E 必生效（原各处半径不一导致「看到提示按了没反应」）----
+function nearGoal(x,y,r){return Math.hypot(player.x-x,player.y-y)<(r===undefined?2.0:r);}
+// ---- 面前格判定：0.55 光程射线优先；D/U 格中心邻近+大致面向时兜底（射线取整落偏导致「贴着楼梯按E没反应」）----
+function frontTile(){
+  let ft=tile(Math.floor(player.x+player.dirX*0.55),Math.floor(player.y+player.dirY*0.55));
+  if(ft!=='D'&&ft!=='U'){
+    let bd=1.25;
+    for(const o of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=Math.floor(player.x)+o[0],ny=Math.floor(player.y)+o[1];
+      const t2=tile(nx,ny);
+      if(t2!=='D'&&t2!=='U')continue;
+      const dx=nx+0.5-player.x,dy=ny+0.5-player.y,d=Math.hypot(dx,dy);
+      if(d<bd&&(dx*player.dirX+dy*player.dirY)/(d||1)>0.2){bd=d;ft=t2;}
+    }
+  }
+  return ft;
+}
+
+// ---- E 提示文案：唯一来源。规则：只要这里给出了「E …」的操作提示，
+//      interact() 就必须在同样距离内生效（半径一律走 nearGoal，禁止各自写死数值）。
+//      测试脚本 .wb_scan.js 直接复用本函数做死区扫描，杜绝提示/判定漂移。
+function computeHint(ft){
+  if(ft===undefined)ft=frontTile();
+  let hint='';
+  if(chapter===0){
+    if(errands>=3&&nearGoal(WELL_X,WELL_Y,2.5))hint='E 放下木桶，打一桶井水';
+    else if(errands>=3)hint='差事都完成了 · 去村口老井（北面）打水';
+    else{
+      for(const t of ch0Tasks){if(!t.done&&nearGoal(t.x,t.y,1.4)){hint=t.hint;break;}}
+      if(!hint)hint='帮阿婆做三件事 ('+errands+'/3)';
+    }
+  }
+  else if(chapter===3){
+    if(tabsPlaced>=3&&nearGoal(DOOR_X,DOOR_Y,2.0))hint='E 推开大门，离开义庄';
+    else{
+      for(const j of oilJars){if(!j.taken&&nearGoal(j.x,j.y,1.4)){hint='E 收起灯油';break;}}
+      if(!hint)for(const tb of tablets){if(!tb.taken&&nearGoal(tb.x,tb.y,1.4)){hint='E 请出牌位';break;}}
+      if(!hint&&tabsCarried>0&&nearGoal(SHRINE_X,SHRINE_Y,1.6))hint='E 安放牌位 ('+tabsPlaced+'/3)';
+      if(!hint)hint=tabsCarried>0?'怀中牌位 '+tabsCarried+' · 神龛在北面小龛室':'盯着纸人——它们不敢动';
+    }
+  }
+  else if(chapter===2){
+    if(hiding)hint='E 推开柜门';
+    else{
+      if(ft==='C')hint='E 躲进衣柜';
+      else if(ritualN<6&&nearGoal(ALTAR_X,ALTAR_Y,2.0))hint='E 送还纸人偶 ('+ritualN+'/6)';
+      else if(fireSpawned&&nearGoal(FIRE_X,FIRE_Y,2.8))hint='E 点燃堂前之火';
+      else if(fireSpawned)hint='堂前之火已现 · 走向大堂深处（南面）点火';
+    }
+  }
+  else if(chapter===4){
+    const nw=nearGoal(WELL_X,WELL_Y,2.5);
+    if(bucketSpawned&&nw)hint='E 把木桶沉入井底';
+    else if(bucketSpawned)hint='木桶已浮起 · 回到井台（北面）沉桶送归';
+    else if(carried.length&&nw)hint='E 沉下「'+CARRY_NAMES[carried[carried.length-1]]+'」';
+    else if(carried.length)hint='带着祭品去井台（北面）· 怀中 '+carried.length+' 件';
+    else{
+      for(const o of offerings){if(!o.taken&&nearGoal(o.x,o.y,1.3)){hint=o.hint;break;}}
+      if(!hint)for(const j of oilJars){if(j.lvl===5&&!j.taken&&nearGoal(j.x,j.y,1.3)){hint='E 收起灯油';break;}}
+      if(!hint)hint='找齐三件祭品 ('+offerSunk+'/3)· 别让灯灭了';
+    }
+  }
+  else if(ft==='D')hint=!hasKey?'大门锁着……需要钥匙':(dollsTaken>=6?'E 打开大门':'大门锁着……纸人偶未找齐 ('+dollsTaken+'/6)');
+  else if(ft==='U')hint=lvl===0?'E 进入地下室':'E 回到一层';
+  else if(!keyItem.taken&&keyItem.lvl===lvl&&nearGoal(keyItem.x,keyItem.y,1.4))hint='E 捡起钥匙';
+  else{for(const d of dolls){if(!d.taken&&d.lvl===lvl&&nearGoal(d.x,d.y,1.4)){hint='E 拾起纸人偶';break;}}}
+  if(hint)return {t:hint,note:false};
+  for(const n of NOTES){if(n.lvl===lvl&&notesFound.indexOf(n.i)<0&&nearGoal(n.x,n.y,NOTE_R))return {t:'E 拾起纸条',note:true};}
+  return {t:'',note:false};
+}
+
 function interact(){
   if(tryPickupNote())return;   // 纸条拾取：所有章节通用，最高优先级
   // ---- 第〇章：帮阿婆做三件事 → 村口老井打水（结局） ----
   if(chapter===0){
     for(const t of ch0Tasks){
-      if(!t.done&&Math.hypot(t.x-player.x,t.y-player.y)<1.15){
+      if(!t.done&&nearGoal(t.x,t.y,1.4)){
         t.done=true;errands++;
         dollPickup();flashWhite=0.12;lastScareAt=timeSec;
         toastMsg(t.msg);
@@ -1457,56 +1932,54 @@ function interact(){
         return;
       }
     }
-    if(errands>=3&&Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.7){
+    if(errands>=3&&nearGoal(WELL_X,WELL_Y,2.5)){
       // 先扬后抑：晴日井边，井底轻轻回握
       whisper();
       seq={mode:'win',t:0};winSound();
       return;
     }
+    if(errands<3&&nearGoal(WELL_X,WELL_Y,2.8))toastMsg(errands===0
+      ?'井绳都备好了，就等你打水。\n可阿婆的三件差事还没做——先去帮工吧。'
+      :'井绳都备好了，就等你打水。\n还差 '+(3-errands)+' 件差事——做完阿婆的差事再来。');
     return;
   }
-  // ---- 第三章：请牌位 / 收灯油 / 神龛安放 / 大门 ----
+  // ---- 第三章：请牌位 / 收灯油 / 神龛安放 / 大门（出口改邻近判定：不再要求正面对准）----
   if(chapter===3){
-    const fx3=Math.floor(player.x+player.dirX*0.55),fy3=Math.floor(player.y+player.dirY*0.55);
-    if(tile(fx3,fy3)==='D'){
-      if(tabsPlaced>=3){seq={mode:'win',t:0};winSound();flashWhite=0.3;}
-      else toastMsg('大门被封死了……先把牌位安放回神龛 ('+tabsPlaced+'/3)');
-      return;
-    }
-    for(const j of oilJars){if(!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<0.85){j.taken=true;oil=Math.min(100,oil+45);oilPickup();return;}}
-    for(const tb of tablets){if(!tb.taken&&Math.hypot(tb.x-player.x,tb.y-player.y)<0.85){tb.taken=true;tabsCarried++;dollPickup();toastMsg('请出牌位（怀中 '+tabsCarried+'）……轻得像一片纸');lastScareAt=timeSec;return;}}
-    if(tabsCarried>0&&Math.hypot(player.x-SHRINE_X,player.y-SHRINE_Y)<1.6){
+    if(tabsPlaced>=3&&nearGoal(DOOR_X,DOOR_Y,2.2)){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
+    for(const j of oilJars){if(!j.taken&&nearGoal(j.x,j.y,1.4)){j.taken=true;oil=Math.min(100,oil+45);oilPickup();return;}}
+    for(const tb of tablets){if(!tb.taken&&nearGoal(tb.x,tb.y,1.4)){tb.taken=true;tabsCarried++;dollPickup();toastMsg('请出牌位（怀中 '+tabsCarried+'）……轻得像一片纸');lastScareAt=timeSec;return;}}
+    if(tabsCarried>0&&nearGoal(SHRINE_X,SHRINE_Y)){
       tabsPlaced+=tabsCarried;tabsCarried=0;
       bell(660,0,0.18);bell(880,0.22,0.14);flashWhite=0.2;
       lastScareAt=timeSec;
-      toastMsg(tabsPlaced>=3?'三块牌位尽数归位。大门的封印，解开了。回去——':'牌位安放完毕 ('+tabsPlaced+'/3)。纸人们……更躁动了。');
+      toastMsg(tabsPlaced>=3?'三块牌位尽数归位。大门的封印，解开了。\n——去西墙大门，离开这里。':'牌位安放完毕 ('+tabsPlaced+'/3)。纸人们……更躁动了。');
       return;
     }
     return;
   }
-  // ---- 第二章：躲藏/送还/点火（优先级：衣柜 > 香坛 > 火堆） ----
+  // ---- 第二章：躲藏/送还/点火（优先级：衣柜 > 香坛 > 火堆；半径统一 2.0）----
   if(chapter===2){
     if(hiding){exitHide(false);return;}
     if(hideLockT>0)return;
     const hx=Math.floor(player.x+player.dirX*0.7),hy=Math.floor(player.y+player.dirY*0.7);
     if(tile(hx,hy)==='C'){enterHide();return;}
-    if(ritualN<6&&Math.hypot(player.x-ALTAR_X,player.y-ALTAR_Y)<1.5){doRitual();return;}
-    if(fireSpawned&&Math.hypot(player.x-FIRE_X,player.y-FIRE_Y)<1.5){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
+    if(ritualN<6&&nearGoal(ALTAR_X,ALTAR_Y,2.0)){doRitual();return;}
+    if(fireSpawned&&nearGoal(FIRE_X,FIRE_Y,2.8)){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
     return;
   }
   // ---- 终章：收灯油 / 拾祭品 / 井台沉愿 / 送归 ----
   if(chapter===4){
-    for(const j of oilJars){if(j.lvl===5&&!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<0.85){j.taken=true;oil=Math.min(100,oil+45);oilPickup();return;}}
-    for(const o of offerings){if(!o.taken&&Math.hypot(o.x-player.x,o.y-player.y)<0.9){o.taken=true;carried.push(o.kind);dollPickup();flashWhite=0.1;lastScareAt=timeSec;toastMsg(o.pickMsg);return;}}
-    if(Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.8){
-      if(bucketSpawned){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
+    // 桶已出现时，井台交互优先级最高（沉桶通关），不被油坛/祭品拦截
+    if(bucketSpawned&&nearGoal(WELL_X,WELL_Y,2.5)){seq={mode:'win',t:0};winSound();flashWhite=0.3;return;}
+    for(const j of oilJars){if(j.lvl===5&&!j.taken&&nearGoal(j.x,j.y,1.3)){j.taken=true;oil=Math.min(100,oil+45);oilPickup();return;}}
+    for(const o of offerings){if(!o.taken&&nearGoal(o.x,o.y,1.3)){o.taken=true;carried.push(o.kind);dollPickup();flashWhite=0.1;lastScareAt=timeSec;toastMsg(o.pickMsg);return;}}
+    if(nearGoal(WELL_X,WELL_Y,2.5)){
       if(carried.length>0){sinkOffering();return;}
       if(offerSunk<3)toastMsg('井里的水声催促着……还差祭品 ('+offerSunk+'/3)');
     }
     return;
   }
-  const fx=Math.floor(player.x+player.dirX*0.55),fy=Math.floor(player.y+player.dirY*0.55);
-  const ft=tile(fx,fy);
+  const ft=frontTile();
   if(ft==='D'){
     if(!hasKey)toastMsg('大门锁着……需要钥匙');
     else if(dollsTaken<6)toastMsg('纸人偶还没有找齐 ('+dollsTaken+'/6)……');
@@ -1514,8 +1987,8 @@ function interact(){
     return;
   }
   if(ft==='U'){switchLevel();return;}
-  if(!keyItem.taken&&keyItem.lvl===lvl&&Math.hypot(keyItem.x-player.x,keyItem.y-player.y)<0.8){keyItem.taken=true;hasKey=true;keyPickup();toastMsg('大门钥匙……到手了');lastScareAt=timeSec;return;}
-  for(const d of dolls){if(d.taken||d.lvl!==lvl)continue;if(Math.hypot(d.x-player.x,d.y-player.y)<0.8){d.taken=true;dollsTaken++;dollPickup();toastMsg('纸人偶……找到了 ('+dollsTaken+'/6)');lastScareAt=timeSec;if(dollsTaken>=3)shadowFlash=0.5;return;}}
+  if(!keyItem.taken&&keyItem.lvl===lvl&&nearGoal(keyItem.x,keyItem.y,1.4)){keyItem.taken=true;hasKey=true;keyPickup();toastMsg('大门钥匙……到手了');lastScareAt=timeSec;return;}
+  for(const d of dolls){if(d.taken||d.lvl!==lvl)continue;if(nearGoal(d.x,d.y,1.4)){d.taken=true;dollsTaken++;dollPickup();toastMsg('纸人偶……找到了 ('+dollsTaken+'/6)');lastScareAt=timeSec;if(dollsTaken>=3)shadowFlash=0.5;return;}}
 }
 
 function move(dt){
@@ -1578,7 +2051,8 @@ function update(dt){
       winEl.style.display='flex';
       if(document.pointerLockElement)document.exitPointerLock();
     }
-  }else if(isTouch||document.pointerLockElement===canvas||(canHover&&document.activeElement===canvas)){
+  }else{
+    // 不以指针锁定/画布聚焦为前置：锁定丢失（ESC/切窗）后移动与 E 交互必须照常工作
     move(dt);
     if(ePressed){ePressed=false;interact();}
     if(hideLockT>0)hideLockT-=dt;
@@ -1630,6 +2104,38 @@ function update(dt){
   if(flashBlack>0)flashBlack-=dt*1.8;
   if(toast.t>0)toast.t-=dt;
 }
+
+// ---- 全程引导：返回「当前目标点+一句话提示」（无目标时返回 null）----
+function guideGoal(){
+  const d=(x,y)=>Math.hypot(player.x-x,player.y-y);
+  if(chapter===0){
+    if(errands<3){const t=ch0Tasks.find(t=>!t.done);return t?{x:t.x,y:t.y,label:'帮阿婆做差事 ('+errands+'/3)'}:null;}
+    if(d(WELL_X,WELL_Y)>2.8)return {x:WELL_X,y:WELL_Y,label:'去村口老井打水'};
+    return null;
+  }
+  if(chapter===1){
+    if(dollsTaken<6){const dl=dolls.find(dd=>!dd.taken&&dd.lvl===lvl);return dl?{x:dl.x,y:dl.y,label:'找纸人偶 ('+dollsTaken+'/6)'}:null;}
+    if(!hasKey)return keyItem.lvl===lvl?{x:keyItem.x,y:keyItem.y,label:'寻找大门钥匙'}:null;
+    return {x:23.0,y:9.5,label:'回一层大门逃生'};
+  }
+  if(chapter===2){
+    if(ritualN<6)return {x:ALTAR_X,y:ALTAR_Y,label:'送还人偶到香坛 ('+ritualN+'/6)'};
+    if(fireSpawned&&d(FIRE_X,FIRE_Y)>2.8)return {x:FIRE_X,y:FIRE_Y,label:'点燃堂前之火'};
+    return null;
+  }
+  if(chapter===3){
+    if(tabsPlaced<3){const tb=tablets.find(t=>!t.taken);return tb?{x:tb.x,y:tb.y,label:'请牌位回神龛 ('+(tabsPlaced+tabsCarried)+'/3)'}:{x:SHRINE_X,y:SHRINE_Y,label:'把怀中牌位安放神龛'};}
+    if(d(DOOR_X,DOOR_Y)>2.4)return {x:DOOR_X,y:DOOR_Y,label:'大门封印已解 · 往西墙离开'};
+    return null;
+  }
+  if(chapter===4){
+    if(offerSunk<3){const o=offerings.find(o=>!o.taken);return o?{x:o.x,y:o.y,label:'寻祭品 ('+offerSunk+'/3)·井在北面'}:(carried.length>0?{x:WELL_X,y:WELL_Y,label:'带祭品去井台沉愿'}:null);}
+    if(bucketSpawned&&d(WELL_X,WELL_Y)>2.2)return {x:WELL_X,y:WELL_Y,label:'把木桶沉入井底，送她归家'};
+    return null;
+  }
+  return null;
+}
+
 
 const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34],g:[158,176,92],p:[198,172,122]};   // g/p：第〇章草地/土路
 function floorStyle(x,y){
@@ -1687,8 +2193,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       const fog=lvl===4?Math.min(1,rowDist/24):Math.min(1,rowDist/14);   // 第〇章：白昼远景几乎无雾
       const fk=1-fog*(lvl===4?0.25:0.78);
       const ex=fx-ix,ey=fy-iy;
-      const edge=Math.min(ex,1-ex,ey,1-ey);
-      const m=edge<0.035?0.8:1;
+      // 体素地砖：北/西棱受光、南/东棱落影（凸块感）
+      const m=(ex<0.045||ey<0.045)?1.09:((ex>0.955||ey>0.955)?0.78:1);
       let r=clamp((c[0]+n)*fk*flicker*m,0,255);
       let g=clamp((c[1]+n)*fk*flicker*m,0,255);
       let b=clamp((c[2]+n)*fk*flicker*m,0,255);
@@ -1699,7 +2205,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   // 每帧常量外提（性能：避免列循环内重复分配数组）
   const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾 / 终章深水雾（已提亮）
   const fogDenom=lvl===1?12:(lvl===4?20:15);
-  const hits=[];
+  const hits=[],vhits=[];
   for(let x=0;x<VW;x++){
     const cam=2*x/VW-1;
     const rdx=player.dirX+player.planeX*cam,rdy=player.dirY+player.planeY*cam;
@@ -1745,6 +2251,180 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         if(a>=1){buf32[i]=pack(r,g,b);}
         else{const d=buf32[i];const dr=d&255,dg=(d>>>8)&255,db=(d>>>16)&255;buf32[i]=pack(r*a+dr*(1-a),g*a+dg*(1-a),b*a+db*(1-a));}
       }
+      // ---- 屋顶：把建筑墙格变成真正的房屋（山墙三角 / 长边等高等脊） ----
+      const bld=buildingAt(h.mapX,h.mapY);
+      if(bld&&!h.shoji){
+        const gable=(bld.axis==='y')?(h.side===1):(h.side===0);   // 垂直于屋脊的面 = 山墙
+        const rH=lineH*bld.rise,eH=lineH*bld.eave;
+        const topExtra=gable?(eH+(rH-eH)*(1-Math.abs(2*wallX-1))):rH;
+        const yBot=horizon-half,yTop=yBot-topExtra;               // 屋顶下缘 = 墙顶
+        let ry0=Math.floor(yTop),ry1=Math.ceil(yBot);
+        if(ry0<0)ry0=0;if(ry1>VH)ry1=VH;
+        if(ry1>ry0){
+          const rTex=(bld.night?roofNight:roofSun).u32;
+          const ru=clamp((wallX*64)|0,0,63);
+          const rv=64/(yBot-yTop||1);
+          for(let y=ry0;y<ry1;y++){
+            const ty=clamp(((y-yTop)*rv)|0,0,63);
+            const c=rTex[ty*64+ru];
+            buf32[y*VW+x]=pack(Math.min(255,(c&255)*shade+fogR),
+                               Math.min(255,((c>>>8)&255)*shade+fogG),
+                               Math.min(255,((c>>>16)&255)*shade+fogB));
+          }
+          // 檐下投影：屋顶压在墙头上留一道暗边，屋顶才“坐”在墙上
+          for(let y=Math.max(y0,Math.floor(yBot));y<Math.min(y1,Math.floor(yBot)+Math.max(2,(lineH*0.04)|0));y++){
+            const i=y*VW+x,d=buf32[i];
+            buf32[i]=pack((d&255)*0.6,((d>>>8)&255)*0.6,((d>>>16)&255)*0.6);
+          }
+          // 石基：墙脚一圈压深的基石
+          const pTop=Math.max(y0,Math.floor(horizon+half-lineH*0.09));
+          for(let y=pTop;y<y1;y++){
+            const i=y*VW+x,d=buf32[i];
+            buf32[i]=pack((d&255)*0.66,((d>>>8)&255)*0.66,((d>>>16)&255)*0.7);
+          }
+        }
+      }
+      // ---- 实体几何（井亭 / 香坛 / 神龛 / 石碑 / 封石）：有体积的真实建筑 ----
+      const VL=volByLvl[lvl];
+      if(VL.length){
+        vhits.length=0;
+        for(let vi=0;vi<VL.length;vi++){
+          const vo=VL[vi];
+          const vex=player.x-vo.x,vey=player.y-vo.y;
+          const vdd=rdx*rdx+rdy*rdy;
+          const vpr=vex*rdx+vey*rdy;
+          if(vpr<=0)continue;                                   // 在身后
+          const vperp=(vex*vex+vey*vey)-vpr*vpr/vdd;             // 射线到中心的垂距²
+          const vrr=vo.rmax+0.04;
+          if(vperp>vrr*vrr)continue;
+          let vta,vtb,vface=0;
+          if(vo.k==='cyl'){
+            const vb=2*vpr,vc=vex*vex+vey*vey-vo.r*vo.r;
+            const vd=vb*vb-4*vdd*vc;
+            if(vd<=0)continue;
+            const vs=Math.sqrt(vd);
+            vta=(-vb-vs)/(2*vdd);vtb=(-vb+vs)/(2*vdd);
+          }else{
+            let ax0,ax1,ay0,ay1;
+            if(Math.abs(rdx)<1e-6){if(vex<-vo.hw||vex>vo.hw)continue;ax0=-1e9;ax1=1e9;}
+            else{const q1=(vo.x-vo.hw-player.x)/rdx,q2=(vo.x+vo.hw-player.x)/rdx;ax0=q1<q2?q1:q2;ax1=q1<q2?q2:q1;}
+            if(Math.abs(rdy)<1e-6){if(vey<-vo.hd||vey>vo.hd)continue;ay0=-1e9;ay1=1e9;}
+            else{const q3=(vo.y-vo.hd-player.y)/rdy,q4=(vo.y+vo.hd-player.y)/rdy;ay0=q3<q4?q3:q4;ay1=q3<q4?q4:q3;}
+            if(ax0>ay0){vta=ax0;vface=0;}else{vta=ay0;vface=1;}
+            vtb=ax1<ay1?ax1:ay1;
+          }
+          if(vtb<=0.10)continue;
+          if(vta<0.10)vta=0.10;
+          if(vta>=zBuffer[x])continue;                          // 整块在墙后
+          if(vtb>zBuffer[x])vtb=zBuffer[x];
+          if(vtb<=vta)continue;
+          vhits.push({vo,vta,vtb,vface});
+        }
+        if(vhits.length){
+          vzBuf.fill(zBuffer[x]);        // 逐列深度：初值=最近墙面，实体之间也靠它互相遮挡
+          for(let hi=0;hi<vhits.length;hi++){
+            const vh=vhits[hi],vo=vh.vo,vta=vh.vta,vtb=vh.vtb;
+            const vtex=vo.tex.u32;
+            const vsh=Math.min(1,1.32/(1+vta*vta*0.08))*flicker;
+            const vfk=Math.min(1,vta/fogDenom);
+            const vfr=(fC[0]*vfk)|0,vfg=(fC[1]*vfk)|0,vfb=(fC[2]*vfk)|0;
+            if(vo.k==='pyr'){
+              // 四角攒尖顶：沿光线采样屋面高度场，取投影最高点作外轮廓（近→远，近坡遮远坡）
+              let vN=((VH/vta)*(vo.y1-vo.y0))|0;
+              vN=(vN<14?14:(vN>110?110:vN))+8;
+              let vTop=1e9;
+              for(let si=0;si<vN;si++){
+                const vt=vta+(vtb-vta)*((si+0.5)/vN);
+                const vwx=player.x+rdx*vt,vwy=player.y+rdy*vt;
+                const vadx=Math.abs(vwx-vo.x)/vo.hw,vady=Math.abs(vwy-vo.y)/vo.hd;
+                const vm=vadx>vady?vadx:vady;
+                if(vm>1)continue;
+                const vT=vo.y1-(vo.y1-vo.y0)*vm;          // 该点的屋面高度
+                const vlH=VH/vt;
+                const vyT=horizon+vlH*(0.5-vT),vyB=horizon+vlH*(0.5-vo.y0);
+                if(vyT>=vTop)continue;
+                let vu=vadx>=vady?(((vwy-(vo.y-vo.hd))/(2*vo.hd))*64)|0:(((vwx-(vo.x-vo.hw))/(2*vo.hw))*64)|0;
+                if(vu<0)vu=0;else if(vu>63)vu=63;
+                let vv=((1-(vT-vo.y0)/(vo.y1-vo.y0))*64)|0;
+                if(vv<0)vv=0;else if(vv>63)vv=63;
+                const vc=vtex[vv*64+vu];
+                const vsh2=Math.min(1,1.32/(1+vt*vt*0.08))*flicker;
+                const vfk2=Math.min(1,vt/fogDenom);
+                const vfr2=(fC[0]*vfk2)|0,vfg2=(fC[1]*vfk2)|0,vfb2=(fC[2]*vfk2)|0;
+                const vp0=vyT<0?0:Math.ceil(vyT);
+                const vp1=Math.min(VH,Math.ceil(vyB<vTop?vyB:vTop));
+                for(let yy=vp0;yy<vp1;yy++){
+                  if(vt>=vzBuf[yy])continue;
+                  vzBuf[yy]=vt;
+                  buf32[yy*VW+x]=pack((vc&255)*vsh2+vfr2,((vc>>>8)&255)*vsh2+vfg2,((vc>>>16)&255)*vsh2+vfb2);
+                }
+                if(vyT<vTop)vTop=vyT;
+              }
+            }else{
+              // 圆柱 / 方盒：等高的侧壁（圆柱每列只交一点，u 由该点方位角决定 → 自然弯曲）
+              const vlH=VH/vta;
+              const vwx=player.x+rdx*vta,vwy=player.y+rdy*vta;
+              let vu;
+              if(vo.k==='cyl')vu=(((Math.atan2(vwy-vo.y,vwx-vo.x)/TAU)+0.5)*64)|0;
+              else if(vh.vface===0)vu=(((vwy-(vo.y-vo.hd))/(2*vo.hd))*64)|0;
+              else vu=(((vwx-(vo.x-vo.hw))/(2*vo.hw))*64)|0;
+              if(vu<0)vu=0;else if(vu>63)vu=63;
+              const vyT=horizon+vlH*(0.5-vo.y1),vyB=horizon+vlH*(0.5-vo.y0);
+              const vp0=vyT<0?0:Math.ceil(vyT),vp1=Math.min(VH,Math.ceil(vyB));
+              if(vp1>vp0){
+                const vinv=64/((vyB-vyT)||1);
+                for(let yy=vp0;yy<vp1;yy++){
+                  if(vta>=vzBuf[yy])continue;
+                  let vv=((yy-vyT)*vinv)|0;
+                  if(vv<0)vv=0;else if(vv>63)vv=63;
+                  const vc=vtex[vv*64+vu];
+                  vzBuf[yy]=vta;
+                  buf32[yy*VW+x]=pack((vc&255)*vsh+vfr,((vc>>>8)&255)*vsh+vfg,((vc>>>16)&255)*vsh+vfb);
+                }
+              }
+              // 顶面：视平线高于顶面时可见（井沿 / 台基 / 碑首）
+              if(vo.cap&&vo.y1<0.49){
+                const vyF=horizon+(VH/vtb)*(0.5-vo.y1);
+                const vq0=vyF<0?0:Math.ceil(vyF),vq1=Math.min(VH,Math.ceil(vyT));
+                const vkk=VH*(0.5-vo.y1);
+                const vdl=Math.sqrt(vdd)||1;
+                for(let yy=vq0;yy<vq1;yy++){
+                  const vt=vkk/(yy-horizon+0.5);
+                  if(vt<vta||vt>vtb||vt>=vzBuf[yy])continue;
+                  const vwx2=player.x+rdx*vt,vwy2=player.y+rdy*vt;
+                  const vox=vwx2-vo.x,voy=vwy2-vo.y;
+                  let vu2,vv2,vd2=0;
+                  if(vo.k==='cyl'){
+                    vd2=Math.sqrt(vox*vox+voy*voy);
+                    if(vd2>vo.r)continue;
+                    vu2=(((Math.atan2(voy,vox)/TAU)+0.5)*64)|0;
+                    vv2=((vd2/vo.r)*64)|0;
+                  }else{
+                    if(Math.abs(vox)>vo.hw||Math.abs(voy)>vo.hd)continue;
+                    vu2=(((vox+vo.hw)/(2*vo.hw))*64)|0;
+                    vv2=(((voy+vo.hd)/(2*vo.hd))*64)|0;
+                  }
+                  if(vu2<0)vu2=0;else if(vu2>63)vu2=63;
+                  if(vv2<0)vv2=0;else if(vv2>63)vv2=63;
+                  vzBuf[yy]=vt;
+                  if(vo.hole&&vd2<vo.hole){
+                    // 井口：远侧内壁受光、近侧与井心沉入幽暗（终章水面浮一层血色）
+                    const vfar=clamp(((vox*rdx+voy*rdy)/(vdl*vo.hole))*0.5+0.5,0,1);
+                    const vdeep=vd2/vo.hole;
+                    const vk2=0.09+0.30*vfar*vdeep+0.05*vdeep;
+                    buf32[yy*VW+x]=pack(vk2*(lvl===5?62:38)+vfr,vk2*(lvl===5?30:44)+vfg,vk2*(lvl===5?36:52)+vfb);
+                  }else{
+                    const vc=vtex[vv2*64+vu2];
+                    const vsh2=Math.min(1,1.32/(1+vt*vt*0.08))*flicker;
+                    const vfk2=Math.min(1,vt/fogDenom);
+                    buf32[yy*VW+x]=pack((vc&255)*vsh2+(fC[0]*vfk2)|0,((vc>>>8)&255)*vsh2+(fC[1]*vfk2)|0,((vc>>>16)&255)*vsh2+(fC[2]*vfk2)|0);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
   wctx.putImageData(imgData,0,0);
@@ -1768,14 +2448,16 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   }
   if(chapter===2&&lvl===2){
     if(ghost)sprites.push({x:ghost.x,y:ghost.y,img:ghostImg,scale:1.2,bob:true,phase:0,alpha:0.94,squash:ghost.state==='CHASE'?0.82:1});
-    for(let i=0;i<ritualN&&i<ALTAR_DOLL_POS.length;i++){const o=ALTAR_DOLL_POS[i];sprites.push({x:o[0],y:o[1],img:dollImg,scale:0.42});}
+    sprites.push({x:ALTAR_X,y:ALTAR_Y,img:blankImg,scale:1.0,glow:0.42});   // 香火微光（实体香坛不再自带）
+    for(let i=0;i<ritualN&&i<ALTAR_DOLL_POS.length;i++){const o=ALTAR_DOLL_POS[i];sprites.push({x:o[0],y:o[1],img:dollImg,scale:0.42,lift:0.86});}   // 供在坛面上
     if(fireSpawned)sprites.push({x:FIRE_X,y:FIRE_Y,img:fireImg,scale:0.95+0.06*Math.sin(tSec*9)+0.03*Math.sin(tSec*23),glow:0.55});
   }
   if(chapter===3&&lvl===3){
     for(let i=0;i<papers.length;i++){const p=papers[i];if(!p.frozen)sprites.push({x:p.x,y:p.y,img:paperImg,scale:1.15,bob:true,phase:i*1.7,alpha:0.96});else sprites.push({x:p.x,y:p.y,img:paperImg,scale:1.15});}
     for(const tb of tablets){if(!tb.taken)sprites.push({x:tb.x,y:tb.y,img:tabletImg,scale:0.85,bob:true,phase:tb.x});}
     for(const j of oilJars){if(!j.taken)sprites.push({x:j.x,y:j.y,img:jarImg,scale:0.8});}
-    if(tabsPlaced>0){const tp=[[12.15,1.5],[12.5,1.44],[12.85,1.52]];for(let i=0;i<tabsPlaced&&i<3;i++){const o=tp[i];sprites.push({x:o[0],y:o[1],img:tabletImg,scale:0.55});}}
+    sprites.push({x:SHRINE_X,y:SHRINE_Y,img:blankImg,scale:1.2,glow:0.36,coldGlow:true});   // 神龛幽光
+    if(tabsPlaced>0){const tp=[[12.15,1.5],[12.5,1.44],[12.85,1.52]];for(let i=0;i<tabsPlaced&&i<3;i++){const o=tp[i];sprites.push({x:o[0],y:o[1],img:tabletImg,scale:0.55,lift:1.02});}}   // 供在龛内
   }
   if(chapter===0&&lvl===4){
     // 阿婆的三件差事：未完成的才显示（收走/喂完即消失）
@@ -1802,7 +2484,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     const ww=hh*(s.img.width/s.img.height)*(s.squash||1);
     const fog=Math.max(0,1-tY/11);
     const yOff=s.bob?Math.sin(timeSec*2+s.phase)*2:0;
-    const yTop=VH/2-hh/2+bobY+yOff;
+    const yTop=VH/2-hh/2+bobY+yOff-(s.lift||0)*(VH/tY);   // lift=抬高到台面/龛内（世界高度单位）
     const x0=Math.floor(sx-ww/2),x1=Math.ceil(sx+ww/2);
     if(x1<=x0||x0>=VW||x1<=0)continue;
     let vis0=x1,vis1=x0;
@@ -1813,7 +2495,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       ctx.globalCompositeOperation='lighter';
       const gc=s.coldGlow?'170,225,255':'255,200,120';   // 第二章灯笼=幽蓝鬼火
       const gf=(chapter===3||chapter===4)?(0.25+0.75*oil/100):1;    // 第三章/终章：灯光随灯油减弱
-      const gr=ctx.createRadialGradient(sx,VH/2-hh/2+bobY+yOff,2,sx,VH/2-hh/2+bobY+yOff,hh*1.1);
+      const gr=ctx.createRadialGradient(sx,yTop,2,sx,yTop,hh*1.1);
       gr.addColorStop(0,'rgba('+gc+','+(0.28*s.glow*fog*gf).toFixed(3)+')');
       gr.addColorStop(1,'rgba('+gc+',0)');
       ctx.fillStyle=gr;
@@ -2005,50 +2687,28 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       ctx.strokeStyle='rgba(220,220,220,0.5)';ctx.strokeRect(VW-122,VH-38,110,10);
     }
     if(!seq){
-      const fx=Math.floor(player.x+player.dirX*0.55),fy=Math.floor(player.y+player.dirY*0.55);
-      const ft=tile(fx,fy);
-      let hint='';
-      if(chapter===0){
-        if(errands>=3&&Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.9)hint='E 放下木桶，打一桶井水';
-        else if(errands>=3)hint='差事都完成了 · 去村口老井（北面）';
-        else{
-          for(const t of ch0Tasks){if(!t.done&&Math.hypot(t.x-player.x,t.y-player.y)<1.5){hint=t.hint;break;}}
-          if(!hint)hint='帮阿婆做三件事 ('+errands+'/3)';
-        }
+      const hv=computeHint();
+      if(hv.t){ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle=hv.note?'rgba(235,220,180,0.75)':'rgba(230,230,230,0.7)';ctx.fillText(hv.t,VW/2,VH-10);}
+      // ---- 全程引导箭头：指向当前目标（屏幕上方中央），带一句话提示与距离 ----
+      const gg=guideGoal();
+      if(gg){
+        const gdx=gg.x-player.x,gdy=gg.y-player.y,gd=Math.hypot(gdx,gdy);
+        const ang=Math.atan2(gdy,gdx)-Math.atan2(player.dirY,player.dirX);
+        const ax=VW/2+Math.sin(ang)*Math.min(VW*0.36,190);
+        const ay=44+Math.max(0,-Math.cos(ang))*26;
+        const off=Math.abs(ang)>0.5;
+        ctx.save();
+        ctx.translate(ax,ay);ctx.rotate(ang);
+        ctx.globalAlpha=(off?0.9:0.55)+0.15*Math.sin(tSec*4);
+        ctx.fillStyle='#d8b86a';
+        ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-5,-7.5);ctx.lineTo(-1.5,0);ctx.lineTo(-5,7.5);ctx.closePath();ctx.fill();
+        ctx.restore();
+        ctx.globalAlpha=1;
+        ctx.textAlign='center';
+        ctx.font='12px '+GAME_FONT;
+        ctx.fillStyle='rgba(216,184,106,'+(off?0.85:0.6)+')';
+        ctx.fillText('「'+gg.label+'」'+(gd>3?' · '+gd.toFixed(0)+' 步':''),ax,ay-16);
       }
-      else if(chapter===3){
-        if(tabsPlaced>=3&&tile(Math.floor(player.x+player.dirX*0.55),Math.floor(player.y+player.dirY*0.55))==='D')hint='E 推开大门，离开义庄';
-        else{
-          for(const j of oilJars){if(!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<1.4){hint='E 收起灯油';break;}}
-          if(!hint)for(const tb of tablets){if(!tb.taken&&Math.hypot(tb.x-player.x,tb.y-player.y)<1.4){hint='E 请出牌位';break;}}
-          if(!hint&&tabsCarried>0&&Math.hypot(player.x-SHRINE_X,player.y-SHRINE_Y)<1.6)hint='E 安放牌位 ('+tabsPlaced+'/3)';
-          if(!hint)hint=tabsCarried>0?'怀中牌位 '+tabsCarried+' · 神龛在北面小龛室':'盯着纸人——它们不敢动';
-        }
-      }
-      else if(chapter===2){
-        if(hiding)hint='E 推开柜门';
-        else{
-          if(ft==='C')hint='E 躲进衣柜';
-          else if(ritualN<6&&Math.hypot(player.x-ALTAR_X,player.y-ALTAR_Y)<1.5)hint='E 送还纸人偶 ('+ritualN+'/6)';
-          else if(fireSpawned&&Math.hypot(player.x-FIRE_X,player.y-FIRE_Y)<1.5)hint='E 点燃堂前之火';
-        }
-      }
-      else if(chapter===4){
-        const nw=Math.hypot(player.x-WELL_X,player.y-WELL_Y)<1.8;
-        if(bucketSpawned&&nw)hint='E 把木桶沉入井底';
-        else if(carried.length&&nw)hint='E 沉下「'+CARRY_NAMES[carried[carried.length-1]]+'」';
-        else{
-          for(const o of offerings){if(!o.taken&&Math.hypot(o.x-player.x,o.y-player.y)<1.3){hint=o.hint;break;}}
-          if(!hint)for(const j of oilJars){if(j.lvl===5&&!j.taken&&Math.hypot(j.x-player.x,j.y-player.y)<1.3){hint='E 收起灯油';break;}}
-          if(!hint)hint=carried.length?('带着祭品去井台（北面）· 怀中 '+carried.length+' 件'):('找齐三件祭品 ('+offerSunk+'/3)· 别让灯灭了');
-        }
-      }
-      else if(ft==='D')hint=!hasKey?'大门锁着……需要钥匙':(dollsTaken>=6?'E 打开大门':'大门锁着……纸人偶未找齐 ('+dollsTaken+'/6)');
-      else if(ft==='U')hint=lvl===0?'E 进入地下室':'E 回到一层';
-      else if(!keyItem.taken&&keyItem.lvl===lvl&&Math.hypot(keyItem.x-player.x,keyItem.y-player.y)<1.4)hint='E 捡起钥匙';
-      else{for(const d of dolls){if(!d.taken&&d.lvl===lvl&&Math.hypot(d.x-player.x,d.y-player.y)<1.4){hint='E 拾起纸人偶';break;}}}
-      if(hint){ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle='rgba(230,230,230,0.7)';ctx.fillText(hint,VW/2,VH-10);}
-      else{for(const n of NOTES){if(n.lvl===lvl&&notesFound.indexOf(n.i)<0&&Math.hypot(n.x-player.x,n.y-player.y)<1.4){hint='E 拾起纸条';ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle='rgba(235,220,180,0.75)';ctx.fillText(hint,VW/2,VH-10);break;}}}
     }
     if(toast.t>0){
       const a=Math.min(1,toast.t*2);
@@ -2138,6 +2798,7 @@ function beginPlay(){
 function startChapter(ch,silent){
   initAudio();
   if(AC&&AC.state==='suspended')AC.resume();
+  if(AC)ambGains.forEach(g=>{g.gain.cancelScheduledValues(at());g.gain.setValueAtTime(Math.max(g.gain.value,0.0001),at());g.gain.linearRampToValueAtTime(g._base||0.02,at()+0.8);});   // 回主菜单淡出后再入章：环境音恢复
   chapter=ch;
   resetChapterState();
   const iv=document.getElementById(chapter===0?'intro0':(chapter===4?'intro4':(chapter===3?'intro3':'intro2')));
@@ -2197,6 +2858,23 @@ function closePause(){
   canvas.focus();
   if(!canTouch)lock();
 }
+// ---- 回到主菜单：结束本局，回到标题选章界面（不重新请求指针锁定）----
+function returnToTitle(){
+  paused=false;state='title';seq=null;hiding=false;
+  document.getElementById('pause').style.display='none';
+  document.getElementById('win').style.display='none';
+  document.getElementById('dead').style.display='none';
+  document.getElementById('intro0').style.display='none';
+  document.getElementById('intro2').style.display='none';
+  document.getElementById('intro3').style.display='none';
+  document.getElementById('intro4').style.display='none';
+  document.getElementById('title').style.display='flex';
+  if(document.pointerLockElement)document.exitPointerLock();
+  if(groanNodes)groanNodes.g.gain.setTargetAtTime(0,at(),0.3);
+  ambGains.forEach(g=>g.gain.setTargetAtTime(0.0001,at(),0.4));   // 环境音淡出，标题页安静
+  toast={text:'',t:0};mouseDX=0;ePressed=false;
+  for(const k in keys)keys[k]=false;
+}
 (function(){
   const box=document.getElementById('setting'),sl=document.getElementById('sens'),lb=document.getElementById('sensVal');
   if(!box||!sl||!lb)return;
@@ -2222,6 +2900,7 @@ function closePause(){
     });
   }
   document.getElementById('resumeBtn').addEventListener('click',e=>{e.stopPropagation();closePause();});
+  document.getElementById('titleBtn').addEventListener('click',e=>{e.stopPropagation();returnToTitle();});
   document.getElementById('muteBtn').addEventListener('click',e=>{e.stopPropagation();toggleMute();});
 })();
 // ESC：暂停中再按恢复；游戏中（指针未锁定时，如触屏/锁定丢失）也可手动暂停
@@ -2233,7 +2912,7 @@ addEventListener('keydown',e=>{
 });
 document.getElementById('dead').addEventListener('click',()=>{if(chapter>1){startChapter(chapter,true);}else{location.reload();}});
 document.getElementById('goCh2').addEventListener('click',e=>{e.stopPropagation();startChapter(2,true);});
-document.getElementById('win').addEventListener('click',()=>location.reload());
+document.getElementById('win').addEventListener('click',e=>{if(e.target.closest('#goCh2'))return;returnToTitle();});
 document.getElementById('btnE').addEventListener('click',()=>{if(state==='playing'&&!paused)ePressed=true;});
 document.getElementById('btnM').addEventListener('click',()=>{toggleMute();});
 document.getElementById('btnPause').addEventListener('click',()=>{if(state!=='playing')return;if(paused){closePause();}else{openPause();}});
