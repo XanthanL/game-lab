@@ -15,7 +15,7 @@ node_modules/
 **/build/tmp/
 **/build/loom-cache/
 
-# 注意：ARH/dist、XanthanLMusic/dist、golden-wind/out、hexachess/dist 是**有意入库**的
+# 注意：ARH/dist、XanthanLMusic/dist、golden-wind/out 是**有意入库**的
 # —— Pages 工作流直接发布整棵仓库树，构建产物不入库就 404。
 # 改这几个项目的源码后必须重新 build 再提交。
 
@@ -63,11 +63,6 @@ Thumbs.db
 .env.*
 !.env.example
 *.local
-
-# hexachess/dist 里唯一要发布的产物是 web.js（Pages 直接发布仓库树）；
-# npm test / gen:levels 产生的临时 bundle 一律不入库
-hexachess/dist/*
-!hexachess/dist/web.js
 
 # ============ 隐私加固：可能带本机路径或凭据的文件 ============
 # sourcemap 会内嵌开发机的绝对源码路径（含用户名）

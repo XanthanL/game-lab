@@ -1,7 +1,0 @@
-{
-  "deviceOrientation": "portrait",
-  "networkTimeout": {
-    "request": 10000
-  },
-  "subpackages": []
-}

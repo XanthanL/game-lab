@@ -1,0 +1,111 @@
+:root {
+  --bg: #f3efe6;
+  --panel: #1f1a15;
+  --panel-text: #e8e0d4;
+  --accent: #c9a227;
+  --adm: #5a8a4a;
+  --dip: #4a6a9a;
+  --mil: #9a4a4a;
+  --border: #3a3028;
+  --panel-w: clamp(200px, 16vw, 280px);
+  --top-h: clamp(44px, 6vh, 56px);
+  --log-h: clamp(32px, 5vh, 42px);
+  --fs-base: clamp(12px, 1.1vw, 14px);
+  --fs-lg: clamp(14px, 1.3vw, 16px);
+  --fs-xl: clamp(16px, 1.6vw, 20px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; overflow: hidden; font-size: var(--fs-base); }
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+.topbar {
+  display: flex; align-items: center; gap: clamp(12px, 2vw, 24px);
+  background: var(--panel); color: var(--panel-text);
+  height: var(--top-h); flex-shrink: 0;
+  padding: 0 clamp(12px, 2vw, 20px);
+  border-bottom: 2px solid var(--accent);
+}
+.brand { font-size: var(--fs-xl); font-weight: 700; color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+.date { font-size: var(--fs-lg); min-width: 9em; white-space: nowrap; }
+.speed { display: flex; gap: 4px; margin-left: auto; }
+.speed button, .map-modes button {
+  background: #2e2820; color: var(--panel-text); border: 1px solid #4a4035;
+  padding: 4px clamp(8px, 1vw, 14px); cursor: pointer; border-radius: 3px;
+  font-size: var(--fs-base); white-space: nowrap;
+}
+.speed button.active, .map-modes button.active { background: var(--accent); color: #1f1a15; border-color: var(--accent); }
+
+.main { flex: 1; display: flex; overflow: hidden; }
+.panel {
+  width: var(--panel-w); background: var(--panel); color: var(--panel-text);
+  padding: clamp(10px, 1.2vw, 16px); overflow-y: auto; font-size: var(--fs-base);
+  border-right: 1px solid var(--border); flex-shrink: 0;
+}
+.panel.right { border-right: none; border-left: 1px solid var(--border); }
+.panel h2 { margin: 0 0 clamp(8px, 1vw, 12px); font-size: var(--fs-lg); color: var(--accent); }
+.res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.8vw, 10px); margin-bottom: 12px; }
+.res-grid div { background: #2e2820; padding: clamp(5px, 0.7vw, 8px); border-radius: 4px; }
+.res-grid span { font-weight: 700; color: #fff; }
+.powers { display: flex; gap: 6px; margin-bottom: 12px; }
+.power { flex: 1; text-align: center; padding: clamp(5px, 0.7vw, 8px); border-radius: 4px; font-weight: 700; }
+.power.adm { background: var(--adm); }
+.power.dip { background: var(--dip); }
+.power.mil { background: var(--mil); }
+.stats > div, .tech > div { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dotted #3a3028; }
+.actions { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.actions button {
+  background: #3a3028; color: var(--panel-text); border: 1px solid #5a5045;
+  padding: 7px; cursor: pointer; border-radius: 4px; font-size: var(--fs-base);
+}
+.actions button:hover { background: #4a4035; }
+
+.map-wrap {
+  flex: 1; position: relative; background: #aac4ce; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+#map {
+  display: block;
+  width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  cursor: crosshair;
+}
+.map-modes { position: absolute; bottom: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 4px; }
+.map-modes button { font-size: var(--fs-base); padding: 4px 8px; }
+
+.logbar {
+  height: var(--log-h); background: var(--panel); color: var(--panel-text);
+  display: flex; align-items: center;
+  padding: 0 clamp(12px, 2vw, 20px); font-size: var(--fs-base);
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+#log { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-body {
+  background: var(--panel); color: var(--panel-text);
+  width: min(92vw, 440px);
+  padding: clamp(16px, 3vw, 22px); border-radius: 6px; border: 2px solid var(--accent);
+}
+.modal-body h3 { margin: 0 0 10px; color: var(--accent); font-size: var(--fs-lg); }
+.ev-options { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.ev-options button { background: #3a3028; color: var(--panel-text); border: 1px solid #5a5045; padding: 8px; cursor: pointer; text-align: left; font-size: var(--fs-base); }
+.ev-options button:hover { background: #4a4035; }
+
+/* 窄屏：侧栏收起为底部抽屉式，地图占满 */
+@media (max-width: 780px) {
+  .main { position: relative; }
+  .panel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    width: 100%; height: 38vh; z-index: 10;
+    border-right: none; border-top: 2px solid var(--accent);
+    transform: translateY(100%); transition: transform .18s ease;
+  }
+  .panel.right { border-left: none; left: auto; top: 0; bottom: auto; height: 100%; width: min(320px, 78vw); transform: translateX(100%); }
+  .panel.open { transform: translateY(0); }
+  .panel.right.open { transform: translateX(0); }
+  .map-modes { bottom: auto; top: 8px; right: 8px; left: auto; }
+}

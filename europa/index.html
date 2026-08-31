@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>欧陆风云 · 1444</title>
+<meta name="description" content="浏览器大战略游戏：1444 年的欧陆风云，纯静态，无需安装。" />
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">欧陆风云 · 1444</div>
+    <div class="date" id="date">1444 年 11 月 11 日</div>
+    <div class="speed">
+      <button data-speed="0" class="active">暂停</button>
+      <button data-speed="1">1×</button>
+      <button data-speed="2">2×</button>
+      <button data-speed="4">4×</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <aside class="panel left" id="countryPanel">
+      <h2 id="countryName">法兰西</h2>
+      <div class="res-grid">
+        <div><span id="treasury">0</span> 金币</div>
+        <div><span id="income">0</span> 月收入</div>
+        <div><span id="manpower">0</span> 人力</div>
+        <div><span id="forceLimit">0</span> 陆军上限</div>
+      </div>
+      <div class="powers">
+        <div class="power adm"><span id="adm">0</span></div>
+        <div class="power dip"><span id="dip">0</span></div>
+        <div class="power mil"><span id="mil">0</span></div>
+      </div>
+      <div class="stats">
+        <div>稳定度 <span id="stability">0</span></div>
+        <div>威望 <span id="prestige">0</span></div>
+        <div>正统性 <span id="legitimacy">0</span></div>
+        <div>厌战 <span id="warExhaustion">0</span></div>
+        <div>发展度 <span id="development">0</span></div>
+        <div>省份 <span id="provinces">0</span></div>
+      </div>
+      <div class="tech">
+        <div>行政科技 <span id="techAdm">3</span></div>
+        <div>外交科技 <span id="techDip">3</span></div>
+        <div>军事科技 <span id="techMil">3</span></div>
+      </div>
+      <div class="actions">
+        <button id="btnRaise">招募军队</button>
+        <button id="btnTech">提升科技</button>
+      </div>
+    </aside>
+
+    <div class="map-wrap" id="mapWrap">
+      <canvas id="map"></canvas>
+      <div class="map-modes">
+        <button data-mode="political" class="active">政治</button>
+        <button data-mode="terrain">地形</button>
+        <button data-mode="religion">宗教</button>
+        <button data-mode="culture">文化</button>
+        <button data-mode="trade">贸易品</button>
+        <button data-mode="unrest">动荡</button>
+      </div>
+    </div>
+
+    <aside class="panel right" id="provPanel">
+      <h2 id="provName">省份</h2>
+      <div id="provOwner">所有者：-</div>
+      <div id="provController">控制者：-</div>
+      <div id="provReligion">宗教：-</div>
+      <div id="provCulture">文化：-</div>
+      <div id="provTerrain">地形：-</div>
+      <div id="provGood">贸易品：-</div>
+      <div class="dev">
+        <div>税收 <span id="provTax">0</span></div>
+        <div>生产 <span id="provProd">0</span></div>
+        <div>人力 <span id="provMan">0</span></div>
+      </div>
+      <div class="actions" id="provActions" style="display:none">
+        <button id="btnClaim">伪造宣称</button>
+        <button id="btnMove">移动至此</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="logbar">
+    <div id="log">欢迎来到 1444 年的欧洲。</div>
+  </footer>
+</div>
+
+<div id="eventModal" class="modal" style="display:none">
+  <div class="modal-body">
+    <h3 id="evTitle"></h3>
+    <p id="evText"></p>
+    <div class="ev-options" id="evOptions"></div>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

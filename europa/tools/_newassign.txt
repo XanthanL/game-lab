@@ -1,0 +1,168 @@
+  /* --- 2) 漫灌。硬上限：吃满目标就停手，剩下的留作未殖民荒原 ---
+     这一步的硬上限是必需的。加权 Voronoi 只能控制「相对扩张速度」，
+     无法限制最终面积——只要整块陆地必须分完，东欧与北非那些无人竞争的
+     地带就必然被莫斯科、奥斯曼吃光（实测莫斯科 445 省 vs 目标 54）。
+     而 1444 年的西伯利亚、撒哈拉内陆本就是无主地，
+     所以「吃满即停、余下留白」既修了失衡，也更贴近史实。 */
+  function flood(speed, cap) {
+    const owner = new Map();
+    const count = new Map(COUNTRIES.map((c) => [c.tag, 0]));
+    const bestD = new Map();
+    for (const c of COUNTRIES) bestD.set(c.tag, new Map());
+    const pq = new MinHeap((a, b) => a.key - b.key);
+    for (const c of COUNTRIES) {
+      const dmap = bestD.get(c.tag);
+      for (const pid of capProv.get(c.tag)) { dmap.set(pid, 0); pq.push({ key: 0, tag: c.tag, pid }); }
+    }
+    let full = 0; // 已吃满上限的国家数
+    while (pq.length && owner.size < total && full < COUNTRIES.length) {
+      const it = pq.pop();
+      if (owner.has(it.pid)) continue;
+      if (count.get(it.tag) >= cap.get(it.tag)) continue;
+      const dmap = bestD.get(it.tag);
+      const v = speed.get(it.tag);
+      if (it.key * v > (dmap.get(it.pid) ?? Infinity) + 1e-6) continue; // 过期条目
+      owner.set(it.pid, it.tag);
+      const n = count.get(it.tag) + 1;
+      count.set(it.tag, n);
+      if (n >= cap.get(it.tag)) full++;
+      const p = world.provinces.get(it.pid);
+      const base = dmap.get(it.pid);
+      for (const nb of p.adj) {
+        if (!landIds.has(nb) || owner.has(nb)) continue;
+        const q = world.provinces.get(nb);
+        const nd = base + edgeCost(p, q) * rng.range(0.94, 1.10);
+        if (nd < (dmap.get(nb) ?? Infinity)) {
+          dmap.set(nb, nd);
+          pq.push({ key: nd / v, tag: it.tag, pid: nb });
+        }
+      }
+    }
+    return { owner, count };
+  }
+
+  /* --- 3) 迭代收敛扩张速度：让被堵住的国家提速，宽裕的减速 --- */
+  const mult = new Map(COUNTRIES.map((c) => [c.tag, 1]));
+  let speed = new Map(COUNTRIES.map((c) => [c.tag, Math.sqrt(target.get(c.tag))]));
+  let owner = null, count = null;
+  for (let iter = 0; iter < 6; iter++) {
+    const r = flood(speed, target);
+    owner = r.owner; count = r.count;
+    let worst = 0;
+    for (const c of COUNTRIES) {
+      const got = Math.max(1, count.get(c.tag));
+      const ratio = target.get(c.tag) / got;
+      worst = Math.max(worst, Math.abs(Math.log(ratio)));
+      const m = clamp(mult.get(c.tag) * Math.pow(ratio, 0.7), 0.15, 8);
+      mult.set(c.tag, m);
+      speed.set(c.tag, Math.sqrt(target.get(c.tag)) * m);
+    }
+    if (worst < 0.08) break;
+  }
+
+  const ratioOf = (t) => count.get(t) / target.get(t);
+  const isSeed = (pid) => {
+    for (const list of capProv.values()) if (list.includes(pid)) return true;
+    return false;
+  };
+
+  /* --- 4) 失衡修补：被围死的国家先吃邻近无主地，再从「相对更宽裕」的邻国接管边境省 ---
+     注意 borderOf 必须查 owner 表：country.provinces 到第 7 步才写入。 */
+  function borderOf(tag) {
+    const out = new Map();
+    for (const [pid, o] of owner) {
+      if (o !== tag) continue;
+      for (const n of world.provinces.get(pid).adj) {
+        if (!landIds.has(n)) continue;
+        const no = owner.get(n);
+        if (no === tag) continue;
+        const key = no ?? '';           // '' 代表无主地
+        const arr = out.get(key) || [];
+        arr.push(n);
+        out.set(key, arr);
+      }
+    }
+    return out;
+  }
+  for (let pass = 0; pass < 120; pass++) {
+    const hungry = COUNTRIES.filter((c) => ratioOf(c.tag) < 0.8)
+      .sort((a, b) => ratioOf(a.tag) - ratioOf(b.tag));
+    if (!hungry.length) break;
+    let moved = false;
+    for (const c of hungry) {
+      if (ratioOf(c.tag) >= 0.8) continue;
+      const b = borderOf(c.tag);
+      const free = (b.get('') || []).filter((pid) => !owner.has(pid));
+      if (free.length) {
+        owner.set(free[0], c.tag);
+        count.set(c.tag, count.get(c.tag) + 1);
+        moved = true;
+        continue;
+      }
+      let pick = null, best = 0.22;      // 至少宽裕 22% 才值得动刀
+      for (const [other, pids] of b) {
+        if (!other) continue;
+        const gain = ratioOf(other) - ratioOf(c.tag);
+        if (gain <= best) continue;
+        for (const pid of pids) {
+          if (isSeed(pid)) continue;     // 不抢别人首都
+          best = gain; pick = { pid, other };
+        }
+      }
+      if (pick) {
+        owner.set(pick.pid, c.tag);
+        count.set(pick.other, count.get(pick.other) - 1);
+        count.set(c.tag, count.get(c.tag) + 1);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  /* --- 5) 无主地整理：小口袋并入邻国（欧洲腹地不留窟窿），
+           成片的（西伯利亚、撒哈拉内陆、拉普兰）保留为未殖民区 --- */
+  {
+    const freeIds = land.filter((p) => !owner.has(p.id)).map((p) => p.id);
+    const POCKET_MAX = 10;
+    for (const pk of connectedComponents(freeIds, world.provinces)) {
+      if (pk.length > POCKET_MAX) continue;
+      let host = null, bestR = Infinity;
+      for (const pid of pk) {
+        for (const n of world.provinces.get(pid).adj) {
+          const o = owner.get(n);
+          if (!o) continue;
+          const r = ratioOf(o);
+          if (r < bestR) { bestR = r; host = o; }
+        }
+      }
+      if (!host) continue;
+      for (const pid of pk) { owner.set(pid, host); count.set(host, count.get(host) + 1); }
+    }
+  }
+
+  /* --- 6) 修飞地：每个国家只保留最大连通块，碎块转给最饥饿的邻国 --- */
+  for (const tag of [...new Set(owner.values())]) {
+    const ids = land.filter((p) => owner.get(p.id) === tag).map((p) => p.id);
+    if (ids.length <= 2) continue;
+    const comps = connectedComponents(ids, world.provinces);
+    if (comps.length <= 1) continue;
+    comps.sort((a, b) => b.length - a.length);
+    for (let i = 1; i < comps.length; i++) {
+      if (comps[i].some((pid) => isSeed(pid))) continue;   // 含首都的块不动
+      let host = null, bestScore = Infinity;
+      for (const pid of comps[i]) {
+        for (const n of world.provinces.get(pid).adj) {
+          const no = owner.get(n);
+          if (!no || no === tag || !landIds.has(n)) continue;
+          const s = ratioOf(no);
+          if (s < bestScore) { bestScore = s; host = no; }
+        }
+      }
+      if (!host) continue;
+      for (const pid of comps[i]) {
+        owner.set(pid, host);
+        count.set(tag, count.get(tag) - 1);
+        count.set(host, count.get(host) + 1);
+      }
+    }
+  }
