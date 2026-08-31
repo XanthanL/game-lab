@@ -7,7 +7,7 @@ I wrote because I wanted them to exist. Everything you can click in the [live in
 runs straight in the browser: no install, no account, no build step on your side.
 
 It is also a scratchpad for a recurring question — *how far can one HTML file go?*
-The horror game, the survivor game and one of the stage plays are each a single file with
+The horror game, one survivor and one of the stage plays are each a single file with
 zero dependencies, and eleven plays were each directed by a *different* coding agent from the
 same one-line brief.
 
@@ -24,7 +24,8 @@ same one-line brief.
 | **植物大战僵尸**<br>*Plants vs Zombies* | Full recreation: 23 levels, 6 worlds, 26 plants, 17 zombies, 2 bosses, sun economy and wave pacing. Every sprite is drawn in vector code — not one game image in the folder. | [`/PVZ/`](https://xanthanl.github.io/game-lab/PVZ/) |
 | **微软大战代码**<br>*Microsoft vs. Code* | A meme-born PvZ parody with the whole meta-game ported to programmer lore: 5 chapters × 2 levels, each chapter a computing scenario (offline mode, merge-conflict waterway, legacy-code fog, a CORS wall where only lobbed bug reports work), 11 cards, 11 enemies, star drops, an npm shop run by the rubber duck, a side-project garden watered with `git commit`, a per-row Ctrl+Z rescue, and a mobile card dock. | [`/microsoft-vs-code/`](https://xanthanl.github.io/game-lab/microsoft-vs-code/) |
 | **Vampire 2D** | Top-down auto-attacking survival: 5 weapons, 6 passives, choose-one-on-level-up, bosses from 180 s and a Blood Frenzy event, 220 enemies on screen. A 45 KB single file; keyboard + mouse. | [`/Vampire-2D/`](https://xanthanl.github.io/game-lab/Vampire-2D/) |
-| **六边智将**<br>*Hexachess* | Hexa Sort mechanics wearing chess: 50 levels on 19/37/61-cell hex boards, locked cells and decoys unlocking gradually, and a board you can spin by dragging empty space. One TypeScript core builds both the browser demo and a WeChat mini-game; 80 unit tests. | [`/hexachess/`](https://xanthanl.github.io/game-lab/hexachess/) |
+| **新星漂移**<br>*Nova Drift* | Inertia-drift asteroid-belt survival in the spirit of Chasing Carrots' *Nova Drift*: three starting hulls, rocks split when shattered, six enemy hulls, and a build picked one-of-three per level from 22 stackable modules. A mother-class boss — Mother Rock, Twin Rocks or the Void Eye — rises every 5th wave; clearing wave 15 opens endless drift. A 92 KB page with procedural WebAudio, a vendored particle engine and an adapted WebGL fluid nebula; keyboard + mouse or touch. | [`/nova-drift/`](https://xanthanl.github.io/game-lab/nova-drift/) |
+| **欧陆风云 · 1444**<br>*Europa 1444* | Browser grand strategy on a hand-drawn Europe / North Africa / Anatolia map: 60+ countries at the 1444 bookmark, economy, diplomacy, war, sieges and historical events. Static, no build. | [`/europa/`](https://xanthanl.github.io/game-lab/europa/) |
 
 ## Watch
 
@@ -65,7 +66,8 @@ game-lab/
 ├── PVZ/                  canvas tower defense              (static)
 ├── microsoft-vs-code/    meme parody tower defense         (static)
 ├── Vampire-2D/           single-file survivor              (static)
-├── hexachess/            TS core → web demo + WeChat mini-game (esbuild)
+├── nova-drift/           asteroid survival, vendored FX    (static)
+├── europa/               1444 grand strategy               (static)
 ├── persona/              11 pixel stage plays + sub-index  (static)
 ├── ascii-art/            ASCII text studio                 (static)
 ├── shuyan-travel/        travel timeline + map             (static, Leaflet vendored)
@@ -95,8 +97,8 @@ you a dashboard with every stylesheet and chunk 404ing — the page opens, but l
 Everything else uses relative paths and survives either way.
 
 The single-file games (`cursed-house`, `Vampire-2D`) and `ascii-art` have no external assets
-at all, so double-clicking their `index.html` over `file://` also just works — handy when you
-only want to play.
+at all, and `nova-drift` keeps its one dependency vendored beside the page — double-clicking
+any of their `index.html` over `file://` also just works, handy when you only want to play.
 
 For the three build-based projects, install and rebuild in their own folder:
 
@@ -104,11 +106,7 @@ For the three build-based projects, install and rebuild in their own folder:
 cd ARH            && npm install && npm run build   # → ARH/dist
 cd XanthanLMusic  && npm install && npm run build   # → XanthanLMusic/dist
 cd golden-wind    && npm install && npm run build   # → golden-wind/out
-cd hexachess      && npm install && npm run build:web && npm test
 ```
-
-`hexachess` additionally carries `game.js` / `game.json` / `project.config.json` for the
-WeChat mini-game target — that side is opened with the WeChat devtools, not a browser.
 
 ## Deploying
 
@@ -143,9 +141,13 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 ## Credits & notes
 
 - Original code and writing, apart from: *Forcing Mars* art/audio produced from prompts
-  (manifest in `forcing-mars/ART_ASSETS.md`), and `shuyan-travel` vendoring Leaflet (BSD-2).
+  (manifest in `forcing-mars/ART_ASSETS.md`), `shuyan-travel` vendoring Leaflet (BSD-2), and
+  `nova-drift` vendoring Proton (MIT) plus a nebula layer adapted from
+  PavelDoGreat/WebGL-Fluid-Simulation (MIT).
 - *Plants vs Zombies* here is a mechanics study with **vector art drawn from scratch** — no
   original assets are included.
+- *Nova Drift* here is a mechanics homage to the game by Chasing Carrots — all art is
+  canvas-drawn code and all sound is synthesized in WebAudio; nothing is copied.
 - The `persona/` folders keep their agent and model names as issued; they are results, not
   branding.
 
@@ -163,7 +165,7 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 | 玩得 | **植物大战僵尸** | 完整复刻：23 关 6 世界、26 植物 17 僵尸 2 Boss，美术全部矢量代码绘制，没有一张图片 |
 | 玩得 | **微软大战代码** | 梗图改编的恶搞塔防，5 章 10 关把 PvZ 元游戏全搬进程序员世界：离线机房/冲突水道/祖传迷雾/跨域高墙，★ 经济 + npm 商店（鸭店主）+ 副业花园 + 每行 Ctrl+Z，手机可玩 |
 | 玩得 | **Vampire 2D** | 顶视角自动攻击生存，5 武器 6 被动，180 秒起出 Boss，同屏 220 只，45KB 单文件（键鼠） |
-| 玩得 | **六边智将** | Hexa Sort 内核 + 国际象棋包装，50 关可旋转六边形棋盘，同一份 TS 逻辑出网页与微信小游戏 |
+| 玩得 | **新星漂移** | 惯性漂移的小行星带生存：三艘船体任选出击，陨石击碎会分裂，6 种敌船，每级三选一拼出 22 种改装模块，每 5 波巨像降临（母岩/双子/虚空之眼三种形态），第 15 波肃清星域后可无尽漂移；92KB 单页，内置粒子引擎与 WebGL 星云（键鼠或触屏） |
 | 看得 | **像素舞台剧 · 十一部** | 同一句话发给 11 个 coding agent 得到的 11 部像素舞台剧，5 部三体、5 部黑夜与灯、1 部妖怪夜市 |
 | 看得 | **ASCII ∴ LAB** | 把汉字或英文写成 ASCII 图的工坊：6 种字体、4 种字形、6 套笔触，宽度与对比可调，可复制图片或存 PNG |
 | 用得 | **树言 · 旅记** | 53 篇旅行札记与 53 个地点，八年驾车之后两年多徒步走完西南—东北对角线，本地 Leaflet 画轨迹 |
@@ -174,7 +176,7 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 `cd .. && python -m http.server 8000`，然后开 `http://localhost:8000/game-lab/`。
 在仓库根直接起服务会坑在金价看板上——它的产物里写死了 `/game-lab/golden-wind/out/_next/...`，
 样式和脚本会整批 404，页面能开但像坏了。咒·怨宅与 Vampire 2D 是单文件，ASCII ∴ LAB 也只依赖
-自己的 css/js，这三者双击 `index.html` 用 `file://` 打开就能用。
+自己的 css/js，新星漂移则把粒子库 vendored 在页面旁边——四者双击 `index.html` 用 `file://` 打开就能用。
 
 关于部署有三条规矩不能破，否则子项目上线就是 404：
 **构建产物有意入库**（`ARH/dist`、`XanthanLMusic/dist`、`golden-wind/out`，改了源码要重新 build 再提交）；
