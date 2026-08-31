@@ -9,21 +9,66 @@
 </head>
 <body>
 
+<!-- 生成世界时的加载层 -->
+<div id="boot" class="boot">
+  <div class="boot-box">
+    <div class="boot-title">欧陆风云 · 1444</div>
+    <div class="boot-sub">EUROPA UNIVERSALIS</div>
+    <div id="bootMsg">正在绘制世界地图、划分省份、安置 82 个国家…</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-tip">首次生成约需 1–3 秒，之后浏览器会缓存脚本。</div>
+  </div>
+</div>
+
+<!-- 开局选国 -->
+<section id="setup" class="setup gone" style="display:none">
+  <header class="setup-head">
+    <div class="sh-title">
+      <h1>选择你的国家</h1>
+      <p>1444 年 11 月 11 日 · 中世纪的尾声。点选一个国家，双击可直接开局。</p>
+    </div>
+    <div class="setup-tools">
+      <input id="csSearch" type="search" placeholder="搜索国家 / 标签…" autocomplete="off" />
+      <select id="csSort">
+        <option value="dev">按发展度</option>
+        <option value="prov">按省份数</option>
+        <option value="easy">按难度</option>
+        <option value="name">按名称</option>
+      </select>
+      <select id="csFilter"></select>
+      <button id="csRandom" type="button">随机</button>
+    </div>
+  </header>
+
+  <div class="setup-body">
+    <div class="cs-list-wrap">
+      <div class="cs-count" id="csCount"></div>
+      <div class="cs-list" id="csList"></div>
+    </div>
+    <aside class="cs-side">
+      <div class="cs-map-wrap"><canvas id="csMap"></canvas></div>
+      <div class="cs-detail" id="csDetail"></div>
+      <button id="csStart" class="cs-start" type="button" disabled>开始游戏</button>
+    </aside>
+  </div>
+</section>
+
 <div id="app">
   <header class="topbar">
     <div class="brand">欧陆风云 · 1444</div>
+    <div class="who">执政 <span id="countryName">—</span> <i id="countryTag"></i></div>
     <div class="date" id="date">1444 年 11 月 11 日</div>
     <div class="speed">
-      <button data-speed="0" class="active">暂停</button>
-      <button data-speed="1">1×</button>
-      <button data-speed="2">2×</button>
-      <button data-speed="4">4×</button>
+      <button type="button" data-speed="0" class="active">暂停</button>
+      <button type="button" data-speed="1">1×</button>
+      <button type="button" data-speed="2">2×</button>
+      <button type="button" data-speed="4">4×</button>
     </div>
   </header>
 
   <main class="main">
     <aside class="panel left" id="countryPanel">
-      <h2 id="countryName">法兰西</h2>
+      <h2 id="countryName2">—</h2>
       <div class="res-grid">
         <div><span id="treasury">0</span> 金币</div>
         <div><span id="income">0</span> 月收入</div>
@@ -31,9 +76,9 @@
         <div><span id="forceLimit">0</span> 陆军上限</div>
       </div>
       <div class="powers">
-        <div class="power adm"><span id="adm">0</span></div>
-        <div class="power dip"><span id="dip">0</span></div>
-        <div class="power mil"><span id="mil">0</span></div>
+        <div class="power adm" title="行政点数"><span id="adm">0</span></div>
+        <div class="power dip" title="外交点数"><span id="dip">0</span></div>
+        <div class="power mil" title="军事点数"><span id="mil">0</span></div>
       </div>
       <div class="stats">
         <div>稳定度 <span id="stability">0</span></div>
@@ -49,25 +94,26 @@
         <div>军事科技 <span id="techMil">3</span></div>
       </div>
       <div class="actions">
-        <button id="btnRaise">招募军队</button>
-        <button id="btnTech">提升科技</button>
+        <button type="button" id="btnRaise">招募军队</button>
+        <button type="button" id="btnTech">提升科技</button>
       </div>
+      <div class="hint">空格暂停/继续 · 1/2/3 调速 · 中键或 Shift 拖动 · 双击复位</div>
     </aside>
 
     <div class="map-wrap" id="mapWrap">
       <canvas id="map"></canvas>
       <div class="map-modes">
-        <button data-mode="political" class="active">政治</button>
-        <button data-mode="terrain">地形</button>
-        <button data-mode="religion">宗教</button>
-        <button data-mode="culture">文化</button>
-        <button data-mode="trade">贸易品</button>
-        <button data-mode="unrest">动荡</button>
+        <button type="button" data-mode="political" class="active">政治</button>
+        <button type="button" data-mode="terrain">地形</button>
+        <button type="button" data-mode="religion">宗教</button>
+        <button type="button" data-mode="culture">文化</button>
+        <button type="button" data-mode="trade">贸易品</button>
+        <button type="button" data-mode="unrest">动荡</button>
       </div>
     </div>
 
     <aside class="panel right" id="provPanel">
-      <h2 id="provName">省份</h2>
+      <h2 id="provName">未选中省份</h2>
       <div id="provOwner">所有者：-</div>
       <div id="provController">控制者：-</div>
       <div id="provReligion">宗教：-</div>
@@ -80,8 +126,8 @@
         <div>人力 <span id="provMan">0</span></div>
       </div>
       <div class="actions" id="provActions" style="display:none">
-        <button id="btnClaim">伪造宣称</button>
-        <button id="btnMove">移动至此</button>
+        <button type="button" id="btnClaim">伪造宣称</button>
+        <button type="button" id="btnMove">移动至此</button>
       </div>
     </aside>
   </main>

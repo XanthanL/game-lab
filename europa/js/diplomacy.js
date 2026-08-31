@@ -1,6 +1,6 @@
 // 外交系统：战争、和平、同盟、王婚、宿敌、宣称、侵略扩张
 import { clamp } from './rng.js';
-import { getRelation, isAtWar } from './world.js';
+import { getRelation, isAtWar, bumpMap } from './world.js';
 import { warScore, peaceCost } from './military.js';
 
 export function fabricateClaim(world, tag, pid) {
@@ -159,6 +159,7 @@ export function transferProvince(world, pid, newOwner) {
   p.cores.add(newOwner);
   p.autonomy = 0.5;
   world.countries.get(newOwner).provinces.add(pid);
+  bumpMap(world);
 }
 
 export function setTruce(world, a, b, months) {

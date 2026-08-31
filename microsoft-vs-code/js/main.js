@@ -104,14 +104,27 @@ function autoDeck(lv) {
     if (lv.roof && NO_ROOF.includes(k)) return false; // 自动布阵无法保证与万能头同行，别带废卡
     deck.push(k); return true;
   };
-  take('coffee'); take('coffee');
-  if (lv.pool) { take('pad'); take('pad'); }
+  if (lv.roof) {
+    // 跨域高墙：本章只有投掷与消耗品可用，卡包可重复——冷却才是瓶颈
+    for (const k of ['coffee', 'coffee', 'bug', 'bug', 'bug', 'bug', 'duck', 'rmrf', 'stack']) take(k);
+    return deck.slice(0, slots);
+  }
+  take('coffee');
+  if (lv.pool) {
+    /* 冲突水道：一张莲叶当支点，其余全给火力。SSH 一行管三行，两台风扇形罩满五行；
+       实测这里再塞一面橡胶鸭就磨不完 3-2 的剧本——水道上肉墙买不来多少时间。 */
+    for (const k of ['pad', 'log', 'ssh', 'ssh', 'keyboard']) take(k);
+    take('firewall');
+    while (deck.length < slots) { const n = deck.length; take('bp') || take('coffee') || take('log'); if (deck.length === n) break; }
+    return deck;
+  }
+  take('log'); take('duck');
   if (lv.night) take('cron');
   if (lv.fog) take('sourcemap');
-  if (lv.roof) { take('bug'); take('bug'); take('bug'); } else take('log');
-  while (deck.length < Math.min(slots, lv.pool ? 6 : 5)) { if (!(take('log') || take('duck') || take('ssh') || take('bp'))) break; }
-  while (deck.length < slots) { if (!(take('keyboard') || take('firewall') || take('monitor') || take('stack') || take('rmrf') || take('rebase') || take('bug') || take('coffee') || take('log') || take('duck'))) break; }
-  return deck.slice(0, slots);
+  for (const k of ['ssh', 'keyboard', 'firewall', 'rebase', 'bp', 'stack', 'monitor', 'rmrf', 'bug']) take(k);
+  take('coffee');
+  while (deck.length < slots) { const n = deck.length; take('bp') || take('duck') || take('coffee'); if (deck.length === n) break; }
+  return deck;
 }
 let endShown = false;
 function startLevel(cfg, deck) {

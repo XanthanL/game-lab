@@ -1,6 +1,6 @@
 // 军事系统：陆军/海军、移动、战斗、围城
 import { clamp, makeRng } from './rng.js';
-import { isAtWar, getRelation } from './world.js';
+import { isAtWar, getRelation, bumpMap } from './world.js';
 
 export function createArmy(world, tag, pid, size) {
   const c = world.countries.get(tag);
@@ -192,6 +192,7 @@ export function updateSieges(world, rng) {
     if (p.siege.progress >= need) {
       p.controller = lead;
       p.siege = null;
+      bumpMap(world);
       const holder0 = world.countries.get(holder);
       if (holder0) holder0.warExhaustion = Math.min(20, holder0.warExhaustion + 1.2);
       const war = world.wars.find((w) => w.active &&

@@ -49,6 +49,9 @@ export function createWorld(opts = {}) {
     log: [],
     eventQueue: [],
     stats: { tick: 0 },
+    // 省份归属/控制权的版本号。渲染器据此决定要不要重烘焙底图，
+    // 免得每 tick 都无条件重画 2000 个省份。
+    mapVersion: 0,
   };
 
   /* 1. 省份状态对象 */
@@ -575,3 +578,8 @@ export function isAtWar(world, a, b) {
 }
 
 export function dateStr(d) { return `${d.y} 年 ${d.m} 月 ${d.d} 日`; }
+
+/** 省份易主后调用：通知渲染器底图过期 */
+export function bumpMap(world) {
+  world.mapVersion = (world.mapVersion | 0) + 1;
+}

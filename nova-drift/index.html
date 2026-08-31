@@ -48,6 +48,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .hud-tr{position:absolute;top:14px;right:64px;text-align:right}
 #score{font-size:22px;letter-spacing:.12em;color:#eaf7ff;text-shadow:0 0 12px rgba(111,231,255,.4)}
 #best{font-size:11px;letter-spacing:.14em;color:var(--dim);margin-top:2px}
+#ptime{font-size:11px;letter-spacing:.14em;color:var(--dim);margin-top:2px}
 .hud-btns{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
 .hud-btns button{width:38px;height:34px;background:rgba(8,13,26,.6);border:1px solid var(--line);
   color:var(--dim);font-size:13px;cursor:pointer;border-radius:6px;letter-spacing:.05em}
@@ -103,6 +104,12 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .pips{display:flex;gap:5px;justify-content:center;margin-top:14px}
 .pips i{width:8px;height:8px;border-radius:50%;border:1px solid var(--cyan)}
 .pips i.on{background:var(--cyan);box-shadow:0 0 7px rgba(111,231,255,.8)}
+.pips i.cap{border-color:var(--amber)}
+.card.mx{border-color:rgba(255,215,94,.55);box-shadow:0 0 26px rgba(255,215,94,.14)}
+.card.mx .g{color:var(--amber);text-shadow:0 0 16px rgba(255,215,94,.7)}
+.card.mx .en{color:rgba(255,215,94,.85)}
+.card.mx:hover{border-color:var(--amber);box-shadow:0 10px 34px rgba(255,215,94,.24)}
+.card.mx .pips i.on{background:var(--amber);box-shadow:0 0 8px rgba(255,215,94,.9)}
 .keyhint{margin-top:26px;font-size:11px;letter-spacing:.22em;color:rgba(207,227,239,.35)}
 
 /* ---------- over / pause ---------- */
@@ -115,8 +122,11 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:24px 0 6px}
 .statgrid div{font-size:11px;color:var(--dim);letter-spacing:.08em;line-height:1.7}
 .statgrid b{display:block;font-size:18px;color:#dcedf5;font-weight:500}
+.statline{margin:10px auto 0;font-size:11.5px;letter-spacing:.08em;color:#9fc6d8;line-height:1.9;
+  font-family:ui-monospace,Consolas,monospace}
 .chips{margin:14px 0 24px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
 .chips span{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:#9fc6d8}
+.chips span.mx{color:var(--amber);border-color:rgba(255,215,94,.55);text-shadow:0 0 8px rgba(255,215,94,.4)}
 .row-btns{display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 
 /* ---------- touch ---------- */
@@ -152,7 +162,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <div class="xprow"><span id="lv" class="mono">LV 1</span><div class="bar xp"><i id="xpbar" style="width:0%"></i></div></div>
   </div>
   <div class="hud-tc"><div id="wavelabel" class="mono">WAVE 1</div><div id="bossbar" hidden><i style="width:100%"></i></div></div>
-  <div class="hud-tr"><div id="score" class="mono">0</div><div id="best" class="mono">BEST 0</div></div>
+  <div class="hud-tr"><div id="score" class="mono">0</div><div id="best" class="mono">BEST 0</div><div id="ptime" class="mono">0:00</div></div>
   <div class="hud-btns">
     <button id="btnMute" title="音效 M">♪</button>
     <button id="btnPause" title="暂停 P">Ⅱ</button>
@@ -176,12 +186,14 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   <div class="menu-in">
     <div class="wordmark">NOVA DRIFT<span class="zh">新星漂移</span></div>
     <p class="tagline">小行星带里的模块构筑射击 —— 三艘船体拖着彗尾出击，惯性飞行，打碎岩石，拾取经验；<br>
-      7 种敌船一波比一波凶，蝌蚪群穷追不舍；每次升级三选一，22 种模块拼出你自己的武器；第 15 波肃清星域，之后可无尽漂移。每 5 波，巨像降临。</p>
+      7 种敌船一波比一波凶，蝌蚪群穷追不舍；路上还能捡到加速 / 修复 / 超频道具。每次升级三选一，22 种模块最高升到 LV6，满级即质变镀金；第 15 波肃清星域，之后可无尽漂移。每 5 波，巨像降临。<br>
+      屏外目标在屏幕边缘有同色亮点指方向；ESC 看构建与状态、可重开；进度自动缓存，刷新或关页后可续。</p>
     <button id="btnLaunch" class="btn">LAUNCH ▸ 出击</button>
+    <button id="btnContinue" class="btn ghost" hidden style="margin-left:14px">继续漂移 ▸ C</button>
     <div class="ctrls">
       <div><b>键鼠</b> — WASD / 方向键 推进转向 · 鼠标瞄准 · 空格或按住左键射击</div>
       <div><b>触屏</b> — 左半屏拖动 = 方向与推力 · 右下 FIRE 射击</div>
-      <div><b>通用</b> — P 暂停 · M 静音 · 撞墙会减速，撞上敌人会掉血</div>
+      <div><b>通用</b> — P / ESC 暂停（查看构建与状态、可重开）· M 静音 · 进度自动缓存，关页后可续 · 撞墙会减速，撞上敌人会掉血</div>
     </div>
     <div id="menuBest" class="mono"></div>
   </div>
@@ -219,10 +231,18 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 <!-- pause -->
 <div id="pause" class="overlay" hidden>
   <div class="panel">
-    <h2>PAUSED<span>已暂停</span></h2>
+    <h2>PAUSED<span>已暂停 —— ESC 继续</span></h2>
+    <div class="statgrid">
+      <div><b id="pWave" class="mono">1</b>波次</div>
+      <div><b id="pLevel" class="mono">1</b>等级</div>
+      <div><b id="pKills" class="mono">0</b>击坠</div>
+      <div><b id="pTime" class="mono">0:00</b>用时</div>
+    </div>
+    <div class="statline" id="pStats"></div>
     <div class="chips" id="pauseChips"></div>
     <div class="row-btns">
       <button id="btnResume" class="btn">继续</button>
+      <button id="btnRestart" class="btn ghost">重开本局</button>
       <button id="btnQuit" class="btn ghost">放弃本局</button>
     </div>
   </div>
@@ -276,9 +296,10 @@ const cv=$('cv'),ctx=cv.getContext('2d');
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
   lv:$('lv'),xp:$('xpbar'),wave:$('wavelabel'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
-  score:$('score'),best:$('best'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
-  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),
-  pause:$('pause'),pauseChips:$('pauseChips'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
+  score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
+  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),
+  pause:$('pause'),pauseChips:$('pauseChips'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
+  pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
   hulls:$('hulls'),hullrow:$('hullrow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),
@@ -822,6 +843,8 @@ const sfx={
   level(){AU.tone({w:'sine',f0:523,t:0.14,g:0.09});AU.tone({w:'sine',f0:659,t:0.14,g:0.09,at:0.1});
     AU.tone({w:'sine',f0:784,t:0.22,g:0.1,at:0.2});},
   select(){AU.tone({w:'triangle',f0:360,f1:540,t:0.1,g:0.09});},
+  max(){[523,659,784,1046,1318].forEach((f,i)=>AU.tone({w:'square',f0:f,t:0.16,g:0.07,at:i*0.06}));
+    AU.noise({t:0.3,g:0.1,fc:3000,fc1:600});},
   dash(){AU.tone({w:'sawtooth',f0:190,f1:660,t:0.18,g:0.05});},
   eshoot(){AU.tone({w:'triangle',f0:320,f1:150,t:0.12,g:0.05});},
   zap(){AU.tone({w:'sawtooth',f0:980,f1:140,t:0.14,g:0.05});},
@@ -835,22 +858,72 @@ const sfx={
 const G={
   mode:'menu', // menu | play | inter | levelup | pause | dying | over
   prevMode:'play',
-  t:0,score:0,best:0,kills:0,runT:0,bannerT:0,
+  t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,
-  player:null,choices:[],build:{},
-  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],drones:[],parts:[],texts:[],warns:[],bolts:[],
+  player:null,choices:[],build:{},pickT:0,
+  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],
 };
 try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
+
+/* ---------------- run save: refresh / close keeps the drift ---------------- */
+const SAVE_KEY='nova-save';
+function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+String(s).padStart(2,'0');}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return s&&s.v===1?s:null;}catch(e){return null;}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+function saveRun(){
+  if(!P||(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='pause'&&G.mode!=='levelup'))return;
+  const s={v:1,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
+    hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+}
+function refreshContinue(){
+  const s=loadSave();
+  el.btnContinue.hidden=!s;
+  if(s)el.btnContinue.textContent=`继续漂移 · WAVE ${s.w} · ${fmtT(s.t)} ▸ C`;
+}
+function resumeRun(){
+  const s=loadSave();
+  if(!s)return openHulls();
+  AU.ensure();
+  G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
+  G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
+  G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.winT=0;
+  G.pending=0;G.shake=0;G.slowT=0;
+  G.build=Object.assign({},s.b||{});
+  P=newPlayer();G.player=P;
+  G.lastHull=HULLS[s.h]||HULLS[0];G.lastHull.apply();
+  for(const[id,n]of Object.entries(G.build)){
+    const m=MOD_BY_ID[id];if(!m||m.max===Infinity)continue;
+    for(let k=1;k<=Math.min(n,m.max);k++)m.apply(k);
+  }
+  recountMax();
+  P.level=s.lv||1;P.xp=s.xp||0;P.xpNext=s.xpN||20;
+  P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
+  G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
+  cam.x=P.x;cam.y=P.y;clampCam();
+  G.mode='play';
+  el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
+  el.hulls.hidden=true;el.victory.hidden=true;
+  el.hud.hidden=false;el.firebtn.hidden=!isTouch;
+  buildWave(s.w||1);
+  banner('DRIFT RESUMED','缓存进度已接续 —— WAVE '+(s.w||1));
+  sfx.ui();
+}
+window.addEventListener('pagehide',saveRun);
 
 const Wv={n:0,qA:[],qE:[],tA:0,tE:0,between:0,cleared:false,boss:false,bossKind:null};
 
 function newPlayer(){return{
   x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:-Math.PI/2,r:14,thrusting:false,trail:[],
-  hp:100,maxHp:100,shield:0,shieldMax:0,shieldT:0,invuln:0,
+  hp:100,maxHp:100,shield:0,shieldMax:0,shieldT:0,shieldRegen:12,invuln:0,
   level:1,xp:0,xpNext:20,fireCd:0,
-  dmg:1,fireRate:3.6,bspd:640,barrels:1,pierce:0,ricochet:0,
-  splashR:0,splashDmg:0,homing:0,crit:0.05,critMul:3,magnet:150,ram:0,
-  regen:0,leech:0,tesla:0,teslaT:0,stasis:0,backshot:0,lance:0,lanceT:0,phase:0,
+  dmg:1,fireRate:3.6,bspd:640,barrels:1,pierce:0,ricochet:0,tight:false,loadMax:false,
+  splashR:0,splashDmg:0,fragMax:false,homing:0,homeR:560,crit:0.05,critMul:3,magnet:150,ram:0,ramMax:false,
+  regen:0,leech:0,tesla:0,teslaT:0,teslaCd:2.2,teslaMax:false,
+  stasis:0,stasisR:260,stasisPow:0.6,stasisMax:false,
+  backshot:0,backPow:0.7,backMax:false,lance:0,lanceT:0,lanceCd:5,lanceMax:false,phase:0,
+  dronePow:0.6,droneCd:0.55,droneMax:false,thrMax:false,maxN:0,
+  boostT:0,rateT:0,
   accel:760,maxSpeed:340,turn:4.4,
 };}
 let P=null;
@@ -859,50 +932,115 @@ let P=null;
 const REPAIR={id:'repair',zh:'应急维修',en:'Field Repair',g:'✚',max:Infinity,
   desc:'立即修复 45% 船体',apply:()=>{P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.45);}};
 const MODULES=[
-  {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',max:4,desc:'最大船体 +30，并立即修复 30',
-    apply:()=>{P.maxHp+=30;P.hp=Math.min(P.maxHp,P.hp+30);}},
-  {id:'thruster',zh:'推进器',en:'Thrusters',g:'➤',max:4,desc:'速度与机动 +14%',
-    apply:()=>{P.maxSpeed*=1.14;P.accel*=1.14;P.turn*=1.06;}},
-  {id:'loader',zh:'自动装填',en:'Autoloader',g:'↻',max:4,desc:'射速 +22%',
-    apply:()=>{P.fireRate*=1.22;}},
-  {id:'warhead',zh:'重型弹头',en:'Heavy Warhead',g:'◆',max:4,desc:'所有伤害 +30%',
-    apply:()=>{P.dmg*=1.3;}},
-  {id:'twin',zh:'双联机炮',en:'Twin Cannon',g:'‖',max:2,desc:'再加一根枪管，略微扩散',
-    apply:()=>{P.barrels++;}},
-  {id:'pierce',zh:'穿甲弹',en:'Piercing Shot',g:'↬',max:3,desc:'子弹可多穿透 1 个目标',
-    apply:()=>{P.pierce++;}},
-  {id:'ricochet',zh:'跳弹',en:'Ricochet',g:'⤳',max:2,desc:'子弹撞墙后反弹 +1 次',
-    apply:()=>{P.ricochet++;}},
-  {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',max:3,desc:'子弹命中时爆炸，溅射周围目标',
-    apply:()=>{const n=G.build.frag;P.splashR=40+14*n;P.splashDmg=(0.35+0.3*n)*P.dmg;}},
-  {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',max:2,desc:'子弹会转向最近的敌人',
-    apply:()=>{P.homing++;}},
-  {id:'crit',zh:'暴击电容',en:'Crit Capacitor',g:'✦',max:3,desc:'暴击率 +12%（暴击造成 3 倍伤害）',
-    apply:()=>{P.crit+=0.12;}},
-  {id:'magnet',zh:'回收磁铁',en:'Salvage Magnet',g:'⊚',max:2,desc:'经验拾取范围 +70%',
-    apply:()=>{P.magnet*=1.7;}},
-  {id:'drone',zh:'战斗无人机',en:'Combat Drone',g:'△',max:3,desc:'新增 1 架环绕你自动开火的无人机',
-    apply:()=>{G.drones.push({a:rand(TAU),cd:rand(0.5)});}},
-  {id:'aegis',zh:'能量护盾',en:'Aegis Shield',g:'◇',max:3,desc:'护盾 +40，脱战 4 秒后自动回复',
-    apply:()=>{P.shieldMax+=40;P.shield+=40;}},
-  {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:2,desc:'撞击即可杀伤敌人，且碰撞自伤减半',
-    apply:()=>{P.ram++;}},
-  {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',max:3,desc:'每秒持续回复 1.2 点船体',
-    apply:()=>{P.regen+=1.2;}},
-  {id:'leech',zh:'噬能回收',en:'Scavenger Core',g:'☍',max:3,desc:'每次击坠回复 2% 最大船体',
-    apply:()=>{P.leech++;}},
-  {id:'tesla',zh:'电弧线圈',en:'Arc Coil',g:'ϟ',max:3,desc:'每 2.2 秒释放电弧，链击最近的 1+等级 个目标',
-    apply:()=>{P.tesla++;}},
-  {id:'stasis',zh:'静止场',en:'Stasis Field',g:'◍',max:2,desc:'260 范围内的敌人被减速',
-    apply:()=>{P.stasis++;}},
-  {id:'backshot',zh:'尾炮',en:'Stern Gun',g:'∥',max:2,desc:'每次齐射向船尾追加一发炮弹',
-    apply:()=>{P.backshot++;}},
-  {id:'lance',zh:'轨道长枪',en:'Orbital Lance',g:'†',max:3,desc:'每 5 秒你的下一发变为贯穿长枪，巨额伤害',
-    apply:()=>{P.lance++;}},
-  {id:'overdrive',zh:'过载超频',en:'Overdrive',g:'♨',max:2,desc:'射速 +18%、伤害 +10%，但最大船体 -12',
-    apply:()=>{P.fireRate*=1.18;P.dmg*=1.1;P.maxHp=Math.max(30,P.maxHp-12);P.hp=Math.min(P.hp,P.maxHp);}},
-  {id:'phase',zh:'相位外壳',en:'Phase Plating',g:'◌',max:2,desc:'受击后的无敌时间 +0.35 秒',
-    apply:()=>{P.phase+=0.35;}},
+  {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',max:6,
+    lv:['最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20',
+        '最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','MAX：船体再 +60 并修复 60 —— 船壳镀上金边'],
+    apply:n=>{const v=n<6?20:60;P.maxHp+=v;P.hp=Math.min(P.maxHp,P.hp+v);}},
+  {id:'thruster',zh:'推进器',en:'Thrusters',g:'➤',max:6,
+    lv:['速度与推进 +7%','速度与推进 +7%','速度与推进 +7%','速度与推进 +7%','速度与推进 +7%',
+        'MAX：速度再 +20%、转向 +10% —— 尾焰转为金色'],
+    apply:n=>{if(n<6){P.maxSpeed*=1.07;P.accel*=1.07;P.turn*=1.03;}
+      else{P.maxSpeed*=1.2;P.accel*=1.2;P.turn*=1.1;P.thrMax=true;}}},
+  {id:'loader',zh:'自动装填',en:'Autoloader',g:'↻',max:6,
+    lv:['射速 +9%','射速 +9%','射速 +9%','射速 +9%','射速 +9%','MAX：射速再 +30% —— 枪口喷出金色火光'],
+    apply:n=>{if(n<6)P.fireRate*=1.09;else{P.fireRate*=1.3;P.loadMax=true;}}},
+  {id:'warhead',zh:'重型弹头',en:'Heavy Warhead',g:'◆',max:6,
+    lv:['所有伤害 +11%','所有伤害 +11%','所有伤害 +11%','所有伤害 +11%','所有伤害 +11%',
+        'MAX：伤害再 +40% —— 弹头装药到达极限'],
+    apply:n=>{P.dmg*=n<6?1.11:1.4;}},
+  {id:'twin',zh:'多联机炮',en:'Multi Cannon',g:'‖',max:6,
+    lv:['再加一根枪管','射速 +6%','再加一根枪管','射速 +6%，枪管收束、弹道更准','弹速 +12%',
+        'MAX：第四根枪管 + 射速 +12% —— 金色曳光齐射'],
+    apply:n=>{if(n===1||n===3)P.barrels++;
+      else if(n===2||n===4)P.fireRate*=1.06;
+      else if(n===5)P.bspd*=1.12;
+      else{P.barrels++;P.fireRate*=1.12;P.tight=true;}}},
+  {id:'pierce',zh:'穿甲弹',en:'Piercing Shot',g:'↬',max:6,
+    lv:['子弹多穿透 1 个目标','子弹多穿透 1 个目标','子弹多穿透 1 个目标','子弹多穿透 1 个目标',
+        '子弹多穿透 1 个目标','MAX：穿透再 +3 —— 弹芯镀金，一往无前'],
+    apply:n=>{P.pierce+=n<6?1:3;}},
+  {id:'ricochet',zh:'跳弹',en:'Ricochet',g:'⤳',max:6,
+    lv:['子弹撞墙后反弹 +1 次','反弹 +1 次','反弹 +1 次','反弹 +1 次','反弹 +1 次',
+        'MAX：反弹再 +3 —— 弹无虚发，墙也是武器'],
+    apply:n=>{P.ricochet+=n<6?1:3;}},
+  {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',max:6,
+    lv:['命中爆炸：范围 52、溅射 55% 伤害','爆炸范围 64、溅射 70%','爆炸范围 78、溅射 85%',
+        '爆炸范围 92、溅射 100%','爆炸范围 108、溅射 120%','MAX：范围 150、溅射 180% —— 金色冲击波'],
+    apply:n=>{const T=[[52,0.55],[64,0.7],[78,0.85],[92,1.0],[108,1.2],[150,1.8]][n-1];
+      P.splashR=T[0];P.splashDmg=T[1]*P.dmg;if(n===6)P.fragMax=true;}},
+  {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',max:6,
+    lv:['子弹会转向最近的敌人','制导搜索范围 +80','制导转向更急','制导搜索范围再 +100','制导转向再加强',
+        'MAX：搜索范围近乎全屏、转向极限 —— 没有逃得掉的猎物'],
+    apply:n=>{if(n===1)P.homing=1;else if(n===2)P.homeR=640;else if(n===3)P.homing=2;
+      else if(n===4)P.homeR=740;else if(n===5)P.homing=3;else{P.homing=4;P.homeR=950;}}},
+  {id:'crit',zh:'暴击电容',en:'Crit Capacitor',g:'✦',max:6,
+    lv:['暴击率 +8%','暴击率 +8%','暴击率 +8%','暴击率 +8%','暴击率 +8%',
+        'MAX：暴击率再 +15%，暴击伤害 3 倍 → 4.5 倍'],
+    apply:n=>{if(n<6)P.crit+=0.08;else{P.crit+=0.15;P.critMul=4.5;}}},
+  {id:'magnet',zh:'回收磁铁',en:'Salvage Magnet',g:'⊚',max:6,
+    lv:['经验与道具拾取范围 +22%','拾取范围 +22%','拾取范围 +22%','拾取范围 +22%','拾取范围 +22%',
+        'MAX：拾取范围再 +55% —— 星域里没有你够不到的东西'],
+    apply:n=>{P.magnet*=n<6?1.22:1.55;}},
+  {id:'drone',zh:'战斗无人机',en:'Combat Drone',g:'△',max:6,
+    lv:['新增 1 架环绕你自动开火的无人机','无人机射速与火力提升','再新增 1 架无人机',
+        '无人机射速与火力再提升','再新增 1 架无人机（共 3 架）',
+        'MAX：一次列装 2 架（共 5 架）+ 金色穿甲弹'],
+    apply:n=>{if(n===1||n===3||n===5)G.drones.push({a:rand(TAU),cd:rand(0.5)});
+      else if(n===2){P.dronePow=0.75;P.droneCd=0.5;}
+      else if(n===4){P.dronePow=0.9;P.droneCd=0.44;}
+      else{G.drones.push({a:rand(TAU),cd:rand(0.5)});G.drones.push({a:rand(TAU),cd:rand(0.5)});
+        P.dronePow=1.2;P.droneCd=0.36;P.droneMax=true;}}},
+  {id:'aegis',zh:'能量护盾',en:'Aegis Shield',g:'◇',max:6,
+    lv:['护盾 +25，脱战 4 秒后自动回复','护盾 +25','护盾 +25','护盾 +25','护盾 +25',
+        'MAX：护盾再 +75，回复速度翻倍 —— 金光护体'],
+    apply:n=>{const v=n<6?25:75;P.shieldMax+=v;P.shield+=v;if(n===6)P.shieldRegen=26;}},
+  {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:6,
+    lv:['撞击即可杀伤敌人，碰撞自伤降低','冲角杀伤提升','冲角杀伤提升，自伤再降',
+        '冲角杀伤提升','冲角杀伤提升','MAX：冲角贯通 —— 撞击伤害暴增，金色的撞角火花'],
+    apply:n=>{P.ram=n<6?n:n+3;if(n===6)P.ramMax=true;}},
+  {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',max:6,
+    lv:['每秒回复 0.9 点船体','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9',
+        'MAX：每秒再 +4 —— 纳米虫群铺满船壳'],
+    apply:n=>{P.regen+=n<6?0.9:4;}},
+  {id:'leech',zh:'噬能回收',en:'Scavenger Core',g:'☍',max:6,
+    lv:['每次击坠回复 1.2% 最大船体','击坠回复 +1.2%','击坠回复 +1.2%','击坠回复 +1.2%','击坠回复 +1.2%',
+        'MAX：击坠回复再 +4.8% —— 以战养战'],
+    apply:n=>{P.leech+=n<6?1:4;}},
+  {id:'tesla',zh:'电弧线圈',en:'Arc Coil',g:'ϟ',max:6,
+    lv:['每 2.2 秒释放电弧，链击 2 个目标','电弧冷却 -0.3 秒','链击 +1 个目标','电弧冷却再 -0.3 秒',
+        '链击 +1 个目标（共 4 个）','MAX：链击 6 个目标 + 冷却骤减 —— 金色雷暴'],
+    apply:n=>{if(n===1)P.tesla=1;else if(n===2)P.teslaCd=1.9;else if(n===3)P.tesla=2;
+      else if(n===4)P.teslaCd=1.6;else if(n===5)P.tesla=3;
+      else{P.tesla=5;P.teslaCd=1.25;P.teslaMax=true;}}},
+  {id:'stasis',zh:'静止场',en:'Stasis Field',g:'◍',max:6,
+    lv:['260 范围内的敌人被减速','力场范围扩大到 300','减速效果增强','力场范围扩大到 350','减速效果再增强',
+        'MAX：范围 440、近乎冻结 —— 金色力场'],
+    apply:n=>{P.stasis=1;
+      if(n===2)P.stasisR=300;else if(n===3)P.stasisPow=1.0;else if(n===4)P.stasisR=350;
+      else if(n===5)P.stasisPow=1.5;else if(n===6){P.stasisR=440;P.stasisPow=2.6;P.stasisMax=true;}}},
+  {id:'backshot',zh:'尾炮',en:'Stern Gun',g:'∥',max:6,
+    lv:['每次齐射向船尾追加一发炮弹','尾炮火力提升','再追加一门尾炮','尾炮火力再提升','第三门尾炮',
+        'MAX：五门尾炮全开 + 火力拉满 —— 没有死角'],
+    apply:n=>{if(n===1)P.backshot=1;else if(n===2)P.backPow=0.8;else if(n===3)P.backshot=2;
+      else if(n===4)P.backPow=0.9;else if(n===5)P.backshot=3;
+      else{P.backshot=5;P.backPow=1.1;P.backMax=true;}}},
+  {id:'lance',zh:'轨道长枪',en:'Orbital Lance',g:'†',max:6,
+    lv:['每 5 秒你的下一发变为贯穿长枪','长枪冷却 -0.6 秒','长枪伤害提升','长枪冷却再 -0.6 秒',
+        '长枪伤害再提升','MAX：长枪贯通全场 + 冷却骤减 —— 金色审判之枪'],
+    apply:n=>{if(n===1)P.lance=1;else if(n===2)P.lanceCd=4.4;else if(n===3)P.lance=2;
+      else if(n===4)P.lanceCd=3.8;else if(n===5)P.lance=3;
+      else{P.lance=5;P.lanceCd=2.4;P.lanceMax=true;}}},
+  {id:'overdrive',zh:'过载超频',en:'Overdrive',g:'♨',max:6,
+    lv:['射速 +7%、伤害 +6%，但最大船体 -8','射速 +7%、伤害 +6%、船体 -8','射速 +7%、伤害 +6%、船体 -8',
+        '射速 +7%、伤害 +6%、船体 -8','射速 +7%、伤害 +6%、船体 -8',
+        'MAX：射速 +20%、伤害 +15%、船体 -18 —— 反应堆烧成金色'],
+    apply:n=>{if(n<6){P.fireRate*=1.07;P.dmg*=1.06;P.maxHp=Math.max(30,P.maxHp-8);}
+      else{P.fireRate*=1.2;P.dmg*=1.15;P.maxHp=Math.max(30,P.maxHp-18);}
+      P.hp=Math.min(P.hp,P.maxHp);}},
+  {id:'phase',zh:'相位外壳',en:'Phase Plating',g:'◌',max:6,
+    lv:['受击后的无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒',
+        'MAX：无敌时间再 +0.8 秒 —— 受击瞬间身形化作金色残影'],
+    apply:n=>{P.phase+=n<6?0.2:0.8;}},
 ];
 const MOD_BY_ID={};for(const m of MODULES)MOD_BY_ID[m.id]=m;
 
@@ -963,6 +1101,7 @@ window.addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.code==='KeyM'){toggleMute();return;}
   if(G.mode==='menu'&&(e.code==='Enter'||e.code==='Space')){openHulls();return;}
+  if(G.mode==='menu'&&e.code==='KeyC'){resumeRun();return;}
   if(G.mode==='hulls'&&/^Digit[1-3]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
   if(G.mode==='hulls'&&e.code==='Escape'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return;}
   if(G.mode==='victory'&&(e.code==='KeyE'||e.code==='Enter')){continueEndless();return;}
@@ -1173,6 +1312,44 @@ function director(dt){
   }
 }
 
+/* ============================== pickups ============================== */
+const PU={
+  boost:{zh:'推进超频',c:'110,255,180',g:'≫'},
+  heal:{zh:'应急修复',c:'255,140,150',g:'✚'},
+  rate:{zh:'火力超频',c:'150,225,255',g:'↻'},
+};
+function spawnPickup(force){
+  if(G.pickups.length>=3&&!force)return;
+  const r=Math.random(),type=r<0.4?'boost':(r<0.75?'heal':'rate');
+  const p=viewPoint();
+  G.pickups.push({type,x:p.x,y:p.y,t:0,life:12});
+}
+function updatePickups(dt){
+  G.pickT-=dt;
+  if(G.pickT<=0){G.pickT=rand(7,12);spawnPickup();}
+  for(let i=G.pickups.length-1;i>=0;i--){
+    const u=G.pickups[i];
+    u.t+=dt;
+    if(u.t>u.life){G.pickups.splice(i,1);continue;}
+    const q=d2(u.x,u.y,P.x,P.y);
+    if(q<P.magnet*P.magnet*0.64){
+      const a=angTo(u.x,u.y,P.x,P.y),sp=320;
+      u.x+=Math.cos(a)*sp*dt;u.y+=Math.sin(a)*sp*dt;
+    }
+    if(q<(P.r+16)*(P.r+16)){
+      const def=PU[u.type];
+      if(u.type==='boost'){P.boostT=7;}
+      else if(u.type==='rate'){P.rateT=7;}
+      else{P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);}
+      ftext(P.x,P.y-30,def.zh+(u.type==='heal'?' +30%':''),def.c);
+      burst(u.x,u.y,12,200,0.5,def.c,2);
+      ring(u.x,u.y,10,def.c);
+      shake(3);sfx.pickup();
+      G.pickups.splice(i,1);
+    }
+  }
+}
+
 /* ============================== combat ============================== */
 function hurtAst(a,dmg,hx,hy,crit){
   a.hp-=dmg;a.flash=0.09;
@@ -1190,7 +1367,7 @@ function killAst(a){
   sfx.boom(a.size);
   FX.boom(a.x,a.y,0.8+a.size*0.5,a.elite?'amber':'blue',a.boss);
   dropXp(a.x,a.y,a.xp);
-  if(P.leech>0)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.02*P.leech);
+  if(P.leech>0)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.012*P.leech);
   if(a.size>1&&!a.boss){
     for(let k=0;k<2;k++){
       const c=spawnAst(a.size-1,a.x+rand(-14,14),a.y+rand(-14,14));
@@ -1234,7 +1411,7 @@ function killEn(e){
   G.score+=sc;ftext(e.x,e.y,'+'+sc,'255,170,120');
   const xp={seeker:4,dart:5,gunner:7,splitter:9,weaver:8,reaver:3,tadpole:2}[e.type]||4;
   dropXp(e.x,e.y,xp);
-  if(P.leech>0)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.02*P.leech);
+  if(P.leech>0)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.012*P.leech);
   burst(e.x,e.y,14,240,0.55,'255,120,70',2.4);
   ring(e.x,e.y,e.r+6,'255,140,90');
   shake(4);sfx.boom(1.4);
@@ -1245,7 +1422,7 @@ function killEn(e){
 
 function hurtPlayer(dmg,sx,sy){
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
-  if(P.ram>0)dmg*=P.ram>=2?0.35:0.6;
+  if(P.ram>0)dmg*=P.ram>=4?0.25:(P.ram>=2?0.35:0.6);
   if(P.shield>0){
     const s=Math.min(P.shield,dmg);P.shield-=s;dmg-=s;
     ring(P.x,P.y,22,'111,231,255');
@@ -1275,7 +1452,7 @@ function die(){
 function fireGun(){
   const n=P.barrels;
   for(let i=0;i<n;i++){
-    const off=(i-(n-1)/2)*(n>1?0.11:0);
+    const off=(i-(n-1)/2)*(n>1?(P.tight?0.08:0.11):0);
     const a=P.angle+off+rand(-0.016,0.016);
     G.bullets.push({
       x:P.x+Math.cos(P.angle)*18,y:P.y+Math.sin(P.angle)*18,
@@ -1290,12 +1467,12 @@ function fireGun(){
     G.bullets.push({
       x:P.x-Math.cos(P.angle)*14,y:P.y-Math.sin(P.angle)*14,
       vx:Math.cos(a)*P.bspd*0.9+P.vx*0.3,vy:Math.sin(a)*P.bspd*0.9+P.vy*0.3,
-      r:2.6,dmg:P.dmg*0.7,life:0.9,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      r:2.6,dmg:P.dmg*P.backPow,life:0.9,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
       splashR:P.splashR,splashDmg:P.splashDmg,crit:P.crit,critMul:P.critMul,
-      hit:new Set(),src:'p',
+      hit:new Set(),src:'p',back:P.backMax||undefined,
     });
   }
-  burst(P.x+Math.cos(P.angle)*20,P.y+Math.sin(P.angle)*20,2,120,0.15,'150,235,255',1.6);
+  burst(P.x+Math.cos(P.angle)*20,P.y+Math.sin(P.angle)*20,2,120,0.15,P.loadMax?'255,215,94':'150,235,255',1.6);
   sfx.shoot();
 }
 function fireLance(){
@@ -1310,7 +1487,7 @@ function fireLance(){
     splashR:0,splashDmg:0,crit:P.crit,critMul:P.critMul,
     hit:new Set(),src:'p',lance:true,
   });
-  ring(P.x,P.y,16,'165,236,255');
+  ring(P.x,P.y,16,P.lanceMax?'255,215,94':'165,236,255');
   shake(5);sfx.lance();
 }
 function teslaZap(){
@@ -1328,10 +1505,10 @@ function teslaZap(){
     }
     if(!best)break;
     targets.push(best);
-    G.bolts.push({x1:from.x,y1:from.y,x2:best.x,y2:best.y,t:0.22,max:0.22});
+    G.bolts.push({x1:from.x,y1:from.y,x2:best.x,y2:best.y,t:0.22,max:0.22,gold:P.teslaMax||undefined});
     if(best.size!==undefined)hurtAst(best,dmg,best.x,best.y,false);
     else hurtEn(best,dmg,best.x,best.y,false);
-    burst(best.x,best.y,5,140,0.3,'165,236,255',1.8);
+    burst(best.x,best.y,5,140,0.3,P.teslaMax?'255,215,94':'165,236,255',1.8);
     from=best;
   }
   if(targets.length)sfx.zap();
@@ -1357,8 +1534,9 @@ function updatePlayer(dt){
   P.thrusting=thrust>0;
   FX.thrust(thrust>0,P.x,P.y,P.angle);
   if(thrust){
-    P.vx+=Math.cos(P.angle)*P.accel*dt;
-    P.vy+=Math.sin(P.angle)*P.accel*dt;
+    const acc=P.accel*(P.boostT>0?1.5:1);
+    P.vx+=Math.cos(P.angle)*acc*dt;
+    P.vy+=Math.sin(P.angle)*acc*dt;
     if(Math.random()<0.6)
       G.parts.push({x:P.x-Math.cos(P.angle)*14,y:P.y-Math.sin(P.angle)*14,
         vx:-Math.cos(P.angle)*rand(60,140)+rand(-30,30),vy:-Math.sin(P.angle)*rand(60,140)+rand(-30,30),
@@ -1368,8 +1546,9 @@ function updatePlayer(dt){
     const k=Math.exp(-2.6*dt);P.vx*=k;P.vy*=k;
   }
   const dr=Math.exp(-2.1*dt);P.vx*=dr;P.vy*=dr;
+  const cap=P.maxSpeed*(P.boostT>0?1.5:1);
   const sp=Math.hypot(P.vx,P.vy);
-  if(sp>P.maxSpeed){P.vx*=P.maxSpeed/sp;P.vy*=P.maxSpeed/sp;}
+  if(sp>cap){P.vx*=cap/sp;P.vy*=cap/sp;}
   P.x+=P.vx*dt;P.y+=P.vy*dt;
 
   // walls
@@ -1386,16 +1565,18 @@ function updatePlayer(dt){
   while(tr.length&&G.t-tr[0].t>1.35)tr.shift();
 
   P.invuln=Math.max(0,P.invuln-dt);
+  P.boostT=Math.max(0,P.boostT-dt);
+  P.rateT=Math.max(0,P.rateT-dt);
   P.shieldT-=dt;
-  if(P.shieldT<=0&&P.shield<P.shieldMax)P.shield=Math.min(P.shieldMax,P.shield+12*dt);
+  if(P.shieldT<=0&&P.shield<P.shieldMax)P.shield=Math.min(P.shieldMax,P.shield+P.shieldRegen*dt);
 
   P.fireCd-=dt;
   if(P.regen>0)P.hp=Math.min(P.maxHp,P.hp+P.regen*dt);
-  if(P.tesla>0){P.teslaT-=dt;if(P.teslaT<=0){P.teslaT=Math.max(0.8,1.6-0.25*P.tesla);teslaZap();}}
+  if(P.tesla>0){P.teslaT-=dt;if(P.teslaT<=0){P.teslaT=P.teslaCd;teslaZap();}}
   if(P.lance>0){P.lanceT-=dt;
-    if(P.lanceT<=0){P.lanceT=Math.max(2.6,5-0.8*P.lance);fireLance();}}
+    if(P.lanceT<=0){P.lanceT=P.lanceCd;fireLance();}}
   const wantFire=mouse.down||keys.Space||fireTouch!==null;
-  if(wantFire&&P.fireCd<=0){P.fireCd=1/P.fireRate;fireGun();}
+  if(wantFire&&P.fireCd<=0){P.fireCd=1/(P.fireRate*(P.rateT>0?1.6:1));fireGun();}
 
   // camera
   const tx=P.x+P.vx*0.1,ty=P.y+P.vy*0.1;
@@ -1419,9 +1600,9 @@ function updateDrones(dt){
       if(best){
         const a=angTo(dx,dy,best.x,best.y);
         G.bullets.push({x:dx,y:dy,vx:Math.cos(a)*600,vy:Math.sin(a)*600,r:2.4,
-          dmg:P.dmg*0.6,life:0.8,pierce:0,ric:0,homing:0,splashR:0,splashDmg:0,
-          crit:0,critMul:1,hit:new Set(),src:'d'});
-        d.cd=0.55;sfx.droneShot();
+          dmg:P.dmg*P.dronePow,life:0.8,pierce:P.droneMax?1:0,ric:0,homing:0,splashR:0,splashDmg:0,
+          crit:0,critMul:1,hit:new Set(),src:'d',gold:P.droneMax||undefined});
+        d.cd=P.droneCd;sfx.droneShot();
       }else d.cd=0.2;
     }
   }
@@ -1565,8 +1746,8 @@ function updateEnemies(dt){
       const sp=Math.hypot(e.vx,e.vy);
       if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
     }
-    if(P.stasis>0&&d2(e.x,e.y,P.x,P.y)<260*260){
-      const k=Math.exp(-(P.stasis>=2?1.1:0.6)*dt);
+    if(P.stasis>0&&d2(e.x,e.y,P.x,P.y)<P.stasisR*P.stasisR){
+      const k=Math.exp(-P.stasisPow*dt);
       e.vx*=k;e.vy*=k;
     }
     e.x+=e.vx*dt;e.y+=e.vy*dt;
@@ -1575,8 +1756,9 @@ function updateEnemies(dt){
 }
 
 function splashAt(x,y,r,dmg,from){
-  ring(x,y,r,'255,180,90');
-  burst(x,y,10,220,0.4,'255,180,90',2);
+  const c=P.fragMax?'255,215,94':'255,180,90';
+  ring(x,y,r,c);
+  burst(x,y,10,220,0.4,c,2);
   for(const t of G.asteroids){
     if(t===from)continue;
     if(d2(x,y,t.x,t.y)<(r+t.r)*(r+t.r))hurtAst(t,dmg,t.x,t.y,false);
@@ -1591,7 +1773,7 @@ function updateBullets(dt){
   for(let i=G.bullets.length-1;i>=0;i--){
     const b=G.bullets[i];
     if(b.homing>0){
-      let best=null,bd=560*560;
+      let best=null,bd=P.homeR*P.homeR;
       for(const t of G.asteroids){const q=d2(b.x,b.y,t.x,t.y);if(q<bd){bd=q;best=t;}}
       for(const t of G.enemies){const q=d2(b.x,b.y,t.x,t.y);if(q<bd){bd=q;best=t;}}
       if(best){
@@ -1687,18 +1869,20 @@ function updateWarns(dt){
   }
 }
 
+function ramDmg(){return (2+2.6*P.ram)*P.dmg*(P.ramMax?1.5:1);}
+function ramFx(){if(P.ramMax)burst(P.x,P.y,8,220,0.4,'255,215,94',2);}
 function collidePlayer(){
   if(P.invuln>0)return;
   for(const a of G.asteroids){
     if(d2(P.x,P.y,a.x,a.y)<(a.r+P.r)*(a.r+P.r)){
-      if(P.ram>0)hurtAst(a,(2+2*P.ram)*P.dmg,P.x,P.y,false);
+      if(P.ram>0){hurtAst(a,ramDmg(),P.x,P.y,false);ramFx();}
       hurtPlayer(a.contact,a.x,a.y);
       return;
     }
   }
   for(const e of G.enemies){
     if(d2(P.x,P.y,e.x,e.y)<(e.r+P.r)*(e.r+P.r)){
-      if(P.ram>0)hurtEn(e,(2+2*P.ram)*P.dmg,P.x,P.y,false);
+      if(P.ram>0){hurtEn(e,ramDmg(),P.x,P.y,false);ramFx();}
       hurtPlayer(e.dmg,e.x,e.y);
       return;
     }
@@ -1727,6 +1911,12 @@ function updateParts(dt){
 }
 
 /* ============================== level up UI ============================== */
+function recountMax(){
+  let n=0;
+  for(const id in G.build){const m=MOD_BY_ID[id];if(m&&G.build[id]>=m.max)n++;}
+  if(P)P.maxN=n;
+  return n;
+}
 function openLevelUp(){
   G.prevMode=G.mode==='inter'?'inter':'play';
   G.mode='levelup';
@@ -1735,13 +1925,19 @@ function openLevelUp(){
   G.choices.forEach((c,i)=>{
     const div=document.createElement('div');
     div.className='card';
-    let pips='';
     if(c.id!=='repair'){
-      const cur=(G.build[c.id]||0)+1;
-      for(let k=0;k<c.max;k++)pips+=`<i class="${k<cur?'on':''}"></i>`;
+      const cur=G.build[c.id]||0,next=cur+1,isMax=next>=c.max;
+      if(isMax)div.classList.add('mx');
+      let pips='';
+      for(let k=1;k<=c.max;k++)pips+=`<i class="${k<=cur?'on':''}${k===c.max?' cap':''}"></i>`;
+      const lvTxt=(c.lv&&c.lv[cur])?c.lv[cur]:c.desc;
+      div.innerHTML=`<div class="g">${isMax?'✦':c.g}</div><h3>${c.zh}</h3>
+        <div class="en">${isMax?'MAX · LV'+next:c.en+' · LV'+next}</div>
+        <p>${lvTxt}</p><div class="pips">${pips}</div>`;
+    }else{
+      div.innerHTML=`<div class="g">${c.g}</div><h3>${c.zh}</h3><div class="en">${c.en}</div>
+        <p>${c.desc}</p><div class="pips"></div>`;
     }
-    div.innerHTML=`<div class="g">${c.g}</div><h3>${c.zh}</h3><div class="en">${c.en}</div>
-      <p>${c.desc}</p><div class="pips">${pips}</div>`;
     div.addEventListener('click',()=>pickCard(i));
     el.cardrow.appendChild(div);
   });
@@ -1752,18 +1948,32 @@ function pickCard(i){
   if(G.mode!=='levelup')return;
   const c=G.choices[i];
   if(!c)return;
+  let maxed=false;
   if(c.id==='repair')c.apply();
-  else{G.build[c.id]=(G.build[c.id]||0)+1;c.apply();}
-  sfx.select();
+  else{
+    const n=(G.build[c.id]||0)+1;
+    G.build[c.id]=n;c.apply(n);
+    maxed=n>=c.max;
+  }
+  if(maxed){
+    recountMax();
+    sfx.max();
+    banner(c.zh+' · MAX','模块到达 LV6 —— 性能质变，火力镀金');
+    ring(P.x,P.y,26,'255,215,94');ring(P.x,P.y,52,'255,215,94');
+    burst(P.x,P.y,26,320,0.8,'255,215,94',2.6);
+    shake(8);
+  }else sfx.select();
   G.pending--;
   el.cards.hidden=true;
   if(G.pending>0)openLevelUp();
   else G.mode=G.prevMode;
+  saveRun();
 }
 
 /* ============================== flow ============================== */
 function menuScene(){
   G.asteroids.length=0;
+  G.pickups.length=0;
   Wv.n=1;
   for(let i=0;i<9;i++){
     const a=spawnAst(irand(1,3),rand(200,WORLD.w-200),rand(200,WORLD.h-200));
@@ -1772,10 +1982,11 @@ function menuScene(){
 }
 function startGame(hull){
   AU.ensure();
+  clearSave();
   hull=hull||G.lastHull||HULLS[0];G.lastHull=hull;
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
   G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
-  G.bolts.length=0;G.endless=false;G.winT=0;
+  G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.build={};G.pending=0;G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;
   P=newPlayer();G.player=P;
   hull.apply();
@@ -1791,17 +2002,27 @@ function startGame(hull){
 function pauseGame(){
   if(G.mode!=='play'&&G.mode!=='inter')return;
   G.prevMode=G.mode;G.mode='pause';
+  el.pWave.textContent=Wv.n;
+  el.pLevel.textContent=P.level;
+  el.pKills.textContent=G.kills;
+  el.pTime.textContent=fmtT(G.runT);
+  el.pStats.textContent=`伤害 ${P.dmg.toFixed(2)} · 射速 ${P.fireRate.toFixed(1)}/s · 极速 ${Math.round(P.maxSpeed)} · `+
+    `暴击 ${Math.round(P.crit*100)}% · 穿透 ${P.pierce} · 枪管 ${P.barrels} · 拾取半径 ${Math.round(P.magnet)}`;
   el.pauseChips.innerHTML=buildChips()||'<span>尚未装配模块</span>';
   el.pause.hidden=false;
+  saveRun();
 }
 function resumeGame(){G.mode=G.prevMode;el.pause.hidden=true;}
 function buildChips(){
   return Object.entries(G.build).map(([id,n])=>{
-    const m=MOD_BY_ID[id];return m?`<span>${m.zh} ×${n}</span>`:'';
+    const m=MOD_BY_ID[id];if(!m)return '';
+    const mx=n>=m.max?' class="mx"':'';
+    return `<span${mx}>${m.zh} LV${n}${n>=m.max?' ✦':''}</span>`;
   }).join('');
 }
 function showOver(){
   G.mode='over';
+  clearSave();
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   el.overScore.textContent=fmt(G.score);
@@ -1817,6 +2038,7 @@ function showOver(){
 }
 function showVictory(){
   G.mode='victory';
+  clearSave();
   G.score+=5000;
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
@@ -1847,6 +2069,7 @@ function toMenu(){
   el.joybase.hidden=true;el.firebtn.hidden=true;
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
   el.menu.hidden=false;
+  refreshContinue();
   menuScene();
 }
 function toggleMute(){
@@ -1861,7 +2084,9 @@ $('btnMenu').addEventListener('click',toMenu);
 $('btnEndless').addEventListener('click',continueEndless);
 $('btnMenuV').addEventListener('click',toMenu);
 $('btnResume').addEventListener('click',resumeGame);
-$('btnQuit').addEventListener('click',toMenu);
+$('btnRestart').addEventListener('click',()=>startGame());
+$('btnQuit').addEventListener('click',()=>{clearSave();toMenu();});
+$('btnContinue').addEventListener('click',resumeRun);
 $('btnMute').addEventListener('click',toggleMute);
 $('btnPause').addEventListener('click',()=>{
   if(G.mode==='pause')resumeGame();else pauseGame();
@@ -1870,6 +2095,7 @@ $('btnPause').addEventListener('click',()=>{
 /* ============================== update ============================== */
 function updateWorld(dt){
   G.runT+=dt;
+  G.saveT-=dt;if(G.saveT<=0){G.saveT=2;saveRun();}
   if(G.mode==='play')director(dt);
   if(G.mode==='inter'){
     Wv.between-=dt;
@@ -1882,6 +2108,7 @@ function updateWorld(dt){
   updateWarns(dt);
   updateBullets(dt);
   updateShards(dt);
+  updatePickups(dt);
   if(G.mode==='play'||G.mode==='inter')collidePlayer();
   updateParts(dt);
 }
@@ -2080,7 +2307,7 @@ function drawShip(){
   if(p.thrusting){
     const f=rand(8,16);
     ctx.beginPath();ctx.moveTo(-10,4);ctx.lineTo(-16-f,0);ctx.lineTo(-10,-4);ctx.closePath();
-    ctx.fillStyle='rgba(120,215,255,0.5)';ctx.fill();
+    ctx.fillStyle=p.thrMax?'rgba(255,215,94,0.55)':'rgba(120,215,255,0.5)';ctx.fill();
     ctx.beginPath();ctx.moveTo(-10,2);ctx.lineTo(-12-f*0.5,0);ctx.lineTo(-10,-2);ctx.closePath();
     ctx.fillStyle='rgba(240,255,255,0.85)';ctx.fill();
   }
@@ -2102,12 +2329,39 @@ function drawShip(){
     ctx.beginPath();ctx.arc(p.x,p.y,21,0,TAU);ctx.stroke();
   }
   if(p.stasis>0){
-    ctx.strokeStyle=`rgba(190,120,255,${0.1+0.05*Math.sin(G.t*2)})`;
+    const sc=p.stasisMax?'255,215,94':'190,120,255';
+    ctx.strokeStyle=`rgba(${sc},${0.1+0.05*Math.sin(G.t*2)})`;
     ctx.lineWidth=1;
     ctx.setLineDash([4,10]);
-    ctx.beginPath();ctx.arc(p.x,p.y,260,0,TAU);ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y,p.stasisR,0,TAU);ctx.stroke();
     ctx.setLineDash([]);
   }
+  if(p.maxN>0){
+    const pl=0.5+0.3*Math.sin(G.t*3);
+    ctx.strokeStyle=`rgba(255,215,94,${0.14*pl*p.maxN})`;
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(p.x,p.y,26+2*Math.sin(G.t*2.2),0,TAU);ctx.stroke();
+  }
+  if(p.boostT>0||p.rateT>0){
+    const col=p.boostT>0?'110,255,180':'150,225,255';
+    ctx.strokeStyle=`rgba(${col},${0.5+0.2*Math.sin(G.t*8)})`;
+    ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.arc(p.x,p.y,24,G.t*2,G.t*2+4.4);ctx.stroke();
+  }
+}
+/* offscreen attackables get a faint same-color dot at the screen edge, pointing their direction */
+function edgeHints(){
+  const out=[];
+  if(G.mode!=='play'&&G.mode!=='inter')return out;
+  const push=(o,c,r,boss)=>{
+    const sx=o.x-cam.x+VW/2,sy=o.y-cam.y+VH/2;
+    if(sx>-30&&sx<VW+30&&sy>-30&&sy<VH+30)return;
+    const cx=clamp(sx,26,VW-26),cy=clamp(sy,74,VH-26);
+    out.push({x:cx,y:cy,c,r,boss,ang:Math.atan2(sy-cy,sx-cx)});
+  };
+  for(const a of G.asteroids)push(a,a.elite?'255,215,94':(a.boss?'190,120,255':'150,175,210'),2.6,a.boss);
+  for(const e of G.enemies)push(e,e.type==='tadpole'?'150,255,170':'255,110,70',2.6,false);
+  return out;
 }
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -2127,6 +2381,33 @@ function draw(){
     ctx.save();ctx.translate(s.x,s.y);ctx.rotate(G.t*2+s.x);
     ctx.fillRect(-2.6,-2.6,5.2,5.2);ctx.restore();
   }
+  for(const u of G.pickups){
+    const def=PU[u.type];
+    const blink=u.life-u.t<3?(Math.floor(G.t*8)%2?0.25:1):1;
+    const pl=1+0.12*Math.sin(G.t*4+u.x);
+    ctx.save();ctx.translate(u.x,u.y);ctx.globalAlpha=blink;
+    ctx.strokeStyle=`rgba(${def.c},0.25)`;ctx.lineWidth=5;
+    ctx.beginPath();ctx.arc(0,0,14*pl,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(${def.c},0.95)`;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(0,0,14*pl,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(${def.c},0.95)`;ctx.lineWidth=2.2;ctx.lineCap='round';
+    if(u.type==='boost'){
+      for(let k=0;k<2;k++){
+        const ox=-4+k*7;
+        ctx.beginPath();ctx.moveTo(ox-3,-5);ctx.lineTo(ox+3,0);ctx.lineTo(ox-3,5);ctx.stroke();
+      }
+    }else if(u.type==='heal'){
+      ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(0,6);ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.stroke();
+    }else{
+      ctx.rotate(G.t*2.4);
+      for(let k=0;k<3;k++){
+        const a=k/3*TAU;
+        ctx.beginPath();ctx.moveTo(Math.cos(a)*2,Math.sin(a)*2);
+        ctx.lineTo(Math.cos(a)*7,Math.sin(a)*7);ctx.stroke();
+      }
+    }
+    ctx.restore();ctx.globalAlpha=1;ctx.lineCap='butt';
+  }
   for(const w of G.warns){
     const k=1-w.t/w.max,r=14+k*10;
     ctx.strokeStyle=`rgba(255,92,73,${0.35+0.5*Math.sin(G.t*16)})`;
@@ -2141,8 +2422,13 @@ function draw(){
     ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a*2);
     ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,5);ctx.lineTo(-5,-5);ctx.closePath();
     ctx.fillStyle='#08131f';ctx.fill();
-    ctx.strokeStyle='rgba(111,231,255,0.3)';ctx.lineWidth=4;ctx.stroke();
-    ctx.strokeStyle='#a5ecff';ctx.lineWidth=1.4;ctx.stroke();
+    if(P.droneMax){
+      ctx.strokeStyle='rgba(255,215,94,0.35)';ctx.lineWidth=4;ctx.stroke();
+      ctx.strokeStyle='#ffe9a8';ctx.lineWidth=1.4;ctx.stroke();
+    }else{
+      ctx.strokeStyle='rgba(111,231,255,0.3)';ctx.lineWidth=4;ctx.stroke();
+      ctx.strokeStyle='#a5ecff';ctx.lineWidth=1.4;ctx.stroke();
+    }
     ctx.restore();
   }
   for(const b of G.ebullets){
@@ -2153,7 +2439,8 @@ function draw(){
   }
   for(const b of G.bullets){
     const a=Math.atan2(b.vy,b.vx);
-    const c=b.src==='d'?'165,236,255':'190,240,255';
+    const gold=b.gold||b.back||(b.lance?P.lanceMax:(b.src==='p'&&b.pierce>=6));
+    const c=gold?'255,215,94':(b.src==='d'?'165,236,255':'190,240,255');
     ctx.strokeStyle=`rgba(${c},0.35)`;ctx.lineWidth=5;
     ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*9,b.y-Math.sin(a)*9);ctx.lineTo(b.x,b.y);ctx.stroke();
     ctx.strokeStyle=`rgba(${c},1)`;ctx.lineWidth=2;
@@ -2161,7 +2448,8 @@ function draw(){
   }
   for(const lt of G.bolts){
     const k=lt.t/lt.max;
-    ctx.strokeStyle=`rgba(165,236,255,${0.85*k})`;ctx.lineWidth=1.8;
+    const c=lt.gold?'255,215,94':'165,236,255';
+    ctx.strokeStyle=`rgba(${c},${0.85*k})`;ctx.lineWidth=1.8;
     ctx.beginPath();ctx.moveTo(lt.x1,lt.y1);
     const seg=5,dx=(lt.x2-lt.x1)/seg,dy=(lt.y2-lt.y1)/seg;
     const l=Math.hypot(dx,dy)||1,px=-dy/l,py=dx/l;
@@ -2188,19 +2476,17 @@ function draw(){
     ctx.fillText(t.txt,t.x,t.y);
   }
   ctx.restore();
-  if(G.mode==='play'||G.mode==='inter'){
-    for(const boss of G.asteroids){
-      if(!boss.boss)continue;
-      const sx=boss.x-cam.x+VW/2,sy=boss.y-cam.y+VH/2;
-      if(sx<-40||sx>VW+40||sy<-40||sy>VH+40){
-        const cx=clamp(sx,64,VW-64),cy=clamp(sy,86,VH-64);
-        const ang=Math.atan2(sy-cy,sx-cx);
-        const pl=0.5+0.4*Math.sin(G.t*5);
-        ctx.save();ctx.translate(cx,cy);ctx.rotate(ang);
-        ctx.strokeStyle=`rgba(190,120,255,${pl})`;ctx.lineWidth=2.5;
-        ctx.beginPath();ctx.moveTo(-7,-8);ctx.lineTo(7,0);ctx.lineTo(-7,8);ctx.stroke();
-        ctx.restore();
-      }
+  for(const h of edgeHints()){
+    if(h.boss){
+      const pl=0.5+0.4*Math.sin(G.t*5);
+      ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.ang);
+      ctx.strokeStyle=`rgba(${h.c},${pl})`;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(-7,-8);ctx.lineTo(7,0);ctx.lineTo(-7,8);ctx.stroke();
+      ctx.restore();
+    }else{
+      const pl=0.26+0.14*Math.sin(G.t*3+h.x*0.7+h.y);
+      ctx.fillStyle=`rgba(${h.c},${pl})`;
+      ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
     }
   }
   ctx.fillStyle=VIGN;ctx.fillRect(0,0,VW,VH);
@@ -2236,6 +2522,8 @@ function updateHUD(){
   if(HUDC.sc!==s){HUDC.sc=s;el.score.textContent=s;}
   s='BEST '+fmt(Math.max(G.best,G.score));
   if(HUDC.bs!==s){HUDC.bs=s;el.best.textContent=s;}
+  s=fmtT(G.runT);
+  if(HUDC.pt!==s){HUDC.pt=s;el.ptime.textContent=s;}
 }
 
 /* ============================== main loop ============================== */
@@ -2296,6 +2584,7 @@ function frame(now){
 /* ============================== boot ============================== */
 menuScene();
 el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+refreshContinue();
 requestAnimationFrame(frame);
 
 /* small test hook (console) */
@@ -2311,13 +2600,31 @@ window.NOVA={
   enemies:()=>G.enemies.map(e=>e.type),
   q:()=>({e:Wv.qE.slice(),a:Wv.qA.slice().length}),
   spawn:t=>{if(P)spawnEnemy(t,P.x+rand(-280,280),P.y+rand(-280,280));},
+  spawnAt:(t,x,y)=>{if(P)spawnEnemy(t,x,y);return !!P;},
+  astAt:(x,y,s)=>{if(P)spawnAst(s||2,x,y);return !!P;},
   bosses:()=>G.asteroids.filter(a=>a.boss).map(a=>a.bossKind),
   modules:()=>MODULES.map(m=>m.id),
   ship:()=>P?{hp:Math.round(P.hp),maxHp:P.maxHp,fireRate:+P.fireRate.toFixed(2),maxSpeed:+P.maxSpeed.toFixed(1),
     shieldMax:P.shieldMax,regen:P.regen,tesla:P.tesla,lance:P.lance,backshot:P.backshot,
-    stasis:P.stasis,phase:P.phase,leech:P.leech}:null,
-  build:id=>{if(!P)return false;const m=MOD_BY_ID[id];if(!m)return false;
-    G.build[id]=(G.build[id]||0)+1;m.apply();return true;},
+    stasis:P.stasis,phase:P.phase,leech:P.leech,barrels:P.barrels,pierce:P.pierce,
+    crit:+P.crit.toFixed(2),magnet:Math.round(P.magnet),drones:G.drones.length,
+    splashR:P.splashR,ram:P.ram,maxN:P.maxN}:null,
+  build:(id,n)=>{if(!P)return false;const m=MOD_BY_ID[id];if(!m)return false;
+    const lv=Math.max(1,Math.min(m.max,Math.round(n||((G.build[id]||0)+1))));
+    for(let k=(G.build[id]||0)+1;k<=lv;k++)m.apply(k);
+    G.build[id]=lv;recountMax();return true;},
+  lv:id=>G.build[id]||0,
+  maxed:()=>Object.keys(G.build).filter(id=>MOD_BY_ID[id]&&G.build[id]>=MOD_BY_ID[id].max),
+  pickup:t=>{if(!P)return false;const type=t||'boost';
+    G.pickups.push({type,x:P.x+rand(-120,120),y:P.y+rand(-120,120),t:0,life:12});return true;},
+  pickups:()=>G.pickups.map(u=>u.type),
+  puNear:()=>{
+    if(!P||!G.pickups.length)return null;
+    let b=null,bd=Infinity;
+    for(const u of G.pickups){const q=d2(P.x,P.y,u.x,u.y);if(q<bd){bd=q;b=u;}}
+    return{x:Math.round(b.x-cam.x+VW/2),y:Math.round(b.y-cam.y+VH/2),type:b.type};
+  },
+  buffs:()=>P?{boost:+P.boostT.toFixed(1),rate:+P.rateT.toFixed(1)}:null,
   clear:()=>{if(!P)return;
     for(const a of[].concat(G.asteroids))if(a.boss)killAst(a);
     for(const e of[].concat(G.enemies))killEn(e);
@@ -2334,6 +2641,13 @@ window.NOVA={
     ds:G.enemies.filter(e=>e.type==='tadpole').map(e=>Math.round(Math.hypot(e.x-P.x,e.y-P.y)))}:null,
   perf:()=>({tier:qTier,dpr:+DPR.toFixed(2),cw:cv.width,pxc:$('fxProton').width,fluid:getComputedStyle($('fxFluid')).display}),
   stats:()=>({score:G.score,kills:G.kills,level:P?P.level:0,wave:Wv.n,mode:G.mode}),
+  hints:()=>edgeHints(),
+  time:()=>G.runT,
+  pause:()=>pauseGame(),
+  resume:()=>resumeGame(),
+  saveNow:()=>saveRun(),
+  hasSave:()=>!!loadSave(),
+  saveData:()=>loadSave(),
 };
 
 })();

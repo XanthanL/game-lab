@@ -23,7 +23,7 @@ const PLANTS = {
   rmrf:     { name: 'rm -rf',        cost: 150, hp: 300,  cd: 28, fx: '3×3 爆 1800 · 一次性',   lore: '同归于尽的艺术' },
   pad:      { name: '分支莲叶',      cost: 25,  hp: 1,    cd: 4,  fx: '水道种植地基',           lore: '在 merge 冲突水道上开一条分支' },
   stack:    { name: 'Stack Overflow', cost: 125, hp: 300,  cd: 10, fx: '3×3 射手射速 +40%',      lore: '复制粘贴之力' },
-  monitor:  { name: '4K 显示器',     cost: 250, hp: 300,  cd: 9,  fx: '全行 120伤/4s',          lore: '像素打击：超远程点名，无视高墙' },
+  monitor:  { name: '4K 显示器',     cost: 250, hp: 300,  cd: 9,  fx: '远程点名 120伤/4s',      lore: '像素打击：超远程点名，无视高墙' },
   bug:      { name: 'BUG 报告',      cost: 125, hp: 300,  cd: 7,  fx: '抛物线 75伤 + 溅射',     lore: '抛物线甩锅：越过障碍砸下 bug 单' },
   cron:     { name: 'cron 定时任务',  cost: 25,  hp: 200,  cd: 10, fx: '产能 15→45 / 20s',      lore: '凌晨三点自己起来干活' },
   ssh:      { name: 'SSH 隧道',       cost: 175, hp: 300,  cd: 7,  fx: '三线 18伤/1.6s',        lore: '端口转发到上下两行，隧道不过墙' },
