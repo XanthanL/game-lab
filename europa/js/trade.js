@@ -90,7 +90,16 @@ export function assignTradeNodes(world) {
 }
 
 export function initTrade(world) {
-  world.trade = { nodes: {}, merchants: new Map(), income: new Map(), blockaded: new Set() };
+  world.trade = { 
+    nodes: {}, 
+    merchants: new Map(), 
+    income: new Map(), 
+    blockaded: new Set(), 
+    pirates: [],
+    competingPenalty: {},  // nodeId -> penalty for countries with multiple merchants
+    dumping: {},           // nodeId -> { country, reduction }
+    hanseaticLeague: null  // { members: Set, bonus: number }
+  };
   for (const c of world.countries.values()) world.trade.merchants.set(c.tag, []);
 }
 
@@ -113,6 +122,17 @@ export function provTradePower(world, p) {
   v *= 1 - p.autonomy * 0.5;
   if (p.devastation > 0) v *= 1 - p.devastation * 0.004;   // 兵灾之下市集萧条
   if (world.trade.blockaded.has(p.id)) v *= 0.45;   // 被封锁的港口几乎做不了生意
+  
+  /* 走私：被禁运时仍保留 30% 实力（若未交战） */
+  const owner = world.countries.get(p.owner);
+  if (owner && owner.embargoes.size > 0) {
+    for (const embargoTag of owner.embargoes) {
+      if (!world.isAtWar(embargoTag, p.owner)) {
+        v *= 0.3;  // 走私渠道留存部分贸易力
+      }
+    }
+  }
+  
   return v;
 }
 
@@ -264,6 +284,8 @@ export function runTrade(world) {
       power: {}, steer: {}, totalPower: 0,
       outflow: {}, collected: {},
       ownerDev: {}, dominant: null, dominantShare: 0, monopoly: false,
+      outgoingDumper: null,  // { country, reduction }
+      hanseaticBonus: 0,     // Hanseatic League bonus if applicable
     };
   }
 
@@ -290,6 +312,14 @@ export function runTrade(world) {
     st.dominant = bestTag;
     st.dominantShare = total > 0 ? best / total : 0;
     st.monopoly = bestTag != null && st.dominantShare >= 0.999;
+  }
+
+  /* 海盗惩罚计算 */
+  const piracyPenalty = new Map(); // seaId -> totalStrength
+  for (const pirate of world.trade.pirates) {
+    if (pirate.active) {
+      piracyPenalty.set(pirate.sea, (piracyPenalty.get(pirate.sea) || 0) + pirate.strength);
+    }
   }
 
   // 1.5) 轻舰贸易力：停在海域的轻舰为船主在相邻节点撑场面
@@ -354,6 +384,51 @@ export function runTrade(world) {
       const steerBonus = 1 + (0.10 + (mods?.tradeSteer || 0) / 100);
       const home = c.homeNode === id;
       const m = merchantsFor(world, t).get(id);
+      
+      /* 检查垄断特许权政策 */
+      const hasMonopolyPolicy = (c.policies || []).includes('pol_monopoly');
+      
+      /* 汉萨同盟特殊加成 */
+      const hanseaticEff = isHanseaticMember(t) && st.hanseaticBonus > 0 
+        ? eff * (1 + st.hanseaticBonus) 
+        : eff;
+
+      // 海盗惩罚：相邻海域有海盗时削减贸易力
+      let piracyReduction = 0;
+      for (const provId of Object.keys(st.power)) {
+        const p = world.provinces.get(provId);
+        if (p && !p.sea && p.adj) {
+          for (const adj of p.adj) {
+            const adjProv = world.provinces.get(adj);
+            if (adjProv && adjProv.sea) {
+              const strength = piracyPenalty.get(adj);
+              if (strength > 0) {
+                piracyReduction += strength * 0.02;
+              }
+            }
+          }
+        }
+      }
+      piracyReduction = Math.min(0.8, piracyReduction);
+      power[t] *= (1 - piracyReduction);
+      power[t] = Math.max(0.1, power[t]);  // 最低保留 10%
+
+      /* 贸易竞争惩罚：多国商人同在一流派系会互相竞争 */
+      if (c.embargoes.size === 0 || m?.node !== id) {
+        const merchantList = merchantsFor(world, t).get(id) ? merchantsOf(world, t) : [];
+        const nodeMerchants = merchantList.filter(m => m.node === id);
+        if (nodeMerchants.length > 3) {
+          const overage = nodeMerchants.length - 3;
+          const penalty = 0.05 * overage;  // 超过 3 个后每个 -5%
+          power[t] *= (1 - penalty);
+        }
+      }
+
+      /* 贸易倾销：人为压低价格获得竞争优势（政策解锁） */
+      const hasDumpingPolicy = (c.policies || []).includes('pol_dumping');
+      if (hasDumpingPolicy && st.outgoingDumper && st.outgoingDumper.country === t) {
+        power[t] *= 1.2;  // 倾销商人在该节点 +20% 贸易力
+      }
 
       let taken = 0;
       if (m && m.action === 'steer' && !isEnd) {
@@ -363,11 +438,11 @@ export function runTrade(world) {
         nodes[target].steer[t] = (nodes[target].steer[t] || 0) + val * 0.2;
         st.outflow[target] = (st.outflow[target] || 0) + sent;
       } else if (m && m.action === 'collect') {
-        taken = val * (home ? 1 : 0.5) * eff;
+        taken = val * (home ? 1 : 0.5) * hanseaticEff;
       } else if (home) {
-        taken = val * eff;
+        taken = val * hanseaticEff;
       } else if (isEnd) {
-        taken = val * 0.7 * eff;
+        taken = val * 0.7 * hanseaticEff;
       } else {
         const hop = st.to[0];
         nodes[hop].incoming += val;
@@ -376,7 +451,17 @@ export function runTrade(world) {
       // 主导者红利：垄断整片节点 +25%，份额过半 +10%
       if (taken > 0 && t === st.dominant) {
         taken *= st.monopoly ? 1.25 : (st.dominantShare >= 0.6 ? 1.1 : 1);
+        // 垄断特许权政策额外加成
+        if (st.monopolyStrict || st.dominantShare >= 0.6) {
+          taken *= 1 + ((mods?.monopolyBonus || 0) / 100);
+        }
       }
+      
+      /* 汉萨同盟特殊加成 */
+      if (isHanseaticMember(t) && st.hanseaticBonus > 0) {
+        eff = (eff - 1) * (1 + st.hanseaticBonus) + 1;
+      }
+
       if (taken > 0) {
         income.set(t, (income.get(t) || 0) + taken);
         st.collected[t] = (st.collected[t] || 0) + taken;
@@ -404,4 +489,160 @@ export function shareOf(world, tag, nodeId) {
   const st = world.trade?.nodes?.[nodeId];
   if (!st || !st.totalPower) return 0;
   return (st.power[tag] || 0) / st.totalPower;
+}
+
+/* ─────────────── 海盗系统 ─────────────── */
+
+/** 在指定海域生成海盗 */
+export function spawnPirate(seaProv, strength, active = true) {
+  world.trade.pirates.push({
+    sea: seaProv,
+    strength: strength || Math.floor(Math.random() * 4) + 1, // 1-5 强度
+    active: active !== false,
+  });
+}
+
+/** 清除指定海域的海盗 */
+export function clearPirates(world, seaProv) {
+  const idx = world.trade.pirates.findIndex((p) => p.sea === seaProv);
+  if (idx >= 0) {
+    world.trade.pirates.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+/** 获取某海域的海盗信息 */
+export function getPiratesInSea(world, seaProv) {
+  return world.trade.pirates.find((p) => p.sea === seaProv);
+}
+
+/** 随机生成海盗事件 */
+export function randomPirateEvent(world) {
+  if (Math.random() > 0.1) return;  // 10% 概率
+  
+  const seas = [...world.provinces.values()].filter(p => p.sea && p.adj.length > 0);
+  if (!seas.length) return;
+  
+  const sea = seas[Math.floor(Math.random() * seas.length)];
+  const nearbyCountries = new Set();
+  for (const adj of sea.adj) {
+    const p = world.provinces.get(adj);
+    if (p && p.owner) nearbyCountries.add(p.owner);
+  }
+  
+  if (nearbyCountries.size > 0) {
+    const owner = Array.from(nearbyCountries)[Math.floor(Math.random() * nearbyCountries.size)];
+    world.log.push(`🏴‍☠️ ${owner}沿海发现海盗船队！贸易活动受到威胁。`);
+    spawnPirate(sea.id, Math.floor(Math.random() * 3) + 2);
+  }
+}
+
+/* ─────────────── 贸易竞争与倾销 ─────────────── */
+
+/**
+ * 计算贸易竞争惩罚
+ * @param {number} count - 该节点商人数量
+ * @returns {number} 惩罚值 (0-1)
+ */
+export function calculateCompetitionPenalty(count) {
+  if (count <= 3) return 0;
+  return 0.05 * (count - 3);  // 超过 3 个后每个 -5%
+}
+
+/**
+ * 设置倾销政策
+ * @param {string} countryTag - 国家标签
+ * @param {string} nodeId - 节点 ID
+ */
+export function setDumpingTarget(world, countryTag, nodeId) {
+  const c = world.countries.get(countryTag);
+  const n = nodes[nodeId];
+  if (!c || !n) return { ok: false, why: '无效的国家或节点' };
+  
+  /* 必须有垄断特许权政策 */
+  if (!c.policies || !c.policies.includes('pol_monopoly')) {
+    return { ok: false, why: '需要解锁垄断特许权政策' };
+  }
+  
+  n.outgoingDumper = { country: countryTag, reduction: 0.15 };
+  return { ok: true };
+}
+
+/**
+ * 清除倾销目标
+ */
+export function clearDumpingTarget(world, nodeId) {
+  const n = nodes[nodeId];
+  if (n) n.outgoingDumper = null;
+}
+
+/* ─────────────── 汉萨同盟特殊机制 ─────────────── */
+
+/** Hanseatic League 成员国家定义 */
+export const HANSEATIC_MEMBERS = ['lubeck', 'krakow', 'kolberg', 'talinn'];
+
+/** 检查是否属于汉萨同盟 */
+export function isHanseaticMember(tag) {
+  return HANSEATIC_MEMBERS.includes(tag);
+}
+
+/** 
+ * 汉萨同盟特殊加成：同盟成员共享贸易优势 
+ * 当 >=4 个成员主导同一节点时触发 +20% 贸易效率
+ */
+export function applyHanseaticBonus(nodes) {
+  for (const id in nodes) {
+    const n = nodes[id];
+    const memberCount = HANSEATIC_MEMBERS.filter(m => n.power[m] > 0).length;
+    if (memberCount >= 4) {
+      n.hanseaticBonus = 0.2;  // +20% 贸易效率
+    } else {
+      n.hanseaticBonus = 0;
+    }
+  }
+}
+
+/* ─────────────── 香料战争事件链 ─────────────── */
+
+/**
+ * 香料战争触发条件
+ *  spice nodes (Venice/Constantinople/Alexandria) 中 Spice/Silk 价值占比高且被某国主导
+ */
+export function checkSpiceWarTrigger(world) {
+  const spiceNodes = ['venice', 'constantinople', 'alexandria'];
+  let trigger = false;
+  
+  for (const nodeId of spiceNodes) {
+    const n = world.trade.nodes[nodeId];
+    if (!n) continue;
+    
+    /* 计算 spice/silk 的价值占比 */
+    let spiceValue = 0;
+    for (const p of world.provinces.values()) {
+      if (p.tradeNode === nodeId && (p.tradeGood === 'spices' || p.tradeGood === 'silk')) {
+        spiceValue += provTradeValue(p);
+      }
+    }
+    
+    if (spiceValue / n.local > 0.5) {
+      /* 找到主导者 */
+      let bestOwner = null;
+      let maxDev = 0;
+      for (const t in n.ownerDev) {
+        if (n.ownerDev[t] > maxDev) {
+          maxDev = n.ownerDev[t];
+          bestOwner = t;
+        }
+      }
+      
+      /* 如果主导者是葡萄牙/威尼斯，触发香料战争 */
+      if (bestOwner && ['portugal', 'venice'].includes(bestOwner)) {
+        trigger = true;
+        world.log.push(`🌶️ ${bestOwner.toUpperCase()}控制了香料之路！其他欧洲强国开始觊觎！`);
+      }
+    }
+  }
+  
+  return trigger;
 }

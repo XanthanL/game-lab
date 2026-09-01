@@ -213,6 +213,11 @@ async function boot() {
   ui.render(true);
   setSpeed(0);
   pushLog(`${world.countries.get(playerTag).name} 的统治开始了。`);
+  
+  // 确保没有任何模态框挡在前面
+  if (ui.modalEl) ui.modalEl.hidden = true;
+  if (ui.modal) ui.modal = null;
+  
   requestAnimationFrame(loop);
   setInterval(() => {
     if (performance.now() - lastRafAt > 400) frame(performance.now());

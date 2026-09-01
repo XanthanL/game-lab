@@ -127,6 +127,7 @@ export function createWorld(opts = {}) {
       ae: new Map(), // tag -> number
       opinion: new Map(),
       coalition: new Set(), // 参与的包围网：针对哪些国家
+      ambassadors: [], // 驻派使节 [{ to, createdAt, duration(96) }]
       ai: { lastWar: -120, lastClaim: -60 },
       stats: { income: 0, expense: 0 },
     };

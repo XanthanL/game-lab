@@ -280,6 +280,7 @@ export const POLICIES = [
   { id: 'pol_court', name: '宫廷外交', requires: ['diplomatic', 'influence'], mods: { improveRelations: 30, aeImpact: -5 }, desc: '沙龙里的合纵连横。' },
   { id: 'pol_royal_army', name: '王师整编', requires: ['administrative', 'quality'], mods: { discipline: 5, techCost: -5 }, desc: '军政一体的精兵路线。' },
   { id: 'pol_expedition', name: '远征后勤', requires: ['quantity', 'maritime'], mods: { supplyLimitMod: 25, sailorMod: 10 }, desc: '补给船队跟着大军走。' },
+  { id: 'pol_monopoly', name: '垄断特许权', requires: ['trade', 'diplomatic'], mods: { monopolyBonus: 15 }, desc: '授予商人行会垄断权，主导节点收益 +15%。' },
 ];
 
 export function policySlots(c) { return Math.floor(groupCount(c) / 2); }

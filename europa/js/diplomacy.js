@@ -27,6 +27,106 @@ export function addOpinionMod(world, a, b, id, label, amount, months) {
   else r.mods.push({ id, label, amount, months });
 }
 
+/** 驻派使节：+15 友好持续 24 月（96 tick） */
+export function sendAmbassador(world, fromTag, toTag, onLog) {
+  const from = world.countries.get(fromTag);
+  const to = world.countries.get(toTag);
+  if (!from || !to) return { ok: false, why: '国家不存在' };
+  
+  // 检查已有使节数量（最多 3 份）
+  const MAX_AMBASSADORS = 3;
+  const usedSlots = from.ambassadors.length;
+  if (usedSlots >= MAX_AMBASSADORS) {
+    return { ok: false, why: `使节槽已满（最多${MAX_AMBASSADORS}份）` };
+  }
+  
+  // 检查目标是否已是盟友或宿敌
+  if (from.allies.has(toTag)) {
+    return { ok: false, why: '不能向盟国派驻使节' };
+  }
+  if (from.rivals.has(toTag)) {
+    return { ok: false, why: '不能向宿敌派驻使节' };
+  }
+  
+  // 检查是否处于战争中
+  if (isAtWar(world, fromTag, toTag)) {
+    return { ok: false, why: '正在交战中，无法派驻使节' };
+  }
+  
+  // 检查当前友好度 >= 0
+  const currentOpinion = opinionOf(world, fromTag, toTag);
+  if (currentOpinion < 0) {
+    return { ok: false, why: `友好度过低（需 ≥ 0，当前 ${currentOpinion < 0 ? currentOpinion : '+' + currentOpinion}）` };
+  }
+  
+  // 派驻使节
+  const now = world.stats.tick;
+  from.ambassadors.push({
+    to: toTag,
+    createdAt: now,
+    duration: 96  // 24 个月 = 96 tick
+  });
+  
+  // 立即应用友好度加成
+  addOpinionMod(world, fromTag, toTag, `amb-${fromTag}-${toTag}`, '使节', 15, 24);
+  
+  if (onLog) {
+    onLog(`🎖️ 已向 ${to.name} 驻派使节 (+15 友好度，持续 24 月)`);
+  }
+  
+  return { ok: true };
+}
+
+/** 召回使节 */
+export function recallAmbassador(world, fromTag, toTag, onLog) {
+  const from = world.countries.get(fromTag);
+  if (!from) return { ok: false, why: '国家不存在' };
+  
+  const idx = from.ambassadors.findIndex(a => a.to === toTag);
+  if (idx === -1) {
+    return { ok: false, why: '没有向该国家派驻使节' };
+  }
+  
+  from.ambassadors.splice(idx, 1);
+  
+  if (onLog) {
+    const to = world.countries.get(toTag);
+    onLog(`🎖️ 已召回对 ${to.name} 的使节 (-15 友好度)`);
+  }
+  
+  return { ok: true };
+}
+
+/** 清理过期的使节 */
+export function cleanupExpiredAmbassadors(world) {
+  for (const country of world.countries.values()) {
+    if (!country.ambassadors || country.ambassadors.length === 0) continue;
+    
+    const before = country.ambassadors.length;
+    const now = world.stats.tick;
+    
+    country.ambassadors = country.ambassadors.filter(a => 
+      (now - a.createdAt) < a.duration
+    );
+    
+    const expired = before - country.ambassadors.length;
+    if (expired > 0) {
+      world.log.push(`🎖️ ${country.name} 的 ${expired} 份使节任期到期`);
+    }
+  }
+}
+
+/** 获取某国家对另一国的活跃使节数 */
+export function getActiveAmbassadorsCount(world, fromTag, toTag) {
+  const from = world.countries.get(fromTag);
+  if (!from || !from.ambassadors) return 0;
+  
+  const now = world.stats.tick;
+  return from.ambassadors.filter(a => 
+    a.to === toTag && (now - a.createdAt) < a.duration
+  ).length;
+}
+
 export function opinionOf(world, a, b) {
   let s = 0;
   for (const x of opinionBreakdown(world, a, b)) s += x.amount;
@@ -55,6 +155,13 @@ export function opinionBreakdown(world, a, b) {
   add('侵略扩张', -Math.round(ae / 3));
   add(ca.religion === cb.religion ? '同教之谊' : '宗教相异', ca.religion === cb.religion ? 5 : -10);
   add('边境摩擦', -borderFriction(world, a, b));
+  
+  // 显示使节加成（如果有）
+  const ambCount = getActiveAmbassadorsCount(world, a, b);
+  if (ambCount > 0) {
+    add(`对 ${cb.name} 的使节`, ambCount * 15, 24);
+  }
+  
   if (ca.subsidiesOut.some((s) => s.to === b) || cb.subsidiesOut.some((s) => s.to === a)) add('补贴', 15);
   for (const m of (r.mods || [])) add(m.label, m.amount, m.months);
   return out;

@@ -10,6 +10,7 @@ import { runTrade, autoMerchants, tradeIncomeOf, GOOD_VALUE } from './trade.js';
 import { fleetMaint } from './navy.js';
 import { supplyLimit } from './military.js';
 import { estatesTick } from './estates.js';
+import { cleanupExpiredAmbassadors } from './diplomacy.js';
 
 export { GOOD_VALUE };
 
@@ -467,6 +468,9 @@ export function monthlyTick(world) {
     }
     c.armies = c.armies.filter((a) => a.size >= 1);
   }
+
+  // 清理过期使节
+  cleanupExpiredAmbassadors(world);
 
   recalcCountries(world);
   return d;

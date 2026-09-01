@@ -33,7 +33,7 @@ import {
   setRival, removeRival, guarantee, requestMilitaryAccess,
   fabricateClaim, casusBelli, declareWar, peaceOptions, peaceDeal, whitePeace,
   truceMonthsLeft, allianceSlots, opinionOf, opinionBreakdown, canRival,
-} from './diplomacy.js';
+  sendAmbassador } from './diplomacy.js';
 import {
   GROUP_BY_ID, maxGroups, groupCount, groupProgress,
   ideaCost, canTakeIdea, takeIdea, groupStates,
@@ -42,7 +42,7 @@ import {
 import {
   TRADE_NODES, NODE_BY_ID, GOOD_CN, merchantCount, merchantsOf,
   setMerchant, clearMerchant, autoMerchants, shareOf, stepToward,
-  setEmbargo, liftEmbargo,
+  setEmbargo, liftEmbargo, isHanseaticMember, checkSpiceWarTrigger,
 } from './trade.js';
 import {
   ESTATES, PRIVILEGES, grantPrivilege, revokePrivilege,
@@ -130,6 +130,9 @@ export class UI {
     this.leftEl = $('leftPanel');
     this.modalEl = $('modal');
     this.modalBodyEl = $('modalBody');
+
+    // 确保 modal 初始隐藏
+    if (this.modalEl) this.modalEl.hidden = true;
 
     this.dirty = true;
     this.lastRender = 0;
@@ -508,6 +511,15 @@ export class UI {
         return;
       }
       case 'subsidy': this.openSubsidy(); return;
+
+      /* ── 使节 ── */
+      case 'openAmbassador': this.openAmbassadorPlacement(); return;
+      case 'sendAmbassador': {
+        const toTag = el.dataset.target;
+        const r = sendAmbassador(W, tag, toTag, (msg) => this.log(msg));
+        if (!r.ok) this.log('驻派失败：' + r.why);
+        return;
+      }
 
       /* ── 禁运 ── */
       case 'embargo': {
@@ -966,6 +978,12 @@ export class UI {
             ? `<button type="button" data-act="liftEmbargo">解除禁运</button>`
             : `<button type="button" data-act="embargo" ${c.allies.has(o.tag) ? 'disabled' : ''}>禁运</button>`}
           <button type="button" data-act="subsidy" ${!c.allies.has(o.tag) || c.subsidiesOut.some((s) => s.to === o.tag) ? 'disabled' : ''}>${c.subsidiesOut.some((s) => s.to === o.tag) ? '补贴中' : '补贴…'}</button>
+          
+          <!-- 使节系统 -->
+          ${!atWar && op >= 0 && !r.alliance && !c.rivals.has(o.tag)
+            ? `<button type="button" data-act="openAmbassador" ${c.ambassadors.length >= 3 ? 'disabled' : ''}>🎖️ ${c.ambassadors.length >= 3 ? '使节槽已满' : '驻派使节'}</button>`
+            : ''}
+          
           <button type="button" class="danger" data-act="declareWar" ${atWar || truce > 0 ? 'disabled' : ''}>${atWar ? '交战中' : truce > 0 ? `休战中（${truce} 月）` : '宣战…'}</button>
         </div>`;
     } else {
@@ -1016,6 +1034,12 @@ export class UI {
         <div class="c-top"><b>${esc(n.name)}${isHome ? ' <em class="gold">本土</em>' : ''}</b><span>份额 ${pct(share)}</span></div>
         <div class="c-line"><span>本地 ${n1(st.local)} · 流入 ${n1(st.incoming)}</span><span>总额 ${n1(st.value)}</span></div>
         <div class="c-line dim">主导者：${domTxt}${st.monopoly ? ' <em class="good">垄断 +25%</em>' : st.dominantShare >= 0.6 ? ' <em class="good">主导 +10%</em>' : ''}</div>
+        
+        /* 汉萨同盟状态 */
+        ${isHanseaticMember(this.tag) && st.hanseaticBonus > 0 
+          ? `<div class="c-line dim gold"><i>汉萨同盟加成</i>+20% 贸易效率（多名成员共享）</div>` 
+          : ''}
+        
         <div class="c-line dim">下游：${n.to.length ? n.to.map((t) => esc((NODE_BY_ID.get(t) || {}).name || t)).join('、') : '终端节点'} · 收取 ${n1(got)}/月</div>
         <div class="c-line dim">${m ? (m.action === 'steer' ? `商人：转移 → ${esc((NODE_BY_ID.get(m.to) || {}).name || m.to)}` : '商人：就地收取') : '未派驻商人'}</div>
         <div class="c-acts">
@@ -1518,6 +1542,58 @@ export class UI {
         c.subsidiesOut.push({ to: o.tag, amount: amt, months });
         this.log(`开始每月补贴 ${o.name} ${amt} 金币，为期 ${months} 个月`);
       },
+    });
+  }
+
+  /* ── 驻派使节 ── */
+
+  openAmbassadorPlacement() {
+    const W = this.world;
+    const c = this.me;
+    if (!this.selCountry) return;
+    
+    const targets = [...W.countries.values()]
+      .filter(o => o.tag !== this.tag && o.provinces.size > 0)
+      .sort((a, b) => {
+        const ra = opinionOf(W, this.tag, a.tag);
+        const rb = opinionOf(W, this.tag, b.tag);
+        return rb - ra;
+      });
+    
+    const alreadySent = c.ambassadors.map(a => a.to);
+    
+    this.openModal({
+      title: '驻派使节',
+      wide: true,
+      body: `<div class="m-note">每份使节提供 +15 友好度，持续 24 个月。最多可驻派 3 份使节。</div>` +
+        `<div class="sub">可选目标（按友好度排序）</div>` +
+        `<div class="plist tall">` +
+        targets.map(o => {
+          const r = getRelation(W, this.tag, o.tag);
+          const op = opinionOf(W, this.tag, o.tag);
+          const canSend = !r.alliance && !c.rivals.has(o.tag) && !isAtWar(W, this.tag, o.tag) && op >= 0;
+          const already = alreadySent.includes(o.tag);
+          
+          let disabledReason = '';
+          if (already) disabledReason = '已派驻';
+          else if (r.alliance) disabledReason = '已是盟国';
+          else if (c.rivals.has(o.tag)) disabledReason = '宿敌不能派驻';
+          else if (isAtWar(W, this.tag, o.tag)) disabledReason = '正在交战中';
+          else if (op < 0) disabledReason = `友好度过低 (${op})`;
+          
+          return `<button type="button" class="prow ${already ? 'on' : ''}" 
+            data-act="${already ? '' : 'sendAmbassador'}" data-target="${o.tag}"
+            ${!canSend && !already ? 'disabled' : ''}>
+            <span class="dot" style="background:rgb(${o.color[0]},${o.color[1]},${o.color[2]})"></span>
+            <span class="pname">${esc(o.name)}</span>
+            <i>${r.alliance ? '<em class="good">盟</em>' : ''}${c.rivals.has(o.tag) ? '<em class="bad">敌</em>' : ''}${isAtWar(W, this.tag, o.tag) ? '<em class="bad">战</em>' : ''}</i>
+            <em class="${op >= 0 ? 'good' : 'bad'}">${op > 0 ? '+' : ''}${Math.round(op)}</em>
+            ${already ? '<u class="good">●</u>' : '<u></u>'}
+          </button>`;
+        }).join('') +
+        `</div>`,
+      submit: '关闭',
+      onSubmit: null,
     });
   }
 
