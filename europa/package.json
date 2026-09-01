@@ -6,6 +6,8 @@
   "description": "Europa 1444 — 浏览器大战略 / 地缘政治模拟。无构建，纯静态；package.json 只为 node 侧的开发脚本（预览 / 冒烟测试）声明 ESM。",
   "scripts": {
     "map": "node tools/map-preview.js",
-    "smoke": "node tools/smoke.js"
+    "smoke": "node tools/smoke.js",
+    "uicheck": "node tools/ui-check.js",
+    "check": "node tools/import-check.js && node tools/ui-check.js && node tools/smoke.js 120"
   }
 }

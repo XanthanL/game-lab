@@ -1,34 +1,31 @@
-// 入口：生成世界 → 选国 → 进入主循环
+// 入口：生成世界 → 选国 → 主循环 → 面板。
+//
+// 这里的职责被压到最小：建世界、跑循环、把地图点击转交给 UI。
+// 所有面板与交互都在 ui.js 里，改动游戏内容不必碰这个文件。
+
 import { createWorld } from './world.js';
 import { buildPaths } from './paint.js';
 import { Renderer } from './render.js';
 import { initGame, tick } from './game.js';
-import { createArmy, moveArmy } from './military.js';
-import { fabricateClaim } from './diplomacy.js';
-import { takeTech } from './economy.js';
 import { runSetup } from './setup.js';
+import { UI } from './ui.js';
 
 function $(id) { return document.getElementById(id); }
-
-/* ── 面板写入全部走脏检查：数值没变就不碰 DOM ── */
-const paneCache = new Map();
-function setText(id, v) {
-  const s = String(v);
-  if (paneCache.get(id) === s) return;
-  paneCache.set(id, s);
-  const el = $(id);
-  if (el) el.textContent = s;
-}
-
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// 让浏览器先把 loading 画出来的宏任务让步。rAF 在后台标签页里永远不触发，
+// setTimeout 会被节流到分钟级，MessageChannel 是唯一不被节流的让步手段。
+const yieldTask = () => new Promise((r) => {
+  const ch = new MessageChannel();
+  ch.port1.onmessage = () => { ch.port1.close(); r(); };
+  ch.port2.postMessage(0);
+});
 
 async function boot() {
   const bootEl = $('boot');
   const msg = $('bootMsg');
 
   // createWorld 是同步重活（约 1.5–2.5s），先让浏览器把 loading 画出来再开跑
-  await nextFrame();
-  await nextFrame();
+  await yieldTask();
+  await yieldTask();
 
   const t0 = performance.now();
   const world = createWorld({ seed: 'europa-1444' });
@@ -46,68 +43,23 @@ async function boot() {
   const canvas = $('map');
   const renderer = new Renderer(canvas, world, paths);
 
-  /* ── 面板 ── */
+  /* ── 日志条 ── */
 
-  function renderPanels() {
-    const c = world.countries.get(world.playerTag);
-    if (!c) return;
-    setText('countryName', c.name);
-    setText('countryName2', c.name);
-    setText('countryTag', c.tag);
-    setText('treasury', Math.floor(c.treasury));
-    setText('income', (c.stats.income - c.stats.expense).toFixed(1));
-    setText('manpower', `${Math.floor(c.manpower)} / ${c.maxManpower}`);
-    setText('forceLimit', c.forceLimit);
-    setText('adm', c.powers.adm);
-    setText('dip', c.powers.dip);
-    setText('mil', c.powers.mil);
-    setText('stability', c.stability);
-    setText('prestige', c.prestige.toFixed(0));
-    setText('legitimacy', c.legitimacy.toFixed(0));
-    setText('warExhaustion', c.warExhaustion.toFixed(1));
-    setText('development', c.development);
-    setText('provinces', c.provinces.size);
-    setText('techAdm', c.tech.adm);
-    setText('techDip', c.tech.dip);
-    setText('techMil', c.tech.mil);
-
-    const sp = world.provinces.get(renderer.selectedId);
-    if (sp && !sp.sea) {
-      setText('provName', sp.name);
-      setText('provOwner', '所有者：' + (sp.owner ? world.countries.get(sp.owner).name : '无'));
-      setText('provController', '控制者：' + (sp.controller ? world.countries.get(sp.controller).name : '无'));
-      setText('provReligion', '宗教：' + (sp.religion || '—'));
-      setText('provCulture', '文化：' + (sp.culture || '—'));
-      setText('provTerrain', '地形：' + (sp.terrain || '—'));
-      setText('provGood', '贸易品：' + (sp.tradeGood || '—'));
-      setText('provTax', sp.baseTax);
-      setText('provProd', sp.baseProduction);
-      setText('provMan', sp.baseManpower);
-      $('provActions').style.display = sp.owner === world.playerTag ? 'none' : 'block';
-    } else {
-      setText('provName', '未选中省份');
-      $('provActions').style.display = 'none';
-    }
-  }
-
-  function updateDate() {
-    setText('date', `${world.date.y} 年 ${world.date.m} 月 ${world.date.d} 日`);
-  }
-
-  function pushLog(msg) {
-    if (!msg) return;
-    world.log.push(msg);
-    if (world.log.length > 200) world.log.shift();
+  function pushLog(text) {
     const el = $('log');
-    el.textContent = msg;
-    el.title = world.log.slice(-6).reverse().join('\n');
+    if (!el) return;
+    el.textContent = text;
+    el.title = world.log.slice(-8).reverse().join('\n');
   }
+
+  const ui = new UI({ world, renderer, onLog: pushLog });
+  world.playerTag = playerTag;
+  ui.selProv = world.countries.get(playerTag).capital ?? -1;
+  renderer.setSelected(ui.selProv);
 
   /* ── 地图交互 ── */
 
-  let selectedArmy = null;
   let dragging = false;
-  let dragButton = -1;
   let last = null;
 
   canvas.addEventListener('mousemove', (e) => {
@@ -117,12 +69,35 @@ async function boot() {
       last = [e.clientX, e.clientY];
       return;
     }
-    renderer.setHover(renderer.pickProv(e.clientX - rect.left, e.clientY - rect.top));
+    const pid = renderer.pickProv(e.clientX - rect.left, e.clientY - rect.top);
+    renderer.setHover(pid);
+    showTip(e, pid);
   });
+
+  function showTip(e, pid) {
+    const tip = $('hoverTip');
+    if (!tip) return;
+    if (pid < 0) { tip.hidden = true; return; }
+    const p = world.provinces.get(pid);
+    if (!p) { tip.hidden = true; return; }
+    const owner = p.owner ? world.countries.get(p.owner) : null;
+    const occ = p.controller && p.owner && p.controller !== p.owner;
+    tip.innerHTML = `<b>${p.name}</b>`
+      + (owner ? `<span>${owner.name}</span>` : '<span class="dim">无主之地</span>')
+      + (occ ? `<span class="bad">被 ${world.countries.get(p.controller).name} 占领</span>` : '')
+      + (p.siege ? `<span class="bad">围城中 ${Math.round((p.siege.progress / (30 + p.fort * 18)) * 100)}%</span>` : '')
+      + (p.sea ? '' : `<span class="dim">发展度 ${p.baseTax + p.baseProduction + p.baseManpower}${p.fort ? ` · 要塞 ${p.fort}` : ''}</span>`);
+    tip.hidden = false;
+    const wrap = canvas.getBoundingClientRect();
+    const x = Math.min(e.clientX - wrap.left + 14, wrap.width - tip.offsetWidth - 6);
+    const y = Math.min(e.clientY - wrap.top + 14, wrap.height - tip.offsetHeight - 6);
+    tip.style.left = Math.max(4, x) + 'px';
+    tip.style.top = Math.max(4, y) + 'px';
+  }
 
   canvas.addEventListener('mousedown', (e) => {
     if (e.button === 1 || e.button === 2 || e.shiftKey) {
-      dragging = true; dragButton = e.button;
+      dragging = true;
       last = [e.clientX, e.clientY];
       canvas.style.cursor = 'grabbing';
       e.preventDefault();
@@ -132,20 +107,18 @@ async function boot() {
     const rect = canvas.getBoundingClientRect();
     const pid = renderer.pickProv(e.clientX - rect.left, e.clientY - rect.top);
     if (pid < 0) return;
-    const p = world.provinces.get(pid);
-    if (!p || p.sea) return;
+
+    // 有待下达的命令（移动 / 调动 / 登陆）时，这一次点击算命令
+    if (ui.onMapClick(pid)) { ui.markDirty(); return; }
+
+    ui.selProv = pid;
     renderer.setSelected(pid);
-    if (selectedArmy) {
-      moveArmy(world, selectedArmy, pid);
-      selectedArmy = null;
-      canvas.style.cursor = 'crosshair';
-    }
-    renderPanels();
+    ui.markDirty();
   });
 
   window.addEventListener('mouseup', () => {
     if (!dragging) return;
-    dragging = false; dragButton = -1; last = null;
+    dragging = false; last = null;
     canvas.style.cursor = 'crosshair';
   });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -157,12 +130,10 @@ async function boot() {
     renderer.zoomAt(e.clientX - rect.left, e.clientY - rect.top, f);
   }, { passive: false });
 
-  canvas.addEventListener('mouseleave', () => renderer.setHover(-1));
-
-  // 双击复位视图
+  canvas.addEventListener('mouseleave', () => { renderer.setHover(-1); $('hoverTip').hidden = true; });
   canvas.addEventListener('dblclick', () => { renderer.fit(); renderer.touch(); });
 
-  /* ── 速度与模式 ── */
+  /* ── 速度与地图模式 ── */
 
   const speedBtns = [...document.querySelectorAll('.speed button')];
   function setSpeed(s) {
@@ -180,85 +151,24 @@ async function boot() {
     });
   }
 
-  /* ── 行动按钮 ── */
-
-  $('btnRaise').addEventListener('click', () => {
-    const c = world.countries.get(world.playerTag);
-    const size = Math.min(1000, Math.floor(c.manpower * 0.3));
-    const a = createArmy(world, world.playerTag, c.capital, size);
-    pushLog(a ? `${c.name} 在 ${world.provinces.get(c.capital).name} 招募了 ${size} 人` : '招募失败：人力或资金不足');
-    renderPanels();
-    renderer.invalidate();
-  });
-
-  $('btnTech').addEventListener('click', () => {
-    const branches = ['adm', 'dip', 'mil'];
-    const br = branches[Math.floor(Math.random() * branches.length)];
-    const ok = takeTech(world, world.playerTag, br);
-    pushLog(ok ? `提升了 ${br.toUpperCase()} 科技` : '君主点数不足以提升科技');
-    renderPanels();
-  });
-
-  $('btnClaim').addEventListener('click', () => {
-    const p = world.provinces.get(renderer.selectedId);
-    if (!p || p.owner === world.playerTag) return;
-    const ok = fabricateClaim(world, world.playerTag, renderer.selectedId);
-    pushLog(ok ? `已对 ${p.name} 伪造宣称` : '无法伪造宣称');
-    renderPanels();
-  });
-
-  $('btnMove').addEventListener('click', () => {
-    const c = world.countries.get(world.playerTag);
-    const armies = c.armies.filter((a) => !a.movement);
-    if (!armies.length) { pushLog('没有可移动的军队'); return; }
-    selectedArmy = armies[0];
-    canvas.style.cursor = 'move';
-    pushLog('已选中一支军队，点击相邻省份下达移动命令（Esc 取消）');
-  });
-
-  /* ── 事件弹窗：弹出时自动暂停 ── */
-
-  let eventOpen = false;
-  function showEvent(ev) {
-    eventOpen = true;
-    world.paused = true;
-    for (const b of speedBtns) b.classList.remove('active');
-    const m = $('eventModal');
-    $('evTitle').textContent = ev.title;
-    $('evText').textContent = ev.text;
-    const opts = $('evOptions');
-    opts.innerHTML = '';
-    for (const opt of ev.options) {
-      const b = document.createElement('button');
-      b.textContent = opt.text;
-      b.addEventListener('click', () => {
-        try { opt.effects(); } catch (err) { console.error(err); }
-        m.style.display = 'none';
-        eventOpen = false;
-        renderPanels();
-        renderer.invalidate();
-      });
-      opts.appendChild(b);
-    }
-    m.style.display = 'flex';
-  }
-
   /* ── 键盘 ── */
 
   window.addEventListener('keydown', (e) => {
-    if (e.target instanceof HTMLInputElement) return;
+    const t = e.target;
+    if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) return;
     if (e.key === 'Escape') {
-      if (selectedArmy) { selectedArmy = null; canvas.style.cursor = 'crosshair'; }
-      else renderer.setSelected(-1);
-    } else if (e.code === 'Space') {
-      e.preventDefault();
-      setSpeed(world.paused ? (world.speed || 1) : 0);
-    } else if (e.key === '1') setSpeed(1);
+      if (ui.modal) { ui.closeModal(); return; }
+      if (!ui.cancelPending()) { ui.selProv = -1; renderer.setSelected(-1); ui.markDirty(); }
+      return;
+    }
+    if (ui.modal) return;
+    if (e.code === 'Space') { e.preventDefault(); setSpeed(world.paused ? (world.speed || 1) : 0); }
+    else if (e.key === '1') setSpeed(1);
     else if (e.key === '2') setSpeed(2);
     else if (e.key === '3' || e.key === '4') setSpeed(4);
   });
 
-  /* ── 主循环：requestAnimationFrame 驱动，固定步长，速度真正生效 ── */
+  /* ── 主循环：固定步长，速度真正生效 ── */
 
   const TICK_MS = 480;            // 1× 速度下一个 tick 的间隔
   let acc = 0;
@@ -267,22 +177,20 @@ async function boot() {
   function doTick() {
     const res = tick(world);
     if (!res) return;
-    updateDate();
-    renderPanels();
+    const el = $('date');
+    if (el) el.textContent = res.date;
+    ui.markDirty();
     renderer.invalidate();
-    for (const b of res.battles) {
-      pushLog(`${world.countries.get(b.a).name} 与 ${world.countries.get(b.b).name} 在 ${world.provinces.get(b.pid).name} 交战`);
-    }
-    for (const s of res.sieges) {
-      pushLog(`${world.countries.get(s.tag).name} 攻占了 ${world.provinces.get(s.pid).name}`);
-    }
-    if (!eventOpen && world.eventQueue.length) showEvent(world.eventQueue.shift());
+    // 只播报最后一条，其余在日志条 title 里可翻
+    const lastMsg = world.log[world.log.length - 1];
+    if (lastMsg) pushLog(lastMsg);
+    if (!ui.modal && world.eventQueue.length) ui.showEvent(world.eventQueue.shift());
   }
 
   function frame(now) {
     const dt = Math.min(now - lastT, 250);   // 切标签页回来别一次补几百个 tick
     lastT = now;
-    if (!world.paused && world.speed > 0 && !eventOpen) {
+    if (!world.paused && world.speed > 0 && !ui.modal) {
       acc += dt * world.speed;
       let n = 0;
       while (acc >= TICK_MS && n < 4) { acc -= TICK_MS; doTick(); n++; }
@@ -291,14 +199,24 @@ async function boot() {
       acc = 0;
     }
     renderer.draw();
-    requestAnimationFrame(frame);
+    ui.update(now);
   }
 
-  renderPanels();
-  updateDate();
+  // 前台用 rAF 驱动；后台标签页 rAF 停摆时由定时器看门狗接管，
+  // 游戏不至于一切回来发现世界纹丝不动。
+  let lastRafAt = 0;
+  function loop(now) {
+    lastRafAt = performance.now();
+    frame(now);
+    requestAnimationFrame(loop);
+  }
+  ui.render(true);
   setSpeed(0);
-  pushLog(`${world.countries.get(world.playerTag).name} 的统治开始了。`);
-  requestAnimationFrame(frame);
+  pushLog(`${world.countries.get(playerTag).name} 的统治开始了。`);
+  requestAnimationFrame(loop);
+  setInterval(() => {
+    if (performance.now() - lastRafAt > 400) frame(performance.now());
+  }, 500);
 }
 
 boot().catch((err) => {

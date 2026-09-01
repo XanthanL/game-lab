@@ -282,7 +282,12 @@ export function runSetup(world, paths) {
   root.style.display = '';
   root.classList.remove('gone');
   canvas.parentElement.style.aspectRatio = `${WORLD_W} / ${WORLD_H}`;
-  requestAnimationFrame(() => {
+  // MessageChannel 宏任务让步：rAF 在后台标签页里永远不触发，选国界面必须照样能进
+  new Promise((r) => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = () => { ch.port1.close(); r(); };
+    ch.port2.postMessage(0);
+  }).then(() => {
     root.classList.add('in');
     renderList();
     // 默认落在法兰西上，但只是预选，不替玩家决定

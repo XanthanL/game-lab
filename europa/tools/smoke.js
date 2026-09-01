@@ -14,6 +14,9 @@ const sum = (f) => [...world.countries.values()].reduce((s, c) => s + f(c), 0);
 console.log(`世界：${land.length} 个陆地省 / ${world.provinces.size - land.length} 个海域 / ${world.countries.size} 个国家`);
 console.log(`开局：常备军 ${sum((c) => c.armies.length)} 支 / ${sum((c) => c.armies.reduce((s, a) => s + a.size, 0))} 千人`);
 
+const c0 = world.countries.get('FRA');
+console.log(`开局法兰西：王权领地 ${Math.round(c0.crownland)}% · 贵族影响 ${Math.round(c0.estates.nobles.influence)}% · 军事传统 ${Math.round(c0.armyTradition)} · 政策槽 ${Math.floor(Object.keys(c0.ideaGroups).length / 2)}`);
+
 const mark = [];
 const t0 = Date.now();
 for (let i = 0; i < MONTHS * 4; i++) {
@@ -25,6 +28,9 @@ for (let i = 0; i < MONTHS * 4; i++) {
       armies: sum((c) => c.armies.length),
       men: Math.round(sum((c) => c.armies.reduce((s, a) => s + a.size, 0))),
       states: [...world.countries.values()].filter((c) => c.provinces.size > 0).length,
+      ideas: sum((c) => Object.values(c.ideaGroups).reduce((s, n) => s + n, 0)),
+      policies: sum((c) => c.policies.size),
+      privileges: sum((c) => c.privileges.size),
     });
   }
 }
@@ -35,7 +41,7 @@ const sizes = alive.map((c) => ({ tag: c.tag, name: c.name, n: c.provinces.size,
   .sort((a, b) => b.n - a.n);
 
 console.log(`\n跑完 ${MONTHS} 个月（${world.date.y} 年 ${world.date.m} 月），耗时 ${ms}ms`);
-for (const m of mark) console.log(`  ${m.date}  战争 ${String(m.wars).padStart(2)}  军队 ${String(m.armies).padStart(3)} 支 ${String(m.men).padStart(5)} 千人  存活国家 ${m.states}`);
+for (const m of mark) console.log(`  ${m.date}  战争 ${String(m.wars).padStart(2)}  军队 ${String(m.armies).padStart(3)} 支 ${String(m.men).padStart(5)} 千人  存活国家 ${m.states}  理念 ${m.ideas} 政策 ${m.policies} 特权 ${m.privileges}`);
 
 console.log(`\n存活国家 ${alive.length} / ${world.countries.size}，被吞并 ${world.countries.size - alive.length}`);
 console.log('最大五国：', sizes.slice(0, 5).map((x) => `${x.name}(${x.n}省/${x.dev}发展度)`).join('、'));
@@ -47,6 +53,11 @@ for (const c of sample) {
   console.log(`  ${c.name.padEnd(8)} ${c.provinces.size}省 发展度${String(c.development).padStart(3)} 收入 ${c.stats.income.toFixed(1)} 支出 ${c.stats.expense.toFixed(1)} 国库 ${Math.round(c.treasury)} 人力 ${Math.round(c.manpower)}/${c.maxManpower} 兵力上限 ${c.forceLimit}`);
 }
 
+// 阶级 / 金融 / 贸易健康抽样
+const withEstates = alive.filter((c) => c.estates && Object.keys(c.estates).length === 4);
+console.log(`\n阶级系统覆盖 ${withEstates.length}/${alive.length} 个存活国家；平均王权领地 ${(alive.reduce((s, c) => s + (c.crownland || 0), 0) / alive.length).toFixed(0)}%`);
+console.log(`军事传统均值 ${(alive.reduce((s, c) => s + (c.armyTradition || 0), 0) / alive.length).toFixed(1)} · 银行设立 ${alive.filter((c) => c.nationalBank).length} 国 · 禁运对 ${sum((c) => c.embargoes.size)} 组 · 活跃补贴 ${sum((c) => c.subsidiesOut.length)} 条`);
+
 // 健康检查
 const problems = [];
 if (alive.length < world.countries.size * 0.8) problems.push(`国家灭亡过快（仅剩 ${alive.length}）`);
@@ -56,6 +67,31 @@ const negTreasury = [...world.countries.values()].filter((c) => c.treasury < 0).
 if (negTreasury) problems.push(`${negTreasury} 个国家国库为负`);
 const nan = [...world.countries.values()].filter((c) => !Number.isFinite(c.treasury) || !Number.isFinite(c.manpower) || !Number.isFinite(c.development)).length;
 if (nan) problems.push(`${nan} 个国家出现 NaN`);
+const nanEstate = alive.filter((c) => !Number.isFinite(c.crownland)
+  || Object.values(c.estates).some((e) => !Number.isFinite(e.influence) || !Number.isFinite(e.loyalty))).length;
+if (nanEstate) problems.push(`${nanEstate} 个国家阶级数据异常`);
+const badMods = alive.filter((c) => !Number.isFinite(world.modsFor(c.tag).discipline)).length;
+if (badMods) problems.push(`${badMods} 个国家修正值出现 NaN`);
+if (world.countries.get('FRA').armyTradition == null) problems.push('军事传统未初始化');
+
+// 友好度 / 破坏度 / 资本
+const { opinionOf } = await import('../js/diplomacy.js');
+let badOpinion = 0, badDev = 0, capitals = 0;
+for (const c of alive) {
+  if (c.capital != null) capitals++;
+  for (const o of alive) {
+    if (o.tag === c.tag) continue;
+    const v = opinionOf(world, c.tag, o.tag);
+    if (!Number.isFinite(v) || v < -200 || v > 200) { badOpinion++; break; }
+  }
+  for (const pid of c.provinces) {
+    const p = world.provinces.get(pid);
+    if (p && !p.sea && (!Number.isFinite(p.devastation) || p.devastation < 0 || p.devastation > 100)) { badDev++; break; }
+  }
+}
+if (badOpinion) problems.push(`${badOpinion} 个国家的友好度超出 ±200 或异常`);
+if (badDev) problems.push(`${badDev} 个国家的破坏度异常`);
+if (capitals < alive.length * 0.9) problems.push(`有首都的国家过少（${capitals}/${alive.length}）`);
 
 if (problems.length) { console.error('\n✗ ' + problems.join('；')); process.exit(1); }
 console.log('\n✓ 冒烟测试通过');

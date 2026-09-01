@@ -3,6 +3,10 @@ import { buildMap } from './mapgen.js';
 import { COUNTRIES, RELIGIONS, CULTURES, TECH_GROUPS, GOVS, TRADE_GOODS, DEFAULTS_BY_TERRAIN } from './countries.js';
 import { makeRng, clamp } from './rng.js';
 import { createArmy } from './military.js';
+import { assignTradeNodes, initTrade, runTrade, autoMerchants } from './trade.js';
+import { modsFor, invalidateMods } from './modifiers.js';
+import { createFleet } from './navy.js';
+import { initEstates } from './estates.js';
 
 /* 简单二叉堆（最小堆） */
 class MinHeap {
@@ -40,6 +44,7 @@ export function createWorld(opts = {}) {
     countries: new Map(),
     armies: [],
     fleets: [],
+    rebels: [],
     wars: [],
     relations: new Map(),
     date: { y: 1444, m: 11, d: 11 },
@@ -53,6 +58,12 @@ export function createWorld(opts = {}) {
     // 免得每 tick 都无条件重画 2000 个省份。
     mapVersion: 0,
   };
+
+  /* 这三个闭包挂在 world 上：modifiers.js 想用 modsFor，
+     但 world.js 又不能 import 依赖链上游的模块，否则成环。 */
+  world.modsFor = (tag) => modsFor(world, tag);
+  world.invalidateMods = () => invalidateMods(world);
+  world.isAtWar = (a, b) => isAtWar(world, a, b);
 
   /* 1. 省份状态对象 */
   for (const p of M.provinces) {
@@ -95,9 +106,21 @@ export function createWorld(opts = {}) {
       monarch: rollMonarch(c, rng),
       powers: { adm: 50, dip: 50, mil: 50 },
       tech: { adm: 3, dip: 3, mil: 3 },
-      ideas: {}, unlocked: new Set(),
-      manpower: 0, maxManpower: 0, sailors: 0, forceLimit: 0, navalLimit: 0,
-      armies: [], fleets: [],
+      ideaGroups: {},
+      policies: new Set(),
+      // 金融：国家银行、战争税冷却、对外补贴
+      nationalBank: false,
+      lastWarTax: -999,
+      subsidiesOut: [],      // [{ to, amount, months }]
+      // 贸易：禁运对象
+      embargoes: new Set(),
+      // 军事传统（0..100）：打仗积攒，影响纪律/士气/将领质量
+      armyTradition: clamp(rng.int(8, 30), 0, 100),
+      homeNode: null,
+      manpower: 0, maxManpower: 0, sailors: 0, maxSailors: 0,
+      forceLimit: 0, navalLimit: 0,
+      loans: [], ledger: null,
+      armies: [], fleets: [], generals: [],
       provinces: new Set(), cores: new Set(), claims: new Set(),
       subjects: [], overlord: null,
       rivals: new Set(), allies: new Set(), marriages: new Set(), truces: new Map(),
@@ -108,6 +131,7 @@ export function createWorld(opts = {}) {
       stats: { income: 0, expense: 0 },
     };
     world.countries.set(c.tag, country);
+    initEstates(world, country, rng);
   }
 
   /* 3. 分配省份给国家 */
@@ -116,16 +140,51 @@ export function createWorld(opts = {}) {
   /* 4. 初始化省份数值：文化/宗教/发展度/贸易品/建筑 */
   initProvinceValues(world, rng);
 
-  /* 5. 国家次要初始化：人力/上限/收入首算 */
+  /* 5. 贸易节点归属 + 本土节点 */
+  assignTradeNodes(world);
+  initTrade(world);
+
+  /* 6. 国家次要初始化：人力/上限/收入首算 */
   recalcCountries(world);
 
-  /* 6. 外交关系默认值 */
+  /* 7. 外交关系默认值 */
   for (const a of world.countries.keys()) for (const b of world.countries.keys()) if (a !== b) getRelation(world, a, b);
 
-  /* 7. 开局军队、国库、AI 计时器错峰 */
+  /* 8. 开局军队、舰队、国库、AI 计时器错峰 */
   seedStartingForces(world, rng);
+  seedStartingFleets(world, rng);
+
+  /* 9. 首月贸易结算，让开局面板就有数字 */
+  runTradeOnce(world);
 
   return world;
+}
+
+/** 沿海国家开局给一支小舰队，否则海军面板永远是空的 */
+function seedStartingFleets(world, rng) {
+  for (const c of world.countries.values()) {
+    if (!c.capital) continue;
+    const coastal = [...c.provinces].filter((pid) => world.provinces.get(pid).coastal);
+    if (!coastal.length) continue;
+    const n = clamp(Math.round(c.navalLimit * rng.range(0.3, 0.6)), 0, 20);
+    if (n < 2) continue;
+    const sea = world.provinces.get(coastal[0]).adj.find((a) => world.provinces.get(a).sea);
+    if (sea == null) continue;
+    c.sailors = c.maxSailors;
+    c.treasury += 60;
+    createFleet(world, c.tag, sea, {
+      heavy: Math.floor(n * 0.25),
+      light: Math.floor(n * 0.5),
+      galley: Math.max(1, Math.ceil(n * 0.25)),
+    });
+  }
+}
+
+/** 跑两遍：第一遍算出各节点实力，第二遍才有数据供 autoMerchants 参考 */
+function runTradeOnce(world) {
+  runTrade(world);
+  for (const c of world.countries.values()) autoMerchants(world, c.tag);
+  runTrade(world);
 }
 
 /**
@@ -457,7 +516,7 @@ function assignProvinces(world, rng) {
     if (capId != null) {
       const capP = world.provinces.get(capId);
       capP.capital = true;
-      capP.fort = Math.max(capP.fort, 1);
+      capP.fort = Math.max(capP.fort, 2);   // 首都城防 2 级
     }
   }
 }
@@ -509,8 +568,8 @@ function initProvinceValues(world, rng) {
     p.tradeGood = goods[rng.int(0, goods.length - 1)];
     if (p.capital && rng.chance(0.5)) p.tradeGood = 'cloth';
 
-    // 堡垒：首都/边境
-    if (p.capital) p.fort = 1;
+    // 堡垒：首都 2 级 / 边境可能 1 级
+    if (p.capital) p.fort = Math.max(p.fort || 0, 2);
     else if (p.adj.some((j) => world.provinces.get(j).owner !== p.owner && !world.provinces.get(j).sea)) {
       if (rng.chance(0.12)) p.fort = 1;
     }
@@ -555,11 +614,16 @@ export function recalcCountries(world) {
     }
     c.development = dev;
     c.provinceCount = prov;
+    const mods = world.modsFor ? world.modsFor(c.tag) : null;
+    const flMod = 1 + (mods?.forceLimitMod || 0) / 100;
+    const nlMod = 1 + (mods?.navalLimitMod || 0) / 100;
     // size 单位 = 千人（1 个军团 = 1000 人）
-    c.maxManpower = Math.max(200, Math.round(dev * 55));
-    c.manpower = clamp(c.manpower + c.maxManpower * 0.04, 0, c.maxManpower);
-    c.forceLimit = Math.max(2, Math.round(dev * 0.075 + prov * 0.28));
-    c.navalLimit = Math.max(0, Math.round(coastal * 1.2));
+    c.maxManpower = Math.max(200, Math.round(dev * 55 * (1 + (mods?.manpowerMod || 0) / 100)));
+    c.manpower = clamp(c.manpower, 0, c.maxManpower);
+    c.maxSailors = Math.max(100, Math.round(dev * 8 * (1 + (mods?.sailorMod || 0) / 100)));
+    c.sailors = clamp(c.sailors, 0, c.maxSailors);
+    c.forceLimit = Math.max(2, Math.round((dev * 0.075 + prov * 0.28) * flMod));
+    c.navalLimit = Math.max(0, Math.round(coastal * 1.2 * nlMod));
   }
 }
 
@@ -567,7 +631,7 @@ export function getRelation(world, a, b) {
   const key = a < b ? `${a}:${b}` : `${b}:${a}`;
   let r = world.relations.get(key);
   if (!r) {
-    r = { opinion: 0, truce: 0, alliance: false, marriage: false, guarantee: false, militaryAccess: false, hostile: false };
+    r = { mods: [], truce: 0, alliance: false, marriage: false, guarantee: false, militaryAccess: false, hostile: false };
     world.relations.set(key, r);
   }
   return r;
