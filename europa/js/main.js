@@ -28,7 +28,13 @@ async function boot() {
   await yieldTask();
 
   const t0 = performance.now();
+
+  msg.textContent = '正在生成世界地图、划分省份…';
+  await yieldTask();
   const world = createWorld({ seed: 'europa-1444' });
+
+  msg.textContent = '正在构建地图路径…';
+  await yieldTask();
   const paths = buildPaths(world.map);
   console.info(`[europa] 世界生成 ${(performance.now() - t0).toFixed(0)}ms · ` +
     `${world.map.provinces.length} 陆省 / ${world.map.seas.length} 海域`);

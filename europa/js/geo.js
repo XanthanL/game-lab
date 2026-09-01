@@ -12,7 +12,10 @@ export const BBOX = { west: -180, east: 180, south: -70, north: 70 };
 export const K = 25;                                  /* 每纬度单位 25 像素 */
 export const WORLD_H = (BBOX.north - BBOX.south) * K; /* = 3500 */
 const scaleAt = (lat) => (1 + Math.cos((lat * Math.PI) / 180)) / 2;
-export const WORLD_W = (BBOX.east - BBOX.west) * scaleAt(BBOX.south) * K; /* ≈ 4375 */
+/** 某纬度处的图幅宽度：赤道最宽，向两极收窄成透镜形 */
+export const widthAt = (lat) => (BBOX.east - BBOX.west) * scaleAt(lat) * K;
+/* 画幅必须按最宽处（赤道）取，否则高纬之外的陆地会被画到画布外 */
+export const WORLD_W = widthAt(0);                     /* = 9000 */
 
 export function proj(lon, lat) {
   const s = scaleAt(lat);
@@ -77,7 +80,7 @@ export function roughen(poly, amp, iters, seed) {
 }
 
 /** Sutherland–Hodgman：用半平面（a 一侧）裁剪凸多边形 */
-function clipHalf(poly, ax, ay, bx, by) {
+export function clipHalf(poly, ax, ay, bx, by) {
   const mx = (ax + bx) / 2, my = (ay + by) / 2;
   const nx = bx - ax, ny = by - ay;                  // 法线指向 b
   const side = (px, py) => (px - mx) * nx + (py - my) * ny <= 0; // 保留靠近 a 的一侧
@@ -97,27 +100,65 @@ function clipHalf(poly, ax, ay, bx, by) {
   return out;
 }
 
-/** Voronoi：半平面裁剪 + 近邻裁剪（按距离排序，够远就停） */
+/** Voronoi：半平面裁剪 + 近邻裁剪（空间哈希取候选，只裁局部几十个邻居） */
 export function voronoiCells(sites, bbox, opts = {}) {
   const { x0 = 0, y0 = 0, x1 = WORLD_W, y1 = WORLD_H, nbr = 26 } = opts;
+  const n = sites.length;
+  const cells = new Array(n);
+  if (!n) return cells;
   const rect = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
-  const cells = new Array(sites.length);
-  const order = new Array(sites.length);
-  const d2 = new Float64Array(sites.length);
-  for (let i = 0; i < sites.length; i++) {
+
+  /* 站点是抖动网格，近似均匀分布：桶边长按平均间距的 2 倍取，
+     要凑够 nbr 个最近邻只需向外扩两三圈，候选量与 n 无关。 */
+  const bucket = Math.max(4, 2 * Math.sqrt(((x1 - x0) * (y1 - y0)) / n));
+  const bw = Math.max(1, Math.ceil((x1 - x0) / bucket));
+  const bh = Math.max(1, Math.ceil((y1 - y0) / bucket));
+  const head = new Int32Array(bw * bh).fill(-1);
+  const nextOf = new Int32Array(n);
+  const bxOf = new Int32Array(n);
+  const byOf = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    const bx = Math.min(bw - 1, Math.max(0, Math.floor((sites[i][0] - x0) / bucket)));
+    const by = Math.min(bh - 1, Math.max(0, Math.floor((sites[i][1] - y0) / bucket)));
+    bxOf[i] = bx; byOf[i] = by;
+    const k = by * bw + bx;
+    nextOf[i] = head[k]; head[k] = i;
+  }
+
+  const limit = Math.max(24, nbr * 3);   // 候选留足余量，保证 nbr 个最近邻都在内
+  const cand = [];
+  const byDist = (a, b) => a.d - b.d;
+
+  for (let i = 0; i < n; i++) {
     const [sx, sy] = sites[i];
-    for (let j = 0; j < sites.length; j++) {
-      const dx = sites[j][0] - sx, dy = sites[j][1] - sy;
-      d2[j] = dx * dx + dy * dy;
-      order[j] = j;
+    const bx = bxOf[i], by = byOf[i];
+    cand.length = 0;
+
+    /* 扫到第 r 圈时，未扫描的站点必然在 r*bucket 之外（站点必在自己桶内，
+       而扫描框两侧各多出了 r 个桶）。所以第 nbr 近的候选一旦落进 r*bucket，
+       nbr 个最近邻就已收齐，继续扩圈只是浪费。 */
+    for (let r = 1; r <= 8; r++) {
+      const jy0 = Math.max(0, by - r), jy1 = Math.min(bh - 1, by + r);
+      const jx0 = Math.max(0, bx - r), jx1 = Math.min(bw - 1, bx + r);
+      for (let jy = jy0; jy <= jy1; jy++) {
+        for (let jx = jx0; jx <= jx1; jx++) {
+          if (r > 1 && jx > bx - r && jx < bx + r && jy > by - r && jy < by + r) continue; // 只扫新环
+          for (let j = head[jy * bw + jx]; j >= 0; j = nextOf[j]) {
+            if (j === i) continue;
+            const dx = sites[j][0] - sx, dy = sites[j][1] - sy;
+            cand.push({ d: dx * dx + dy * dy, j });
+          }
+        }
+      }
+      cand.sort(byDist);
+      if (cand.length >= limit && cand[nbr - 1].d < r * bucket * (r * bucket)) break;
     }
-    order.sort((a, b) => d2[a] - d2[b]);
+
     let cell = rect;
     // rect 必须是凸的且顶点顺序一致，clip 才成立
-    for (let k = 1; k < order.length && cell.length; k++) {
-      const j = order[k];
-      if (j === i) continue;
-      const far = Math.sqrt(d2[j]) * 0.5;
+    for (let k = 0; k < cand.length && cell.length; k++) {
+      const j = cand[k].j;
+      const far = Math.sqrt(cand[k].d) * 0.5;
       // 当前 cell 外接半径：超过就不再可能被裁
       let r = 0;
       for (const p of cell) r = Math.max(r, dist(p[0], p[1], sx, sy));
@@ -165,32 +206,50 @@ export class Grid {
     }
     return { grid: g, mask };
   }
-  /** 最近 site 归属（带桶加速） */
+  /** 最近 site 归属（CSR 桶加速） */
   static assign(sites, res, bucket) {
     const g = new Grid(res);
     const owner = new Int32Array(g.n).fill(-1);
+    const n = sites.length;
+    if (!n) return { grid: g, owner };
     const bw = Math.ceil(WORLD_W / bucket) + 2, bh = Math.ceil(WORLD_H / bucket) + 2;
-    const buckets = new Map();
-    sites.forEach((s, i) => {
-      const key = (Math.floor(s[1] / bucket) + 1) * bw + (Math.floor(s[0] / bucket) + 1);
-      let b = buckets.get(key);
-      if (!b) buckets.set(key, (b = []));
-      b.push(i);
-    });
+    const nbw = bw * bh;
+
+    // 计数前缀和 → 扁平桶表，扫描时只碰内存连续的站点下标
+    const start = new Int32Array(nbw + 1);
+    for (let i = 0; i < n; i++) {
+      const bx = Math.min(bw - 1, Math.max(0, Math.floor(sites[i][0] / bucket) + 1));
+      const by = Math.min(bh - 1, Math.max(0, Math.floor(sites[i][1] / bucket) + 1));
+      start[by * bw + bx + 1]++;
+    }
+    for (let k = 0; k < nbw; k++) start[k + 1] += start[k];
+    const cursor = start.slice(0, nbw);
+    const items = new Int32Array(n);
+    const bxc = new Float64Array(n), byc = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const bx = Math.min(bw - 1, Math.max(0, Math.floor(sites[i][0] / bucket) + 1));
+      const by = Math.min(bh - 1, Math.max(0, Math.floor(sites[i][1] / bucket) + 1));
+      items[cursor[by * bw + bx]++] = i;
+      bxc[i] = sites[i][0]; byc[i] = sites[i][1];
+    }
+
     for (let cy = 0; cy < g.h; cy++) {
       const y = cy * res + res / 2;
       for (let cx = 0; cx < g.w; cx++) {
         const x = cx * res + res / 2;
+        const bx = Math.floor(x / bucket) + 1, by = Math.floor(y / bucket) + 1;
         let best = -1, bd = Infinity;
         for (let r = 1; r <= 6; r++) {
-          const bx = Math.floor(x / bucket) + 1, by = Math.floor(y / bucket) + 1;
-          for (let jy = by - r; jy <= by + r; jy++) {
-            for (let jx = bx - r; jx <= bx + r; jx++) {
-              if (r > 1 && Math.abs(jx - bx) !== r && Math.abs(jy - by) !== r) continue; // 只扫环
-              const b = buckets.get(jy * bw + jx);
-              if (!b) continue;
-              for (const si of b) {
-                const dx = sites[si][0] - x, dy = sites[si][1] - y;
+          const jy0 = Math.max(0, by - r), jy1 = Math.min(bh - 1, by + r);
+          const jx0 = Math.max(0, bx - r), jx1 = Math.min(bw - 1, bx + r);
+          for (let jy = jy0; jy <= jy1; jy++) {
+            const row = jy * bw;
+            for (let jx = jx0; jx <= jx1; jx++) {
+              if (r > 1 && jx > bx - r && jx < bx + r && jy > by - r && jy < by + r) continue; // 只扫环
+              const k = row + jx;
+              for (let t = start[k], end = start[k + 1]; t < end; t++) {
+                const si = items[t];
+                const dx = bxc[si] - x, dy = byc[si] - y;
                 const d = dx * dx + dy * dy;
                 if (d < bd) { bd = d; best = si; }
               }

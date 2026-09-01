@@ -36,7 +36,7 @@ function nextId(obj) { const id = obj.nextId; obj.nextId++; return id; }
 export function createWorld(opts = {}) {
   const seed = opts.seed || 'europa-1444';
   const rng = makeRng(seed);
-  const M = buildMap({ spacing: opts.spacing || 20, res: 2, seed });
+  const M = buildMap({ seed, spacing: opts.spacing, res: opts.res });
 
   const world = {
     seed,

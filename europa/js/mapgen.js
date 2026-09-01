@@ -4,11 +4,14 @@
 import { makeRng } from './rng.js';
 import {
   BBOX, K, WORLD_W, WORLD_H, proj, projPoly, roughen, Grid,
-  voronoiCells, adjacencyFromGrid, polyArea, polyCentroid,
+  voronoiCells, adjacencyFromGrid, polyArea, polyCentroid, widthAt, clipHalf,
 } from './geo.js';
 import { LAND, SEAS, TERRAIN_BOXES, STRAITS } from './mapdata.js';
 
-export const DEFAULTS = { spacing: 20, res: 2, seed: 'europa-1444', rough: 5.0 };
+/* 全球图幅 9000×3500：spacing 决定省份粒度（世界像素/省），res 是栅格步长
+   （只影响面积统计与鼠标拾取精度）。spacing=40 实测生成 2.0s / 约 1.1 万陆省，
+   再密会让 Path2D 构建、底图烘焙与月度结算线性变慢。 */
+export const DEFAULTS = { spacing: 40, res: 4, seed: 'europa-1444', rough: 5.0 };
 
 export function unproject(x, y) {
   const lat = BBOX.north - y / K;
@@ -17,7 +20,8 @@ export function unproject(x, y) {
 }
 
 export function buildMap(opts = {}) {
-  const o = { ...DEFAULTS, ...opts };
+  const o = { ...DEFAULTS };
+  for (const [k, v] of Object.entries(opts)) if (v !== undefined) o[k] = v;
   const SP = o.spacing, RES = o.res;
 
   /* 1. 海岸线：投影 + 两级碎形扰动 */
@@ -84,6 +88,14 @@ export function buildMap(opts = {}) {
 
   /* 5. 组装省份对象 */
   const cells = voronoiCells(sites, {}, { nbr: 30 });
+  /* 收边：高纬度处图幅变窄，矩形画幅的角上没有经度定义（撒点时已剔除），
+     但边界站点的 cell 会朝空白角凸出去。按各自纬度裁回透镜形图幅。 */
+  for (let i = 0; i < sites.length; i++) {
+    const cell = cells[i];
+    if (!cell || cell.length < 3) continue;
+    const w = widthAt(BBOX.north - sites[i][1] / K);
+    if (w < WORLD_W) cells[i] = clipHalf(cell, w, 0, w + 1, 0);
+  }
   const seaPts = SEAS.map((s) => ({ ...s, p: proj(s.c[0], s.c[1]) }));
   const provs = [];
   const meanArea = (() => {

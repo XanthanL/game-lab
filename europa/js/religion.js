@@ -149,7 +149,7 @@ export function updateMissionaries(world, onLog) {
 
 /** 宗教改革触发条件：1517 年后，概率触发 */
 export function triggerReformationEvent(world, onLog) {
-  if (world.stats.date.y < 1517 || world.religiousReform.started) return;
+  if (world.date.y < 1517 || world.religiousReform.started) return;
   
   // 10% 概率每年尝试触发
   if (Math.random() > 0.1) return;
@@ -161,7 +161,7 @@ export function triggerReformationEvent(world, onLog) {
   if (catholicCount < 5) return;
   
   world.religiousReform.started = true;
-  world.religiousReform.year = world.stats.date.y;
+  world.religiousReform.year = world.date.y;
   
   // 随机选择一个德意志诸侯作为改革发起者
   const germanCountries = [...world.countries.values()]

@@ -386,7 +386,7 @@ export function runTrade(world) {
       const m = merchantsFor(world, t).get(id);
       
       /* 检查垄断特许权政策 */
-      const hasMonopolyPolicy = (c.policies || []).includes('pol_monopoly');
+      const hasMonopolyPolicy = !!c.policies?.has('pol_monopoly');
       
       /* 汉萨同盟特殊加成 */
       const hanseaticEff = isHanseaticMember(t) && st.hanseaticBonus > 0 
@@ -425,7 +425,7 @@ export function runTrade(world) {
       }
 
       /* 贸易倾销：人为压低价格获得竞争优势（政策解锁） */
-      const hasDumpingPolicy = (c.policies || []).includes('pol_dumping');
+      const hasDumpingPolicy = !!c.policies?.has('pol_dumping');
       if (hasDumpingPolicy && st.outgoingDumper && st.outgoingDumper.country === t) {
         power[t] *= 1.2;  // 倾销商人在该节点 +20% 贸易力
       }
@@ -561,7 +561,7 @@ export function setDumpingTarget(world, countryTag, nodeId) {
   if (!c || !n) return { ok: false, why: '无效的国家或节点' };
   
   /* 必须有垄断特许权政策 */
-  if (!c.policies || !c.policies.includes('pol_monopoly')) {
+  if (!c.policies?.has('pol_monopoly')) {
     return { ok: false, why: '需要解锁垄断特许权政策' };
   }
   
