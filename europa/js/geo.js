@@ -5,12 +5,14 @@ import { makeRng, clamp } from './rng.js';
 /* ────────────── 投影 ──────────────
    伪圆柱「折中」投影：x 随纬度收缩 (1+cos φ)/2。
    比等距圆柱好看（斯堪的纳维亚不至于横向炸开），
-   又不像墨卡托那样把高纬度拉成竖条。                      */
-export const BBOX = { west: -11, east: 50.5, south: 29.4, north: 70.6 };
-export const K = 20;                                  // 每纬度单位
-export const WORLD_H = (BBOX.north - BBOX.south) * K; // ≈ 824
+   又不像墨卡托那样把高纬度拉成竖条。
+   
+   全局版本：经度 -180°~180°，纬度 -70°~70° */
+export const BBOX = { west: -180, east: 180, south: -70, north: 70 };
+export const K = 25;                                  /* 每纬度单位 25 像素 */
+export const WORLD_H = (BBOX.north - BBOX.south) * K; /* = 3500 */
 const scaleAt = (lat) => (1 + Math.cos((lat * Math.PI) / 180)) / 2;
-export const WORLD_W = (BBOX.east - BBOX.west) * scaleAt(BBOX.south) * K; // ≈ 1150
+export const WORLD_W = (BBOX.east - BBOX.west) * scaleAt(BBOX.south) * K; /* ≈ 4375 */
 
 export function proj(lon, lat) {
   const s = scaleAt(lat);
