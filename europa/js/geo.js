@@ -182,26 +182,28 @@ export class Grid {
     this.n = this.w * this.h;
   }
   idx(cx, cy) { return cy * this.w + cx; }
-  /** 扫描线填充陆地多边形集合 → Uint8Array 掩膜 */
+  /** 扫描线填充陆地多边形集合 → Uint8Array 掩膜。
+      每个多边形独立做奇偶配对再并入掩膜——交点若跨多边形混排，
+      两块重叠大陆的交点会互相配对，把大陆内部填成海。 */
   static landMask(polys, res) {
     const g = new Grid(res);
     const mask = new Uint8Array(g.n);
     const xs = [];
     for (let cy = 0; cy < g.h; cy++) {
       const y = cy * res + res / 2;
-      xs.length = 0;
       for (const poly of polys) {
+        xs.length = 0;
         for (let i = 0, n = poly.length; i < n; i++) {
           const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n];
           if ((y1 > y) !== (y2 > y)) xs.push(x1 + ((y - y1) / (y2 - y1)) * (x2 - x1));
         }
-      }
-      if (xs.length < 2) continue;
-      xs.sort((a, b) => a - b);
-      for (let i = 0; i + 1 < xs.length; i += 2) {
-        const a = Math.max(0, Math.round(xs[i] / res));
-        const b = Math.min(g.w - 1, Math.round(xs[i + 1] / res));
-        for (let cx = a; cx <= b; cx++) mask[cy * g.w + cx] = 1;
+        if (xs.length < 2) continue;
+        xs.sort((a, b) => a - b);
+        for (let i = 0; i + 1 < xs.length; i += 2) {
+          const a = Math.max(0, Math.round(xs[i] / res));
+          const b = Math.min(g.w - 1, Math.round(xs[i + 1] / res));
+          for (let cx = a; cx <= b; cx++) mask[cy * g.w + cx] = 1;
+        }
       }
     }
     return { grid: g, mask };

@@ -266,7 +266,7 @@ function assignProvinces(world, rng) {
   const land = [];
   for (const p of M.provinces) {
     const arctic = p.terrain === 'tundra' || p.lat > 67.5;
-    const deepDesert = p.terrain === 'desert' && p.lat < 32.5;
+    const deepDesert = p.terrain === 'desert';
     if (arctic || deepDesert) {
       p.wasteland = true;
       const wp = world.provinces.get(p.id);
