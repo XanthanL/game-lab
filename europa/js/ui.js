@@ -535,6 +535,14 @@ export class UI {
         this.log(r.ok ? `解除了对 ${o ? o.name : '对方'} 的禁运` : '解除失败：' + r.why);
         return;
       }
+      
+      /* ── 传教士 ── */
+      case 'sendMissionary': {
+        const r = sendMissionary(W, tag, el.dataset.pid, (msg) => this.log(msg));
+        if (!r.ok) this.log('派遣传教士失败：' + r.why);
+        return;
+      }
+
       default: return;
     }
   }
@@ -747,12 +755,29 @@ export class UI {
 
     if (mine) {
       const cc = coreCost(W, this.tag, p.id);
-      html += `<div class="acts">
-        <button type="button" data-act="core" data-pid="${p.id}" ${core || this.me.powers.adm < cc ? 'disabled' : ''}>${core ? '已是核心' : `核心化（${cc} ADM）`}</button>
-        ${!p.capital && p.cores.has(this.tag) && p.controller === this.tag
-          ? `<button type="button" data-act="moveCapital" data-pid="${p.id}" ${this.me.powers.adm < 100 ? 'disabled' : ''} title="首都：城防 2 级、贸易力 +25%；本土贸易节点随首都而定">迁都至此（100 ADM）</button>`
-          : ''}
-      </div>`;
+      html += `<div class="acts">`;
+      
+      /* 核心化 */
+      html += `<button type="button" data-act="core" data-pid="${p.id}" ${core || this.me.powers.adm < cc ? 'disabled' : ''}>${core ? '已是核心' : `核心化（${cc} ADM）`}</button>`;
+      
+      /* 传教士功能 */
+      const maxMissionaries = 3 + Math.floor(this.me.tech.adm / 10);
+      const activeMissionaries = W.missionaries?.filter(m => m.fromTag === this.tag).length || 0;
+      const canSendMissionary = !p.sea && owner && owner.religion !== this.me.religion 
+        && activeMissionaries < maxMissionaries;
+      
+      if (canSendMissionary) {
+        html += `<button type="button" data-act="sendMissionary" data-pid="${p.id}">⛪ 派遣传教士</button>`;
+      } else if (activeMissionaries >= maxMissionaries) {
+        html += `<button type="button" disabled>传教士已满 (${activeMissionaries}/${maxMissionaries})</button>`;
+      }
+      
+      /* 迁都 */
+      if (!p.capital && p.cores.has(this.tag) && p.controller === this.tag) {
+        html += `<button type="button" data-act="moveCapital" data-pid="${p.id}" ${this.me.powers.adm < 100 ? 'disabled' : ''} title="首都：城防 2 级、贸易力 +25%；本土贸易节点随首都而定">迁都至此（100 ADM）</button>`;
+      }
+      
+      html += `</div>`;
     } else if (p.owner) {
       const claimed = this.me.claims.has(p.id);
       const adj = [...this.me.provinces].some((id) => W.provinces.get(id).adj.includes(p.id));
