@@ -44,6 +44,7 @@ import {
   setMerchant, clearMerchant, autoMerchants, shareOf, stepToward,
   setEmbargo, liftEmbargo, isHanseaticMember, checkSpiceWarTrigger,
 } from './trade.js';
+import { sendMissionary } from './religion.js';
 import {
   ESTATES, PRIVILEGES, grantPrivilege, revokePrivilege,
   seizeLand, summonDiet, sellTitles,

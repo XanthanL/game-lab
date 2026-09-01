@@ -7,6 +7,7 @@ import { assignTradeNodes, initTrade, runTrade, autoMerchants } from './trade.js
 import { modsFor, invalidateMods } from './modifiers.js';
 import { createFleet } from './navy.js';
 import { initEstates } from './estates.js';
+import { initReligion } from './religion.js';
 
 /* 简单二叉堆（最小堆） */
 class MinHeap {
@@ -144,8 +145,11 @@ export function createWorld(opts = {}) {
   /* 5. 贸易节点归属 + 本土节点 */
   assignTradeNodes(world);
   initTrade(world);
+  
+  /* 6. 宗教系统初始化 */
+  initReligion(world);
 
-  /* 6. 国家次要初始化：人力/上限/收入首算 */
+  /* 7. 国家次要初始化：人力/上限/收入首算 */
   recalcCountries(world);
 
   /* 7. 外交关系默认值 */

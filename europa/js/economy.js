@@ -11,6 +11,7 @@ import { fleetMaint } from './navy.js';
 import { supplyLimit } from './military.js';
 import { estatesTick } from './estates.js';
 import { cleanupExpiredAmbassadors } from './diplomacy.js';
+import { updateMissionaries, triggerReformationEvent, randomConversion } from './religion.js';
 
 export { GOOD_VALUE };
 
@@ -471,6 +472,11 @@ export function monthlyTick(world) {
 
   // 清理过期使节
   cleanupExpiredAmbassadors(world);
+  
+  /* 宗教更新 */
+  triggerReformationEvent(world, (msg) => world.log.push(msg));
+  randomConversion(world, (msg) => world.log.push(msg));
+  updateMissionaries(world, (msg) => world.log.push(msg));
 
   recalcCountries(world);
   return d;
