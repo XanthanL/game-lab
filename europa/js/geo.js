@@ -1,6 +1,6 @@
 // 投影 / 多边形 / 栅格 / Voronoi —— 纯几何层，不碰 DOM，node 里也能跑
 
-import { makeRng, clamp } from './rng.js';
+import { clamp } from './rng.js';
 
 /* ────────────── 投影 ──────────────
    伪圆柱「折中」投影：x 随纬度收缩 (1+cos φ)/2。
@@ -19,7 +19,8 @@ export const WORLD_W = widthAt(0);                     /* = 9000 */
 
 export function proj(lon, lat) {
   const s = scaleAt(lat);
-  return [(lon - BBOX.west) * s * K, (BBOX.north - lat) * K];
+  /* 0° 经线落在图幅中线：两侧随纬度对称收窄，世界图不会歪向一边 */
+  return [WORLD_W / 2 + lon * s * K, (BBOX.north - lat) * K];
 }
 export function projPoly(pts) { return pts.map((p) => proj(p[0], p[1])); }
 
@@ -56,28 +57,6 @@ export function pointInPoly(x, y, poly) {
   return inside;
 }
 export function dist(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return Math.sqrt(dx * dx + dy * dy); }
-
-/** 海岸线加碎形扰动：手绘折线 → 看起来像真海岸 */
-export function roughen(poly, amp, iters, seed) {
-  const rng = makeRng(seed);
-  let pts = poly.slice();
-  for (let it = 0; it < iters; it++) {
-    const out = [];
-    const a = amp / Math.pow(1.9, it);
-    for (let i = 0; i < pts.length; i++) {
-      const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
-      out.push([x1, y1]);
-      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-      const dx = x2 - x1, dy = y2 - y1;
-      const len = Math.hypot(dx, dy) || 1;
-      // 沿法线方向外推，幅度随段长收敛，避免自交
-      const d = rng.gauss(0, 1) * Math.min(a, len * 0.28);
-      out.push([mx + (-dy / len) * d, my + (dx / len) * d]);
-    }
-    pts = out;
-  }
-  return pts;
-}
 
 /** Sutherland–Hodgman：用半平面（a 一侧）裁剪凸多边形 */
 export function clipHalf(poly, ax, ay, bx, by) {
@@ -182,20 +161,37 @@ export class Grid {
     this.n = this.w * this.h;
   }
   idx(cx, cy) { return cy * this.w + cx; }
-  /** 扫描线填充陆地多边形集合 → Uint8Array 掩膜。
-      每个多边形独立做奇偶配对再并入掩膜——交点若跨多边形混排，
-      两块重叠大陆的交点会互相配对，把大陆内部填成海。 */
-  static landMask(polys, res) {
+  /** 扫描线填充陆地环组 → Uint8Array 掩膜。
+      每组 = 外环 + 内环（里海、大湖这类内水域），同组的交点一起排序做 even-odd
+      配对，内环处自然留空；组与组之间取并集（不能混排交点，否则相邻大陆的
+      交点会互相配对，把对方内部填成海）。 */
+  static landMask(groups, res) {
     const g = new Grid(res);
     const mask = new Uint8Array(g.n);
     const xs = [];
-    for (let cy = 0; cy < g.h; cy++) {
-      const y = cy * res + res / 2;
-      for (const poly of polys) {
+    for (const group of groups) {
+      /* 逐环算行包围盒：一行只处理穿过它的环 */
+      const rings = [];
+      let lo = g.h, hi = -1;
+      for (const poly of group) {
+        let y0 = Infinity, y1 = -Infinity;
+        for (const [, y] of poly) { if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        const a = Math.max(0, Math.floor(y0 / res)), b = Math.min(g.h - 1, Math.ceil(y1 / res));
+        if (b < a || poly.length < 3) continue;
+        rings.push({ poly, a, b });
+        if (a < lo) lo = a;
+        if (b > hi) hi = b;
+      }
+      for (let cy = lo; cy <= hi; cy++) {
+        const y = cy * res + res / 2;
         xs.length = 0;
-        for (let i = 0, n = poly.length; i < n; i++) {
-          const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n];
-          if ((y1 > y) !== (y2 > y)) xs.push(x1 + ((y - y1) / (y2 - y1)) * (x2 - x1));
+        for (const r of rings) {
+          if (cy < r.a || cy > r.b) continue;
+          const poly = r.poly;
+          for (let i = 0, n = poly.length; i < n; i++) {
+            const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n];
+            if ((y1 > y) !== (y2 > y)) xs.push(x1 + ((y - y1) / (y2 - y1)) * (x2 - x1));
+          }
         }
         if (xs.length < 2) continue;
         xs.sort((a, b) => a - b);

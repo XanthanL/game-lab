@@ -24,6 +24,10 @@ class Ctx2D {
   fill() { tally('fill'); this.calls++; }
   stroke() { tally('stroke'); this.calls++; }
   drawImage() { tally('drawImage'); }
+  fillText() { tally('fillText'); }
+  strokeText() { tally('strokeText'); }
+  /** 宽度按「字数 × 字号」近似——中文注记够用，只为跑通放得下判断 */
+  measureText(t) { const size = parseFloat(this.font) || 10; return { width: String(t).length * size }; }
 }
 for (const k of ['fillStyle', 'strokeStyle', 'lineWidth', 'lineJoin', 'imageSmoothingEnabled']) {
   Object.defineProperty(Ctx2D.prototype, k, { get() { return this['_' + k]; }, set(v) { this['_' + k] = v; }, configurable: true });
@@ -88,15 +92,15 @@ console.log(`  Path2D 构建完成：${paths.provPaths.size} 条省路径`);
 world.playerTag = 'FRA';
 
 console.log('\n绘制路径自检：');
-ok('paintBase · 全部 6 种模式', () => {
-  for (const mode of ['political', 'terrain', 'religion', 'culture', 'trade', 'unrest']) {
+ok('paintBase · 全部 7 种模式', () => {
+  for (const mode of ['political', 'terrain', 'religion', 'culture', 'trade', 'unrest', 'tradenode']) {
     paintBase(new Ctx2D(), world, paths, mode, fitView(WORLD_W, WORLD_H, 1200, 760), { w: 1200, h: 760, dpr: 2 });
   }
 });
 ok('provinceColor · 荒地/未殖民/海域省', () => {
   let n = 0;
   for (const p of world.provinces.values()) {
-    for (const m of ['political', 'terrain', 'religion', 'culture', 'trade', 'unrest']) {
+    for (const m of ['political', 'terrain', 'religion', 'culture', 'trade', 'unrest', 'tradenode']) {
       const c = provinceColor(p, world, m);
       if (typeof c !== 'string' || !c) throw new Error(`模式 ${m} 在省 ${p.id} 返回了 ${c}`);
     }
@@ -135,12 +139,34 @@ ok('zoomAt / panBy → 位图变换而非重烘焙', () => {
   renderer.panBy(40, -25);
   renderer.draw();
 });
-ok('setMode · 6 种模式切换', () => {
-  for (const m of ['terrain', 'religion', 'culture', 'trade', 'unrest', 'political']) {
+ok('setMode · 7 种模式切换', () => {
+  for (const m of ['terrain', 'religion', 'culture', 'trade', 'unrest', 'tradenode', 'political']) {
     renderer.setMode(m);
     renderer.bakeAt = 0;
     renderer.draw();
   }
+});
+ok('focusOn · 飞向国家并居中收敛', () => {
+  const c = world.countries.get('FRA');
+  renderer.focusOn([...c.provinces], { margin: 0.8, dur: 400 });
+  if (!renderer.anim) throw new Error('focusOn 没有建立动画');
+  if (!Number.isFinite(renderer.view.zoom) || renderer.view.zoom <= renderer.fitZoom) {
+    throw new Error('聚焦缩放非法或未真正放大：' + renderer.view.zoom);
+  }
+  // 模拟动画结束：把起始时间推到很久以前再 draw 一帧，应清空 anim 且 pan 合法
+  renderer.anim.t0 = performance.now() - 100000;
+  renderer.draw();
+  if (renderer.anim) throw new Error('动画结束后 anim 未清空');
+  if (!Number.isFinite(renderer.view.panX) || !Number.isFinite(renderer.view.panY)) {
+    throw new Error('聚焦后 pan 非法');
+  }
+});
+ok('focusOn · 玩家拖拽立即打断动画', () => {
+  const c = world.countries.get('OTT');
+  renderer.focusOn([...c.provinces]);
+  if (!renderer.anim) throw new Error('聚焦未建立动画');
+  renderer.panBy(30, -20);                 // 模拟玩家拖拽
+  if (renderer.anim) throw new Error('拖拽后动画未被取消');
 });
 ok('setHover / setSelected ± 无效 id', () => {
   const some = world.map.provinces[0].id;

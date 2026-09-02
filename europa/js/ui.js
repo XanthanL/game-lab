@@ -344,7 +344,14 @@ export class UI {
       case 'disembark': this.openLanding(id); return;
 
       /* ── 外交 ── */
-      case 'selCountry': this.selCountry = el.dataset.ctag; return;
+      case 'selCountry':
+        this.selCountry = el.dataset.ctag;
+        // 点选国家时把镜头飞过去定位；玩家仍可随时手动控制视角
+        if (this.renderer) {
+          const c = W.countries.get(this.selCountry);
+          if (c && c.provinces.size) this.renderer.focusOn([...c.provinces], { margin: 0.8, dur: 520 });
+        }
+        return;
       case 'dipGift': {
         const r = sendGift(W, tag, this.selCountry);
         this.log(r.ok ? `赠送了 ${r.amount} 金币` : '送礼失败：' + r.why);

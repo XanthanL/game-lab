@@ -78,6 +78,9 @@ desktop.ini
 # ============ europa 子项目：生成 / 临时产物 ============
 # 预览图与临时脚本由 tools/ 下的构建脚本产出，不进仓库。
 europa/tools/_tmp_*.mjs
-europa/tools/preview-*.png
-europa/tools/preview-*.jpg
-europa/tools/*.small.*
+europa/tools/preview*
+europa/tools/*small*
+
+# ============ nova-drift 子项目：截图验证临时产物 ============
+# 浏览器截图 / 断言测试产物，不进仓库。
+nova-drift/.tmp_test/

@@ -330,13 +330,13 @@ export const TRADE_GOODS = {
 };
 
 export const TERRAINS = {
-  farmland: { name: '农田', en: 'Farmland', color: [220, 205, 150] },
-  forest: { name: '森林', en: 'Forest', color: [140, 170, 110] },
-  hills: { name: '丘陵', en: 'Hills', color: [190, 175, 135] },
-  alpine: { name: '山地', en: 'Mountains', color: [180, 165, 150] },
-  coastal: { name: '海岸', en: 'Coast', color: [210, 200, 160] },
-  steppe: { name: '草原', en: 'Steppe', color: [205, 185, 130] },
-  desert: { name: '沙漠', en: 'Desert', color: [225, 205, 160] },
-  ocean: { name: '海洋', en: 'Ocean', color: [190, 210, 220] },
-  tundra: { name: '苔原', en: 'Tundra', color: [195, 205, 190] },
+  farmland: { name: '农田', en: 'Farmland', color: [202, 214, 148] },
+  forest: { name: '森林', en: 'Forest', color: [100, 142, 90] },
+  hills: { name: '丘陵', en: 'Hills', color: [194, 178, 118] },
+  alpine: { name: '山地', en: 'Mountains', color: [168, 160, 152] },
+  coastal: { name: '海岸', en: 'Coast', color: [222, 210, 164] },
+  steppe: { name: '草原', en: 'Steppe', color: [212, 198, 132] },
+  desert: { name: '沙漠', en: 'Desert', color: [230, 210, 166] },
+  ocean: { name: '海洋', en: 'Ocean', color: [138, 174, 184] },
+  tundra: { name: '苔原', en: 'Tundra', color: [196, 204, 196] },
 };

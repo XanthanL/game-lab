@@ -3,9 +3,9 @@
      1. 五层 inset 高光/暗边 box-shadow（原封不动，外投影已去掉）
      2. border: 1px double rgba(51,51,51,0.08)
      3. background rgba(255,255,255,0.04) + backdrop-filter blur(2px)
-     4. ::before 折射暗环：top 35% / 四周内缩 8px / 1px 黑描边 / blur(8px)
-     5. ::after 45° 双端白高光（端点 25% / blur 3px）
+     4. ::after 45° 双端白高光（端点 25% / blur 3px）——唯一保留的伪元素层
    玻璃常驻，不依赖 :hover 触发；hover 只做 1~2px 的位移，不加特效层。
+   折射暗环（原版 ::before blur(8px) 黑描边）已移除：那圈柔化暗晕属于"背后的模糊阴影"。
    背景两层：分区主题背景图（每区一张）→ 玻璃组件。
    两套配色（暗/亮）通过 data-theme 切换，未设置时跟随系统 prefers-color-scheme。
    主题切换是一枚灯泡开关，造型取自 CodePen "Pure CSS Bulb Switch"（Wujek_Greg）。 */
@@ -36,8 +36,8 @@
   --l-sec-img-o: 0.12;
 
   /* ========== 液态玻璃 · 原版数值（两主题共用）==========
-     五层 inset 是 yzrt 原封不动的；折射暗环回到 ::before 用原版描边环实现。
-     外投影（原版 0 4px 8px rgba(0,0,0,.2)）已按要求去掉。 */
+     五层 inset 是 yzrt 原封不动的；折射暗环（原版 ::before blur(8px) 黑描边）已移除。
+     外投影（原版 0 4px 8px rgba(0,0,0,.2)）此前已按要求去掉。 */
   --glass:
     inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
     inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
@@ -116,8 +116,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 
 /* ============ 液态玻璃（原版照搬，常驻）============
    本体 ：五层原版 inset + double 边框 + blur(2px)
-   ::before 折射暗环（原版）：top 35% 起、四周内缩 8px、1px 黑边、blur(8px)
-   ::after  45° 双端白高光（透明段 25%~75%）、blur(3px)、最上层 = 液态感 */
+   ::after  45° 双端白高光（透明段 25%~75%）、blur(3px)、最上层 = 液态感
+   折射暗环（原版 ::before blur(8px)）已删：那圈柔化暗晕是"背后的模糊阴影"。 */
 .glass, .card, .row {
   position: relative;
   isolation: isolate;
@@ -125,14 +125,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass);
-}
-.glass::before, .card::before, .row::before {
-  content: ''; position: absolute; z-index: 1; pointer-events: none;
-  top: 35%; left: 8px;
-  width: calc(100% - 16px); height: calc(100% - 16px);
-  border: 1px solid rgba(0, 0, 0, 0.9);
-  border-radius: inherit;
-  filter: blur(8px);
 }
 .glass::after, .card::after, .row::after {
   content: ''; position: absolute; z-index: 4; pointer-events: none; inset: 0;
@@ -144,7 +136,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
     transparent 75%,
     var(--glass-sheen) 100%);
 }
-/* 卡片正文：压在折射暗环之上 */
+/* 卡片正文：置于玻璃本体与 ::after 高光之间，保证文字清晰 */
 .card > *, .row > * { position: relative; z-index: 2; }
 
 /* 封面图：绝对定位铺在卡片顶部，向下渐隐融入玻璃卡身 */
@@ -237,17 +229,17 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .bulb-switch {
   --bs-w: 56px; --bs-h: 28px; --bs-bulb: 24px; --bs-pad: 3px;
   --bs-speed: .55s;
-  /* —— 熄灭（暗色主题）—— */
-  --bulb-glass: #34343a;
-  --bulb-rim:   #3d3d44;
-  --bulb-deep:  #2a2a2f;
-  --bulb-core:  #44444b;
-  --bulb-ring:  #4e4e56;
-  --bulb-hot:   #57575f;
-  --bulb-glow:  rgba(0, 0, 0, 0.28);
-  --bulb-fil:   #3e3e45;
+  /* —— 熄灭（暗色主题）：冷灰，区分明显但不刺眼 —— */
+  --bulb-glass: #82828c;
+  --bulb-rim:   #9e9ea8;
+  --bulb-deep:  #5e5e66;
+  --bulb-core:  #aaaaae;
+  --bulb-ring:  #b8b8c0;
+  --bulb-hot:   #cacace;
+  --bulb-glow:  rgba(0, 0, 0, 0.16);
+  --bulb-fil:   #9c9ca4;
   --bulb-halo:  rgba(0, 0, 0, 0);
-  --bulb-drop:  rgba(0, 0, 0, 0.34);
+  --bulb-drop:  rgba(0, 0, 0, 0.28);
   --bs-x: var(--bs-pad);
 
   flex: 0 0 auto; width: var(--bs-w); height: var(--bs-h);
@@ -420,10 +412,12 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   100% { left: -5.3px; bottom: -2.7px; width: 3px; height: 3px; opacity: 0; }
 }
 
-/* ============ HERO：纯视觉过渡带（无文字），让作品成为首屏焦点 ============ */
+/* ============ HERO：仅三枚分区导航按钮，紧凑不抢版面 ============ */
 .hero {
-  min-height: 28vh;
+  min-height: clamp(120px, 18vh, 200px);
+  display: flex; flex-direction: column; justify-content: center;
   position: relative; isolation: isolate;
+  padding: clamp(20px, 4vh, 44px) 0;
 }
 /* 首屏背景图：给玻璃提供可折射的明暗层次 */
 .hero::before {
@@ -441,11 +435,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   :root:not([data-theme="dark"]) .hero.lost::before { display: none; }
 }
 
-.hero-lead { max-width: 18ch; }
-.hero h1 {
-  font-family: var(--serif); font-weight: 400;
-  font-size: clamp(30px, 5vw, 60px); line-height: 1.06; letter-spacing: -0.01em;
-}
 /* 动态背景：两团低对比光晕缓慢漂移，营造“活”的气息而不抢内容 */
 .hero::after {
   content: ''; position: absolute; z-index: -1; inset: -12% -22%;
@@ -467,20 +456,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
       radial-gradient(46% 56% at 82% 70%, rgba(90, 70, 120, 0.09), transparent 70%);
   }
 }
-.hero-side {
-  display: flex; flex-direction: column; gap: 26px;
-  padding-bottom: clamp(4px, 1.6vh, 16px);
-}
-.hero-meta {
-  display: flex; flex-wrap: wrap; gap: 8px 22px;
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--ink-3);
-}
-.hero-meta span { white-space: nowrap; }
 .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 26px; }
 .lede { max-width: 46ch; font-size: 15.5px; line-height: 1.8; color: var(--ink-2); }
 .lede b { color: var(--ink); font-weight: 500; }
-.hero-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .btn {
   display: inline-flex; align-items: center; gap: 12px; padding: 13px 24px;
   border-radius: 100px; color: var(--ink); background: transparent;
@@ -504,13 +482,30 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .toc em { font-style: normal; color: var(--ink-3); }
 
 /* ============ 分区：编号 + 大标题 + 背景图 ============ */
-.sec { padding-top: clamp(72px, 12vh, 120px); position: relative; isolation: isolate; }
+/* 分区间距用 margin-top（板块之间），面板内留白用 padding（面板边缘→内容） */
+.sec {
+  margin-top: clamp(80px, 12vh, 140px);
+  padding: 36px calc(var(--pad) * 0.6) 44px;
+  position: relative; isolation: isolate;
+}
+/* 第一个板块（游戏）：与 Hero 之间的间距，等同板块之间的间距 */
+.sec:first-of-type {
+  margin-top: clamp(80px, 12vh, 140px);
+  padding-top: 36px;
+}
 .sec::before {
   content: ""; position: absolute; z-index: -1; inset: -6px calc(var(--pad) * -0.6);
   background: var(--sec-img) center / cover no-repeat;
   opacity: var(--sec-img-o); border-radius: 44px;
-  -webkit-mask-image: radial-gradient(118% 92% at 50% 34%, #000 36%, transparent 74%);
-  mask-image: radial-gradient(118% 92% at 50% 34%, #000 36%, transparent 74%);
+  /* 软框（径向，四边渐隐）+ 底部纵向渐隐到完全透明（最下方消失） */
+  -webkit-mask-image:
+    radial-gradient(118% 104% at 50% 40%, #000 32%, transparent 80%),
+    linear-gradient(to bottom, #000 56%, transparent 94%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    radial-gradient(118% 104% at 50% 40%, #000 32%, transparent 80%),
+    linear-gradient(to bottom, #000 56%, transparent 94%);
+  mask-composite: intersect;
 }
 #games { --sec-img: url("bg/games.jpg"); }
 #plays { --sec-img: url("bg/stage.jpg"); }
@@ -601,13 +596,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .row-go { font-family: var(--mono); font-size: 12px; color: var(--ink-3); transition: transform .5s var(--ease), color .4s var(--ease); }
 .row:hover .row-go { color: var(--ink); transform: translateX(5px); }
 
-.foot-note {
-  grid-column: 1 / -1;
-  margin-top: 4px; padding: 16px 22px; border-radius: 16px;
-  font-size: 13px; line-height: 1.8; color: var(--ink-3); max-width: none;
-  box-shadow: var(--glass-sm);
-}
-
 /* ============ Footer ============ */
 footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line); padding: 46px 0 60px; }
 .foot-in { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
@@ -626,8 +614,7 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   .grid { grid-template-columns: repeat(2, 1fr); }
   .card, .card-s3, .card-s4, .card-feat { grid-column: auto; }
   .card-feat { grid-column: span 2; grid-row: auto; min-height: 240px; }
-  .hero { grid-template-columns: 1fr; align-items: start; }
-  .hero h1 { font-size: clamp(28px, 8vw, 46px); }
+  .hero { align-items: flex-start; }
 }
 @media (max-width: 720px) {
   .grid { grid-template-columns: 1fr; }

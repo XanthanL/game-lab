@@ -81,6 +81,7 @@ export function createWorld(opts = {}) {
       siege: null,
       adj: p.adj,
       lon: p.lon, lat: p.lat, cx: p.cx, cy: p.cy, cell: p.cell,
+      seaDist: p.seaDist,
     };
     world.provinces.set(p.id, prov);
   }
@@ -261,12 +262,14 @@ function assignProvinces(world, rng) {
 
   /* 气候荒地：撒哈拉腹地与北极冻土。1444 年谁也不住在那儿，
      而且它们必须从「可分配土地」的分母里剔除——否则目标规模会被
-     一大片没人要的沙子和苔原稀释，法兰西这种拥挤地带的国家永远吃不到额度。 */
+     一大片没人要的沙子和苔原稀释，法兰西这种拥挤地带的国家永远吃不到额度。
+     沙漠只算「内陆沙漠」：离海 4.5° 以内仍有降水（尼罗河、北非海岸、
+     阿拉伯沿海），真实尺寸的地球上把全部沙漠划成荒地会连埃及一起抹掉。 */
   const wasteland = [];
   const land = [];
   for (const p of M.provinces) {
     const arctic = p.terrain === 'tundra' || p.lat > 67.5;
-    const deepDesert = p.terrain === 'desert';
+    const deepDesert = p.terrain === 'desert' && (p.seaDist ?? 0) > 4.5;
     if (arctic || deepDesert) {
       p.wasteland = true;
       const wp = world.provinces.get(p.id);
@@ -277,107 +280,156 @@ function assignProvinces(world, rng) {
   const total = land.length;
   const landIds = new Set(land.map((p) => p.id));
 
-  /* 目标规模：权重按可分配土地缩放，并保底 2 省 */
-  const rawSum = COUNTRIES.reduce((s, c) => s + c.weight, 0);
-  const scale = (total * 0.92) / rawSum;
-  const target = new Map(COUNTRIES.map((c) => [c.tag, Math.max(2, Math.round(c.weight * scale))]));
-
-  /* --- 1) 首都播种：大国优先，且每块地只认领一次 --- */
-  const capProv = new Map();
-  const taken = new Set();
-  const byWeight = COUNTRIES.slice().sort((a, b) => b.weight - a.weight);
-  for (const c of byWeight) {
-    const seeds = [c.capital, ...(c.capital2 || [])];
-    const list = [];
-    for (const cap of seeds) {
-      let best = null, bd = Infinity;
-      for (const p of land) {
-        if (taken.has(p.id)) continue;
-        const d = (p.lon - cap[1]) ** 2 + ((p.lat - cap[2]) * 0.7) ** 2;
-        if (d < bd) { bd = d; best = p; }
-      }
-      if (best) { taken.add(best.id); list.push(best.id); }
-    }
-    if (!list.length) {
-      const p = land.find((q) => !taken.has(q.id));
-      if (p) { taken.add(p.id); list.push(p.id); }
-    }
-    capProv.set(c.tag, list);
-  }
-
-  /* 地形阻力：山脉/沙漠/冻土让边界更容易停在自然屏障上 */
+  /* 地形阻力：山脉/沙漠/冻土让边界更容易停在自然屏障上。
+     代价以世界像素计，BUDGET 即一个国家能离首都走多远；随 spacing 缩放，
+     保证不同粒度下国家的地理覆盖范围一致。 */
   const TERRAIN_COST = {
-    mountains: 2.4, highlands: 1.5, hills: 1.3,
-    desert: 2.6, steppe: 1.2, forest: 1.35,
-    farmlands: 1.0, grasslands: 1.0, coastal: 1.0, tundra: 2.0,
+    alpine: 2.4, hills: 1.35, steppe: 1.15, forest: 1.35,
+    desert: 2.6, tundra: 2.0, farmland: 1.0, coastal: 1.0, grasslands: 1.0,
   };
+  const BUDGET = 900 * (M.spacing / 40);
   function edgeCost(p, q) {
     let d = Math.hypot(p.cx - q.cx, p.cy - q.cy);
     if (d < 1e-6) d = 0.5;
     return d * (0.55 * (TERRAIN_COST[p.terrain] || 1) + 0.45 * (TERRAIN_COST[q.terrain] || 1));
   }
 
-  /* --- 2) 漫灌。硬上限：吃满目标就停手，剩下的留作未殖民荒原 ---
-     这一步的硬上限是必需的。加权 Voronoi 只能控制「相对扩张速度」，
-     无法限制最终面积——只要整块陆地必须分完，东欧与北非那些无人竞争的
-     地带就必然被莫斯科、奥斯曼吃光（实测莫斯科 445 省 vs 目标 54）。
-     而 1444 年的西伯利亚、撒哈拉内陆本就是无主地，
-     所以「吃满即停、余下留白」既修了失衡，也更贴近史实。 */
-  function flood(speed, cap) {
+  /* --- 1) 首都播种：全局「最近优先」配对，每块地只认领一次 ---
+     早先按国力从大到小依次认领，结果在省密的地方出了岔子：托斯卡纳
+     周边每一块地都被邻国先行占作首府，锡耶纳的首府被挤到 3° 外的阿尔卑斯。
+     改成把所有首都请求的候选省放在一起按距离统一排序、近的先配。 */
+  const capProv = new Map();
+  const taken = new Set();
+  const reqs = [];
+  for (const c of COUNTRIES) {
+    capProv.set(c.tag, []);
+    [c.capital, ...(c.capital2 || [])].forEach((cap, i) => {
+      reqs.push({ tag: c.tag, i, lon: cap[1], lat: cap[2] });
+    });
+  }
+  const K = 40;                        // 每个请求考察的候选省数
+  const cands = [];
+  for (const r of reqs) {
+    const top = [];                    // 按距离降序的 K 小表，堆顶是最远的
+    for (const p of land) {
+      const d = (p.lon - r.lon) ** 2 + ((p.lat - r.lat) * 0.7) ** 2;
+      if (top.length < K) { top.push([d, p.id]); if (top.length === K) top.sort((a, b) => b[0] - a[0]); continue; }
+      if (d >= top[0][0]) continue;
+      top[0] = [d, p.id];
+      let i = 0;
+      while (i + 1 < K && top[i][0] < top[i + 1][0]) { [top[i], top[i + 1]] = [top[i + 1], top[i]]; i++; }
+    }
+    for (const [d, pid] of top) cands.push({ d, tag: r.tag, i: r.i, pid });
+  }
+  cands.sort((a, b) => a.d - b.d);
+  const filled = new Map();
+  for (const c of cands) {
+    const key = c.tag + '#' + c.i;
+    if (filled.has(key) || taken.has(c.pid)) continue;
+    taken.add(c.pid);
+    filled.set(key, c.pid);
+  }
+  for (const r of reqs) {
+    const key = r.tag + '#' + r.i;
+    let pid = filled.get(key);
+    if (pid == null) {                 // 候选池被邻国占满：退回全局最近的空地
+      let best = null, bd = Infinity;
+      for (const p of land) {
+        if (taken.has(p.id)) continue;
+        const d = (p.lon - r.lon) ** 2 + ((p.lat - r.lat) * 0.7) ** 2;
+        if (d < bd) { bd = d; best = p; }
+      }
+      if (best) { pid = best.id; taken.add(pid); }
+    }
+    if (pid != null) capProv.get(r.tag).push(pid);
+  }
+
+  /* --- 1.5) 圈内供给：从所有首都种子按行军代价走 BUDGET ---
+     真实地球上，撒哈拉—伊朗—塔克拉玛干—喜马拉雅这条荒地腰带把印度、
+     中国、中南半岛隔在了行军范围之外，而 1444 年的名单也只有欧陆与
+     近东八十二国。目标规模必须按「首都走得到的地」算，
+     否则等于给每个国家派了它根本拿不到的额度，欧洲自己先空掉三分之二。
+     限额用行军代价而非跳数：省子大小现在随开发度变化，一跳的实地距离不等。 */
+  let reachable = 0;
+  {
+    const cost = new Map();
+    const pq = new MinHeap((a, b) => a.k - b.k);
+    for (const list of capProv.values()) for (const pid of list) {
+      if (cost.has(pid)) continue;
+      cost.set(pid, 0); pq.push({ k: 0, pid });
+    }
+    while (pq.length) {
+      const it = pq.pop();
+      if (it.k > (cost.get(it.pid) ?? Infinity) + 1e-6 || it.k > BUDGET) continue;
+      reachable++;
+      const p = world.provinces.get(it.pid);
+      for (const nb of p.adj) {
+        if (!landIds.has(nb) || cost.has(nb)) continue;
+        const v = it.k + edgeCost(p, world.provinces.get(nb));
+        if (v <= BUDGET) { cost.set(nb, v); pq.push({ k: v, pid: nb }); }
+      }
+    }
+  }
+
+  /* 目标规模：权重按可达土地缩放，并保底 2 省 */
+  const rawSum = COUNTRIES.reduce((s, c) => s + c.weight, 0);
+  const scale = (reachable * 0.92) / rawSum;
+  const target = new Map(COUNTRIES.map((c) => [c.tag, Math.max(2, Math.round(c.weight * scale))]));
+
+  /* --- 2) 轮转配额生长 ---
+     先前是「全局优先队列 + 加权速度 + 六轮收敛」，在真实尺寸的地球上彻底失配：
+     跑得快的国家成批吃地，跑得慢的小国被邻国围死，威尼斯、米兰、萨伏依
+     最后只剩 1 省，可达陆地也有八成无人认领——因为波前一旦被邻国占住的
+     地块挡住就整片死掉（地峡尤其致命：苏伊士、黎凡特、乌拉尔缺口）。
+     现在改成每轮各国依次落一子：谁都不会被排队饿死，吃满配额即停；
+     生长范围限制在首都行军代价 BUDGET 之内，1444 年的 Old World 势力
+     不会一路漫到印度去。范围同时决定了可用土地的分母——
+     圈外的地（西伯利亚、撒哈拉腹地、印度、中国、美洲）留作未殖民区。 */
+  function grow(cap) {
     const owner = new Map();
     const count = new Map(COUNTRIES.map((c) => [c.tag, 0]));
-    const bestD = new Map();
-    for (const c of COUNTRIES) bestD.set(c.tag, new Map());
-    const pq = new MinHeap((a, b) => a.key - b.key);
+    const heap = new Map(), dist = new Map();
     for (const c of COUNTRIES) {
-      const dmap = bestD.get(c.tag);
-      for (const pid of capProv.get(c.tag)) { dmap.set(pid, 0); pq.push({ key: 0, tag: c.tag, pid }); }
-    }
-    let full = 0; // 已吃满上限的国家数
-    while (pq.length && owner.size < total && full < COUNTRIES.length) {
-      const it = pq.pop();
-      if (owner.has(it.pid)) continue;
-      if (count.get(it.tag) >= cap.get(it.tag)) continue;
-      const dmap = bestD.get(it.tag);
-      const v = speed.get(it.tag);
-      if (it.key * v > (dmap.get(it.pid) ?? Infinity) + 1e-6) continue; // 过期条目
-      owner.set(it.pid, it.tag);
-      const n = count.get(it.tag) + 1;
-      count.set(it.tag, n);
-      if (n >= cap.get(it.tag)) full++;
-      const p = world.provinces.get(it.pid);
-      const base = dmap.get(it.pid);
-      for (const nb of p.adj) {
-        if (!landIds.has(nb) || owner.has(nb)) continue;
-        const q = world.provinces.get(nb);
-        const nd = base + edgeCost(p, q) * rng.range(0.94, 1.10);
-        if (nd < (dmap.get(nb) ?? Infinity)) {
-          dmap.set(nb, nd);
-          pq.push({ key: nd / v, tag: it.tag, pid: nb });
-        }
+      const tag = c.tag;
+      heap.set(tag, new MinHeap((a, b) => a.k - b.k));
+      dist.set(tag, new Map());
+      for (const pid of capProv.get(tag)) {
+        dist.get(tag).set(pid, 0);
+        heap.get(tag).push({ k: 0, pid });
       }
+    }
+    function push(tag, from, nb, k) {
+      if (k > BUDGET || owner.has(nb)) return;
+      const dm = dist.get(tag);
+      const v = k + edgeCost(from, world.provinces.get(nb)) * rng.range(0.94, 1.10);
+      if (v <= BUDGET && v < (dm.get(nb) ?? Infinity)) { dm.set(nb, v); heap.get(tag).push({ k: v, pid: nb }); }
+    }
+    const n = COUNTRIES.length;
+    for (let round = 0; ; round++) {
+      let moved = false;
+      for (let i = 0; i < n; i++) {
+        const tag = COUNTRIES[(i + round) % n].tag;
+        if (count.get(tag) >= cap.get(tag)) continue;
+        const h = heap.get(tag), dm = dist.get(tag);
+        let it = null;
+        while (h.length) {
+          const x = h.pop();
+          if (dm.get(x.pid) === undefined || x.k > dm.get(x.pid) + 1e-6) continue; // 过期
+          if (owner.has(x.pid)) continue;
+          it = x; break;
+        }
+        if (!it) continue;
+        owner.set(it.pid, tag);
+        count.set(tag, count.get(tag) + 1);
+        moved = true;
+        const p = world.provinces.get(it.pid);
+        for (const nb of p.adj) if (landIds.has(nb)) push(tag, p, nb, it.k);
+      }
+      if (!moved) break;
     }
     return { owner, count };
   }
-
-  /* --- 3) 迭代收敛扩张速度：让被堵住的国家提速，宽裕的减速 --- */
-  const mult = new Map(COUNTRIES.map((c) => [c.tag, 1]));
-  let speed = new Map(COUNTRIES.map((c) => [c.tag, Math.sqrt(target.get(c.tag))]));
-  let owner = null, count = null;
-  for (let iter = 0; iter < 6; iter++) {
-    const r = flood(speed, target);
-    owner = r.owner; count = r.count;
-    let worst = 0;
-    for (const c of COUNTRIES) {
-      const got = Math.max(1, count.get(c.tag));
-      const ratio = target.get(c.tag) / got;
-      worst = Math.max(worst, Math.abs(Math.log(ratio)));
-      const m = clamp(mult.get(c.tag) * Math.pow(ratio, 0.7), 0.15, 8);
-      mult.set(c.tag, m);
-      speed.set(c.tag, Math.sqrt(target.get(c.tag)) * m);
-    }
-    if (worst < 0.08) break;
-  }
+  const { owner, count } = grow(target);
 
   const ratioOf = (t) => count.get(t) / target.get(t);
   const isSeed = (pid) => {

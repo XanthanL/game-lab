@@ -1,17 +1,19 @@
-// 地图生成：手绘海岸线 → 碎形化 → 抖动网格撒点 → Voronoi 省份 → 栅格化（面积/邻接/拾取）
+// 地图生成：真实海岸线（Natural Earth，见 coastdata.js）→ 陆地掩膜 → 抖动网格撒点
+// → Voronoi 省份 → 栅格化（面积/邻接/拾取）
 // 纯计算，不依赖 DOM；浏览器与 node 预览脚本共用这一份。
 
 import { makeRng } from './rng.js';
 import {
-  BBOX, K, WORLD_W, WORLD_H, proj, projPoly, roughen, Grid,
-  voronoiCells, adjacencyFromGrid, polyArea, polyCentroid, widthAt, clipHalf,
+  BBOX, K, WORLD_W, WORLD_H, proj, Grid,
+  voronoiCells, adjacencyFromGrid, polyCentroid, widthAt, clipHalf,
 } from './geo.js';
-import { LAND, SEAS, TERRAIN_BOXES, STRAITS } from './mapdata.js';
+import { COAST } from './coastdata.js';
+import { SEAS, TERRAIN_BOXES, STRAITS } from './mapdata.js';
 
 /* 全球图幅 9000×3500：spacing 决定省份粒度（世界像素/省），res 是栅格步长
-   （只影响面积统计与鼠标拾取精度）。spacing=40 实测生成 2.0s / 约 1.1 万陆省，
-   再密会让 Path2D 构建、底图烘焙与月度结算线性变慢。 */
-export const DEFAULTS = { spacing: 40, res: 4, seed: 'europa-1444', rough: 5.0 };
+   （只影响面积统计与鼠标拾取精度）。spacing=60 实测生成约 6k 陆省，
+   与 EU4 的省份尺度更接近；再密会让 Path2D 构建、底图烘焙与月度结算线性变慢。 */
+export const DEFAULTS = { spacing: 60, res: 4, seed: 'europa-1444' };
 
 /** 掩膜的两遍 chamfer 距离变换：每个陆地栅格到最近海（mask=0）的像素距离。
     气候模型的「大陆度」用它衡量——离海越远降水越少。 */
@@ -52,7 +54,7 @@ function seaDistanceField(mask, w, h) {
 export function unproject(x, y) {
   const lat = BBOX.north - y / K;
   const s = (1 + Math.cos((lat * Math.PI) / 180)) / 2;
-  return [x / (s * K) + BBOX.west, lat];
+  return [(x - WORLD_W / 2) / (s * K), lat];
 }
 
 export function buildMap(opts = {}) {
@@ -60,28 +62,46 @@ export function buildMap(opts = {}) {
   for (const [k, v] of Object.entries(opts)) if (v !== undefined) o[k] = v;
   const SP = o.spacing, RES = o.res;
 
-  /* 1. 海岸线：投影 + 两级碎形扰动 */
-  const coasts = Object.entries(LAND).map(([id, pts]) => ({
-    id, poly: roughen(projPoly(pts), o.rough, 2, o.seed + '/coast/' + id),
-  }));
-  const polys = coasts.map((c) => c.poly);
+  /* 1. 海岸线：Natural Earth 真实陆地，已是投影后的环组（外环 + 内海内环） */
+  const coasts = COAST.map((rings, i) => ({ id: 'land' + i, rings }));
 
   /* 2. 陆地掩膜（扫描线）+ 离海距离场（气候模型的大陆度） */
-  const { grid, mask } = Grid.landMask(polys, RES);
+  const { grid, mask } = Grid.landMask(COAST, RES);
   const seaDistPx = seaDistanceField(mask, grid.w, grid.h);
 
-  /* 3. 抖动网格全域撒点：陆地与海洋都撒，之后按「陆地像素占比」分家 */
+  /* 3. 撒点：栖息地加权 —— 有人住的地方省子更碎。
+     均匀网格下整个意大利只有十来个省，名单光北意就要摆十三国，
+     欧洲看起来像一片没人要的荒原；欧陆风云本身也是「开发度越高省越密」。
+     农田/森林/海岸/丘陵的格子切成 2×2，海洋与草原、沙漠、冻土、山地维持粗颗粒，
+     全球站点总数因此和从前同量级，渲染开销不变。 */
   const rng = makeRng(o.seed);
+  const DENSE = new Set(['farmland', 'forest', 'coastal', 'hills']);
+  function subdivide(px, py) {
+    const [lon] = unproject(px, py);
+    if (lon < BBOX.west || lon > BBOX.east) return 0;
+    const cx = Math.min(grid.w - 1, Math.max(0, Math.round(px / RES)));
+    const cy = Math.min(grid.h - 1, Math.max(0, Math.round(py / RES)));
+    const i = cy * grid.w + cx;
+    if (!mask[i]) return 1;                                  // 海省：保持大块
+    const sd = (seaDistPx[i] * RES) / K;
+    return DENSE.has(terrainAt(lon, BBOX.north - py / K, false, sd)) ? 2 : 1;
+  }
   let sites = [];
   for (let gy = 0; gy * SP < WORLD_H + SP; gy++) {
     for (let gx = 0; gx * SP < WORLD_W + SP; gx++) {
-      const px = gx * SP + SP / 2 + rng.range(-0.40, 0.40) * SP;
-      const py = gy * SP + SP / 2 + rng.range(-0.40, 0.40) * SP;
-      if (px < 0 || py < 0 || px > WORLD_W || py > WORLD_H) continue;
-      // 伪圆柱投影下图幅是个梯形（越高纬越窄），梯形外的点不属于任何经纬度
-      const [lon] = unproject(px, py);
-      if (lon < BBOX.west || lon > BBOX.east) continue;
-      sites.push([px, py]);
+      const k = subdivide(gx * SP + SP / 2, gy * SP + SP / 2);
+      if (!k) continue;
+      const sub = SP / k;
+      for (let sy = 0; sy < k; sy++) {
+        for (let sx = 0; sx < k; sx++) {
+          const px = gx * SP + sub * (sx + 0.5) + rng.range(-0.40, 0.40) * sub;
+          const py = gy * SP + sub * (sy + 0.5) + rng.range(-0.40, 0.40) * sub;
+          if (px < 0 || py < 0 || px > WORLD_W || py > WORLD_H) continue;
+          const [lon] = unproject(px, py);
+          if (lon < BBOX.west || lon > BBOX.east) continue;
+          sites.push([px, py]);
+        }
+      }
     }
   }
 
@@ -125,13 +145,15 @@ export function buildMap(opts = {}) {
 
   /* 5. 组装省份对象 */
   const cells = voronoiCells(sites, {}, { nbr: 30 });
-  /* 收边：高纬度处图幅变窄，矩形画幅的角上没有经度定义（撒点时已剔除），
-     但边界站点的 cell 会朝空白角凸出去。按各自纬度裁回透镜形图幅。 */
+  /* 收边：高纬度处图幅变窄，矩形画幅的两侧角上没有经度定义（撒点时已剔除），
+     但边界站点的 cell 会朝空白角凸出去。按各自纬度把左右两边都裁回透镜形图幅。 */
   for (let i = 0; i < sites.length; i++) {
     const cell = cells[i];
     if (!cell || cell.length < 3) continue;
     const w = widthAt(BBOX.north - sites[i][1] / K);
-    if (w < WORLD_W) cells[i] = clipHalf(cell, w, 0, w + 1, 0);
+    if (w >= WORLD_W) continue;
+    const right = (WORLD_W + w) / 2, left = (WORLD_W - w) / 2;
+    cells[i] = clipHalf(clipHalf(cell, right, 0, right + 1, 0), left, 0, left - 1, 0);
   }
   const seaPts = SEAS.map((s) => ({ ...s, p: proj(s.c[0], s.c[1]) }));
   const provs = [];
@@ -159,7 +181,7 @@ export function buildMap(opts = {}) {
     provs.push({
       id: i, site: sites[i], cell, cx: c[0], cy: c[1], lon, lat,
       sea, area: landPx[i] / meanArea, raster: area[i],
-      terrain: terrainAt(lon, lat, sea, seaDistDeg), seaName,
+      terrain: terrainAt(lon, lat, sea, seaDistDeg), seaName, seaDist: seaDistDeg,
       adj: (adj.get(i) || []).slice(),
     });
   }
@@ -189,11 +211,54 @@ export function buildMap(opts = {}) {
       .map(([a, b, n]) => ({ to: a === p.id ? b : a, name: n }));
   }
 
+  /* 7. 渲染用几何：省界分段（带邻省）+ 海域注记 */
+  const provAt = (x, y) => {
+    const cx = Math.floor(x / RES), cy = Math.floor(y / RES);
+    if (cx < 0 || cy < 0 || cx >= grid.w || cy >= grid.h) return -1;
+    return owner[cy * grid.w + cx];
+  };
+  /* 每条边沿外法线外移一小段查归属，得到这条边对面的省。
+     偏移取间距的 1/4：既越过公共边，又不会穿进邻省的邻省。 */
+  const out = SP * 0.25;
+  const edgesOf = new Map();
+  for (const p of provs) {
+    if (p.sea || !p.cell || p.cell.length < 3) continue;
+    const cell = p.cell, list = [];
+    for (let k = 0; k < cell.length; k++) {
+      const a = cell[k], b = cell[(k + 1) % cell.length];
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      let dx = mx - p.cx, dy = my - p.cy;
+      const L = Math.hypot(dx, dy) || 1;
+      list.push([a[0], a[1], b[0], b[1], provAt(mx + (dx / L) * out, my + (dy / L) * out)]);
+    }
+    edgesOf.set(p.id, list);
+  }
+
+  const seaBox = new Map();
+  for (const p of provs) {
+    if (!p.sea || !p.seaName) continue;
+    let b = seaBox.get(p.seaName);
+    if (!b) seaBox.set(p.seaName, (b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, sx: 0, sy: 0, n: 0 }));
+    if (p.cx < b.x0) b.x0 = p.cx; if (p.cx > b.x1) b.x1 = p.cx;
+    if (p.cy < b.y0) b.y0 = p.cy; if (p.cy > b.y1) b.y1 = p.cy;
+    b.sx += p.cx; b.sy += p.cy; b.n++;
+  }
+  const seaLabels = [];
+  for (const s of seaPts) {
+    const b = seaBox.get(s.name);
+    if (!b) continue;
+    let x = s.p[0], y = s.p[1];
+    const anchor = byId.get(provAt(x, y));
+    if (!anchor || !anchor.sea) { x = b.sx / b.n; y = b.sy / b.n; }   // 锚点被陆地占：退回海域质心
+    seaLabels.push({ name: s.name, x, y, w: b.x1 - b.x0, h: b.y1 - b.y0 });
+  }
+
   return {
     res: RES, grid, landMask: mask, owner, coasts, sites,
     provinces: provs.filter((p) => !p.sea),
     seas: provs.filter((p) => p.sea),
     all: provs, provById: byId, straitPairs, spacing: SP,
+    edgesOf, seaLabels,
     world: { w: WORLD_W, h: WORLD_H },
   };
 }

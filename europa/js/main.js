@@ -63,6 +63,10 @@ async function boot() {
   ui.selProv = world.countries.get(playerTag).capital ?? -1;
   renderer.setSelected(ui.selProv);
 
+  // 进入游戏即飞向玩家国家，而不是停在整张大图（玩家之后仍可自由拖拽缩放）
+  const playerCountry = world.countries.get(playerTag);
+  if (playerCountry) renderer.focusOn([...playerCountry.provinces], { margin: 0.8, dur: 650 });
+
   /* ── 地图交互 ── */
 
   let dragging = false;

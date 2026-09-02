@@ -9,7 +9,7 @@
 //   · 省份易主由 world.mapVersion 触发重烘焙，并做节流，避免围城期间每帧重画。
 
 import { WORLD_W, WORLD_H } from './geo.js';
-import { buildPaths, paintBase, fitView, pathOfIds } from './paint.js';
+import { buildPaths, paintBase, fitView, pathOfIds, SEA_BG } from './paint.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -39,6 +39,7 @@ export class Renderer {
     this.interacting = false;
     this.interactUntil = 0;
     this.bakedVersion = -1;
+    this.anim = null;             // 飞向某国的平滑过渡（null = 无动画）
 
     this.minZoom = 0.1;
     this.maxZoom = 12;
@@ -80,6 +81,7 @@ export class Renderer {
   }
 
   fit() {
+    this.anim = null;
     const v = fitView(WORLD_W, WORLD_H, this.cssW, this.cssH, 0.97);
     Object.assign(this.view, v);
     this.clampPan();
@@ -125,6 +127,7 @@ export class Renderer {
 
   /** 交互中：延后重烘焙，让位图变换先顶上 */
   touch() {
+    this.anim = null;            // 玩家一拖拽/缩放，飞行动画立即让位给手动控制
     this.interacting = true;
     this.interactUntil = performance.now() + 160;
     if (!this.baseDirty) { this.baseDirty = true; this.bakeAt = this.interactUntil; }
@@ -134,12 +137,59 @@ export class Renderer {
 
   setMode(mode) {
     if (this.mode === mode) return;
+    this.anim = null;
     this.mode = mode;
     this.baseDirty = true;
     this.bakeAt = 0;
     this.overlayDirty = true;
   }
   setHover(id) { if (this.hoverId !== id) { this.hoverId = id; this.overlayDirty = true; } }
+
+  /** 飞向并居中一组省份（国家/地区）。玩家仍可随时拖拽缩放，交互会立即打断动画。
+   *  opts.margin 留白比例（越小越贴近省份），opts.dur 动画时长(ms)。 */
+  focusOn(ids, opts = {}) {
+    const margin = opts.margin ?? 0.82;
+    const dur = opts.dur ?? 480;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, n = 0;
+    for (const id of ids) {
+      const g = this.map.provById.get(id);
+      if (!g || g.sea) continue;
+      if (g.cell && g.cell.length) {
+        for (const [vx, vy] of g.cell) {
+          if (vx < x0) x0 = vx; if (vx > x1) x1 = vx;
+          if (vy < y0) y0 = vy; if (vy > y1) y1 = vy;
+        }
+      } else if (g.cx != null) {
+        if (g.cx < x0) x0 = g.cx; if (g.cx > x1) x1 = g.cx;
+        if (g.cy < y0) y0 = g.cy; if (g.cy > y1) y1 = g.cy;
+      }
+      n++;
+    }
+    if (!n) return;
+    const bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0);
+    const bcx = (x0 + x1) / 2, bcy = (y0 + y1) / 2;
+    // 让国家尽量铺满视口但留点边；单省小国封顶避免缩放到一个像素
+    let zoom = Math.min(this.cssW / bw, this.cssH / bh) * margin;
+    zoom = Math.max(this.minZoom, Math.min(zoom, this.maxZoom, this.fitZoom * 6));
+    const from = { zoom: this.view.zoom, panX: this.view.panX, panY: this.view.panY };
+    this.view.zoom = zoom;
+    this.view.panX = this.cssW / 2 - bcx * zoom;
+    this.view.panY = this.cssH / 2 - bcy * zoom;
+    this.clampPan();                                  // 近地图边缘时微调，避免飞出界
+    const to = { zoom: this.view.zoom, panX: this.view.panX, panY: this.view.panY };
+    if (this.bakedVersion < 0) this.bake();           // 保证动画期间底图不是空白
+    const now = performance.now();
+    this.anim = {
+      fromZoom: from.zoom, fromPanX: from.panX, fromPanY: from.panY,
+      toZoom: to.zoom, toPanX: to.panX, toPanY: to.panY,
+      t0: now, dur,
+    };
+    this.interacting = true;
+    this.interactUntil = now + dur + 120;
+    this.baseDirty = true;
+    this.bakeAt = now + dur + 140;                    // 飞到位后再锐化重烘焙
+    this.overlayDirty = true;
+  }
   setSelected(id) { if (this.selectedId !== id) { this.selectedId = id; this.overlayDirty = true; } }
   invalidate() { this.overlayDirty = true; }
 
@@ -148,6 +198,18 @@ export class Renderer {
   draw() {
     const now = performance.now();
     if (this.interacting && now > this.interactUntil) this.interacting = false;
+
+    // 飞向目标国的平滑过渡：缩放用对数插值更自然，平移用缓出曲线
+    if (this.anim) {
+      const a = this.anim;
+      const t = Math.min(1, (now - a.t0) / a.dur);
+      const e = 1 - Math.pow(1 - t, 3);
+      this.view.zoom = a.fromZoom * Math.pow(a.toZoom / a.fromZoom, e);
+      this.view.panX = a.fromPanX + (a.toPanX - a.fromPanX) * e;
+      this.view.panY = a.fromPanY + (a.toPanY - a.fromPanY) * e;
+      this.overlayDirty = true;
+      if (t >= 1) this.anim = null;
+    }
 
     if (!this.baseDirty && this.world.mapVersion !== this.bakedVersion) {
       this.baseDirty = true;
@@ -199,7 +261,7 @@ export class Renderer {
     const ty = D * (this.view.panY - this.baseView.panY * s);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#a9c3cd';
+    ctx.fillStyle = SEA_BG;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(s, 0, 0, s, tx, ty);
     ctx.imageSmoothingEnabled = true;

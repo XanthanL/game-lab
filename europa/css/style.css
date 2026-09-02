@@ -98,7 +98,7 @@ html, body {
 .cs-diff.d4 { color: #d8724a; } .cs-diff.d5 { color: #c0392b; }
 
 .cs-side { display: flex; flex-direction: column; min-height: 0; padding: clamp(10px, 1.4vw, 18px); gap: 12px; background: #1b1712; }
-.cs-map-wrap { width: 100%; background: #a9c3cd; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+.cs-map-wrap { width: 100%; background: #79a8b0; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
 #csMap { display: block; width: 100%; height: 100%; }
 .cs-detail { flex: 1; overflow-y: auto; font-size: var(--fs-base); }
 .csd-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -186,7 +186,7 @@ html, body {
 .actions button:hover { background: #4a4035; }
 .hint { margin-top: 14px; font-size: clamp(9px, .85vw, 11px); opacity: .38; line-height: 1.6; }
 
-.map-wrap { flex: 1; position: relative; background: #a9c3cd; overflow: hidden; min-width: 0; }
+.map-wrap { flex: 1; position: relative; background: #79a8b0; overflow: hidden; min-width: 0; }
 #map { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 .map-modes { position: absolute; bottom: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
 .map-modes button { font-size: var(--fs-base); padding: 4px 8px; }
