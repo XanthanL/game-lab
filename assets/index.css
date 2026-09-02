@@ -256,9 +256,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-sm);
 }
-/* 玻璃泡 */
+/* 玻璃泡（垂直居中于轨道） */
 .bs-bulb {
-  position: absolute; top: var(--bs-pad); left: var(--bs-x);
+  position: absolute; top: 50%; left: var(--bs-x); transform: translateY(-50%);
   width: var(--bs-bulb); height: var(--bs-bulb);
   border-radius: 50%; display: block;
   background: var(--bulb-glass);
