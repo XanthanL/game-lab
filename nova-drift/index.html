@@ -933,7 +933,7 @@ function resumeRun(){
 window.addEventListener('pagehide',saveRun);
 
 const Wv={n:0,qA:[],qE:[],tA:0,tE:0,between:0,cleared:false,boss:false,bossKind:null,
-  timeT:0,timeMax:0,overflow:0};
+  timeT:0,timeMax:0,overflow:0,early:false};
 
 function newPlayer(){return{
   x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:-Math.PI/2,r:14,thrusting:false,trail:[],
@@ -1341,8 +1341,10 @@ function buildWave(n){
   Wv.n=n;Wv.qA.length=0;Wv.qE.length=0;Wv.cleared=false;Wv.boss=n%5===0;
   Wv.bossKind=Wv.boss?(n%20===0?'hydra':(n%15===0?'eye':(n%15===10?'twin':'rock'))):null;
   Wv.overflow=0;
-  // 超时上限：普通波 22s，Boss 波 45s；超时未清空也推进下一波
-  Wv.timeMax=Wv.boss?45:22;
+  // 发育期（第一个 Boss 母岩到来前）：纯清剿制，无超时推进，玩家从容成长
+  Wv.early=n<5;
+  // 超时上限：普通波 30s，Boss 波 45s；超时未清空也推进下一波（仅非发育期生效）
+  Wv.timeMax=Wv.boss?45:30;
   Wv.timeT=Wv.timeMax;
   if(Wv.boss){
     Wv.qA.push('boss');
@@ -1369,7 +1371,7 @@ function buildWave(n){
     if(n>=8)for(let i=0;i<Math.min(1+Math.floor((n-8)/2),5);i++)Wv.qE.push('bastion');
     if(n>=9)for(let i=0;i<Math.min(Math.floor((n-9)/2),4);i++)Wv.qE.push('shifter');
     if(n>=10)for(let i=0;i<Math.min(Math.floor((n-10)/2),3);i++)Wv.qE.push('wraith');
-    banner('WAVE '+n,'');
+    banner('WAVE '+n,Wv.early?'肃清区域内全部目标后推进':'');
   }
   if(!Wv.boss)shuffle(Wv.qA);
   shuffle(Wv.qE);
@@ -1404,8 +1406,9 @@ function director(dt){
     G.warns.push({x:p.x,y:p.y,t:0.75,max:0.75,type:Wv.qE.shift()});
   }
   // 超时推进：普通波倒计时归零且场上还有残余，强制结算进入下一波（不清场，残余怪继续存在）。
-  // Boss 波不做超时推进——必须击杀 Boss 才能过关，避免多 Boss 并存。
-  if(!Wv.cleared&&!Wv.boss){
+  // 发育期（Wv.early，第一个 Boss 前）与 Boss 波不做超时推进——前者让玩家从容清剿成长，
+  // 后者必须击杀 Boss 才能过关，避免多 Boss 并存。
+  if(!Wv.cleared&&!Wv.boss&&!Wv.early){
     Wv.timeT-=dt;
     if(Wv.timeT<=0){
       Wv.timeT=Wv.timeMax;
@@ -2923,7 +2926,11 @@ function updateHUD(){
   w=hudW('xp',clamp(P.xp/P.xpNext*100,0,100));
   if(w)el.xp.style.width=HUDC.xp;
   const bName={rock:'MOTHER ROCK',twin:'TWIN ROCKS',eye:'VOID EYE',hydra:'HYDRA PRIME'}[Wv.bossKind]||'MOTHER ROCK';
-  s=Wv.boss?('WAVE '+Wv.n+' · '+bName):('WAVE '+Wv.n);
+  if(Wv.boss)s='WAVE '+Wv.n+' · '+bName;
+  else if(Wv.early){ // 发育期：显示剩余目标，让玩家知道为何下一波未至
+    const left=Wv.qA.length+Wv.qE.length+G.warns.length+G.asteroids.length+G.enemies.length;
+    s='WAVE '+Wv.n+' · 剩余 '+left;
+  }else s='WAVE '+Wv.n;
   if(HUDC.wv!==s){HUDC.wv=s;el.wave.textContent=s;}
   let bHp=0,bMax=0;
   for(const a of G.asteroids)if(a.boss){bHp+=a.hp;bMax+=a.maxHp;}
