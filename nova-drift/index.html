@@ -4,6 +4,18 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#04060d" />
+<meta name="description" content="新星漂移 NOVA DRIFT — 浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="新星漂移 · NOVA DRIFT" />
+<meta property="og:description" content="浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/nova-drift/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="新星漂移 NOVA DRIFT — 街机太空射击浏览器游戏" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="新星漂移 · NOVA DRIFT" />
+<meta name="twitter:description" content="浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" />
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/nova-drift/og.jpg" />
 <title>新星漂移 · NOVA DRIFT — GAME LAB</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M28 16 L6 27 L11 16 L6 5 Z' fill='none' stroke='%236fe7ff' stroke-width='2.4'/%3E%3C/svg%3E" />
 <style>
@@ -918,7 +930,7 @@ function resumeRun(){
     for(let k=1;k<=Math.min(n,m.max);k++)m.apply(k);
   }
   recountMax();
-  P.level=s.lv||1;P.xp=s.xp||0;P.xpNext=s.xpN||20;
+  P.level=s.lv||1;P.xp=s.xp||0;P.xpNext=s.xpN||12;
   P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
   G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
   cam.x=P.x;cam.y=P.y;clampCam();
@@ -938,7 +950,7 @@ const Wv={n:0,qA:[],qE:[],tA:0,tE:0,between:0,cleared:false,boss:false,bossKind:
 function newPlayer(){return{
   x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:-Math.PI/2,r:14,thrusting:false,trail:[],
   hp:100,maxHp:100,shield:0,shieldMax:0,shieldT:0,shieldRegen:12,invuln:0,
-  level:1,xp:0,xpNext:20,fireCd:0,
+  level:1,xp:0,xpNext:12,fireCd:0,
   dmg:1,fireRate:3.6,bspd:640,barrels:1,pierce:0,ricochet:0,tight:false,loadMax:false,
   splashR:0,splashDmg:0,fragMax:false,homing:0,homeR:560,crit:0.05,critMul:3,magnet:150,ram:0,ramMax:false,
   regen:0,leech:0,tesla:0,teslaT:0,teslaCd:2.2,teslaMax:false,
@@ -1175,7 +1187,7 @@ window.addEventListener('keydown',e=>{
   if(G.mode==='over'&&(e.code==='KeyR'||e.code==='Enter')){startGame();return;}
   if(G.mode==='levelup'&&/^Digit[1-3]$/.test(e.code)){pickCard(+e.code.slice(5)-1);return;}
   if(G.mode==='pause'&&e.code==='KeyR'){startGame();return;}
-  if(G.mode==='pause'&&e.code==='KeyQ'){clearSave();toMenu();return;}
+  if(G.mode==='pause'&&e.code==='KeyQ'){saveRun();toMenu();return;}
   if((e.code==='Escape'||e.code==='KeyP')){
     if(G.mode==='play'||G.mode==='inter')pauseGame();
     else if(G.mode==='pause')resumeGame();
@@ -2126,7 +2138,7 @@ function gainXp(v){
   P.xp+=v;
   while(P.xp>=P.xpNext){
     P.xp-=P.xpNext;P.level++;
-    P.xpNext=Math.round(P.xpNext*1.22+3);
+    P.xpNext=Math.round(P.xpNext*1.18+3);
     G.pending++;
   }
   if(G.pending>0&&(G.mode==='play'||G.mode==='inter'))openLevelUp();
@@ -2368,7 +2380,7 @@ $('btnEndless').addEventListener('click',continueEndless);
 $('btnMenuV').addEventListener('click',toMenu);
 $('btnResume').addEventListener('click',resumeGame);
 $('btnRestart').addEventListener('click',()=>startGame());
-$('btnQuit').addEventListener('click',()=>{clearSave();toMenu();});
+$('btnQuit').addEventListener('click',()=>{saveRun();toMenu();});
 $('btnContinue').addEventListener('click',resumeRun);
 $('btnMute').addEventListener('click',toggleMute);
 $('btnPause').addEventListener('click',()=>{

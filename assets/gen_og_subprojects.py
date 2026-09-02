@@ -24,6 +24,8 @@ PROJECTS = [
          meta="幸存者类 · 浏览器即玩", url="XANTHANL.GITHUB.IO / GAME-LAB"),
     dict(out="shuyan-travel/og.jpg", word="SHUYAN",      cn="树言 · 旅记",
          meta="徒步对角线 · 真实旅途记录", url="XANTHANL.GITHUB.IO / GAME-LAB"),
+    dict(out="nova-drift/og.jpg",      word="NOVA DRIFT",  cn="新星漂移",
+         meta="街机太空射击 · 浏览器即玩", url="XANTHANL.GITHUB.IO / GAME-LAB"),
 ]
 
 
