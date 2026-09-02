@@ -1,28 +1,49 @@
 <!doctype html>
 <html lang="zh-CN"
-      data-title-zh="GAME LAB — 前端小玩意合集"
-      data-title-en="GAME LAB — Frontend Trinkets"
-      data-desc-zh="12 个零散写下的前端东西：6 款网页游戏、11 部像素舞台剧、几个自用站点与小工具。全部托管在 GitHub Pages，点开即玩。"
-      data-desc-en="Twelve frontend things I wrote for fun: 6 web games, 11 pixel stage plays, a few sites and tools. All on GitHub Pages — click and play.">
+      data-title-zh="GAME LAB — 前端实验合集"
+      data-title-en="GAME LAB — Frontend Experiments"
+      data-desc-zh="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。"
+      data-desc-en="7 web games, 11 pixel stage plays, plus a handful of self-built sites and tools. Fully static — no install required.">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GAME LAB — 前端小玩意合集</title>
-<meta name="description" content="13 个零散写下的前端东西：7 款网页游戏、11 部像素舞台剧、几个自用站点与小工具。全部托管在 GitHub Pages，点开即玩。" />
+<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="180x180" href="./assets/favicon-180.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon-180.png" />
+<meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<title>GAME LAB — 前端实验合集</title>
+<meta name="description" content="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。" />
 <!-- ===== 微信 / Open Graph 分享卡片 ===== -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="GAME LAB" />
 <meta property="og:locale" content="zh_CN" />
-<meta property="og:title" content="GAME LAB — 前端小玩意合集" />
-<meta property="og:description" content="7 款网页游戏、11 部像素舞台剧、几个自用站点与小工具。点开即玩。" />
-<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
-<meta property="og:image:width" content="600" />
-<meta property="og:image:height" content="800" />
+<meta property="og:title" content="GAME LAB — 前端实验合集" />
+<meta property="og:description" content="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<meta property="og:image:alt" content="GAME LAB — 前端实验合集" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta property="og:url" content="https://xanthanl.github.io/game-lab/" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="GAME LAB — 前端小玩意合集" />
-<meta name="twitter:description" content="7 款网页游戏、11 部像素舞台剧、几个自用站点与小工具。点开即玩。" />
-<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.png" />
+<meta name="twitter:title" content="GAME LAB — 前端实验合集" />
+<meta name="twitter:description" content="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。" />
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<!-- 主题在样式生效前定好，避免刷新时闪一下白/黑 -->
+<script>
+(function () {
+  var d = document.documentElement;
+  d.classList.add("js");
+  try {
+    var t = localStorage.getItem("gl-theme");
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    d.setAttribute("data-theme", t);
+  } catch (e) {}
+})();
+</script>
 <link rel="stylesheet" href="./assets/index.css" />
 </head>
 <body>
@@ -30,185 +51,210 @@
 <div class="wrap">
 
   <div class="topbar">
-    <div><span data-zh="个人前端合集" data-en="Personal frontend pile">个人前端合集</span></div>
+    <div><span data-zh="前端实验场" data-en="Frontend Experiments">前端实验场</span></div>
     <div style="display:flex;align-items:center;gap:20px">
       <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a>
-      <button id="langToggle" class="lang-toggle" type="button">EN</button>
+      <button id="langToggle" class="lang-toggle glass" type="button">EN</button>
     </div>
   </div>
 
-  <!-- ============ HERO ============ -->
+  <!-- ============ HERO：非对称首屏 ============ -->
   <header class="hero">
-    <h1>GAME <span class="i">LAB</span></h1>
-    <p class="lede">
-      <span data-zh="13 个零散写下的前端东西：<b>7 款网页游戏</b>、<b>11 部像素舞台剧</b>、几个自用的小站和小工具。原先散在十几个仓库里，现在收进同一个。点开就能玩。"
-            data-en="Thirteen frontend things I wrote for fun — <b>7 web games</b>, <b>11 pixel stage plays</b>, a few sites and tools of my own. They used to live in a dozen repos; now they share one. Click and play.">13 个零散写下的前端东西：<b>7 款网页游戏</b>、<b>11 部像素舞台剧</b>、几个自用的小站和小工具。原先散在十几个仓库里，现在收进同一个。点开就能玩。</span>
-    </p>
-    <div class="hero-actions">
-      <a class="btn" href="#games"><span data-zh="全部作品" data-en="All work">全部作品</span> <span class="ar">↓</span></a>
-      <a class="btn btn-ghost" href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener"><span data-zh="源码仓库" data-en="Source repo">源码仓库</span></a>
+    <h1>GAME<br><span class="i">LAB</span></h1>
+    <div class="hero-side">
+      <div class="hero-meta">
+        <span>INDEX — 13</span>
+        <span data-zh="游戏 — 07" data-en="GAMES — 07">游戏 — 07</span>
+        <span data-zh="实验 — 02" data-en="EXPERIMENTS — 02">实验 — 02</span>
+        <span data-zh="站点 — 04" data-en="SITES — 04">站点 — 04</span>
+      </div>
+      <p class="lede">
+        <span data-zh="<b>7 款网页游戏</b>、<b>11 部像素舞台剧</b>，以及若干自建站点与工具——原先散落在十几个仓库，现收拢于一处。全部静态部署，无需安装。"
+              data-en="<b>7 web games</b>, <b>11 pixel stage plays</b>, plus a handful of self-built sites and tools — once scattered across a dozen repos, now gathered in one. Fully static, no install required.">7 款网页游戏、11 部像素舞台剧、若干自建站点与工具——原先散落在十几个仓库，现收拢于一处。全部静态部署，点开即达。</span>
+      </p>
+      <div class="hero-actions">
+        <a class="btn glass" href="#games"><span data-zh="作品索引" data-en="Index">作品索引</span> <span class="ar">↓</span></a>
+        <a class="btn glass" href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener"><span data-zh="源码仓库" data-en="Source">源码仓库</span></a>
+      </div>
     </div>
   </header>
 
   <nav class="toc" aria-label="目录">
-    <a href="#games"><span data-zh="玩得" data-en="Games">玩得</span> <em>07</em></a>
-    <a href="#plays"><span data-zh="看得" data-en="Interactive">看得</span> <em>02</em></a>
-    <a href="#sites"><span data-zh="用得" data-en="Sites &amp; apps">用得</span> <em>04</em></a>
+    <a class="glass" href="#games"><span data-zh="游戏" data-en="Games">游戏</span> <em>07</em></a>
+    <a class="glass" href="#plays"><span data-zh="实验" data-en="Experiments">实验</span> <em>02</em></a>
+    <a class="glass" href="#sites"><span data-zh="站点" data-en="Sites">站点</span> <em>04</em></a>
   </nav>
 
   <!-- ============ 游戏 ============ -->
   <section class="sec" id="games">
     <div class="sec-head reveal">
-      <h2><span data-zh="玩得" data-en="Games">玩得</span><span class="en">07</span></h2>
+      <span class="sec-idx">01</span>
+      <h2><span data-zh="游戏" data-en="Games">游戏</span><span class="en">GAMES</span></h2>
+      <span class="sec-count"><em>07</em> <span data-zh="件作品" data-en="works">件作品</span></span>
     </div>
 
-    <a class="row reveal" href="./cursed-house/">
-      <span class="row-num">01</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="咒 · 怨宅" data-en="JYU / Cursed House">咒 · 怨宅</span>
-        <span class="row-what" data-zh="第一人称中式恐怖，5 章 6 张地图，整个光线投射引擎在一个文件里" data-en="First-person Chinese horror — 5 chapters, a whole raycaster in one file">第一人称中式恐怖，5 章 6 张地图，整个光线投射引擎在一个文件里</span>
-      </span>
-      <span class="row-tags">Canvas · Raycast · WebAudio</span>
-      <span class="row-side"><span class="row-stat">05 <span data-zh="章" data-en="ch.">章</span></span><span class="row-go">→</span></span>
-    </a>
+    <div class="grid">
 
-    <a class="row reveal" href="./forcing-mars/">
-      <span class="row-num">02</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="强渡火星" data-en="Forcing Mars">强渡火星</span>
-        <span class="row-what" data-zh="杀戮尖塔式卡牌构筑，从火星地表下潜到 2000 米地核，有结局" data-en="Deckbuilder — descend from the surface to a 2,000 m core, with a real ending">杀戮尖塔式卡牌构筑，从火星地表下潜到 2000 米地核，有结局</span>
-      </span>
-      <span class="row-tags">Phaser 3 · 卡牌 · i18n</span>
-      <span class="row-side"><span class="row-stat">30 <span data-zh="卡" data-en="cards">卡</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-feat reveal" href="./cursed-house/">
+        <span class="card-top"><span class="card-num">01</span><span class="card-meta"><span>Canvas · Raycast · WebAudio</span></span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="咒 · 怨宅" data-en="JYU / Cursed House">咒 · 怨宅</span>
+          <span class="card-what" data-zh="第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。"
+                data-en="First-person Chinese horror — 5 chapters, 6 maps, a whole raycasting engine in a single file.">第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。</span>
+        </span>
+        <span class="card-meta"><span>05 <span data-zh="章" data-en="ch.">章</span></span><span class="card-go">→</span></span>
+      </a>
 
-    <a class="row reveal" href="./PVZ/">
-      <span class="row-num">03</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="植物大战僵尸" data-en="Plants vs Zombies">植物大战僵尸</span>
-        <span class="row-what" data-zh="完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片" data-en="Full recreation — 23 levels, every sprite drawn in vector code, zero images">完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片</span>
-      </span>
-      <span class="row-tags">Canvas · 原生 JS · 矢量美术</span>
-      <span class="row-side"><span class="row-stat">23 <span data-zh="关" data-en="levels">关</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card reveal" href="./forcing-mars/">
+        <span class="card-top"><span class="card-num">02</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="强渡火星" data-en="Forcing Mars">强渡火星</span>
+          <span class="card-what" data-zh="卡牌构筑：从火星地表下潜到 2000 米地核，有结局。"
+                data-en="Deckbuilder — descend from the surface to a 2,000 m core, with a real ending.">卡牌构筑：从火星地表下潜到 2000 米地核，有结局。</span>
+        </span>
+        <span class="card-meta"><span>Phaser 3</span><span>30 <span data-zh="卡" data-en="cards">卡</span></span></span>
+      </a>
 
-    <a class="row reveal" href="./microsoft-vs-code/">
-      <span class="row-num">04</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="微软大战代码" data-en="Microsoft vs. Code">微软大战代码</span>
-        <span class="row-what" data-zh="梗图改编的恶搞塔防：5 章 10 关全是程序员场景（离线/水道/迷雾/跨域高墙），★ 经济 + npm 商店 + 副业花园，手机可玩" data-en="A meme-born parody tower defense — 5 chapters, 10 levels in programmer lore (offline, waterway, fog, CORS wall), star economy, npm shop, side-project garden, mobile-friendly">梗图改编的恶搞塔防：5 章 10 关全是程序员场景（离线/水道/迷雾/跨域高墙），★ 经济 + npm 商店 + 副业花园，手机可玩</span>
-      </span>
-      <span class="row-tags">Canvas · 原生 JS · 恶搞</span>
-      <span class="row-side"><span class="row-stat">10 <span data-zh="关" data-en="levels">关</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card reveal" href="./PVZ/">
+        <span class="card-top"><span class="card-num">03</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="植物大战僵尸" data-en="Plants vs Zombies">植物大战僵尸</span>
+          <span class="card-what" data-zh="完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。"
+                data-en="Full recreation — 23 levels, every sprite drawn in vector code, zero images.">完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 原生 JS" data-en="Canvas · Vanilla JS">Canvas · 原生 JS</span><span>23 <span data-zh="关" data-en="levels">关</span></span></span>
+      </a>
 
-    <a class="row reveal" href="./Vampire-2D/">
-      <span class="row-num">05</span>
-      <span class="row-main">
-        <span class="row-title">Vampire 2D</span>
-        <span class="row-what" data-zh="顶视角自动攻击生存，5 种武器 6 种被动，180 秒起出 Boss" data-en="Top-down survivor — 5 weapons, 6 passives, bosses from 180 s">顶视角自动攻击生存，5 种武器 6 种被动，180 秒起出 Boss</span>
-      </span>
-      <span class="row-tags">Canvas · 单文件 · 键鼠</span>
-      <span class="row-side"><span class="row-stat" data-zh="无尽" data-en="Endless">无尽</span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./microsoft-vs-code/">
+        <span class="card-top"><span class="card-num">04</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="微软大战代码" data-en="Microsoft vs. Code">微软大战代码</span>
+          <span class="card-what" data-zh="梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。"
+                data-en="A meme-born parody tower defense — 10 levels in programmer lore, star economy, npm shop, mobile-friendly.">梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 原生 JS" data-en="Canvas · Vanilla JS">Canvas · 原生 JS</span><span>10 <span data-zh="关" data-en="levels">关</span></span></span>
+      </a>
 
-    <a class="row reveal" href="./nova-drift/">
-      <span class="row-num">06</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="新星漂移" data-en="Nova Drift">新星漂移</span>
-        <span class="row-what" data-zh="惯性漂移的小行星带生存：三艘船体拖着彗尾出击，击碎会分裂的陨石，7 种敌船一波比一波凶（蝌蚪群会追着咬），路上捡加速 / 修复 / 超频道具；每级三选一，把 22 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 15 波肃清星域后可无尽漂移；屏外目标在边缘有同色亮点指方向，ESC 看构建与状态、可重开，进度自动缓存、关页可续，手机可玩" data-en="Inertia-drift asteroid survival — three comet-tailed hulls, shatter splitting rocks, outswarm 7 enemy hulls that get meaner every wave, grab boost / repair / overdrive drops; build a ship from 22 modules pushed to LV6 for gold-breakthrough upgrades, face a colossus every 5th wave, clear the sector on wave 15 and drift endlessly; offscreen prey glows as same-color dots on the screen edge, ESC opens the build & stats panel with a restart, runs auto-save and resume after closing; touch-ready">惯性漂移的小行星带生存：三艘船体拖着彗尾出击，击碎会分裂的陨石，7 种敌船一波比一波凶（蝌蚪群会追着咬），路上捡加速 / 修复 / 超频道具；每级三选一，把 22 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 15 波肃清星域后可无尽漂移；屏外目标在边缘有同色亮点指方向，ESC 看构建与状态、可重开，进度自动缓存、关页可续，手机可玩</span>
-      </span>
-      <span class="row-tags">Canvas · WebGL · 触屏</span>
-      <span class="row-side"><span class="row-stat">22 <span data-zh="模块" data-en="modules">模块</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./Vampire-2D/">
+        <span class="card-top"><span class="card-num">05</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title">Vampire 2D</span>
+          <span class="card-what" data-zh="顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。"
+                data-en="Top-down survivor — 5 weapons, 6 passives, bosses from 180 s.">顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 单文件" data-en="Canvas · Single file">Canvas · 单文件</span><span data-zh="无尽" data-en="Endless">无尽</span></span>
+      </a>
 
-    <a class="row reveal" href="./europa/">
-      <span class="row-num">07</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="欧陆风云 · 1444" data-en="Europa 1444">欧陆风云 · 1444</span>
-        <span class="row-what" data-zh="浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建" data-en="Browser grand strategy — hand-drawn Europe/North Africa/Anatolia map, 60+ countries in 1444, economy/diplomacy/war/sieges/events, static, no build">浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建</span>
-      </span>
-      <span class="row-tags">Canvas · 大战略 · 地缘政治</span>
-      <span class="row-side"><span class="row-stat">400+ <span data-zh="省" data-en="provs">省</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./nova-drift/">
+        <span class="card-top"><span class="card-num">06</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="新星漂移" data-en="Nova Drift">新星漂移</span>
+          <span class="card-what" data-zh="惯性漂移的小行星带生存：三艘船体拖着彗尾出击，22 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 15 波肃清星域后可无尽漂移；进度自动缓存，关页可续，手机可玩。"
+                data-en="Inertia-drift asteroid survival — three comet-tailed hulls, 22 modules pushed to LV6 for gold-breakthrough upgrades, a colossus every 5th wave, endless drift after wave 15; auto-save, resume, touch-ready.">惯性漂移的小行星带生存：三艘船体拖着彗尾出击，22 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 15 波肃清星域后可无尽漂移；进度自动缓存，关页可续，手机可玩。</span>
+        </span>
+        <span class="card-meta"><span>Canvas · WebGL</span><span>22 <span data-zh="模块" data-en="modules">模块</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./europa/">
+        <span class="card-top"><span class="card-num">07</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="欧陆风云 · 1444" data-en="Europa 1444">欧陆风云 · 1444</span>
+          <span class="card-what" data-zh="浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建。"
+                data-en="Browser grand strategy — hand-drawn map, 60+ countries in 1444, economy/diplomacy/war/sieges/events, static, no build.">浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 大战略" data-en="Canvas · Grand strategy">Canvas · 大战略</span><span>400+ <span data-zh="省" data-en="provs">省</span></span></span>
+      </a>
+
+    </div>
   </section>
 
-  <!-- ============ 互动 ============ -->
+  <!-- ============ 实验 ============ -->
   <section class="sec" id="plays">
     <div class="sec-head reveal">
-      <h2><span data-zh="看得" data-en="Interactive">看得</span><span class="en">02</span></h2>
+      <span class="sec-idx">02</span>
+      <h2><span data-zh="实验" data-en="Experiments">实验</span><span class="en">EXPERIMENTS</span></h2>
+      <span class="sec-count"><em>02</em> <span data-zh="项" data-en="projects">projects</span></span>
     </div>
 
-    <a class="row reveal" href="./persona/">
-      <span class="row-num">07</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="像素舞台剧 · 十一部" data-en="Eleven Pixel Stage Plays">像素舞台剧 · 十一部</span>
-        <span class="row-what" data-zh="同一句话发给 11 个 coding agent，让它们各自从剧本导到演出" data-en="The same one-line brief handed to 11 coding agents, script to performance">同一句话发给 11 个 coding agent，让它们各自从剧本导到演出</span>
-      </span>
-      <span class="row-tags">Canvas · 像素 · 多 Agent</span>
-      <span class="row-side"><span class="row-stat">11 <span data-zh="部" data-en="plays">部</span></span><span class="row-go">→</span></span>
-    </a>
+    <div class="grid">
 
-    <a class="row reveal" href="./ascii-art/">
-      <span class="row-num">08</span>
-      <span class="row-main">
-        <span class="row-title">ASCII ∴ LAB</span>
-        <span class="row-what" data-zh="把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG" data-en="Turn Chinese or Latin text into ASCII art: 6 fonts, 4 glyph styles, 6 strokes, adjustable width and contrast, copy or export PNG in one click">把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG</span>
-      </span>
-      <span class="row-tags">Canvas · 原生 JS · 零构建</span>
-      <span class="row-side"><span class="row-stat">6 <span data-zh="笔触 · 200 列" data-en="strokes · 200 cols">笔触 · 200 列</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./persona/">
+        <span class="card-top"><span class="card-num">08</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="像素舞台剧 · 十一部" data-en="Eleven Pixel Stage Plays">像素舞台剧 · 十一部</span>
+          <span class="card-what" data-zh="同一句话发给 11 个 coding agent，让它们各自从剧本导到演出。"
+                data-en="The same one-line brief handed to 11 coding agents, script to performance.">同一句话发给 11 个 coding agent，让它们各自从剧本导到演出。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 像素 · 多 Agent" data-en="Canvas · Pixel · Multi-agent">Canvas · 像素 · 多 Agent</span><span>11 <span data-zh="部" data-en="plays">部</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./ascii-art/">
+        <span class="card-top"><span class="card-num">09</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title">ASCII ∴ LAB</span>
+          <span class="card-what" data-zh="把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG。"
+                data-en="Turn Chinese or Latin text into ASCII art: 6 fonts, 4 glyph styles, 6 strokes, adjustable width and contrast, copy or export PNG.">把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Canvas · 零构建" data-en="Canvas · No build">Canvas · 零构建</span><span>6 <span data-zh="笔触" data-en="strokes">笔触</span></span></span>
+      </a>
+
+    </div>
   </section>
 
-  <!-- ============ 站点与应用 ============ -->
+  <!-- ============ 站点 ============ -->
   <section class="sec" id="sites">
     <div class="sec-head reveal">
-      <h2><span data-zh="用得" data-en="Sites &amp; apps">用得</span><span class="en">04</span></h2>
+      <span class="sec-idx">03</span>
+      <h2><span data-zh="站点" data-en="Sites">站点</span><span class="en">SITES &amp; APPS</span></h2>
+      <span class="sec-count"><em>04</em> <span data-zh="个" data-en="live">live</span></span>
     </div>
 
-    <a class="row reveal" href="./shuyan-travel/">
-      <span class="row-num">09</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="树言 · 旅记" data-en="Shuyan Travel">树言 · 旅记</span>
-        <span class="row-what" data-zh="53 篇长文札记与 53 个地点，Leaflet 画出行车与徒步两段轨迹" data-en="53 travel essays and 53 places, driving and walking routes on one map">53 篇长文札记与 53 个地点，Leaflet 画出行车与徒步两段轨迹</span>
-      </span>
-      <span class="row-tags">静态 · Leaflet · 无构建</span>
-      <span class="row-side"><span class="row-stat">53 <span data-zh="篇" data-en="entries">篇</span></span><span class="row-go">→</span></span>
-    </a>
+    <div class="grid">
 
-    <a class="row reveal" href="./XanthanLMusic/dist/">
-      <span class="row-num">10</span>
-      <span class="row-main">
-        <span class="row-title">Electric Mirage</span>
-        <span class="row-what" data-zh="以 XanthanL 名义发的 5 首曲子，站内流式播放，中英双语" data-en="5 tracks released under the name XanthanL, streamed in place, bilingual">以 XanthanL 名义发的 5 首曲子，站内流式播放，中英双语</span>
-      </span>
-      <span class="row-tags">React 19 · Vite · Web Audio</span>
-      <span class="row-side"><span class="row-stat">05 <span data-zh="首" data-en="tracks">首</span></span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./shuyan-travel/">
+        <span class="card-top"><span class="card-num">10</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="树言 · 旅记" data-en="Shuyan Travel">树言 · 旅记</span>
+          <span class="card-what" data-zh="53 篇长文札记与 53 个地点，Leaflet 画出行车与徒步两段轨迹。"
+                data-en="53 travel essays and 53 places, driving and walking routes on one map.">53 篇长文札记与 53 个地点，Leaflet 画出行车与徒步两段轨迹。</span>
+        </span>
+        <span class="card-meta"><span data-zh="Leaflet · 无构建" data-en="Leaflet · No build">Leaflet · 无构建</span><span>53 <span data-zh="篇" data-en="entries">篇</span></span></span>
+      </a>
 
-    <a class="row reveal" href="./golden-wind/out/">
-      <span class="row-num">11</span>
-      <span class="row-main">
-        <span class="row-title" data-zh="实时金价看板" data-en="Gold Observatory">实时金价看板</span>
-        <span class="row-what" data-zh="实时报价、均线与金叉死叉，Next.js 静态导出" data-en="Live quote, moving averages and golden / death crosses, statically exported">实时报价、均线与金叉死叉，Next.js 静态导出</span>
-      </span>
-      <span class="row-tags">Next.js · lightweight-charts</span>
-      <span class="row-side"><span class="row-stat" data-zh="实时" data-en="Live">实时</span><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./XanthanLMusic/dist/">
+        <span class="card-top"><span class="card-num">11</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title">Electric Mirage</span>
+          <span class="card-what" data-zh="以 XanthanL 名义发的 5 首曲子，站内流式播放，中英双语。"
+                data-en="5 tracks released under the name XanthanL, streamed in place, bilingual.">以 XanthanL 名义发的 5 首曲子，站内流式播放，中英双语。</span>
+        </span>
+        <span class="card-meta"><span>React 19 · Web Audio</span><span>05 <span data-zh="首" data-en="tracks">首</span></span></span>
+      </a>
 
-    <!-- 保留入口，但不占版面 -->
-    <a class="row is-quiet reveal" href="./ARH/dist/">
-      <span class="row-num">·</span>
-      <span class="row-main">
-        <span class="row-title">ARH — <span data-zh="意识形态坐标测试" data-en="Ideology Coordinate Test">意识形态坐标测试</span></span>
-        <span class="row-what" data-zh="7 个维度的光谱定位问卷，30 / 65 / 95 题三档，纯属自娱" data-en="A 7-axis spectrum quiz in three lengths — a questionnaire-algorithm toy">7 个维度的光谱定位问卷，30 / 65 / 95 题三档，纯属自娱</span>
-      </span>
-      <span class="row-tags">React · Vite</span>
-      <span class="row-side"><span class="row-go">→</span></span>
-    </a>
+      <a class="card card-s3 reveal" href="./golden-wind/out/">
+        <span class="card-top"><span class="card-num">12</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title" data-zh="实时金价看板" data-en="Gold Observatory">实时金价看板</span>
+          <span class="card-what" data-zh="实时报价、均线与金叉死叉，Next.js 静态导出。"
+                data-en="Live quote, moving averages and golden / death crosses, statically exported.">实时报价、均线与金叉死叉，Next.js 静态导出。</span>
+        </span>
+        <span class="card-meta"><span>Next.js · lightweight-charts</span><span data-zh="实时" data-en="Live">实时</span></span>
+      </a>
 
-    <p class="foot-note reveal" data-zh="全部条目都随仓库部署，不需要 npm install。构建型项目的产物一并入库，细节见 README。"
-       data-en="Everything above ships with the repo — no npm install. Build-based projects commit their artifacts; the README has the details."></p>
+      <a class="card card-s3 is-quiet reveal" href="./ARH/dist/">
+        <span class="card-top"><span class="card-num">·</span><span class="card-go">→</span></span>
+        <span class="card-main">
+          <span class="card-title">ARH — <span data-zh="意识形态坐标测试" data-en="Ideology Coordinate Test">意识形态坐标测试</span></span>
+          <span class="card-what" data-zh="7 个维度的光谱定位问卷，30 / 65 / 95 题三档。"
+                data-en="A 7-axis spectrum quiz in three lengths — 30 / 65 / 95 questions.">7 个维度的光谱定位问卷，30 / 65 / 95 题三档。</span>
+        </span>
+        <span class="card-meta"><span>React · Vite</span></span>
+      </a>
+
+      <p class="foot-note glass reveal" data-zh="全部条目都随仓库部署，不需要 npm install。构建型项目的产物一并入库，细节见 README。"
+         data-en="Everything above ships with the repo — no npm install. Build-based projects commit their artifacts; the README has the details."></p>
+
+    </div>
   </section>
 
   <footer>
