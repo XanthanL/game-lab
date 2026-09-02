@@ -51,33 +51,15 @@
 <div class="wrap">
 
   <div class="topbar">
-    <div><span data-zh="前端实验场" data-en="Frontend Experiments">前端实验场</span></div>
+    <a class="brand" href="./"><span class="brand-dot"></span>GAME LAB</a>
     <div style="display:flex;align-items:center;gap:20px">
       <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a>
-      <button id="langToggle" class="lang-toggle glass" type="button">EN</button>
+      <button id="langToggle" class="lang-switch" type="button">中</button>
     </div>
   </div>
 
-  <!-- ============ HERO：非对称首屏 ============ -->
-  <header class="hero">
-    <h1>GAME<br><span class="i">LAB</span></h1>
-    <div class="hero-side">
-      <div class="hero-meta">
-        <span>INDEX — 13</span>
-        <span data-zh="游戏 — 07" data-en="GAMES — 07">游戏 — 07</span>
-        <span data-zh="实验 — 02" data-en="EXPERIMENTS — 02">实验 — 02</span>
-        <span data-zh="站点 — 04" data-en="SITES — 04">站点 — 04</span>
-      </div>
-      <p class="lede">
-        <span data-zh="<b>7 款网页游戏</b>、<b>11 部像素舞台剧</b>，以及若干自建站点与工具——原先散落在十几个仓库，现收拢于一处。全部静态部署，无需安装。"
-              data-en="<b>7 web games</b>, <b>11 pixel stage plays</b>, plus a handful of self-built sites and tools — once scattered across a dozen repos, now gathered in one. Fully static, no install required.">7 款网页游戏、11 部像素舞台剧、若干自建站点与工具——原先散落在十几个仓库，现收拢于一处。全部静态部署，点开即达。</span>
-      </p>
-      <div class="hero-actions">
-        <a class="btn glass" href="#games"><span data-zh="作品索引" data-en="Index">作品索引</span> <span class="ar">↓</span></a>
-        <a class="btn glass" href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener"><span data-zh="源码仓库" data-en="Source">源码仓库</span></a>
-      </div>
-    </div>
-  </header>
+  <!-- ============ HERO：纯视觉过渡带，无文字，焦点让给作品 ============ -->
+  <header class="hero"></header>
 
   <nav class="toc" aria-label="目录">
     <a class="glass" href="#games"><span data-zh="游戏" data-en="Games">游戏</span> <em>07</em></a>
@@ -96,17 +78,17 @@
     <div class="grid">
 
       <a class="card card-feat reveal" href="./cursed-house/">
-        <span class="card-top"><span class="card-num">01</span><span class="card-meta"><span>Canvas · Raycast · WebAudio</span></span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">01</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="咒 · 怨宅" data-en="JYU / Cursed House">咒 · 怨宅</span>
           <span class="card-what" data-zh="第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。"
                 data-en="First-person Chinese horror — 5 chapters, 6 maps, a whole raycasting engine in a single file.">第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。</span>
         </span>
-        <span class="card-meta"><span>05 <span data-zh="章" data-en="ch.">章</span></span><span class="card-go">→</span></span>
+        <span class="card-meta"><span>Canvas · Raycast · WebAudio</span><span>05 <span data-zh="章" data-en="ch.">章</span></span></span>
       </a>
 
       <a class="card reveal" href="./forcing-mars/">
-        <span class="card-top"><span class="card-num">02</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">02</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="强渡火星" data-en="Forcing Mars">强渡火星</span>
           <span class="card-what" data-zh="卡牌构筑：从火星地表下潜到 2000 米地核，有结局。"
@@ -116,7 +98,7 @@
       </a>
 
       <a class="card reveal" href="./PVZ/">
-        <span class="card-top"><span class="card-num">03</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">03</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="植物大战僵尸" data-en="Plants vs Zombies">植物大战僵尸</span>
           <span class="card-what" data-zh="完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。"
@@ -126,7 +108,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./microsoft-vs-code/">
-        <span class="card-top"><span class="card-num">04</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">04</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="微软大战代码" data-en="Microsoft vs. Code">微软大战代码</span>
           <span class="card-what" data-zh="梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。"
@@ -136,7 +118,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./Vampire-2D/">
-        <span class="card-top"><span class="card-num">05</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">05</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title">Vampire 2D</span>
           <span class="card-what" data-zh="顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。"
@@ -146,7 +128,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./nova-drift/">
-        <span class="card-top"><span class="card-num">06</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">06</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="新星漂移" data-en="Nova Drift">新星漂移</span>
           <span class="card-what" data-zh="惯性漂移的小行星带生存：三艘船体拖着彗尾出击，22 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 15 波肃清星域后可无尽漂移；进度自动缓存，关页可续，手机可玩。"
@@ -156,7 +138,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./europa/">
-        <span class="card-top"><span class="card-num">07</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="游戏" data-en="GAME">游戏</span><span class="card-num">07</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="欧陆风云 · 1444" data-en="Europa 1444">欧陆风云 · 1444</span>
           <span class="card-what" data-zh="浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建。"
@@ -179,7 +161,7 @@
     <div class="grid">
 
       <a class="card card-s3 reveal" href="./persona/">
-        <span class="card-top"><span class="card-num">08</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="实验" data-en="LAB">实验</span><span class="card-num">08</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="像素舞台剧 · 十一部" data-en="Eleven Pixel Stage Plays">像素舞台剧 · 十一部</span>
           <span class="card-what" data-zh="同一句话发给 11 个 coding agent，让它们各自从剧本导到演出。"
@@ -189,7 +171,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./ascii-art/">
-        <span class="card-top"><span class="card-num">09</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="实验" data-en="LAB">实验</span><span class="card-num">09</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title">ASCII ∴ LAB</span>
           <span class="card-what" data-zh="把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG。"
@@ -212,7 +194,7 @@
     <div class="grid">
 
       <a class="card card-s3 reveal" href="./shuyan-travel/">
-        <span class="card-top"><span class="card-num">10</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="站点" data-en="SITE">站点</span><span class="card-num">10</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="树言 · 旅记" data-en="Shuyan Travel">树言 · 旅记</span>
           <span class="card-what" data-zh="53 篇长文札记与 53 个地点，Leaflet 画出行车与徒步两段轨迹。"
@@ -222,7 +204,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./XanthanLMusic/dist/">
-        <span class="card-top"><span class="card-num">11</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="站点" data-en="SITE">站点</span><span class="card-num">11</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title">Electric Mirage</span>
           <span class="card-what" data-zh="以 XanthanL 名义发的 5 首曲子，站内流式播放，中英双语。"
@@ -232,7 +214,7 @@
       </a>
 
       <a class="card card-s3 reveal" href="./golden-wind/out/">
-        <span class="card-top"><span class="card-num">12</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="站点" data-en="SITE">站点</span><span class="card-num">12</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title" data-zh="实时金价看板" data-en="Gold Observatory">实时金价看板</span>
           <span class="card-what" data-zh="实时报价、均线与金叉死叉，Next.js 静态导出。"
@@ -242,7 +224,7 @@
       </a>
 
       <a class="card card-s3 is-quiet reveal" href="./ARH/dist/">
-        <span class="card-top"><span class="card-num">·</span><span class="card-go">→</span></span>
+        <span class="card-top"><span class="card-tag" data-zh="站点" data-en="SITE">站点</span><span class="card-num">·</span><span class="card-go">→</span></span>
         <span class="card-main">
           <span class="card-title">ARH — <span data-zh="意识形态坐标测试" data-en="Ideology Coordinate Test">意识形态坐标测试</span></span>
           <span class="card-what" data-zh="7 个维度的光谱定位问卷，30 / 65 / 95 题三档。"
