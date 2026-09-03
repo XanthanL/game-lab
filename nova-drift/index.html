@@ -3414,7 +3414,6 @@ function deathBurst(b){
   ring(b.x,b.y,R,'255,210,120');
   burst(b.x,b.y,18,300,0.5,'255,180,90',2.4);
   FX.boom(b.x,b.y,1.0,'amber',false);
-  shake(3);
   G.dtFx.push({x:b.x,y:b.y,ang:b.ang,t:0,max:0.32}); // 横向冲击波特效在 drawDeathTrail 渲染
 }
 function updateBullets(dt){
