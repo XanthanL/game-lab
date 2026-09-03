@@ -3089,6 +3089,9 @@ function updateDeathTrail(dt){
 }
 function deathBurst(b){
   const R=92,dmg=Math.round(b.dmg*1.6);
+  for(const a of G.asteroids.slice()){ // 炸裂同样灼伤岩石：MAX 尾流的横向冲击波对岩石生效
+    if(d2(b.x,b.y,a.x,a.y)<(R+a.r)*(R+a.r))hurtAst(a,dmg,b.x,b.y,false);
+  }
   for(const e of G.enemies.slice()){
     if(d2(b.x,b.y,e.x,e.y)<(R+e.r)*(R+e.r))hurtEn(e,dmg,b.x,b.y,false);
   }
@@ -3164,17 +3167,20 @@ function updateShards(dt){
   for(let i=G.shards.length-1;i>=0;i--){
     const s=G.shards[i];
     s.t+=dt;
-    const q=d2(s.x,s.y,P.x,P.y);
+    let q=d2(s.x,s.y,P.x,P.y);
     if(!s.mag&&q<P.magnet*P.magnet)s.mag=true; // 进入磁吸范围即锁定：无论多远都会追到底
     if(s.mag){
-      // 比例追踪：速度随距离提升且远超船速上限，保证必被追上；靠近时自然减速不绕圈
+      // 柔和追踪：基础曲线放缓（√距离×2.5，下限 240），但始终比玩家快 120 ——
+      // 既不会悬停追不上，也不会瞬间吸到脸上
       const a=angTo(s.x,s.y,P.x,P.y);
-      const sp=clamp(Math.sqrt(q)*6,520,1600);
+      const psp=Math.hypot(P.vx,P.vy);
+      const sp=Math.max(clamp(Math.sqrt(q)*2.5,240,760),psp+120);
       s.vx=Math.cos(a)*sp;s.vy=Math.sin(a)*sp;
     }else{
       const k=Math.exp(-1.6*dt);s.vx*=k;s.vy*=k;
     }
     s.x+=s.vx*dt;s.y+=s.vy*dt;
+    q=d2(s.x,s.y,P.x,P.y); // 移动后复测距离：高速贴近时避免用旧坐标漏判拾取
     if(q<(P.r+11)*(P.r+11)){
       gainXp(s.v);
       // 单个经验的 +x 跳字，颜色与碎片同色
