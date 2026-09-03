@@ -201,6 +201,34 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .chips .mchip .pips i:last-child.on{background:var(--amber);border-color:transparent}
 .chips .mchip.mx{border-left-color:rgba(255,215,94,.6);border-right-color:rgba(255,215,94,.3);
   background:rgba(255,215,94,.05)}
+/* 模块/协同条目：相对定位，展开详情以标签形式贴在条目下方（非弹窗） */
+.chips .mchip,.synlist .schip{position:relative;cursor:help}
+.chips .mchip .detail,.synlist .schip .detail{
+  display:none;position:absolute;top:calc(100% + 7px);left:50%;transform:skewX(16deg) translateX(-50%);
+  min-width:200px;max-width:min(320px,72vw);z-index:30;pointer-events:none;
+  background:rgba(5,14,24,.96);border:1px solid rgba(111,231,255,.35);
+  border-left:2px solid rgba(111,231,255,.7);padding:8px 12px;text-align:left;
+  font-size:11px;line-height:1.55;color:#bfe0ee;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.chips .mchip .detail>*{transform:skewX(-16deg) translateX(0)}
+.synlist .schip .detail{transform:skewX(0) translateX(-50%)}
+.synlist .schip .detail>*{transform:none}
+.chips .mchip .detail::after,.synlist .schip .detail::after{ /* 与条目相连的小尖角 */
+  content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%) skewX(-16deg);
+  width:8px;height:8px;background:rgba(5,14,24,.96);
+  border-left:1px solid rgba(111,231,255,.35);border-top:1px solid rgba(111,231,255,.35);
+  transform-origin:center;rotate:45deg}
+.synlist .schip .detail::after{transform:translateX(-50%) rotate(45deg)}
+.chips .mchip .detail h4,.synlist .schip .detail h4{
+  margin:0 0 3px;font-size:12px;font-weight:700;color:#e8f7ff;letter-spacing:.08em}
+.chips .mchip .detail .lv,.synlist .schip .detail .lv{
+  color:var(--amber);font-weight:700;margin:4px 0 2px;letter-spacing:.06em}
+.chips .mchip .detail p{margin:0;color:#9fd4e8}
+.chips .mchip .detail .pair{margin-top:5px;color:#8fe6ff;font-size:10.5px}
+.chips .mchip .detail .pair b{color:#e8f7ff}
+@media (hover:hover){
+  .chips .mchip:hover .detail,.synlist .schip:hover .detail{display:block}
+}
+.chips .mchip.open .detail,.synlist .schip.open .detail{display:block}
 .synlist{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;
   margin:-14px 0 20px;font-size:11px}
 .synlist b{color:#8fe6ff;letter-spacing:.1em;font-weight:500}
@@ -3701,7 +3729,57 @@ function synListHtml(){
   if(!P)return '';
   const act=SYN.filter(s=>G.syn[s.id]);
   if(!act.length)return `<i>协同 0/${SYN.length} —— 装配成对的模块即可触发</i>`;
-  return `<b>协同 ${act.length}/${SYN.length}</b>`+act.map(s=>`<span>${s.zh}</span>`).join('');
+  return `<b>协同 ${act.length}/${SYN.length}</b>`+act.map(s=>{
+    const a=MOD_BY_ID[s.a],b=MOD_BY_ID[s.b];
+    return `<span class="schip">${s.zh}<em class="detail"><h4>⚡ ${s.zh}</h4>`+
+      `<div class="lv">${a.g} ${a.zh} + ${b.g} ${b.zh}</div><p>${s.d}</p></em></span>`;
+  }).join('');
+}
+/* 模块条目详情：当前等级效果文案 + 该模块的关键实时数值（有状态、有特效说明） */
+function moduleDetail(m,n){
+  const mx=n>=m.max;
+  const lvTxt=(m.lv&&m.lv[n-1])?m.lv[n-1]:(m.desc||'');
+  let stat='';
+  const S=(t)=>stat+=`<p>${t}</p>`;
+  switch(m.id){
+    case 'hull':S(`船体 ${Math.round(P.hp)} / ${Math.round(P.maxHp)}`);break;
+    case 'thruster':S(`极速 ${Math.round(P.maxSpeed)} · 转向 ${P.turn.toFixed(1)}`);break;
+    case 'loader':S(`射速 ${P.fireRate.toFixed(1)}/s`);break;
+    case 'warhead':S(`伤害 ${P.dmg.toFixed(2)}`);break;
+    case 'twin':S(`枪管 ${P.barrels} · 弹速 ${Math.round(P.bspd)}`);break;
+    case 'pierce':S(`穿透 ${P.pierce}`);break;
+    case 'ricochet':S(`反弹 ${P.ricochet}`);break;
+    case 'frag':S(`爆炸范围 ${Math.round(P.splashR)} · 溅射 ${Math.round(P.splashDmg)}`);break;
+    case 'guided':S(`制导强度 ${P.homing} · 搜索 ${Math.round(P.homeR)}`);break;
+    case 'crit':S(`暴击 ${Math.round(P.crit*100)}% · 暴伤 ×${P.critMul}`);break;
+    case 'magnet':S(`拾取半径 ${Math.round(P.magnet)}`);break;
+    case 'regen':S(`回复 ${P.regen.toFixed(1)}/s`);break;
+    case 'leech':S(`击坠回复 ${((P.leech||0)*1.2).toFixed(1)}% 最大船体`);break;
+    case 'overdrive':S(`射速 ${P.fireRate.toFixed(1)}/s · 伤害 ${P.dmg.toFixed(2)} · 船体上限 ${Math.round(P.maxHp)}`);break;
+    case 'phase':S(`受击无敌 ${(0.9+P.phase).toFixed(1)}s`);break;
+    case 'drone':S(`无人机 ${G.drones.length} 架 · 火力 ${(P.dronePow*100|0)}% · 射速 ${P.droneCd.toFixed(2)}s`);break;
+    case 'aegis':S(`护盾 ${Math.round(P.shield)} / ${Math.round(P.shieldMax)} · 脱战回复 ${P.shieldRegen.toFixed(0)}/s`);break;
+    case 'ram':S(`冲角伤害 ${Math.round(ramDmg())} · 碰撞受伤 -${P.ram>=4?75:(P.ram>=2?65:40)}%`);break;
+    case 'tesla':S(`电弧 ${1+P.tesla} 链 · 伤害 ${Math.round(P.dmg*(1.1+0.7*P.tesla))} · 冷却 ${P.teslaCd.toFixed(2)}s`);break;
+    case 'stasis':S(`范围 ${P.stasisR} · 减速强度 ${P.stasisPow.toFixed(1)}`);break;
+    case 'backshot':S(`尾炮 ${P.backshot} 门 · 火力 ${(P.backPow*100|0)}%`);break;
+    case 'lance':S(`长枪伤害 ${Math.round(P.dmg*(4+1.5*P.lance))} · 冷却 ${P.lanceCd.toFixed(1)}s`);break;
+    case 'deathtrail':S(`灼烧 ${DEATHTRAIL[P.death].dmg+P.deathBonus}/0.2s · 极速 ${Math.round(P.maxSpeed)} · 射速 ${P.fireRate.toFixed(1)}/s`);break;
+    case 'nova':S(`范围 ${NOVA_LV[P.nova-1][1]} · 伤害 ${Math.round(P.dmg*NOVA_LV[P.nova-1][2])} · 冷却 ${NOVA_LV[P.nova-1][0]}s`);break;
+    case 'blink':S(`折跃距离 ${BLINK_LV[P.blink-1][1]} · 冷却 ${BLINK_LV[P.blink-1][0]}s · 就绪 ${P.blinkT>0?Math.ceil(P.blinkT)+'s':'√'}`);break;
+    case 'mine':S(`爆炸范围 ${MINE_LV[P.mine-1][1]} · 伤害 ${Math.round(MINE_LV[P.mine-1][2]*P.dmg)} · 场上 ${G.mines.length}/${MINE_LV[P.mine-1][3]}`);break;
+  }
+  // 该模块参与的协同（含未触发的，供玩家查看构筑方向）
+  const syns=SYN.filter(s=>s.a===m.id||s.b===m.id);
+  let pair='';
+  for(const s of syns){
+    const o=MOD_BY_ID[s.a===m.id?s.b:s.a];
+    const on=G.syn[s.id]?'':'（未激活）';
+    pair+=`<div class="pair">⚡ ${s.zh} <b>${o.g} ${o.zh}</b>${on}</div>`;
+  }
+  return `<em class="detail"><h4>${m.g} ${m.zh} · ${mx?'MAX':'LV'+n}</h4>`+
+    `<div class="lv">${mx?'✦ MAX 质变已激活':'下一级：'+((m.lv&&m.lv[n])?m.lv[n]:'')}</div>`+
+    `<p>${lvTxt}</p>${stat}${pair}</em>`;
 }
 function buildChips(){
   // 能力型与数值型分组：每模块一行 —— 图标 + 名称 + 六格斜杠进度（第 6 格金色 = MAX 质变格）
@@ -3712,7 +3790,7 @@ function buildChips(){
       const n=G.build[id],mx=n>=m.max;
       let pips='';
       for(let k=1;k<=m.max;k++)pips+=`<i class="${k<=n?'on':''}"></i>`;
-      out+=`<div class="mchip${mx?' mx':''}"><b>${m.g}</b><span>${m.zh}</span><em class="pips">${pips}</em></div>`;
+      out+=`<div class="mchip${mx?' mx':''}" data-mod="${id}"><b>${m.g}</b><span>${m.zh}</span><em class="pips">${pips}</em>${moduleDetail(m,n)}</div>`;
     }
     return out;
   };
@@ -3826,6 +3904,21 @@ $('btnRestart').addEventListener('click',()=>startGame());
 $('btnQuit').addEventListener('click',()=>{saveRun();toMenu();});
 $('btnContinue').addEventListener('click',resumeRun);
 $('btnReroll').addEventListener('click',rerollCards);
+/* ESC/结算/通关面板：模块与协同条目 —— 桌面 hover 展开，触屏点击展开（再点收起，点其它切换） */
+document.addEventListener('pointerdown',e=>{
+  const chip=e.target.closest('.mchip,.schip');
+  if(!chip)return;
+  if(e.pointerType==='mouse')return; // 桌面鼠标走 hover，不占用点击
+  const wasOpen=chip.classList.contains('open');
+  for(const o of document.querySelectorAll('.mchip.open,.schip.open'))o.classList.remove('open');
+  if(!wasOpen)chip.classList.add('open');
+  e.preventDefault();
+},true);
+document.addEventListener('pointerdown',e=>{ // 点击空白处收起所有展开的详情
+  if(e.pointerType==='mouse')return;
+  if(!e.target.closest('.mchip,.schip'))
+    for(const o of document.querySelectorAll('.mchip.open,.schip.open'))o.classList.remove('open');
+},true);
 $('btnMute').addEventListener('click',toggleMute);
 $('btnLogbook').addEventListener('click',openLogbook);
 $('btnLbBack').addEventListener('click',toMenu);
