@@ -203,11 +203,15 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .chips .mchip.mx{border-left-color:rgba(255,215,94,.6);border-right-color:rgba(255,215,94,.3);
   background:rgba(255,215,94,.05)}
 /* 模块/协同条目：相对定位，展开详情以标签形式贴在条目下方（非弹窗） */
-.chips .mchip,.synlist .schip{position:relative;cursor:help}
-/* 层叠修复：.mchip 的 skew 变换会创建独立层叠上下文，内部 detail 的 z-index 无法越过后续 DOM 的 synlist；
+.chips .mchip,.synlist .schip{position:relative;cursor:help;z-index:1}
+/* 层叠修复 1：.mchip 的 skew 变换会创建独立层叠上下文，内部 detail 的 z-index 无法越过后续 DOM 的 synlist；
    给两个容器显式分层，保证 chips 的详情标签始终盖在 synlist 徽章之上 */
 .chips{position:relative;z-index:2}
 .synlist{position:relative;z-index:1}
+/* 层叠修复 2：chips 内部的兄弟 mchip 同样各自成层叠上下文且按 DOM 顺序后画，
+   下垂的详情会被下一行模块条盖住 —— 悬停/展开时把该条整体抬到兄弟之上 */
+.chips .mchip:hover,.chips .mchip.open,
+.synlist .schip:hover,.synlist .schip.open{z-index:40}
 .chips .mchip .detail,.synlist .schip .detail{
   display:none;position:absolute;top:calc(100% + 7px);left:50%;transform:skewX(16deg) translateX(-50%);
   min-width:200px;max-width:min(320px,72vw);z-index:30;pointer-events:none;
