@@ -203,6 +203,10 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   background:rgba(255,215,94,.05)}
 /* 模块/协同条目：相对定位，展开详情以标签形式贴在条目下方（非弹窗） */
 .chips .mchip,.synlist .schip{position:relative;cursor:help}
+/* 层叠修复：.mchip 的 skew 变换会创建独立层叠上下文，内部 detail 的 z-index 无法越过后续 DOM 的 synlist；
+   给两个容器显式分层，保证 chips 的详情标签始终盖在 synlist 徽章之上 */
+.chips{position:relative;z-index:2}
+.synlist{position:relative;z-index:1}
 .chips .mchip .detail,.synlist .schip .detail{
   display:none;position:absolute;top:calc(100% + 7px);left:50%;transform:skewX(16deg) translateX(-50%);
   min-width:200px;max-width:min(320px,72vw);z-index:30;pointer-events:none;
