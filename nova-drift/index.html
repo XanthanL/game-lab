@@ -3413,7 +3413,6 @@ function deathBurst(b){
   }
   ring(b.x,b.y,R,'255,210,120');
   burst(b.x,b.y,7,240,0.4,'255,180,90',2);
-  FX.boom(b.x,b.y,0.7,'amber',false);
   G.dtFx.push({x:b.x,y:b.y,ang:b.ang,t:0,max:0.32}); // 横向冲击波特效在 drawDeathTrail 渲染
 }
 function updateBullets(dt){
@@ -4524,15 +4523,13 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船头前方钉着一枚等边钝角三角锋芒 —— 简洁直白的"我能撞人"提示
+  if(P.ram>0){ // 冲角装甲：船头前方顶着一个大开口中括号 < —— 简洁直白的"我能撞人"提示
     const rc=P.ramMax?'255,215,94':hullGlow();
     const charge=0.35+0.5*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
-    const s=7; // 等边钝角三角形：底边朝船首、钝角尖朝前
+    const bx=22,tip=bx-8,dy=6.5; // 开口大的 < 形：两撇从中点向斜后张开
     ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle=`rgba(${rc},${0.32*charge})`;
-    ctx.beginPath();ctx.moveTo(20,-s*0.62);ctx.lineTo(20+s*1.35,0);ctx.lineTo(20,s*0.62);ctx.closePath();ctx.fill();
-    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(20,-s*0.62);ctx.lineTo(20+s*1.35,0);ctx.lineTo(20,s*0.62);ctx.closePath();ctx.stroke();
+    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(bx,-dy);ctx.lineTo(tip,0);ctx.lineTo(bx,dy);ctx.stroke();
     ctx.globalCompositeOperation='source-over';
   }
   ctx.restore();ctx.globalAlpha=1;
