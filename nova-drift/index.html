@@ -1403,9 +1403,11 @@ const MODULES=[
         'MAX：护盾再 +75，回复速度翻倍 —— 金光护体'],
     apply:n=>{const v=n<6?25:75;P.shieldMax+=v;P.shield+=v;if(n===6)P.shieldRegen=26;}},
   {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:6,type:'ability',
-    lv:['撞击即可杀伤敌人，碰撞自伤降低','冲角杀伤提升','冲角杀伤提升，自伤再降',
-        '冲角杀伤提升','冲角杀伤提升','MAX：冲角贯通 —— 撞击伤害暴增，金色的撞角火花'],
-    apply:n=>{P.ram=n<6?n:n+3;if(n===6)P.ramMax=true;}},
+    lv:['撞击即可杀伤敌人，碰撞自伤降低；射速 -10%','冲角杀伤提升；射速 -10%','冲角杀伤提升，自伤再降；射速 -10%',
+        '冲角杀伤提升；射速 -10%','冲角杀伤提升；射速 -10%','MAX：冲角贯通 —— 撞击伤害暴增，金色的破锋尖刺'],
+    apply:n=>{P.ram=n<6?n:n+3;if(n===6)P.ramMax=true;
+      // 冲角流派以射速换撞击威力（续档重放按级重放，乘法叠加保持一致）
+      P.fireRate*=0.9;}},
   {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',max:6,type:'stat',
     lv:['每秒回复 0.9 点船体','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9',
         'MAX：每秒再 +4 —— 纳米虫群铺满船壳'],
@@ -1450,16 +1452,16 @@ const MODULES=[
         'MAX：无敌时间再 +0.8 秒 —— 受击瞬间身形化作金色残影'],
     apply:n=>{P.phase+=n<6?0.2:0.8;}},
   {id:'deathtrail',zh:'死亡尾流',en:'Death Wake',g:'☄',max:6,type:'ability',
-    lv:['极速 +8%、射速 -5% —— 尾流灼伤触敌，并消解触及的敌方子弹；飞得越快尾流越长',
-        '极速 +8%、射速 -5% —— 尾流更长、灼烧伤害提升',
-        '极速 +8%、射速 -5% —— 尾流更长、灼烧伤害提升',
-        '极速 +8%、射速 -5% —— 尾流更长、灼烧伤害提升',
-        '极速 +8%、射速 -5% —— 尾流更长、灼烧伤害提升',
-        'MAX：极速再 +12%、射速 -5% —— 霓虹尾流消失前横向炸裂，重创整片敌群'],
+    lv:['极速 +8%、射速 -10% —— 尾流灼伤触敌，并消解触及的敌方子弹；飞得越快尾流越长',
+        '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
+        '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
+        '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
+        '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
+        'MAX：极速再 +12%、射速 -10% —— 霓虹尾流消失前横向炸裂，重创整片敌群'],
     apply:n=>{P.death=n;
       // 每级提速但降低射速：速度换火力的交易（续档重放时按级重放，乘法叠加保持一致）
       const k=n<6?1.08:1.2;
-      P.maxSpeed*=k;P.accel*=k;P.fireRate*=0.95;}},
+      P.maxSpeed*=k;P.accel*=k;P.fireRate*=0.9;}},
   {id:'nova',zh:'脉冲核心',en:'Nova Core',g:'✸',max:6,type:'ability',
     lv:['每 7 秒释放冲击波：击伤并震退周身敌人','冲击波冷却 -1 秒','冲击波范围与伤害提升',
         '冷却再 -1 秒','范围与伤害再提升','MAX：金色振荡 —— 范围与伤害大增，并湮灭波及的敌方子弹'],
@@ -2318,12 +2320,12 @@ function hurtPlayer(dmg,sx,sy){
   if(P.shieldTmp>0){ // 临时屏障先扛：外层的蓝色护罩
     const s=Math.min(P.shieldTmp,dmg);P.shieldTmp-=s;dmg-=s;vented=true;
     if(P.shieldTmp<=0)P.shieldTmpMax=0;
-    ring(P.x,P.y,28,'111,231,255');
+    ring(P.x,P.y,28,hullGlow());
     FX.splash(P.x,P.y,'cyan',0.9);
   }
   if(dmg>0&&P.shield>0){
     const s=Math.min(P.shield,dmg);P.shield-=s;dmg-=s;vented=true;
-    ring(P.x,P.y,22,'111,231,255');
+    ring(P.x,P.y,22,hullGlow());
     FX.splash(P.x,P.y,'cyan',0.8);
   }
   if(vented&&G.syn.vent_wake&&P.death>0){ // 泄压尾流：护盾受击时向四周喷发灼热火团
@@ -2352,11 +2354,11 @@ function drainPlayer(dmg){
   if(P.shieldTmp>0){
     const s=Math.min(P.shieldTmp,d);P.shieldTmp-=s;d-=s;
     if(P.shieldTmp<=0)P.shieldTmpMax=0;
-    ring(P.x,P.y,24,'111,231,255');
+    ring(P.x,P.y,24,hullGlow());
   }
   if(d>0&&P.shield>0){
     const s=Math.min(P.shield,d);P.shield-=s;d-=s;P.shieldT=4;
-    ring(P.x,P.y,20,'111,231,255');
+    ring(P.x,P.y,20,hullGlow());
   }
   if(d>0){P.hp-=d;flashRed();}
   if(P.hp<=0){P.hp=0;die();}
@@ -2378,9 +2380,9 @@ function die(){
    默认 bolt 细光条；穿甲=needle 长针；跳弹=orb 琥珀圆珠+旋转环；高爆=pulse 橙色脉动；
    制导=wisp 青绿波动尾迹；暴击流=紫色辉光核；重型弹头=整体加粗加长；
    组合：穿甲+制导=幽灵残影针 · 跳弹+高爆=双旋转环 · 穿甲+暴击=金色针尖 · 制导+高爆=脉动青珠 */
-const BULLET_DEFAULT={shape:'bolt',c:'165,236,255',len:9,w:2,tip:null,ring:0,pulse:0,ghost:0,glow:null};
+const BULLET_DEFAULT=null; // 已废弃占位：无 vis 的弹体统一走 droneBulletVis()（船体辉光色 bolt）
 function bulletVis(){
-  const v={shape:'bolt',c:'190,240,255',len:9,w:2,tip:null,ring:0,pulse:0,ghost:0,glow:null};
+  const v={shape:'bolt',c:hullGlow(),len:9,w:2,tip:null,ring:0,pulse:0,ghost:0,glow:null};
   const crit=P.crit>=0.15,spl=P.splashR>0,hom=P.homing>0,pie=P.pierce>0,ric=P.ricochet>0;
   if((G.build.warhead||0)>0){v.len+=3;v.w+=1;}
   if(pie){v.shape='needle';v.len=16;v.w=1.5;}
@@ -2783,7 +2785,14 @@ function clampCam(){
   cam.y=VH>=WORLD.h?WORLD.h/2:clamp(cam.y,VH/2,WORLD.h-VH/2);
 }
 
-/* 无人机弹丸视觉：颜色跟随当前船体辉光（按船体缓存） */
+/* 当前船体辉光色（RGB 字符串，按船体缓存）：护盾环、默认弹体等需要与船身同色的视觉统一取此值 */
+let HULL_GLOW='111,231,255',HULL_GLOW_ID='';
+function hullGlow(){
+  const hid=(G.lastHull&&G.lastHull.id)||'peregrine';
+  if(HULL_GLOW_ID!==hid){HULL_GLOW_ID=hid;HULL_GLOW=(HULL_TINT[hid]||HULL_TINT.peregrine).glow;}
+  return HULL_GLOW;
+}
+/* 无人机弹丸视觉：颜色跟随当前船体辉光（按船体缓存）；也作为无 vis 弹的兜底视觉 */
 let DRONE_VIS=null,DRONE_VIS_HULL='';
 function droneBulletVis(){
   const hid=(G.lastHull&&G.lastHull.id)||'peregrine';
@@ -3479,7 +3488,7 @@ function gainXp(v){
   P.xp+=v;
   while(P.xp>=P.xpNext){
     P.xp-=P.xpNext;P.level++;
-    P.xpNext=Math.round(P.xpNext*1.18+3);
+    P.xpNext=Math.round(P.xpNext*1.13+2); // 升级曲线放缓（原 1.18+3）：更快成型构筑
     G.pending++;
   }
   if(G.pending>0&&(G.mode==='play'||G.mode==='inter'))openLevelUp();
@@ -4423,29 +4432,32 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船首两道前掠光刺 + 充能光晕，速度越快越亮 —— 提醒玩家"我能撞人"
-    const rc=P.ramMax?'255,215,94':'140,236,255';
+  if(P.ram>0){ // 冲角装甲：船首单根破锋尖刺 + 锋尖充能光点，速度越快越亮 —— 提醒玩家"我能撞人"
+    const rc=P.ramMax?'255,215,94':hullGlow();
     const charge=0.35+0.45*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
     ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=`rgba(${rc},${0.3*charge})`;ctx.lineWidth=5;
-    ctx.beginPath();ctx.moveTo(13,-9);ctx.lineTo(24,-13);ctx.moveTo(13,9);ctx.lineTo(24,13);ctx.stroke();
-    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=1.6;
-    ctx.beginPath();ctx.moveTo(14,-7.5);ctx.lineTo(23.5,-11.5);ctx.moveTo(14,7.5);ctx.lineTo(23.5,11.5);ctx.stroke();
-    // 船首充能光点：即将撞上什么时的"就绪"信号
+    ctx.lineCap='round';
+    // 宽晕刺体：从船首探出的一根尖锐长刺
+    ctx.strokeStyle=`rgba(${rc},${0.3*charge})`;ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(28,0);ctx.stroke();
+    // 亮芯
+    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(27,0);ctx.stroke();
+    // 锋尖充能光点：即将撞上什么时的"就绪"信号
     const tw=0.7+0.3*Math.sin(G.t*8);
-    ctx.fillStyle=`rgba(${rc},${0.5*charge*tw})`;
-    ctx.beginPath();ctx.arc(22,0,2.2+0.8*charge,0,TAU);ctx.fill();
+    ctx.fillStyle=`rgba(${rc},${0.55*charge*tw})`;
+    ctx.beginPath();ctx.arc(27,0,1.6+0.7*charge,0,TAU);ctx.fill();
     ctx.globalCompositeOperation='source-over';
   }
   ctx.restore();ctx.globalAlpha=1;
   const shTot=p.shield+p.shieldTmp,shCap=p.shieldMax+p.shieldTmpMax;
-  if(shTot>0){
-    ctx.strokeStyle=`rgba(111,231,255,${0.2+0.4*shTot/Math.max(1,shCap)})`;
+  if(shTot>0){ // 护盾环：颜色与船身辉光一致
+    ctx.strokeStyle=`rgba(${hullGlow()},${0.2+0.4*shTot/Math.max(1,shCap)})`;
     ctx.lineWidth=1.6;
     ctx.beginPath();ctx.arc(p.x,p.y,21,0,TAU);ctx.stroke();
   }
-  if(p.shieldTmp>0){ // 临时屏障：外圈虚线蓝环
-    ctx.strokeStyle=`rgba(150,238,255,${0.34+0.26*Math.sin(G.t*6)})`;
+  if(p.shieldTmp>0){ // 临时屏障：外圈虚线环（同色更亮）
+    ctx.strokeStyle=`rgba(${hullGlow()},${0.34+0.26*Math.sin(G.t*6)})`;
     ctx.lineWidth=1.2;ctx.setLineDash([5,6]);
     ctx.beginPath();ctx.arc(p.x,p.y,25,0,TAU);ctx.stroke();
     ctx.setLineDash([]);
@@ -4612,7 +4624,7 @@ function draw(){
       ctx.strokeStyle='#ffe9a8';ctx.lineWidth=1.8;
       ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*6,b.y-Math.sin(a)*6);ctx.lineTo(b.x,b.y);ctx.stroke();
     }else{
-      drawBulletVis(b,a,b.vis||BULLET_DEFAULT);
+      drawBulletVis(b,a,b.vis||droneBulletVis());
     }
   }
   for(const lt of G.bolts){
