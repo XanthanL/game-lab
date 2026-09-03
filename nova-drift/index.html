@@ -49,7 +49,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 #shieldbar{width:min(220px,34vw);height:5px;margin-top:3px;background:rgba(255,255,255,.06);
   border:1px solid rgba(111,231,255,.4);transform:skewX(-16deg);overflow:hidden}
 #shieldbar i{background:linear-gradient(90deg,#2f9fd6,#a5ecff);display:block;height:100%;transition:width .12s linear}
-/* 能力型装配框：血条/护盾条下方一排 6 格，展示已拥有的能力图标与等级 */
+/* 能力型装配框：经验条下方一排 6 格，展示已拥有的能力图标与等级 */
 #abrow{display:flex;gap:5px;margin-top:7px}
 #abrow .ab{width:29px;height:29px;position:relative;display:flex;align-items:center;justify-content:center;
   border:2px solid rgba(111,231,255,.4);background:rgba(255,255,255,.04);transform:skewX(-16deg);
@@ -176,11 +176,29 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   text-shadow:0 0 18px rgba(111,231,255,.5)}
 #newBest{display:inline-block;margin-top:10px;font-size:11px;letter-spacing:.3em;color:var(--amber);
   border:1px solid rgba(255,215,94,.5);padding:4px 12px;border-radius:3px}
-.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:24px 0 6px}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:24px 0 6px}
 .statgrid div{font-size:11px;color:var(--dim);letter-spacing:.08em;line-height:1.7}
 .statgrid b{display:block;font-size:18px;color:#dcedf5;font-weight:500}
 .statline{margin:10px auto 0;font-size:11.5px;letter-spacing:.08em;color:#9fc6d8;line-height:1.9;
   font-family:ui-monospace,Consolas,monospace}
+/* ---------- 存档管理 ---------- */
+.saves-panel{max-width:min(92vw,560px)}
+#saveList{display:flex;flex-direction:column;gap:8px;margin:20px 0 4px;max-height:48vh;overflow:auto;text-align:left}
+.saverow{display:flex;align-items:center;gap:12px;justify-content:space-between;
+  border:1px solid var(--line);border-left:2px solid rgba(111,231,255,.5);
+  background:rgba(111,231,255,.04);padding:10px 14px}
+.saverow.cur{border-left-color:var(--cyan);background:rgba(111,231,255,.08)}
+.sv-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sv-info b{color:#cfeeff;letter-spacing:.12em;font-size:13px}
+.sv-info .sv-meta{font-size:11px;color:#9fc6d8;font-family:ui-monospace,Consolas,monospace}
+.sv-info .sv-time{font-size:10px;color:var(--dim);font-family:ui-monospace,Consolas,monospace}
+.sv-tag{display:inline-block;font-size:9px;letter-spacing:.2em;color:var(--cyan);
+  border:1px solid rgba(111,231,255,.4);padding:1px 6px;margin-left:8px;vertical-align:1px}
+.sv-btns{display:flex;gap:8px;flex-shrink:0}
+.btn.sm{padding:7px 16px;font-size:11px;letter-spacing:.18em;text-indent:.18em}
+.btn.danger{border-color:rgba(255,92,73,.55);color:#ff9d90}
+.btn.danger:hover{background:rgba(255,92,73,.14);box-shadow:0 0 18px rgba(255,92,73,.25)}
+#saveList .empty{font-size:11.5px;color:var(--dim);text-align:center;padding:18px 0;letter-spacing:.1em;line-height:2}
 .chips{margin:14px 0 24px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
 .chips span{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:#9fc6d8}
 .chips span.mx{color:var(--amber);border-color:rgba(255,215,94,.55);text-shadow:0 0 8px rgba(255,215,94,.4)}
@@ -259,6 +277,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 @media (max-width:640px){
   .hud-tr{right:58px}
   #score{font-size:18px}
+  /* 窄屏下左上 HUD 纵向堆叠变高，WAVE 标签整体下移避让（清过血条/护盾/经验条/能力格整列） */
+  .hud-tc{top:96px}
   .panel{padding:28px 22px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
 }
@@ -276,8 +296,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   <div class="hud-tl">
     <div class="bar"><i id="hpbar" style="width:100%"></i></div>
     <div id="shieldbar" hidden><i style="width:100%"></i></div>
-    <div id="abrow" hidden></div>
     <div class="xprow"><span id="lv" class="mono">LV 1</span><div class="bar xp"><i id="xpbar" style="width:0%"></i></div></div>
+    <div id="abrow" hidden></div>
   </div>
   <div class="hud-tc"><div id="wavelabel" class="mono">WAVE 1</div><div id="bossbar" hidden><i style="width:100%"></i></div></div>
   <div class="hud-tr"><div id="score" class="mono">0</div><div id="best" class="mono">BEST 0</div><div id="ptime" class="mono">0:00</div></div>
@@ -311,6 +331,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <div class="menu-actions">
       <button id="btnLaunch" class="btn">LAUNCH ▸ 出击</button>
       <button id="btnContinue" class="btn ghost" hidden>继续漂移 ▸ C</button>
+      <button id="btnSaves" class="btn ghost">SAVES ▸ 存档管理</button>
       <button id="btnLogbook" class="btn ghost">LOG ▸ 航行日志</button>
       <button id="btnSettings" class="btn ghost">SETTINGS ▸ 设置</button>
     </div>
@@ -408,8 +429,9 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
       <div><b id="lbGames" class="mono">0</b>出击场次</div>
       <div><b id="lbWave" class="mono">0</b>最远波次</div>
       <div><b id="lbTime" class="mono">0:00</b>累计漂移</div>
+      <div><b id="lbScoreSum" class="mono">0</b>累计得分</div>
+      <div><b id="lbBest" class="mono">0</b>最高得分</div>
     </div>
-    <div class="statline" id="lbScore"></div>
     <div class="chips" id="lbHulls"></div>
     <div class="synlist" id="lbSwarm"></div>
     <div class="row-btns">
@@ -424,8 +446,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <h2>SETTINGS<span>音频设置</span></h2>
     <div class="volrow">
       <label>BGM</label>
-      <input id="bgmVol" type="range" min="0" max="100" value="8">
-      <span id="bgmVal" class="volval mono">8%</span>
+      <input id="bgmVol" type="range" min="0" max="100" value="18">
+      <span id="bgmVal" class="volval mono">18%</span>
     </div>
     <div class="volrow">
       <label>SFX</label>
@@ -435,6 +457,17 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <div class="setnote">BGM 会随场景自动切换：菜单 / 巡航 / 战斗 / 巨像 / 无尽 / 结算。<br>首次播放需一次点击或按键解锁浏览器音频。</div>
     <div class="row-btns">
       <button id="btnSetBack" class="btn">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- saves manager -->
+<div id="saves" class="overlay" hidden>
+  <div class="panel saves-panel">
+    <h2>SAVES<span>存档管理 —— 中途退出的漂移记录</span></h2>
+    <div id="saveList"></div>
+    <div class="row-btns">
+      <button id="btnSavesBack" class="btn">返回 ▸ ESC</button>
     </div>
   </div>
 </div>
@@ -470,10 +503,11 @@ const el={
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
   hulls:$('hulls'),hullrow:$('hullrow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
-  lbScore:$('lbScore'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
+  lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
   flash:$('flash'),joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
   btnReroll:$('btnReroll'),
+  saves:$('saves'),saveList:$('saveList'),
   settings:$('settings'),bgmVol:$('bgmVol'),sfxVol:$('sfxVol'),bgmVal:$('bgmVal'),sfxVal:$('sfxVal'),
   btnSettings:$('btnSettings'),btnSettingsP:$('btnSettingsP'),btnSetBack:$('btnSetBack'),
 };
@@ -992,7 +1026,7 @@ const NEB_SPR=NEBULAE.map(n=>{
 
 /* ============================== audio ============================== */
 const AU={ctx:null,master:null,bgm:null,nbuf:null,muted:false,lastShot:0,
-  bgmVol:0.08,sfxVol:0.5,
+  bgmVol:0.18,sfxVol:0.5,
   ensure(){
     const C=window.AudioContext||window.webkitAudioContext;
     if(!C)return;
@@ -1198,7 +1232,7 @@ class BGMManager{
   }
   /* 依据游戏状态推导当前应播放的曲组 */
   _phase(){
-    if(!P||G.mode==='menu'||G.mode==='hulls'||G.mode==='logbook')return 'menu';
+    if(!P||G.mode==='menu'||G.mode==='hulls'||G.mode==='logbook'||G.mode==='saves')return 'menu';
     if(G.mode==='dying'||G.mode==='over'||G.mode==='victory')return 'end';
     if(Wv.boss)return 'boss';
     if(G.endless)return 'endless';
@@ -1252,6 +1286,7 @@ const G={
   mode:'menu', // menu | play | inter | levelup | pause | dying | over
   prevMode:'play',
   t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
+  runId:0,runStart:0, // 当前漂移的唯一 id / 开始时刻（时间戳），多存档管理用
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],
@@ -1261,13 +1296,35 @@ try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
 /* ---------------- run save: refresh / close keeps the drift ---------------- */
 const SAVE_KEY='nova-save';
 function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+String(s).padStart(2,'0');}
-function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return s&&s.v===1?s:null;}catch(e){return null;}}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(s&&s.v===1){if(!s.id){s.id=s.st||Date.now();}if(!s.st)s.st=s.id;return s;}}catch(e){}
+  return null;}
 function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
 function saveRun(){
   if(!P||(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='pause'&&G.mode!=='levelup'))return;
-  const s={v:1,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
+  const s={v:1,id:G.runId,st:G.runStart,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
     hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+}
+/* ---------------- 多存档：开新游戏时旧档自动归档保留 ----------------
+   nova-save 始终是「最近一次漂移」的自动保存；开新游戏（startGame）时，
+   旧档被挪入 nova-slots 归档列表，由主菜单「存档管理」加载/删除。
+   漂移结束（坠毁/通关结算）时同 id 的归档一并清除。 */
+const SLOTS_KEY='nova-slots',SLOT_MAX=8;
+function loadSlots(){try{const a=JSON.parse(localStorage.getItem(SLOTS_KEY)||'[]');
+  return Array.isArray(a)?a.filter(s=>s&&s.v===1):[];}catch(e){return[];}}
+function saveSlots(a){try{localStorage.setItem(SLOTS_KEY,JSON.stringify(a));}catch(e){}}
+function archiveSave(s){ // 按 id 覆盖式归档，最新的在最前，上限 SLOT_MAX 个
+  if(!s)return;
+  const a=loadSlots().filter(x=>x.id!==s.id);
+  a.unshift(s);
+  while(a.length>SLOT_MAX)a.pop();
+  saveSlots(a);
+}
+function removeSlotArch(id){if(!id)return;saveSlots(loadSlots().filter(s=>s.id!==id));}
+function slotView(){ // 存档管理的合并视图：进行中档（nova-save）在前 + 其余归档
+  const cur=loadSave();
+  return cur?[cur,...loadSlots().filter(s=>s.id!==cur.id)]:loadSlots();
 }
 function refreshContinue(){
   const s=loadSave();
@@ -1293,10 +1350,11 @@ function resumeRun(){
   }
   recountMax();
   G.syn={};G.synQ=[];checkSynergies();G.synQ=[]; // 续档重算协同加成，但不弹提示
-  G.statK=G.kills;G.statRT=G.runT;G.statOn=true; // 已计入过的水位，避免重复计数
   P.level=s.lv||1;P.xp=s.xp||0;P.xpNext=s.xpN||12;
   P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
   G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
+  G.runId=s.id;G.runStart=s.st||s.id; // 续用该漂移的原 id / 开始时刻，自动保存与归档清理才能对上号
+  G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;G.statOn=true; // 恢复后重设已计入水位，避免重复计数
   cam.x=P.x;cam.y=P.y;clampCam();
   G.mode='play';
   el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
@@ -1664,24 +1722,25 @@ function unlockHull(id){
 }
 
 /* ============================== 局外统计 ==============================
-   累计击坠 / 出击场次 / 累计漂移时长 / 最远波次。挂在 2s 存档 tick 上增量结算，
-   用 G.statK / G.statRT 记录「已计入统计」的水位，避免续档重复计数。 */
+   累计击坠 / 出击场次 / 累计漂移时长 / 最远波次 / 累计得分。挂在 2s 存档 tick 上增量结算，
+   用 G.statK / G.statRT / G.statSc 记录「已计入统计」的水位，避免续档重复计数。 */
 const STAT_KEY='nova-stats';
 function loadStats(){
   try{const s=JSON.parse(localStorage.getItem(STAT_KEY)||'null');
-    if(s&&typeof s==='object')return{k:s.k|0,g:s.g|0,t:s.t||0,w:s.w||0};}catch(e){}
-  return{k:0,g:0,t:0,w:0};
+    if(s&&typeof s==='object')return{k:s.k|0,g:s.g|0,t:s.t||0,w:s.w||0,sc:s.sc|0};}catch(e){}
+  return{k:0,g:0,t:0,w:0,sc:0};
 }
 function saveStats(s){try{localStorage.setItem(STAT_KEY,JSON.stringify(s));}catch(e){}}
 function flushStats(){
   if(!P||!G.statOn)return;
   const dk=G.kills-(G.statK||0);
   const dt=Math.max(0,G.runT-(G.statRT||0));
-  if(dk<=0&&dt<1)return;
+  const dsc=Math.max(0,G.score-(G.statSc||0));
+  if(dk<=0&&dt<1&&dsc<=0)return;
   const before=loadStats().k;
-  G.statK=G.kills;G.statRT=G.runT;
+  G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;
   const s=loadStats();
-  s.k+=dk;s.t+=dt;s.w=Math.max(s.w,Wv.n);
+  s.k+=dk;s.t+=dt;s.sc+=dsc;s.w=Math.max(s.w,Wv.n);
   saveStats(s);
   if(before<SWARM_KILLS&&s.k>=SWARM_KILLS){ // 蜂群解锁时刻
     banner('NEW HULL · 蜂群','累计击坠 '+SWARM_KILLS+' 达成 —— 无人机母舰已解锁');
@@ -1756,7 +1815,7 @@ window.addEventListener('keydown',e=>{
   if(G.mode==='menu'&&(e.code==='Enter'||e.code==='Space')){openHulls();return;}
   if(G.mode==='menu'&&e.code==='KeyC'){resumeRun();return;}
   if(G.mode==='menu'&&e.code==='KeyL'){openLogbook();return;}
-  if(G.mode==='logbook'&&e.code==='Escape'){toMenu();return;}
+  if((G.mode==='logbook'||G.mode==='saves')&&e.code==='Escape'){toMenu();return;}
   if(G.mode==='hulls'&&/^Digit[1-6]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
   if(G.mode==='hulls'&&e.code==='Escape'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return;}
   if(G.mode==='victory'&&(e.code==='KeyE'||e.code==='Enter')){continueEndless();return;}
@@ -3696,14 +3755,17 @@ function menuScene(){
 function startGame(hull){
   AU.ensure();
   fireOn=false;el.firebtn.classList.remove('hot');
+  const prev=loadSave();
+  if(prev)archiveSave(prev); // 旧档归档保留 —— 开新漂移不会覆盖历史进度
   clearSave();
+  G.runId=Date.now();G.runStart=G.runId; // 新漂移的唯一 id / 开始时刻
   hull=hull||G.lastHull||HULLS[0];G.lastHull=hull;
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
   G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;
-  G.statK=0;G.statRT=0;G.statOn=true;
+  G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
   hull.apply();
@@ -3810,6 +3872,7 @@ function buildChips(){
 function showOver(){
   G.mode='over';
   clearSave();
+  removeSlotArch(G.runId); // 坠毁结算：漂移终结，归档同 id 一并清除
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   el.overScore.textContent=fmt(G.score);
@@ -3826,6 +3889,7 @@ function showOver(){
 function showVictory(){
   G.mode='victory';
   clearSave();
+  removeSlotArch(G.runId); // 通关结算：漂移终结，归档同 id 一并清除（无尽续漂后自动保存会重新跟踪）
   G.score+=8000;
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
@@ -3856,7 +3920,7 @@ function toMenu(){
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
-  el.logbook.hidden=true;
+  el.logbook.hidden=true;el.saves.hidden=true;
   el.joybase.hidden=true;el.firebtn.hidden=true;
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
   el.menu.hidden=false;
@@ -3884,13 +3948,64 @@ function openLogbook(){
   drawLogbook();
   el.logbook.hidden=false;
 }
+/* 存档管理：中途退出的漂移记录，可加载 / 删除 */
+function fmtWhen(ts){
+  if(!ts)return '—';
+  const d=new Date(ts);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function openSaves(){
+  G.mode='saves';
+  el.menu.hidden=true;
+  renderSaves();
+  el.saves.hidden=false;
+}
+function renderSaves(){
+  const cur=loadSave();
+  const list=slotView();
+  el.saveList.innerHTML=list.length?list.map(s=>{
+    const h=HULLS[s.h]||HULLS[0];
+    const isCur=cur&&s.id===cur.id;
+    return `<div class="saverow${isCur?' cur':''}" data-id="${s.id}">
+      <div class="sv-info">
+        <b>${h.g} · ${h.zh}${isCur?'<span class="sv-tag">最近</span>':''}${s.e?'<span class="sv-tag">无尽</span>':''}</b>
+        <span class="sv-meta">LV ${s.lv||1} · WAVE ${s.w||1} · ${fmtT(s.t||0)} · ${fmt(s.sc||0)} 分 · 击坠 ${fmt(s.k||0)}</span>
+        <span class="sv-time">开始于 ${fmtWhen(s.st||s.id)}</span>
+      </div>
+      <div class="sv-btns">
+        <button class="btn sm" data-load="${s.id}">加载</button>
+        <button class="btn sm ghost danger" data-del="${s.id}">删除</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="empty">暂无存档<br>中途「返回基地」或刷新页面会自动保存进度，开新出击后旧档会保留在这里</div>';
+}
+function loadSlot(id){
+  const s=slotView().find(x=>String(x.id)===String(id));
+  if(!s)return;
+  const cur=loadSave();
+  if(cur&&cur.id!==s.id)archiveSave(cur); // 当前进行中的档先归档，避免被加载的旧档覆盖丢失
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){} // 写回活跃档，续用现有恢复/自动保存链路
+  el.saves.hidden=true;
+  el.menu.hidden=true;
+  resumeRun();
+  refreshContinue();
+}
+function delSlot(id){
+  const num=Number(id)||id;
+  saveSlots(loadSlots().filter(s=>s.id!==num));
+  const cur=loadSave();
+  if(cur&&cur.id===num){clearSave();} // 删除的是最近进行中档
+  renderSaves();
+  refreshContinue();
+}
 function drawLogbook(){
   const s=loadStats();
   el.lbKills.textContent=fmt(s.k);
   el.lbGames.textContent=fmt(s.g);
   el.lbWave.textContent=s.w;
   el.lbTime.textContent=fmtT(s.t);
-  el.lbScore.textContent='历史最佳 · '+fmt(Math.max(G.best,parseInt(localStorage.getItem('nova-best')||'0',10)||0));
+  el.lbScoreSum.textContent=fmt(s.sc);
+  el.lbBest.textContent=fmt(G.best);
   el.lbHulls.innerHTML=HULLS.map(h=>{
     const ok=hullUnlocked(h.id);
     return `<span class="${ok?'mx':''}">${ok?(h.g+' '+h.zh):'🔒 '+h.zh}</span>`;
@@ -3929,6 +4044,18 @@ document.addEventListener('pointerdown',e=>{ // 点击空白处收起所有展�
 $('btnMute').addEventListener('click',toggleMute);
 $('btnLogbook').addEventListener('click',openLogbook);
 $('btnLbBack').addEventListener('click',toMenu);
+/* 存档管理：进入 / 返回 / 加载 / 两步确认删除 */
+$('btnSaves').addEventListener('click',openSaves);
+$('btnSavesBack').addEventListener('click',toMenu);
+el.saveList.addEventListener('click',e=>{
+  const ld=e.target.closest('[data-load]');
+  if(ld){loadSlot(ld.dataset.load);return;}
+  const del=e.target.closest('[data-del]');
+  if(!del)return;
+  if(del.dataset.arm){delSlot(del.dataset.del);return;} // 第二次点击才真删
+  del.dataset.arm='1';del.textContent='确认?';
+  setTimeout(()=>{if(del.isConnected){delete del.dataset.arm;del.textContent='删除';}},4000);
+});
 $('btnPause').addEventListener('click',()=>{
   if(G.mode==='pause')resumeGame();else pauseGame();
 });
