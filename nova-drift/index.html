@@ -49,6 +49,16 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 #shieldbar{width:min(220px,34vw);height:5px;margin-top:3px;background:rgba(255,255,255,.06);
   border:1px solid rgba(111,231,255,.4);transform:skewX(-16deg);overflow:hidden}
 #shieldbar i{background:linear-gradient(90deg,#2f9fd6,#a5ecff);display:block;height:100%;transition:width .12s linear}
+/* 能力型装配框：血条/护盾条下方一排 6 格，展示已拥有的能力图标与等级 */
+#abrow{display:flex;gap:5px;margin-top:7px}
+#abrow .ab{width:27px;height:27px;position:relative;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(111,231,255,.25);background:rgba(255,255,255,.04);transform:skewX(-16deg);
+  font-size:16px;color:#bfe9ff;text-shadow:0 0 6px rgba(111,231,255,.5)}
+#abrow .ab span{transform:skewX(16deg)}
+#abrow .ab i{position:absolute;right:2px;bottom:0;transform:skewX(16deg);font-style:normal;
+  font-family:'JetBrains Mono',monospace;font-size:8px;line-height:1;color:rgba(255,255,255,.5)}
+#abrow .ab.mx{border-color:rgba(255,215,94,.6);color:#ffe9a8;text-shadow:0 0 6px rgba(255,215,94,.5)}
+#abrow .ab.mx i{color:var(--amber)}
 .xprow{display:flex;align-items:center;gap:10px;margin-top:9px}
 #lv{font-size:12px;letter-spacing:.14em;color:var(--amber)}
 .bar.xp{height:6px;border-color:rgba(255,215,94,.3)}
@@ -173,6 +183,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .chips{margin:14px 0 24px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
 .chips span{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:#9fc6d8}
 .chips span.mx{color:var(--amber);border-color:rgba(255,215,94,.55);text-shadow:0 0 8px rgba(255,215,94,.4)}
+.chipgrp{flex-basis:100%;font-size:10.5px;letter-spacing:.3em;color:var(--dim);margin-top:4px}
+.chipgrp.t-a{color:#8fd4ff}
 .synlist{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;
   margin:-14px 0 20px;font-size:11px}
 .synlist b{color:#8fe6ff;letter-spacing:.1em;font-weight:500}
@@ -211,6 +223,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   <div class="hud-tl">
     <div class="bar"><i id="hpbar" style="width:100%"></i></div>
     <div id="shieldbar" hidden><i style="width:100%"></i></div>
+    <div id="abrow" hidden></div>
     <div class="xprow"><span id="lv" class="mono">LV 1</span><div class="bar xp"><i id="xpbar" style="width:0%"></i></div></div>
   </div>
   <div class="hud-tc"><div id="wavelabel" class="mono">WAVE 1</div><div id="bossbar" hidden><i style="width:100%"></i></div></div>
@@ -396,7 +409,7 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d');
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
-  lv:$('lv'),xp:$('xpbar'),wave:$('wavelabel'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
+  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),wave:$('wavelabel'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
   cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),dataChips:$('dataChips'),
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
@@ -868,17 +881,42 @@ window.addEventListener('resize',()=>{if(hasP){pxc.width=Math.round(VW*PDPR());p
 return api;
 })();
 
-/* starfield: three baked parallax tiles (screen space, tiled) */
+/* starfield: four baked parallax tiles (screen space, tiled) — dust + 3 star layers */
 const STAR_TILES=[];
 {
-  const layers=[[0.22,46,1.1],[0.5,38,1.5],[0.85,30,2]];
-  for(const[f,n,s]of layers){
+  /* 深空星场：远景尘 + 三层星，全部烘焙进贴图，运行时零额外开销。
+     [视差系数, 星数, 尺寸, 亮星数, 星云斑数] —— 亮星带光晕与十字光芒，星云斑营造银河感 */
+  const layers=[[0.12,110,0.8,0,3],[0.25,44,1.1,0,0],[0.5,36,1.5,2,0],[0.85,26,2,3,0]];
+  const cols=['#cfe0f0','#bcd4ff','#ffe9d0','#d8e8ff']; // 冷白为主，掺少许暖星
+  for(const[f,n,s,bright,blobs]of layers){
     const c=document.createElement('canvas');c.width=1400;c.height=900;
     const g=c.getContext('2d');
-    g.fillStyle='#cfe0f0';
+    // 极淡星云斑：径向渐隐，边缘用 3x3 平铺重绘消除接缝
+    for(let i=0;i<blobs;i++){
+      const bx=rand(1400),by=rand(900),r=rand(160,320);
+      const col=['30,50,90','50,35,80','25,60,70'][(Math.random()*3)|0];
+      for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+        const x=bx+ox*1400,y=by+oy*900;
+        const gr=g.createRadialGradient(x,y,0,x,y,r);
+        gr.addColorStop(0,`rgba(${col},0.06)`);gr.addColorStop(1,'rgba(0,0,0,0)');
+        g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();
+      }
+    }
     for(let i=0;i<n;i++){
-      g.globalAlpha=rand(0.2,0.85);
+      g.globalAlpha=rand(0.15,0.85);
+      g.fillStyle=cols[(Math.random()*cols.length)|0];
       g.fillRect(rand(1400),rand(900),rand(0.5,1)*s,rand(0.5,1)*s);
+    }
+    // 亮星：柔光晕 + 十字光芒（远离贴图边缘避免裁切）
+    for(let i=0;i<bright;i++){
+      const x=rand(24,1376),y=rand(24,876);
+      const col=cols[(Math.random()*cols.length)|0];
+      const gr=g.createRadialGradient(x,y,0,x,y,7);
+      gr.addColorStop(0,col);gr.addColorStop(0.25,'rgba(190,215,255,0.35)');gr.addColorStop(1,'rgba(0,0,0,0)');
+      g.globalAlpha=1;g.fillStyle=gr;
+      g.beginPath();g.arc(x,y,7,0,TAU);g.fill();
+      g.globalAlpha=0.5;g.strokeStyle=col;g.lineWidth=0.8;
+      g.beginPath();g.moveTo(x-9,y);g.lineTo(x+9,y);g.moveTo(x,y-9);g.lineTo(x,y+9);g.stroke();
     }
     STAR_TILES.push({c,f});
   }
@@ -1462,7 +1500,8 @@ function synById(id){return SYN.find(s=>s.id===id);}
 
 /* 能力型加权：玩家每选过一种能力型模块，该类型（含已解锁但未满级的能力型）后续出现的概率提升。
    数值型始终保持稳定权重，作为保底。
-   能力型最多装配 6 种：拿满 6 种后不再出现新的能力型，只刷已拥有且未满级的能力型。 */
+   能力型最多装配 6 种：拿满 6 种后不再出现新的能力型，只刷已拥有且未满级的能力型。
+   未全 max 时每次刷新至少 2 张能力型（能力池不足时以实际数量为限）。 */
 function rollChoices(){
   const ABILITY_CAP=6;
   const ownedAbilities=new Set();
@@ -1482,14 +1521,22 @@ function rollChoices(){
   }
   const abilityBoost=1+abilityCount*0.22;   // 每选一个能力型，能力型权重 +22%
   // 加权取样（不放回，避免重复）
-  const chosen=[];
-  while(chosen.length<3&&pool.length){
-    const weights=pool.map(m=>m.type==='ability'?abilityBoost:1);
+  const wsample=plist=>{
+    if(!plist.length)return null;
+    const weights=plist.map(m=>m.type==='ability'?abilityBoost:1);
     let sum=0;for(const w of weights)sum+=w;
     let r=Math.random()*sum,idx=0;
-    for(let i=0;i<pool.length;i++){r-=weights[i];if(r<=0){idx=i;break;}}
-    chosen.push(pool.splice(idx,1)[0]);
-  }
+    for(let i=0;i<plist.length;i++){r-=weights[i];if(r<=0){idx=i;break;}}
+    return plist.splice(idx,1)[0];
+  };
+  const chosen=[];
+  const abPool=pool.filter(m=>m.type==='ability');
+  const stPool=pool.filter(m=>m.type!=='ability');
+  // 保底：先从能力池取 min(2, 可用能力数) 张
+  while(chosen.length<Math.min(2,abPool.length))chosen.push(wsample(abPool));
+  // 其余从数值池补；数值池不够再用剩余能力型补
+  while(chosen.length<3&&stPool.length)chosen.push(wsample(stPool));
+  while(chosen.length<3&&abPool.length)chosen.push(wsample(abPool));
   while(chosen.length<3)chosen.push(REPAIR);
   return chosen;
 }
@@ -2479,7 +2526,7 @@ function updatePlayer(dt){
       const spdK=0.55+0.45*clamp(sp/P.maxSpeed,0,1.25); // 速度系数：慢速 0.55×，极速约 1.1×
       const life=ev.life*spdK;
       G.deathTrail.push({x:tpx,y:tpy,r:ev.r,
-        life,maxLife:life,dmg:ev.dmg+P.deathBonus,ang:P.angle,
+        life,maxLife:life,dmg:ev.dmg+P.deathBonus,ang:P.angle,ph:rand(TAU),
         gold:P.death>=6,exploded:false});
       P.deathT=ev.every;
     }
@@ -2515,6 +2562,17 @@ function clampCam(){
   cam.y=VH>=WORLD.h?WORLD.h/2:clamp(cam.y,VH/2,WORLD.h-VH/2);
 }
 
+/* 无人机弹丸视觉：颜色跟随当前船体辉光（按船体缓存） */
+let DRONE_VIS=null,DRONE_VIS_HULL='';
+function droneBulletVis(){
+  const hid=(G.lastHull&&G.lastHull.id)||'peregrine';
+  if(DRONE_VIS_HULL!==hid){
+    DRONE_VIS_HULL=hid;
+    const t=HULL_TINT[hid]||HULL_TINT.peregrine;
+    DRONE_VIS={shape:'bolt',c:t.glow,len:9,w:2,tip:null,ring:0,pulse:0,ghost:0,glow:null};
+  }
+  return DRONE_VIS;
+}
 function updateDrones(dt){
   for(const d of G.drones){
     d.a+=1.7*dt;d.cd-=dt;
@@ -2528,7 +2586,7 @@ function updateDrones(dt){
         const a=angTo(dx,dy,best.x,best.y);
         G.bullets.push({x:dx,y:dy,vx:Math.cos(a)*600,vy:Math.sin(a)*600,r:2.4,
           dmg:P.dmg*P.dronePow,life:0.8,pierce:P.droneMax?1:0,ric:0,homing:0,splashR:0,splashDmg:0,
-          crit:0,critMul:1,hit:new Set(),src:'d',gold:P.droneMax||undefined});
+          crit:0,critMul:1,hit:new Set(),src:'d',gold:P.droneMax||undefined,vis:droneBulletVis()});
         d.cd=P.droneCd;sfx.droneShot();
       }else d.cd=0.2;
     }
@@ -3404,11 +3462,18 @@ function synListHtml(){
   return `<b>协同 ${act.length}/${SYN.length}</b>`+act.map(s=>`<span>${s.zh}</span>`).join('');
 }
 function buildChips(){
-  return Object.entries(G.build).map(([id,n])=>{
-    const m=MOD_BY_ID[id];if(!m)return '';
-    const mx=n>=m.max?' class="mx"':'';
-    return `<span${mx}>${m.zh} LV${n}${n>=m.max?' ✦':''}</span>`;
-  }).join('');
+  // 能力型与数值型分组展示
+  const ab=[],st=[];
+  for(const id in G.build){
+    const m=MOD_BY_ID[id];if(!m)continue;
+    const n=G.build[id],mx=n>=m.max?' class="mx"':'';
+    const chip=`<span${mx}>${m.zh} LV${n}${n>=m.max?' ✦':''}</span>`;
+    (m.type==='ability'?ab:st).push(chip);
+  }
+  let out='';
+  if(ab.length)out+=`<div class="chipgrp t-a">能力型</div>`+ab.join('');
+  if(st.length)out+=`<div class="chipgrp t-s">数值型</div>`+st.join('');
+  return out;
 }
 function showOver(){
   G.mode='over';
@@ -3572,12 +3637,24 @@ function updateWorld(dt){
 
 /* ============================== draw ============================== */
 function drawStars(){
+  /* 伪 3D 景深：摄像机速度驱动"镜头推拉"——
+     移动越快，远景层缩小+变淡（像被甩到身后），近景层放大+提亮（像贴脸掠过）。
+     zoom 以屏幕中心为锚缩放平铺，配合各层原有的位置视差，产生纵深透视感。 */
+  const spd=Math.hypot(P?P.vx:0,P?P.vy:0);
+  const mk=clamp(spd/650,0,1);            // 0 静止 → 1 极速
   for(const{c,f}of STAR_TILES){
-    const bx=mod(-cam.x*f,1400),by=mod(-cam.y*f,900);
-    ctx.globalAlpha=0.82+0.18*Math.sin(G.t*1.3+f*9);
-    for(let ox=bx-1400;ox<VW;ox+=1400)
-      for(let oy=by-900;oy<VH;oy+=900)
-        ctx.drawImage(c,ox,oy);
+    const near=f>0.4;                      // 近景层：放大提亮；远景层：缩小变淡
+    const zoom=1+(near?0.16:-0.1)*mk;
+    const bx=mod(-cam.x*f*zoom,1400),by=mod(-cam.y*f*zoom,900);
+    const tw=0.82+0.18*Math.sin(G.t*1.3+f*9);
+    ctx.globalAlpha=tw*(near?1+0.25*mk:1-0.4*mk);
+    const TW=1400*zoom,TH=900*zoom;
+    ctx.save();
+    ctx.translate(VW/2,VH/2);ctx.scale(zoom,zoom);ctx.translate(-VW/2,-VH/2);
+    for(let ox=bx-TW;ox<VW;ox+=TW)
+      for(let oy=by-TH;oy<VH;oy+=TH)
+        ctx.drawImage(c,ox,oy,1400,900);
+    ctx.restore();
   }
   ctx.globalAlpha=1;
 }
@@ -4004,12 +4081,15 @@ function drawHullBody(c,id,tier){
   }
 }
 function drawDeathTrail(){
+  // 尾流配色跟随船体（宽晕/中层/白热芯复用 TRAIL_RAMP），MAX 镀金追加金色描边流
+  const hid=(G.lastHull&&G.lastHull.id)||'peregrine';
+  const DR=TRAIL_RAMP[hid]||TRAIL_RAMP.peregrine;
   if(G.dtFx.length){
     for(const f of G.dtFx){
       const k=f.t/f.max,pa=f.ang, R=92*k;
       ctx.globalCompositeOperation='lighter';
       ctx.save();ctx.translate(f.x,f.y);ctx.rotate(pa);
-      ctx.strokeStyle=`rgba(255,210,120,${0.75*(1-k)})`;
+      ctx.strokeStyle=`rgba(${DR[1]},${0.75*(1-k)})`;
       ctx.lineWidth=3*(1-k)+1;
       ctx.beginPath();ctx.ellipse(0,0,R*0.42,R,0,0,TAU);ctx.stroke(); // 横向炸裂：垂直于航迹的冲击波
       ctx.restore();
@@ -4019,15 +4099,27 @@ function drawDeathTrail(){
   if(!G.deathTrail.length)return;
   ctx.globalCompositeOperation='lighter';
   for(const b of G.deathTrail){
-    const k=Math.max(0,b.life/b.maxLife),a=0.5*k;
-    const core=b.gold?'255,225,140':'255,80,95';
-    const mid=b.gold?'255,150,90':'255,50,70';
+    const k=Math.max(0,b.life/b.maxLife);
+    const flick=0.78+0.22*Math.sin(G.t*13+b.ph); // 特效①：灼燃闪烁 —— 每团独立相位的不稳定明暗
+    const a=0.5*k*flick;
+    const core=b.gold?'255,228,150':DR[2];
+    const mid=b.gold?'255,160,95':DR[1];
     const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*1.7);
     g.addColorStop(0,`rgba(${core},${0.9*a})`);
     g.addColorStop(0.5,`rgba(${mid},${0.5*a})`);
-    g.addColorStop(1,`rgba(${b.gold?'255,120,80':'200,30,50'},0)`);
+    g.addColorStop(1,`rgba(${b.gold?'255,130,80':DR[0]},0)`);
     ctx.fillStyle=g;
     ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.7,0,TAU);ctx.fill();
+    // 特效②：核心处旋转的灼裂星芒，将尾流与普通推进尾迹区分开
+    const sa=0.55*a,s=b.r*0.95*(1-k*0.45);
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(G.t*3.2+b.ph);
+    ctx.strokeStyle=`rgba(255,255,255,${sa})`;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(-s,0);ctx.lineTo(s,0);ctx.moveTo(0,-s);ctx.lineTo(0,s);ctx.stroke();
+    if(b.gold){ // 特效③：MAX 镀金 —— 追加金色外环
+      ctx.strokeStyle=`rgba(255,215,94,${sa*0.8})`;
+      ctx.beginPath();ctx.arc(0,0,s*1.15,0,TAU);ctx.stroke();
+    }
+    ctx.restore();
   }
   ctx.globalCompositeOperation='source-over';
 }
@@ -4035,9 +4127,8 @@ function drawShip(){
   const p=P;
   const hullId=(G.lastHull&&G.lastHull.id)||'peregrine';
   const tint=HULL_TINT[hullId]||HULL_TINT.peregrine;
-  const deathOn=P.death>0;
-  const TR=deathOn?(P.death>=6?['255,225,140','255,160,90','255,210,210']:['255,95,105','255,60,80','255,200,210'])
-    :(TRAIL_RAMP[hullId]||TRAIL_RAMP.peregrine);
+  // 尾流颜色始终与船体一致（死亡尾流模组不改色，靠灼裂星芒等特效区分）
+  const TR=TRAIL_RAMP[hullId]||TRAIL_RAMP.peregrine;
   const spd=Math.hypot(p.vx,p.vy),movK=Math.min(1,spd/230); // 静止/低速时尾流收起
   const boost=p.boostT>0;
   // comet tail: sway offset baked per trail point, then drawn as smoothed chunks
@@ -4231,15 +4322,17 @@ function draw(){
   drawDeathTrail();
   for(const d of G.drones){
     if(d.x===undefined)continue;
+    // 无人机配色跟随当前船体
+    const dTint=HULL_TINT[(G.lastHull&&G.lastHull.id)||'peregrine']||HULL_TINT.peregrine;
     ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a*2);
     ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,5);ctx.lineTo(-5,-5);ctx.closePath();
-    ctx.fillStyle='#08131f';ctx.fill();
+    ctx.fillStyle=dTint.fill;ctx.fill();
     if(P.droneMax){
       ctx.strokeStyle='rgba(255,215,94,0.35)';ctx.lineWidth=4;ctx.stroke();
       ctx.strokeStyle='#ffe9a8';ctx.lineWidth=1.4;ctx.stroke();
     }else{
-      ctx.strokeStyle='rgba(111,231,255,0.3)';ctx.lineWidth=4;ctx.stroke();
-      ctx.strokeStyle='#a5ecff';ctx.lineWidth=1.4;ctx.stroke();
+      ctx.strokeStyle=`rgba(${dTint.glow},0.3)`;ctx.lineWidth=4;ctx.stroke();
+      ctx.strokeStyle=dTint.line;ctx.lineWidth=1.4;ctx.stroke();
     }
     ctx.restore();
   }
@@ -4304,9 +4397,12 @@ function draw(){
       ctx.beginPath();ctx.moveTo(-7,-8);ctx.lineTo(7,0);ctx.lineTo(-7,8);ctx.stroke();
       ctx.restore();
     }else{
-      const pl=0.26+0.14*Math.sin(G.t*3+h.x*0.7+h.y);
+      // 屏外目标：小三角指向敌人方向（脉动呼吸）
+      const pl=0.35+0.2*Math.sin(G.t*3+h.x*0.7+h.y);
+      ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.ang);
       ctx.fillStyle=`rgba(${h.c},${pl})`;
-      ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.moveTo(6.5,0);ctx.lineTo(-4.5,-4.2);ctx.lineTo(-4.5,4.2);ctx.closePath();ctx.fill();
+      ctx.restore();
     }
   }
   ctx.fillStyle=VIGN;ctx.fillRect(0,0,VW,VH);
@@ -4325,6 +4421,19 @@ function updateHUD(){
   if(shOn){
     w=hudW('sh',clamp(shTot/shCap*100,0,100));
     if(w)el.shieldFill.style.width=HUDC.sh;
+  }
+  // 能力型装配框：build 变化时才重建（G.build 按获得顺序遍历）
+  let abKey='';
+  for(const k in G.build){const m=MOD_BY_ID[k];if(m&&m.type==='ability')abKey+=k+':'+G.build[k]+';';}
+  if(HUDC.ab!==abKey){
+    HUDC.ab=abKey;
+    let abHtml='';
+    for(const k in G.build){
+      const m=MOD_BY_ID[k];if(!m||m.type!=='ability')continue;
+      const n=G.build[k],mx=n>=m.max;
+      abHtml+=`<div class="ab${mx?' mx':''}" title="${m.zh} LV${n}"><span>${m.g}</span><i>${mx?'MAX':'lv'+n}</i></div>`;
+    }
+    el.abrow.innerHTML=abHtml;el.abrow.hidden=!abHtml;
   }
   let s='LV '+P.level;
   if(HUDC.lv!==s){HUDC.lv=s;el.lv.textContent=s;}
