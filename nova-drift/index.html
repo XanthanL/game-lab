@@ -194,7 +194,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .chips .mchip b{font-weight:800;font-size:18px;color:#cfeeff}
 .chips .mchip span{border:none;padding:0;border-radius:0;font-size:12px}
 .chips .mchip .pips{display:flex;gap:3px;font-style:normal}
-.chips .mchip .pips i{width:6px;height:11px;transform:skewX(-18deg);
+.chips .mchip .pips i{width:6px;height:11px;transform:skewX(-18deg);border-radius:0;
   border:1px solid rgba(159,198,216,.35)}
 .chips .mchip .pips i.on{background:rgba(111,231,255,.75);border-color:transparent}
 .chips .mchip .pips i:last-child{border-color:rgba(255,215,94,.5)}
@@ -1217,7 +1217,7 @@ const G={
   t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
-  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],
+  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],
 };
 try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
 
@@ -1328,6 +1328,9 @@ function newPlayer(){return{
   dronePow:0.6,droneCd:0.55,droneMax:false,thrMax:false,maxN:0,
   boostT:0,rateT:0,
   death:0,deathT:0,deathBonus:0,ramCd:0,
+  nova:0,novaT:0,novaMax:false,
+  blink:0,blinkT:0,blinkMax:false,
+  mine:0,mineT:0,mineMax:false,
   accel:760,maxSpeed:340,turn:4.4,
 };}
 let P=null;
@@ -1457,39 +1460,52 @@ const MODULES=[
       // 每级提速但降低射速：速度换火力的交易（续档重放时按级重放，乘法叠加保持一致）
       const k=n<6?1.08:1.2;
       P.maxSpeed*=k;P.accel*=k;P.fireRate*=0.95;}},
+  {id:'nova',zh:'脉冲核心',en:'Nova Core',g:'✸',max:6,type:'ability',
+    lv:['每 7 秒释放冲击波：击伤并震退周身敌人','冲击波冷却 -1 秒','冲击波范围与伤害提升',
+        '冷却再 -1 秒','范围与伤害再提升','MAX：金色振荡 —— 范围与伤害大增，并湮灭波及的敌方子弹'],
+    apply:n=>{P.nova=n;if(n===6)P.novaMax=true;}},
+  {id:'blink',zh:'相位折跃',en:'Phase Blink',g:'↯',max:6,type:'ability',
+    lv:['每 14 秒就绪：足以破盾的重击袭来时自动折跃脱险，该次伤害作废，并获得 0.8 秒无敌','折跃冷却 -2 秒',
+        '折跃更远，无敌 +0.2 秒','冷却再 -2 秒','折跃后引擎超频 2 秒',
+        'MAX：金色湮灭 —— 折跃起点炸开湮灭风暴，冷却骤减'],
+    apply:n=>{P.blink=n;if(n===6)P.blinkMax=true;}},
+  {id:'mine',zh:'磁暴雷',en:'Mag Mine',g:'⊙',max:6,type:'ability',
+    lv:['每 6 秒在船尾布设磁雷：磁引靠近的敌人，触爆后炸伤一片（场上至多 2 枚）','爆炸伤害与范围提升',
+        '布设更频繁','伤害再提升，场上至多 3 枚','磁引范围扩大',
+        'MAX：金色磁暴 —— 爆炸范围大增并湮灭波及的敌方子弹（至多 4 枚）'],
+    apply:n=>{P.mine=n;if(n===6)P.mineMax=true;}},
 ];
 const MOD_BY_ID={};for(const m of MODULES)MOD_BY_ID[m.id]=m;
 
 /* ============================== 模块协同 ==============================
-   两个模块同时装配即触发，效果只在「达成那一刻」结算一次（G.syn 记录，不重复叠加）。
-   命名尽量沿用子弹视觉已有的组合，让玩家看到的形态和拿到的加成对得上。 */
+   协同只在「能力型 × 能力型」之间触发 —— 数值型是纯粹的数字成长，不参与联动。
+   两个能力型同时装配即触发，效果只在「达成那一刻」结算一次（G.syn 记录，不重复叠加）；
+   标 apply:()=>{} 的协同为运行时判定，逻辑分散在各能力触发点中。 */
 const SYN=[
-  {id:'ghost',a:'pierce',b:'guided',zh:'幽灵穿刺',d:'制导转向 +1 级 —— 穿甲弹化作会拐弯的幽灵长针',
-   apply:()=>{P.homing=Math.min(6,P.homing+1);}},
-  {id:'bounce',a:'ricochet',b:'frag',zh:'跳雷风暴',d:'爆炸范围 +20% —— 跳弹撞墙即炸，双击环',
-   apply:()=>{P.splashR=Math.round(P.splashR*1.2);}},
-  {id:'lance_crit',a:'crit',b:'pierce',zh:'贯体暴击',d:'暴击伤害 +0.6 倍 —— 紫针金尖，一击贯体',
-   apply:()=>{P.critMul+=0.6;}},
   {id:'storm',a:'tesla',b:'stasis',zh:'静滞雷场',d:'电弧冷却 -0.35 秒 —— 被冻住的敌人任你链击',
    apply:()=>{P.teslaCd=Math.max(0.8,P.teslaCd-0.35);}},
-  {id:'salvage',a:'drone',b:'magnet',zh:'回收机群',d:'无人机火力 +0.25 —— 无人机替你搜集残骸',
-   apply:()=>{P.dronePow+=0.25;}},
-  {id:'engine',a:'leech',b:'regen',zh:'永动核心',d:'每秒额外回复 0.8 —— 以战养战，纳米虫自我增殖',
-   apply:()=>{P.regen+=0.8;}},
   {id:'bulwark_ram',a:'ram',b:'aegis',zh:'撞角力场',d:'护盾上限 +20 并立即充满 —— 撞上去，护盾扛得住',
    apply:()=>{P.shieldMax+=20;P.shield+=20;}},
-  {id:'omni',a:'backshot',b:'twin',zh:'全向弹幕',d:'射速 +8% —— 前后枪管齐鸣，没有射击死角',
-   apply:()=>{P.fireRate*=1.08;}},
-  {id:'judge',a:'lance',b:'crit',zh:'审判之枪',d:'长枪冷却 -0.4 秒 —— 金色的长枪更快落下',
-   apply:()=>{P.lanceCd=Math.max(1,P.lanceCd-0.4);}},
-  {id:'afterimage',a:'overdrive',b:'phase',zh:'过载残影',d:'受击无敌时间 +0.25 秒 —— 烧穿的反应堆换来金色残影',
-   apply:()=>{P.phase+=0.25;}},
-  {id:'hunt',a:'stasis',b:'guided',zh:'猎杀领域',d:'制导搜索范围 +90 —— 减速场里的猎物无处可逃',
-   apply:()=>{P.homeR+=90;}},
-  {id:'blitz',a:'thruster',b:'ram',zh:'突袭撞角',d:'冲角等级 +1 —— 速度就是撞击伤害',
-    apply:()=>{P.ram+=1;}},
-  {id:'ember',a:'deathtrail',b:'thruster',zh:'熔火航迹',d:'死亡尾流灼烧伤害 +3 —— 高速拖曳的火舌更致命',
-    apply:()=>{P.deathBonus+=3;}},
+  {id:'blink_ram',a:'blink',b:'ram',zh:'折跃冲撞',d:'折跃路径上的敌人承受全额冲角伤害 —— 相位状态下的你是一发炮弹',
+   apply:()=>{}},
+  {id:'blink_arc',a:'blink',b:'tesla',zh:'闪现电弧',d:'每次折跃沿轨迹劈出一道电弧，灼烧沿途敌人',
+   apply:()=>{}},
+  {id:'nova_stasis',a:'nova',b:'stasis',zh:'共振脉冲',d:'冲击波对减速中的敌人伤害 ×1.6、击退 ×1.8 —— 冻结的躯体在振荡中碎裂',
+   apply:()=>{}},
+  {id:'pulse_swarm',a:'nova',b:'drone',zh:'脉冲机群',d:'每次冲击波为所有无人机瞬间装填 —— 机群随脉冲齐射',
+   apply:()=>{}},
+  {id:'judge_frost',a:'lance',b:'stasis',zh:'冻结审判',d:'轨道长枪对减速中的敌人伤害 +60% —— 审判先冻结，后贯穿',
+   apply:()=>{}},
+  {id:'rear_lance',a:'lance',b:'backshot',zh:'回马枪',d:'长枪发射时船尾同时射出一道长枪 —— 前后皆是审判',
+   apply:()=>{}},
+  {id:'molten_ram',a:'deathtrail',b:'ram',zh:'熔火撞角',d:'冲角撞击时在撞击点炸开一团死亡尾流 —— 撞完还要烧',
+   apply:()=>{}},
+  {id:'vent_wake',a:'deathtrail',b:'aegis',zh:'泄压尾流',d:'护盾承受伤害时向四周喷发灼热火团 —— 盾牌也会反击',
+   apply:()=>{}},
+  {id:'swarm_arc',a:'tesla',b:'drone',zh:'雷驰机群',d:'电弧冷却 -0.3 秒、无人机火力 +0.2 —— 机群与线圈同频共振',
+   apply:()=>{P.teslaCd=Math.max(0.8,P.teslaCd-0.3);P.dronePow+=0.2;}},
+  {id:'ignite',a:'mine',b:'deathtrail',zh:'燃雷',d:'死亡尾流经过磁雷会将其提前引爆，爆炸伤害 +50% —— 火舌扫过雷区',
+   apply:()=>{}},
 ];
 function synActive(s){return P&&(G.build[s.a]|0)>=1&&(G.build[s.b]|0)>=1;}
 /* 结算新达成的协同，返回本次新增的协同列表 */
@@ -1517,19 +1533,24 @@ function synFor(id){
 function synById(id){return SYN.find(s=>s.id===id);}
 
 /* 能力型加权：玩家每选过一种能力型模块，该类型（含已解锁但未满级的能力型）后续出现的概率提升。
-   数值型始终保持稳定权重，作为保底。
-   能力型最多装配 6 种：拿满 6 种后不再出现新的能力型，只刷已拥有且未满级的能力型。
+   能力型与数值型都最多装配 6 种：拿满后不再出现该类新模块，只刷已拥有且未满级的。
    未全 max 时每次刷新至少 2 张能力型（能力池不足时以实际数量为限）。 */
 function rollChoices(){
-  const ABILITY_CAP=6;
-  const ownedAbilities=new Set();
+  const ABILITY_CAP=6,STAT_CAP=6;
+  const ownedAbilities=new Set(),ownedStats=new Set();
   for(const m of MODULES){
-    if(m.type==='ability'&&(G.build[m.id]||0)>0)ownedAbilities.add(m.id);
+    if((G.build[m.id]||0)>0){
+      if(m.type==='ability')ownedAbilities.add(m.id);else ownedStats.add(m.id);
+    }
   }
   const capped=ownedAbilities.size>=ABILITY_CAP;
+  const statCapped=ownedStats.size>=STAT_CAP;
   let pool=MODULES.filter(m=>(G.build[m.id]||0)<m.max);
-  if(capped){ // 已达 6 种：剔除未曾拥有的能力型
+  if(capped){ // 能力型已满 6 种：剔除未曾拥有的能力型
     pool=pool.filter(m=>m.type!=='ability'||ownedAbilities.has(m.id));
+  }
+  if(statCapped){ // 数值型已满 6 种：剔除未曾拥有的数值型
+    pool=pool.filter(m=>m.type==='ability'||ownedStats.has(m.id));
   }
   // 统计已投资的能力型模块数，作为加权强度
   let abilityCount=0;
@@ -2182,13 +2203,18 @@ function killAst(a){
       c.vx=a.vx*0.5+Math.cos(ang)*s;c.vy=a.vy*0.5+Math.sin(ang)*s;
     }
   }
-  if(a.champ){ // 精英巨像：厚赏（大量经验碎片 + 必定掉落）
+  if(a.elite){ // 精英岩：必掉 1 个应急修复
+    G.pickups.push({type:'heal',x:a.x,y:a.y,t:0,life:15});
+  }
+  if(a.champ){ // 精英巨像：厚赏（大量经验碎片 + 必定掉落 + 必掉回血）
     G.score+=300;
     for(let k=0;k<2;k++)spawnAst(3,a.x+rand(-40,40),a.y+rand(-40,40));
     spawnPickup(true);
+    G.pickups.push({type:'heal',x:a.x+rand(-20,20),y:a.y+rand(-20,20),t:0,life:15});
     banner('COLOSSUS DOWN','精英巨像已击碎 —— 厚赏已结算');
   }
-  if(a.boss){
+  if(a.boss){ // Boss：必掉 2 个数据注入（直升两级）
+    for(let k=0;k<2;k++)G.pickups.push({type:'level',x:a.x+rand(-34,34),y:a.y+rand(-34,34),t:0,life:20});
     for(let k=0;k<3;k++)spawnAst(2,a.x+rand(-40,40),a.y+rand(-40,40));
     for(let k=0;k<5;k++)spawnAst(1,a.x+rand(-50,50),a.y+rand(-50,50));
     G.slowT=0.55;
@@ -2286,17 +2312,28 @@ function killEn(e){
 
 function hurtPlayer(dmg,sx,sy){
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
+  if(tryBlink(dmg,sx,sy))return; // 相位折跃：重击袭来时折跃脱险，该次伤害作废
   if(P.ram>0)dmg*=P.ram>=4?0.25:(P.ram>=2?0.35:0.6);
+  let vented=false;
   if(P.shieldTmp>0){ // 临时屏障先扛：外层的蓝色护罩
-    const s=Math.min(P.shieldTmp,dmg);P.shieldTmp-=s;dmg-=s;
+    const s=Math.min(P.shieldTmp,dmg);P.shieldTmp-=s;dmg-=s;vented=true;
     if(P.shieldTmp<=0)P.shieldTmpMax=0;
     ring(P.x,P.y,28,'111,231,255');
     FX.splash(P.x,P.y,'cyan',0.9);
   }
   if(dmg>0&&P.shield>0){
-    const s=Math.min(P.shield,dmg);P.shield-=s;dmg-=s;
+    const s=Math.min(P.shield,dmg);P.shield-=s;dmg-=s;vented=true;
     ring(P.x,P.y,22,'111,231,255');
     FX.splash(P.x,P.y,'cyan',0.8);
+  }
+  if(vented&&G.syn.vent_wake&&P.death>0){ // 泄压尾流：护盾受击时向四周喷发灼热火团
+    const ev=DEATHTRAIL[P.death];
+    for(let k=0;k<5;k++){
+      const a=rand(TAU);
+      G.deathTrail.push({x:P.x+Math.cos(a)*26,y:P.y+Math.sin(a)*26,r:ev.r,
+        life:ev.life,maxLife:ev.life,dmg:ev.dmg+P.deathBonus,ang:a,ph:rand(TAU),
+        gold:P.death>=6,exploded:false});
+    }
   }
   P.shieldT=4;
   if(dmg>0){P.hp-=dmg;flashRed();}
@@ -2451,6 +2488,16 @@ function fireLance(){
     hit:new Set(),src:'p',lance:true,
   });
   ring(P.x,P.y,16,P.lanceMax?'255,215,94':'165,236,255');
+  if(G.syn.rear_lance){ // 回马枪：船尾同时射出一道长枪
+    const back=a+Math.PI;
+    G.bullets.push({
+      x:P.x-Math.cos(a)*18,y:P.y-Math.sin(a)*18,
+      vx:Math.cos(back)*P.bspd*1.35,vy:Math.sin(back)*P.bspd*1.35,
+      r:5,dmg:P.dmg*(4+1.5*P.lance)*0.7,life:1.4,pierce:99,ric:0,homing:0,
+      splashR:0,splashDmg:0,crit:P.crit,critMul:P.critMul,
+      hit:new Set(),src:'p',lance:true,
+    });
+  }
   shake(5);sfx.lance();
 }
 function teslaZap(){
@@ -2475,6 +2522,150 @@ function teslaZap(){
     from=best;
   }
   if(targets.length)sfx.zap();
+}
+
+/* ---- 脉冲核心 / 相位折跃 / 磁暴雷 ---- */
+const NOVA_LV=[[7,150,3],[6,150,3],[5,190,4],[5,190,4],[5,230,5],[3.6,330,7]]; // [冷却, 范围, 伤害×P.dmg]
+function novaFire(){
+  const L=NOVA_LV[P.nova-1],r=L[1],gold=P.novaMax;
+  const c=gold?'255,215,94':'140,231,255';
+  ring(P.x,P.y,r*0.4,c);ring(P.x,P.y,r,c);
+  burst(P.x,P.y,14,280,0.5,c,2.4);
+  shake(4);sfx.boom(1);
+  const base=L[2]*P.dmg;
+  for(const e of G.enemies.slice()){
+    if(d2(P.x,P.y,e.x,e.y)<(r+e.r)*(r+e.r)){
+      let dm=base,kb=340;
+      // 共振脉冲：减速中的敌人被振荡撕开
+      if(G.syn.nova_stasis&&P.stasis>0&&d2(e.x,e.y,P.x,P.y)<P.stasisR*P.stasisR){dm*=1.6;kb=620;}
+      const a=angTo(P.x,P.y,e.x,e.y);
+      e.vx+=Math.cos(a)*kb;e.vy+=Math.sin(a)*kb;
+      hurtEn(e,dm,e.x,e.y,false);
+    }
+  }
+  for(const t of G.asteroids.slice()){
+    if(d2(P.x,P.y,t.x,t.y)<(r+t.r)*(r+t.r)){
+      const a=angTo(P.x,P.y,t.x,t.y);
+      t.vx+=Math.cos(a)*90;t.vy+=Math.sin(a)*90;
+      hurtAst(t,base,t.x,t.y,false);
+    }
+  }
+  if(gold){ // 金色振荡：湮灭波及的敌方子弹
+    for(let i=G.ebullets.length-1;i>=0;i--){
+      const eb=G.ebullets[i];
+      if(d2(eb.x,eb.y,P.x,P.y)<r*r){
+        burst(eb.x,eb.y,3,110,0.3,'255,215,94',1.6);
+        G.ebullets.splice(i,1);
+      }
+    }
+  }
+  // 脉冲机群：冲击波为所有无人机瞬间装填
+  if(G.syn.pulse_swarm)for(const d of G.drones)d.cd=0;
+}
+const BLINK_LV=[[14,170,0.8],[12,170,0.8],[12,230,1.0],[10,230,1.0],[10,230,1.0],[6,260,1.2]]; // [冷却, 距离, 无敌]
+function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作废，返回 true
+  if(P.blink<=0||P.blinkT>0)return false;
+  // 只有足以破盾、足以破防的重击才触发折跃 —— 冲角流的贴身剐蹭不会打断你的节奏
+  if(dmg<=P.shieldTmp+P.shield)return false;
+  const sev=dmg*(P.ram>0?(P.ram>=4?0.25:(P.ram>=2?0.35:0.6)):1);
+  if(sev<8)return false;
+  const L=BLINK_LV[P.blink-1];
+  P.blinkT=L[0];
+  const ox=P.x,oy=P.y,gold=P.blinkMax;
+  const c=gold?'255,215,94':'150,200,255';
+  const base=angTo(sx,sy,P.x,P.y); // 朝伤害来源的反方向逃
+  let nx=P.x,ny=P.y;
+  for(let k=0;k<7;k++){ // 优先选择不落进岩石里的落点
+    const a2=base+rand(-1.1,1.1);
+    nx=clamp(P.x+Math.cos(a2)*L[1],P.r+30,WORLD.w-P.r-30);
+    ny=clamp(P.y+Math.sin(a2)*L[1],P.r+30,WORLD.h-P.r-30);
+    let bad=false;
+    for(const t of G.asteroids)if(d2(nx,ny,t.x,t.y)<(t.r+P.r+8)*(t.r+P.r+8)){bad=true;break;}
+    if(!bad)break;
+  }
+  P.x=nx;P.y=ny;P.vx*=0.35;P.vy*=0.35;
+  P.invuln=Math.max(P.invuln,L[2]);
+  if(P.blink>=5)P.boostT=Math.max(P.boostT,2); // 折跃后引擎超频
+  ring(ox,oy,30,c);burst(ox,oy,12,220,0.45,c,2.2);
+  ring(nx,ny,16,c);shake(5);sfx.zap();
+  ftext(ox,oy-26,'相位折跃',gold?'255,215,94':'150,220,255');
+  if(gold){ // 金色湮灭：折跃起点炸开湮灭风暴
+    const rr=120,dd=P.dmg*6;
+    ring(ox,oy,rr,'255,215,94');burst(ox,oy,16,260,0.5,'255,215,94',2.6);
+    for(const e of G.enemies.slice())if(d2(e.x,e.y,ox,oy)<(rr+e.r)*(rr+e.r))hurtEn(e,dd,e.x,e.y,false);
+    for(const t of G.asteroids.slice())if(d2(t.x,t.y,ox,oy)<(rr+t.r)*(rr+t.r))hurtAst(t,dd,t.x,t.y,false);
+  }
+  const dx=nx-ox,dy=ny-oy,len2=(dx*dx+dy*dy)||1;
+  if(G.syn.blink_ram){ // 折跃冲撞：相位状态下的你是一发炮弹
+    const rd=ramDmg();
+    for(const e of G.enemies.slice()){
+      const t2=clamp(((e.x-ox)*dx+(e.y-oy)*dy)/len2,0,1);
+      if(d2(ox+dx*t2,oy+dy*t2,e.x,e.y)<(e.r+P.r+4)*(e.r+P.r+4))hurtEn(e,rd,e.x,e.y,false);
+    }
+    for(const t of G.asteroids.slice()){
+      const t2=clamp(((t.x-ox)*dx+(t.y-oy)*dy)/len2,0,1);
+      if(d2(ox+dx*t2,oy+dy*t2,t.x,t.y)<(t.r+P.r+4)*(t.r+P.r+4))hurtAst(t,rd,t.x,t.y,false);
+    }
+    ramFx();
+  }
+  if(G.syn.blink_arc){ // 闪现电弧：沿折跃轨迹放电
+    const dm=P.dmg*(1.0+0.5*P.tesla);
+    G.bolts.push({x1:ox,y1:oy,x2:nx,y2:ny,t:0.25,max:0.25,gold:P.teslaMax||undefined});
+    for(const e of G.enemies.slice()){
+      const t2=clamp(((e.x-ox)*dx+(e.y-oy)*dy)/len2,0,1);
+      if(d2(ox+dx*t2,oy+dy*t2,e.x,e.y)<(e.r+26)*(e.r+26))hurtEn(e,dm,e.x,e.y,false);
+    }
+    sfx.zap();
+  }
+  return true;
+}
+const MINE_LV=[[6,80,3,2],[6,100,4.4,2],[4.8,100,4.4,2],[4.8,112,5.8,3],[4.8,112,5.8,3],[3.6,150,8,4]]; // [冷却, 范围, 伤害×P.dmg, 场上上限]
+function updateMines(dt){
+  const arr=G.mines;
+  for(let i=arr.length-1;i>=0;i--){
+    const m=arr[i];
+    m.life-=dt;m.arm-=dt;
+    if(m.life<=0){burst(m.x,m.y,4,90,0.3,'255,170,90',1.6);arr.splice(i,1);continue;}
+    if(m.arm>0)continue;
+    const pr2=m.pull*m.pull;
+    for(const e of G.enemies){ // 磁引：把敌人往雷上拽
+      if(d2(e.x,e.y,m.x,m.y)<pr2){
+        const a=angTo(e.x,e.y,m.x,m.y);
+        e.vx+=Math.cos(a)*300*dt;e.vy+=Math.sin(a)*300*dt;
+      }
+    }
+    let hit=0;
+    for(const e of G.enemies)if(d2(e.x,e.y,m.x,m.y)<(e.r+16)*(e.r+16)){hit=1;break;}
+    if(!hit)for(const t of G.asteroids)if(d2(t.x,t.y,m.x,m.y)<(t.r+14)*(t.r+14)){hit=1;break;}
+    if(!hit&&G.syn.ignite){ // 燃雷：死亡尾流点燃磁雷
+      for(const b of G.deathTrail)if(d2(b.x,b.y,m.x,m.y)<(b.r+10)*(b.r+10)){hit=2;break;}
+    }
+    if(hit)detonateMine(m,hit===2?1.5:1);
+  }
+}
+function detonateMine(m,k){
+  const gold=P.mineMax;
+  const r=m.r*k,dmg=m.dmg*k;
+  const c=gold?'255,215,94':'255,170,90';
+  const i=G.mines.indexOf(m);if(i>=0)G.mines.splice(i,1);
+  ring(m.x,m.y,r,c);burst(m.x,m.y,12,240,0.45,c,2.4);
+  shake(4);sfx.boom(2);
+  for(const e of G.enemies.slice()){
+    if(d2(e.x,e.y,m.x,m.y)<(r+e.r)*(r+e.r)){
+      const a=angTo(m.x,m.y,e.x,e.y);
+      e.vx+=Math.cos(a)*260;e.vy+=Math.sin(a)*260;
+      hurtEn(e,dmg,e.x,e.y,false);
+    }
+  }
+  for(const t of G.asteroids.slice()){
+    if(d2(t.x,t.y,m.x,m.y)<(r+t.r)*(r+t.r))hurtAst(t,dmg,t.x,t.y,false);
+  }
+  if(gold){ // 金色磁暴：湮灭波及的敌方子弹
+    for(let i2=G.ebullets.length-1;i2>=0;i2--){
+      const eb=G.ebullets[i2];
+      if(d2(eb.x,eb.y,m.x,m.y)<r*r){burst(eb.x,eb.y,3,100,0.3,'255,215,94',1.5);G.ebullets.splice(i2,1);}
+    }
+  }
 }
 
 function updatePlayer(dt){
@@ -2567,6 +2758,18 @@ function updatePlayer(dt){
   if(P.tesla>0){P.teslaT-=dt;if(P.teslaT<=0){P.teslaT=P.teslaCd;teslaZap();}}
   if(P.lance>0){P.lanceT-=dt;
     if(P.lanceT<=0){P.lanceT=P.lanceCd;fireLance();}}
+  if(P.nova>0){P.novaT-=dt;if(P.novaT<=0){P.novaT=NOVA_LV[P.nova-1][0];novaFire();}}
+  if(P.mine>0){P.mineT-=dt;
+    if(P.mineT<=0){
+      const L=MINE_LV[P.mine-1];
+      if(G.mines.length<L[3]){ // 场上未满才布设
+        P.mineT=L[0];
+        G.mines.push({x:tpx,y:tpy,life:10,arm:0.55,pull:P.mine>=5?170:130,r:L[1],dmg:L[2]*P.dmg});
+        burst(tpx,tpy,4,90,0.3,P.mineMax?'255,215,94':'255,170,90',1.6);
+      }else P.mineT=0.5; // 满了稍后再试
+    }
+  }
+  P.blinkT=Math.max(0,P.blinkT-dt);
   const wantFire=mouse.down||keys.Space||fireOn;
   if(wantFire&&P.fireCd<=0){P.fireCd=1/(P.fireRate*(P.rateT>0?1.6:1));fireGun();}
 
@@ -3216,7 +3419,10 @@ function updateBullets(dt){
       if(hitT){
         b.hit.add(hitT);
         const crit=Math.random()<b.crit;
-        const dmg=b.dmg*(crit?b.critMul:1);
+        let dmg=b.dmg*(crit?b.critMul:1);
+        // 冻结审判：长枪对静止场中的敌人伤害 +60%
+        if(b.lance&&G.syn.judge_frost&&P.stasis>0
+          &&d2(hitT.x,hitT.y,P.x,P.y)<P.stasisR*P.stasisR)dmg*=1.6;
         if(b.splashR>0)splashAt(b.x,b.y,b.splashR,b.splashDmg,hitT);
         if(hitT.size!==undefined)hurtAst(hitT,dmg,b.x,b.y,crit);
         else hurtEn(hitT,dmg,b.x,b.y,crit);
@@ -3297,6 +3503,7 @@ function collidePlayer(){
       if(P.ram>0&&(!inv||P.ramCd<=0)){
         if(inv)P.ramCd=0.3; // 无敌撞角节流：没有受击硬直做间隔，改为计时器控频
         hurtAst(a,ramDmg(),P.x,P.y,false);ramFx();
+        if(G.syn.molten_ram&&P.death>0)moltenSplash(); // 熔火撞角
       }
       if(!inv)hurtPlayer(a.contact,a.x,a.y);
       return;
@@ -3308,11 +3515,18 @@ function collidePlayer(){
       if(P.ram>0&&(!inv||P.ramCd<=0)){
         if(inv)P.ramCd=0.3;
         hurtEn(e,ramDmg(),P.x,P.y,false);ramFx();
+        if(G.syn.molten_ram&&P.death>0)moltenSplash(); // 熔火撞角
       }
       if(!inv)hurtPlayer(e.dmg,e.x,e.y);
       return;
     }
   }
+}
+/* 熔火撞角：冲角撞击时在撞击点炸开一团死亡尾流 —— 撞完还要烧 */
+function moltenSplash(){
+  const ev=DEATHTRAIL[P.death];
+  G.deathTrail.push({x:P.x,y:P.y,r:ev.r,life:ev.life,maxLife:ev.life,
+    dmg:ev.dmg+P.deathBonus,ang:P.angle,ph:rand(TAU),gold:P.death>=6,exploded:false});
 }
 
 function updateParts(dt){
@@ -3443,6 +3657,7 @@ function startGame(hull){
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
   G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
+  G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;
   G.statK=0;G.statRT=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
@@ -3652,6 +3867,7 @@ function updateWorld(dt){
   updateWarns(dt);
   updateBullets(dt);
   updateDeathTrail(dt);
+  updateMines(dt);
   updateShards(dt);
   updatePickups(dt);
   if(G.mode==='play'||G.mode==='inter')collidePlayer();
@@ -4207,6 +4423,20 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
+  if(P.ram>0){ // 冲角装甲：船首两道前掠光刺 + 充能光晕，速度越快越亮 —— 提醒玩家"我能撞人"
+    const rc=P.ramMax?'255,215,94':'140,236,255';
+    const charge=0.35+0.45*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(${rc},${0.3*charge})`;ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(13,-9);ctx.lineTo(24,-13);ctx.moveTo(13,9);ctx.lineTo(24,13);ctx.stroke();
+    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(14,-7.5);ctx.lineTo(23.5,-11.5);ctx.moveTo(14,7.5);ctx.lineTo(23.5,11.5);ctx.stroke();
+    // 船首充能光点：即将撞上什么时的"就绪"信号
+    const tw=0.7+0.3*Math.sin(G.t*8);
+    ctx.fillStyle=`rgba(${rc},${0.5*charge*tw})`;
+    ctx.beginPath();ctx.arc(22,0,2.2+0.8*charge,0,TAU);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+  }
   ctx.restore();ctx.globalAlpha=1;
   const shTot=p.shield+p.shieldTmp,shCap=p.shieldMax+p.shieldTmpMax;
   if(shTot>0){
@@ -4280,6 +4510,19 @@ function draw(){
     ctx.fillStyle=`rgba(${s.c},${a})`;
     ctx.save();ctx.translate(s.x,s.y);ctx.rotate(G.t*2+s.x);
     ctx.fillRect(-2.6,-2.6,5.2,5.2);ctx.restore();
+  }
+  for(const m of G.mines){ // 磁暴雷：琥珀色核心 + 呼吸外环 + 布防期的磁引细环
+    const gold=P.mineMax;
+    const c=gold?'255,215,94':'255,170,90';
+    const pl=1+0.15*Math.sin(G.t*5+m.x*0.1);
+    ctx.strokeStyle=`rgba(${c},0.3)`;ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(m.x,m.y,9*pl,0,TAU);ctx.stroke();
+    ctx.fillStyle=`rgba(${c},${m.arm>0?0.4:0.95})`;
+    ctx.beginPath();ctx.arc(m.x,m.y,3.2,0,TAU);ctx.fill();
+    if(m.arm<=0){
+      ctx.strokeStyle=`rgba(${c},0.12)`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(m.x,m.y,m.pull*(0.85+0.1*Math.sin(G.t*3)),0,TAU);ctx.stroke();
+    }
   }
   for(const u of G.pickups){
     const def=PU[u.type];
