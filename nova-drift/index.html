@@ -22,7 +22,7 @@
 :root{
   --bg:#04060d; --ink:#cfe3ef; --dim:rgba(207,227,239,.55);
   --cyan:#6fe7ff; --amber:#ffd75e; --red:#ff5c49;
-  --panel:rgba(8,13,26,.82); --line:#24344f;
+  --panel:rgba(8,13,26,.68); --line:#24344f;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -170,7 +170,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 
 /* ---------- over / pause ---------- */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:38px 46px;text-align:center;max-width:min(92vw,460px);margin:auto}
+  padding:38px 46px;text-align:center;max-width:min(92vw,460px);margin:auto;
+  backdrop-filter:blur(4px)}
 #overScore{font-size:44px;letter-spacing:.1em;color:#eaf7ff;margin-top:18px;
   text-shadow:0 0 18px rgba(111,231,255,.5)}
 #newBest{display:inline-block;margin-top:10px;font-size:11px;letter-spacing:.3em;color:var(--amber);
