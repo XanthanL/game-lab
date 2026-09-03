@@ -1404,7 +1404,7 @@ const MODULES=[
     apply:n=>{const v=n<6?25:75;P.shieldMax+=v;P.shield+=v;if(n===6)P.shieldRegen=26;}},
   {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:6,type:'ability',
     lv:['撞击即可杀伤敌人，碰撞自伤降低；射速 -10%','冲角杀伤提升；射速 -10%','冲角杀伤提升，自伤再降；射速 -10%',
-        '冲角杀伤提升；射速 -10%','冲角杀伤提升；射速 -10%','MAX：冲角贯通 —— 撞击伤害暴增，金色的破锋尖刺'],
+        '冲角杀伤提升；射速 -10%','冲角杀伤提升；射速 -10%','MAX：冲角贯通 —— 撞击伤害暴增，金色的破锋尖角'],
     apply:n=>{P.ram=n<6?n:n+3;if(n===6)P.ramMax=true;
       // 冲角流派以射速换撞击威力（续档重放按级重放，乘法叠加保持一致）
       P.fireRate*=0.9;}},
@@ -4432,21 +4432,20 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船首单根破锋尖刺 + 锋尖充能光点，速度越快越亮 —— 提醒玩家"我能撞人"
+  if(P.ram>0){ // 冲角装甲：船首破锋尖角（实体楔形角）+ 锋尖充能光点，速度越快越亮 —— 提醒玩家"我能撞人"
     const rc=P.ramMax?'255,215,94':hullGlow();
     const charge=0.35+0.45*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
     ctx.globalCompositeOperation='lighter';
-    ctx.lineCap='round';
-    // 宽晕刺体：从船首探出的一根尖锐长刺
-    ctx.strokeStyle=`rgba(${rc},${0.3*charge})`;ctx.lineWidth=6;
-    ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(28,0);ctx.stroke();
-    // 亮芯
-    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(27,0);ctx.stroke();
+    // 外层宽角：半透明楔形包络
+    ctx.fillStyle=`rgba(${rc},${0.16*charge})`;
+    ctx.beginPath();ctx.moveTo(10,-6.5);ctx.lineTo(30,0);ctx.lineTo(10,6.5);ctx.closePath();ctx.fill();
+    // 内层亮角：坚实的破锋本体
+    ctx.fillStyle=`rgba(${rc},${0.5*charge})`;
+    ctx.beginPath();ctx.moveTo(12,-3.6);ctx.lineTo(28,0);ctx.lineTo(12,3.6);ctx.closePath();ctx.fill();
     // 锋尖充能光点：即将撞上什么时的"就绪"信号
     const tw=0.7+0.3*Math.sin(G.t*8);
     ctx.fillStyle=`rgba(${rc},${0.55*charge*tw})`;
-    ctx.beginPath();ctx.arc(27,0,1.6+0.7*charge,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.arc(28,0,1.6+0.7*charge,0,TAU);ctx.fill();
     ctx.globalCompositeOperation='source-over';
   }
   ctx.restore();ctx.globalAlpha=1;
