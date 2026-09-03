@@ -4527,10 +4527,10 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船头前方顶着一个大开口中括号 < —— 简洁直白的"我能撞人"提示
+  if(P.ram>0){ // 冲角装甲：船头前方顶着一个大开口中括号 > —— 简洁直白的"我能撞人"提示
     const rc=P.ramMax?'255,215,94':hullGlow();
     const charge=0.35+0.5*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
-    const bx=22,tip=bx-8,dy=6.5; // 开口大的 < 形：两撇从中点向斜后张开
+    const bx=22,tip=bx+9,dy=9; // 开口大的 > 形：尖角顶在船首正前，两撇向斜后张开包住船头
     ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=2;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(bx,-dy);ctx.lineTo(tip,0);ctx.lineTo(bx,dy);ctx.stroke();
