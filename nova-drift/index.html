@@ -105,8 +105,9 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 
 /* ---------- menu ---------- */
 .menu-in{text-align:center;padding:0;max-width:640px;margin:auto}
-.menu-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:30px auto 0}
-.menu-actions .btn{margin:0}
+.menu-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:30px auto 0;max-width:480px}
+.menu-actions .btn{margin:0;width:100%;padding:13px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#btnContinue{grid-column:1/-1} /* 继续漂移带波次/时长信息较长，独占整行 */
 .wordmark{font-size:clamp(42px,9vw,84px);font-weight:200;letter-spacing:.34em;text-indent:.34em;
   color:#eaf7ff;text-shadow:0 0 14px rgba(111,231,255,.7),0 0 46px rgba(111,231,255,.3);line-height:1.1}
 .wordmark .zh{display:block;font-size:clamp(12px,1.8vw,15px);letter-spacing:1.1em;text-indent:1.1em;
@@ -135,7 +136,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 /* ---------- level-up cards ---------- */
 .cards-in{text-align:center;margin:auto;padding:20px 0}
 #cardrow,#hullrow{display:flex;gap:18px;margin-top:34px;justify-content:center;flex-wrap:wrap}
-.card{width:196px;padding:22px 18px 20px;background:var(--panel);border:1px solid var(--line);
+.card{width:196px;padding:22px 18px 20px;background:rgba(8,13,26,.82);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-radius:10px;cursor:pointer;text-align:center;
   transition:transform .16s ease,border-color .16s,box-shadow .16s}
 .card:hover{transform:translateY(-7px);border-color:var(--cyan);box-shadow:0 10px 30px rgba(111,231,255,.16)}
@@ -282,6 +284,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   .hud-tc{top:96px}
   .panel{padding:28px 22px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
+  .menu-actions{grid-template-columns:1fr;max-width:340px} /* 窄屏菜单按钮单列等宽 */
   /* 手机端手牌模式：借鉴 Swiper.js cards effect —— 卡片像手握扑克牌扇形叠放，
      当前牌全跟手旋转，左右滑动循环切换，松手超过阈值飞行/未超过弹回 */
   .keyhint .kd{display:none}
