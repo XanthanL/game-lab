@@ -167,6 +167,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .card.mx:hover{border-color:var(--amber);box-shadow:0 10px 34px rgba(255,215,94,.24)}
 .card.mx .pips i.on{background:var(--amber);box-shadow:0 0 8px rgba(255,215,94,.9)}
 .keyhint{margin-top:26px;font-size:11px;letter-spacing:.22em;color:rgba(207,227,239,.35)}
+.keyhint .mh{display:none} /* 手机提示默认隐藏，窄屏反转 */
 
 /* ---------- over / pause ---------- */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -281,6 +282,15 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   .hud-tc{top:96px}
   .panel{padding:28px 22px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
+  /* 手机端手牌模式：借鉴 Swiper.js cards effect —— 卡片像手握扑克牌扇形叠放，
+     当前牌全跟手旋转，左右滑动循环切换，松手超过阈值飞行/未超过弹回 */
+  .keyhint .kd{display:none}
+  .keyhint .mh{display:inline}
+  #cardrow.deck,#hullrow.deck{display:block;position:relative;height:320px;max-width:340px;margin:30px auto 0}
+  #cardrow.deck .card,#hullrow.deck .card{position:absolute;left:50%;top:0;width:180px;margin:0;
+    touch-action:pan-y;will-change:transform;backface-visibility:hidden;
+    transition:transform .32s cubic-bezier(.22,.61,.36,1),opacity .32s ease,border-color .16s,box-shadow .16s}
+  .deck .card.act{border-color:rgba(111,231,255,.55)}
 }
 </style>
 </head>
@@ -318,7 +328,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <div class="row-btns" style="margin-top:26px">
       <button id="btnReroll" class="btn ghost">↻ 刷新选项 · R</button>
     </div>
-    <div class="keyhint mono">1 / 2 / 3 或点按选择 · R 刷新一次</div>
+    <div class="keyhint mono"><span class="kd">1 / 2 / 3 或点按选择 · R 刷新一次</span><span class="mh">◀ 左右滑动浏览 ▶ · 点按当前卡选择</span></div>
   </div>
 </div>
 
@@ -349,7 +359,7 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
   <div class="cards-in">
     <h2>CHOOSE HULL<span>选择出厂船体 —— 击败巨像解锁更多</span></h2>
     <div id="hullrow"></div>
-    <div class="keyhint mono">1 – 5 或点按选择</div>
+    <div class="keyhint mono"><span class="kd">1 – 5 或点按选择</span><span class="mh">◀ 左右滑动浏览 ▶ · 点按当前卡出击</span></div>
   </div>
 </div>
 
@@ -1772,6 +1782,7 @@ function openHulls(){
     el.hullrow.appendChild(div);
   });
   el.hulls.hidden=false;
+  deckify(el.hullrow); // 手机端：手牌模式布局
   sfx.ui();
 }
 function pickHull(i){
@@ -1781,6 +1792,98 @@ function pickHull(i){
   el.hulls.hidden=true;
   startGame(h);
 }
+
+/* ====================== 手机端手牌模式（deck） ======================
+   借鉴 Swiper.js cards effect / Tinder 式拖拽的交互手感：窄屏（≤640px）下
+   船体选择与升级三选一的卡片改为手握扑克牌式扇形叠放 —— 当前牌全跟手
+   拖动并随位移旋转，两侧牌被"拨开"微张；松手超过阈值循环切换到下一张、
+   未超过则弹回。点按后面的牌先转正，点按当前牌才确认选择；宽屏维持平铺。 */
+const deckMq=window.matchMedia('(max-width:640px)');
+const decks=new Map();
+function deckTf(d,extra=0){ // 距当前牌 d 步的扇形摆位：横移 / 下沉 / 旋转 / 缩放
+  const ad=Math.abs(d);
+  return `translateX(calc(-50% + ${d*38+extra}px)) translateY(${ad*13}px) rotate(${d*7}deg) scale(${1-ad*0.055})`;
+}
+function deckDist(i,a,n){ // 环形距离：保证滑动可以无限循环浏览，且三张也能对称成 -1/0/1
+  let d=i-a;
+  if(n>=3){if(d>n/2)d-=n;if(d<-n/2)d+=n;}
+  return d;
+}
+function layoutDeck(row){
+  const st=decks.get(row);
+  if(!st||!row.offsetParent)return; // 面板不可见时跳过，待打开后再布局
+  const cards=[...row.children],n=cards.length;
+  if(!n)return;
+  if(st.a>=n)st.a=0;
+  row.style.height=(Math.max(...cards.map(c=>c.offsetHeight))+34)+'px'; // 底部预留：下沉牌不压刷新按钮
+  cards.forEach((c,i)=>{
+    const d=deckDist(i,st.a,n);
+    c.style.transition='';
+    c.style.zIndex=30-Math.abs(d);
+    c.style.opacity=Math.abs(d)>2?'0':'1';       // 只露左右各两张
+    c.style.pointerEvents=Math.abs(d)>2?'none':'';
+    c.style.transform=deckTf(d);
+    c.classList.toggle('act',d===0);
+  });
+}
+function deckify(row){
+  if(!row)return;
+  if(!deckMq.matches){ // 宽屏：撤掉手牌态，还原平铺
+    if(!decks.has(row))return;
+    decks.delete(row);row.classList.remove('deck');row.style.height='';
+    for(const c of row.children){c.style.transform='';c.style.opacity='';c.style.zIndex='';
+      c.style.transition='';c.style.pointerEvents='';c.classList.remove('act');}
+    return;
+  }
+  let st=decks.get(row);
+  if(!st){
+    row.classList.add('deck');
+    st={a:0,sx:0,dx:0,pid:null,moved:false};
+    decks.set(row,st);
+    row.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true}); // 不触发全局摇杆/开火
+    row.addEventListener('pointerdown',e=>{
+      if(e.pointerId===st.pid)return;
+      const card=e.target.closest('.card');if(!card||!row.contains(card))return;
+      st.pid=e.pointerId;st.sx=e.clientX;st.dx=0;st.moved=false;
+      try{card.setPointerCapture(e.pointerId);}catch(err){}
+    });
+    row.addEventListener('pointermove',e=>{
+      if(e.pointerId!==st.pid)return;
+      st.dx=e.clientX-st.sx;
+      if(Math.abs(st.dx)>8)st.moved=true; // 拖过了：松手后的点按不当选择
+      const cards=[...row.children],n=cards.length;
+      cards.forEach((c,i)=>{
+        const d=deckDist(i,st.a,n);
+        c.style.transition='none'; // 拖动实时跟手，无过渡
+        c.style.transform=d===0
+          ?deckTf(0,st.dx)+` rotate(${st.dx*0.055}deg)`       // 当前牌全跟手 + 随位移旋转
+          :deckTf(d,st.dx*0.16*Math.sign(d));                 // 两侧牌按拖动方向微张（拨牌感）
+      });
+    });
+    const end=e=>{
+      if(e.pointerId!==st.pid)return;
+      st.pid=null;
+      const n=row.children.length;
+      if(Math.abs(st.dx)>56&&n>1){ // 超阈值：左滑看下一张 / 右滑看上一张（循环）
+        st.a=(st.a+(st.dx>0?-1:1)+n)%n;
+        sfx.ui();
+      }
+      layoutDeck(row); // 未超阈值也走这里 = 带过渡弹回原位
+    };
+    row.addEventListener('pointerup',end);
+    row.addEventListener('pointercancel',end);
+    row.addEventListener('click',e=>{ // 捕获阶段拦截：点后面的牌 = 转正，不当选择
+      if(!deckMq.matches)return;
+      const card=e.target.closest('.card');if(!card||!row.contains(card))return;
+      const i=[...row.children].indexOf(card);
+      if(st.moved){e.stopImmediatePropagation();return;} // 拖动后的松手点按：只切牌
+      if(i!==st.a){e.stopImmediatePropagation();st.a=i;layoutDeck(row);sfx.ui();}
+    },true);
+  }
+  st.a=0;st.moved=false; // 每次重新发牌回到第一张
+  layoutDeck(row);
+}
+deckMq.addEventListener('change',()=>{deckify(el.cardrow);deckify(el.hullrow);});
 
 /* ============================== input ============================== */
 const keys=Object.create(null);
@@ -3667,6 +3770,7 @@ function openLevelUp(){
   G.rerolled=false; // 每次升级可免费刷新一次
   renderCards();
   el.cards.hidden=false;
+  deckify(el.cardrow); // 手机端：手牌模式布局
   sfx.level();
 }
 /* 把 G.choices 渲染成三张卡片（选择与刷新共用） */
@@ -3706,6 +3810,7 @@ function rerollCards(){
   G.rerolled=true;
   G.choices=rollChoices();
   renderCards();
+  deckify(el.cardrow); // 手机端：重新发牌
   sfx.ui();
 }
 function pickCard(i){
