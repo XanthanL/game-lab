@@ -63,15 +63,23 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 #lv{font-size:12px;letter-spacing:.14em;color:var(--amber)}
 .bar.xp{height:6px;border-color:rgba(255,215,94,.3)}
 #xpbar{background:linear-gradient(90deg,#e8b93d,#ffe89a)}
-.hud-tc{position:absolute;top:14px;left:50%;transform:translateX(-50%);text-align:center}
-#wavelabel{font-size:13px;letter-spacing:.42em;text-indent:.42em;color:var(--dim)}
-#bossbar{width:min(260px,40vw);height:6px;margin:8px auto 0;background:rgba(255,255,255,.06);
+.hud-tc{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center}
+#bossname{font-size:clamp(9px,1.4vw,11px);letter-spacing:.36em;margin-right:-.36em;color:#e9a8ff;margin-bottom:7px}
+#bossbar{width:min(260px,40vw);height:6px;margin:0 auto;background:rgba(255,255,255,.06);
   border:1px solid rgba(255,92,73,.4)}
 #bossbar i{display:block;height:100%;background:linear-gradient(90deg,#b44cf0,#ff7ad9)}
-.hud-tr{position:absolute;top:14px;right:64px;text-align:right}
-#score{font-size:22px;letter-spacing:.12em;color:#eaf7ff;text-shadow:0 0 12px rgba(111,231,255,.4)}
-#best{font-size:11px;letter-spacing:.14em;color:var(--dim);margin-top:2px}
-#ptime{font-size:11px;letter-spacing:.14em;color:var(--dim);margin-top:2px}
+/* 右上信息栈：积分 → 波次 → 最佳 → 计时 → 剩余，字体随视口自适应 */
+.hud-tr{position:absolute;top:12px;right:64px;text-align:right;
+  display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#score{font-size:clamp(17px,2.4vw,23px);letter-spacing:.12em;margin-right:-.12em;
+  color:#eaf7ff;text-shadow:0 0 12px rgba(111,231,255,.4);line-height:1.15}
+#wavelabel{font-size:clamp(10px,1.5vw,13px);letter-spacing:.3em;margin-right:-.3em;
+  color:#9fe0f2;line-height:1.4}
+#best{font-size:clamp(9px,1.35vw,11.5px);letter-spacing:.14em;margin-right:-.14em;
+  color:var(--dim);margin-top:5px}
+#ptime{font-size:clamp(9px,1.35vw,11.5px);letter-spacing:.14em;margin-right:-.14em;color:var(--dim)}
+#enleft{font-size:clamp(9px,1.35vw,11.5px);letter-spacing:.14em;margin-right:-.14em;
+  color:var(--dim);margin-top:1px}
 .hud-btns{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
 .hud-btns button{width:38px;height:34px;background:rgba(8,13,26,.6);border:1px solid var(--line);
   color:var(--dim);font-size:13px;cursor:pointer;border-radius:6px;letter-spacing:.05em}
@@ -105,9 +113,11 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 
 /* ---------- menu ---------- */
 .menu-in{text-align:center;padding:0;max-width:640px;margin:auto}
-.menu-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:30px auto 0;max-width:480px}
-.menu-actions .btn{margin:0;width:100%;padding:13px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#btnContinue{grid-column:1/-1} /* 继续漂移带波次/时长信息较长，独占整行 */
+/* 菜单按钮：等宽卡片居中换行 —— 主按钮独占一行，其余等宽两列，落单的也会居中 */
+.menu-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:30px auto 0;max-width:520px}
+.menu-actions .btn{margin:0;flex:1 1 240px;max-width:250px;padding:13px 10px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-actions #btnLaunch{flex:0 0 100%;max-width:100%;font-size:15px;padding:15px 10px}
 .wordmark{font-size:clamp(42px,9vw,84px);font-weight:200;letter-spacing:.34em;text-indent:.34em;
   color:#eaf7ff;text-shadow:0 0 14px rgba(111,231,255,.7),0 0 46px rgba(111,231,255,.3);line-height:1.1}
 .wordmark .zh{display:block;font-size:clamp(12px,1.8vw,15px);letter-spacing:1.1em;text-indent:1.1em;
@@ -278,13 +288,14 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 #firebtn.hot{background:rgba(111,231,255,.2)}
 
 @media (max-width:640px){
-  .hud-tr{right:58px}
-  #score{font-size:18px}
-  /* 窄屏下左上 HUD 纵向堆叠变高，WAVE 标签整体下移避让（清过血条/护盾/经验条/能力格整列） */
-  .hud-tc{top:96px}
+  .hud-tr{right:58px;gap:2px}
+  /* 窄屏下左上 HUD 纵向堆叠变高，巨像名与血条整体下移避让（清过血条/护盾/经验条/能力格整列） */
+  .hud-tc{top:104px}
   .panel{padding:28px 22px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
-  .menu-actions{grid-template-columns:1fr;max-width:340px} /* 窄屏菜单按钮单列等宽 */
+  .menu-actions{max-width:340px;flex-direction:column;align-items:center} /* 窄屏菜单按钮单列等宽 */
+  .menu-actions .btn,.menu-actions #btnLaunch{flex:0 0 auto;width:100%;max-width:340px;
+    font-size:14px;padding:13px 10px}
   /* 手机端手牌模式：借鉴 Swiper.js cards effect —— 卡片像手握扑克牌扇形叠放，
      当前牌全跟手旋转，左右滑动循环切换，松手超过阈值飞行/未超过弹回 */
   .keyhint .kd{display:none}
@@ -312,8 +323,14 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
     <div class="xprow"><span id="lv" class="mono">LV 1</span><div class="bar xp"><i id="xpbar" style="width:0%"></i></div></div>
     <div id="abrow" hidden></div>
   </div>
-  <div class="hud-tc"><div id="wavelabel" class="mono">WAVE 1</div><div id="bossbar" hidden><i style="width:100%"></i></div></div>
-  <div class="hud-tr"><div id="score" class="mono">0</div><div id="best" class="mono">BEST 0</div><div id="ptime" class="mono">0:00</div></div>
+  <div class="hud-tc"><div id="bossname" class="mono" hidden></div><div id="bossbar" hidden><i style="width:100%"></i></div></div>
+  <div class="hud-tr">
+    <div id="score" class="mono">0</div>
+    <div id="wavelabel" class="mono">WAVE 1</div>
+    <div id="best" class="mono">BEST 0</div>
+    <div id="ptime" class="mono">0:00</div>
+    <div id="enleft" class="mono" hidden>剩余 0</div>
+  </div>
   <div class="hud-btns">
     <button id="btnMute" title="音效 M">♪</button>
     <button id="btnPause" title="暂停 P">Ⅱ</button>
@@ -508,7 +525,8 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d');
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
-  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),wave:$('wavelabel'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
+  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),wave:$('wavelabel'),enleft:$('enleft'),
+  bossName:$('bossname'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
   cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),dataChips:$('dataChips'),
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
@@ -2829,7 +2847,7 @@ function updateMines(dt){
   for(let i=arr.length-1;i>=0;i--){
     const m=arr[i];
     m.life-=dt;m.arm-=dt;
-    if(m.life<=0){burst(m.x,m.y,4,90,0.3,'255,170,90',1.6);arr.splice(i,1);continue;}
+    if(m.life<=0){burst(m.x,m.y,4,90,0.3,hullGlow(),1.6);arr.splice(i,1);continue;}
     if(m.arm>0)continue;
     const pr2=m.pull*m.pull;
     for(const e of G.enemies){ // 磁引：把敌人往雷上拽
@@ -2850,7 +2868,7 @@ function updateMines(dt){
 function detonateMine(m,k){
   const gold=P.mineMax;
   const r=m.r*k,dmg=m.dmg*k;
-  const c=gold?'255,215,94':'255,170,90';
+  const c=m.hullC||hullGlow(); // 未 MAX 时取布雷当时的船体发光色，MAX 恒为金色
   const i=G.mines.indexOf(m);if(i>=0)G.mines.splice(i,1);
   ring(m.x,m.y,r,c);burst(m.x,m.y,12,240,0.45,c,2.4);
   shake(4);sfx.boom(2);
@@ -2968,8 +2986,10 @@ function updatePlayer(dt){
       const L=MINE_LV[P.mine-1];
       if(G.mines.length<L[3]){ // 场上未满才布设
         P.mineT=L[0];
-        G.mines.push({x:tpx,y:tpy,life:10,arm:0.55,pull:P.mine>=5?170:130,r:L[1],dmg:L[2]*P.dmg});
-        burst(tpx,tpy,4,90,0.3,P.mineMax?'255,215,94':'255,170,90',1.6);
+        // hullC：布雷瞬间锁定配色 —— 未 MAX 跟随当前船体发光色，MAX 恒为金色
+        const mc=P.mineMax?'255,215,94':hullGlow();
+        G.mines.push({x:tpx,y:tpy,life:10,arm:0.55,pull:P.mine>=5?170:130,r:L[1],dmg:L[2]*P.dmg,hullC:mc});
+        burst(tpx,tpy,4,90,0.3,mc,1.6);
       }else P.mineT=0.5; // 满了稍后再试
     }
   }
@@ -4850,9 +4870,8 @@ function draw(){
     ctx.save();ctx.translate(s.x,s.y);ctx.rotate(G.t*2+s.x);
     ctx.fillRect(-2.6,-2.6,5.2,5.2);ctx.restore();
   }
-  for(const m of G.mines){ // 磁暴雷：琥珀色核心 + 呼吸外环 + 布防期的磁引细环
-    const gold=P.mineMax;
-    const c=gold?'255,215,94':'255,170,90';
+  for(const m of G.mines){ // 磁暴雷：跟随船体发光色的核心 + 呼吸外环 + 布防期的磁引细环
+    const c=m.hullC||hullGlow();
     const pl=1+0.15*Math.sin(G.t*5+m.x*0.1);
     ctx.strokeStyle=`rgba(${c},0.3)`;ctx.lineWidth=4;
     ctx.beginPath();ctx.arc(m.x,m.y,9*pl,0,TAU);ctx.stroke();
@@ -5034,15 +5053,17 @@ function updateHUD(){
   w=hudW('xp',clamp(P.xp/P.xpNext*100,0,100));
   if(w)el.xp.style.width=HUDC.xp;
   const bName=BOSS_NAME[Wv.bossKind]||'MOTHER ROCK';
-  if(Wv.boss)s='WAVE '+Wv.n+' · '+bName;
-  else if(Wv.early){ // 发育期：显示剩余目标，让玩家知道为何下一波未至
-    const left=Wv.qA.length+Wv.qE.length+G.warns.length+G.asteroids.length+G.enemies.length;
-    s='WAVE '+Wv.n+' · 剩余 '+left;
-  }else{
-    const sq=SQUADS.find(x=>x.id===Wv.squad);
-    s='WAVE '+Wv.n+(sq?' · '+sq.zh:'');
-  }
+  s='WAVE '+Wv.n;
   if(HUDC.wv!==s){HUDC.wv=s;el.wave.textContent=s;}
+  // 剩余目标数：boss 波让位给巨像名，其余时候实时反映本波还剩多少要清
+  if(Wv.boss){
+    if(HUDC.el!==''){HUDC.el='';el.enleft.hidden=true;}
+  }else{
+    const left=Wv.qA.length+Wv.qE.length+G.warns.length+G.asteroids.length+G.enemies.length;
+    s='剩余 '+left;
+    if(HUDC.el!==s){HUDC.el=s;el.enleft.textContent=s;}
+    if(el.enleft.hidden)el.enleft.hidden=false;
+  }
   let bHp=0,bMax=0;
   for(const a of G.asteroids)if(a.boss){
     bHp+=a.hp;bMax+=a.maxHp;
@@ -5053,7 +5074,9 @@ function updateHUD(){
     if(HUDC.bb!==true){HUDC.bb=true;el.bossbar.hidden=false;}
     w=hudW('bf',clamp(bHp/bMax*100,0,100));
     if(w)el.bossFill.style.width=HUDC.bf;
-  }else if(HUDC.bb!==false){HUDC.bb=false;el.bossbar.hidden=true;}
+    if(HUDC.bn!==bName){HUDC.bn=bName;el.bossName.textContent=bName;}
+    if(el.bossName.hidden)el.bossName.hidden=false;
+  }else if(HUDC.bb!==false){HUDC.bb=false;el.bossbar.hidden=true;el.bossName.hidden=true;}
   s=fmt(G.score);
   if(HUDC.sc!==s){HUDC.sc=s;el.score.textContent=s;}
   s='BEST '+fmt(Math.max(G.best,G.score));

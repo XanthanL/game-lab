@@ -16,7 +16,7 @@
 | 3 | 战斗中段 | 「陨雨 / Asteroid Rain」 | `「陨雨___Asteroid_Rain」.mp3` | 单 | 96 | 5.0M | ✅ |
 | 4 | 巨像降临（每 5 波 Boss） | 「星之巨像 / Colossus」 | `「星之巨像___Colossus」.mp3` | 单 | 80 | 4.4M | ✅ |
 | 5 | 模块 LV6 镀金质变 | 「镀金裂变 / Goldbreak」 | `「镀金裂变___Goldbreak」.mp3` | 单 | 90 | 6.2M | ✅ |
-| 6 | 第 15 波肃清后无尽漂移 | 「无尽漂移 / Endless Drift」 | `「无尽漂移___Endless_Drift」1.mp3` · `2.mp3` | **双** | 86 | 5.4M / 5.6M | ✅ |
+| 6 | 第 30 波肃清后无尽漂移 | 「无尽漂移 / Endless Drift」 | `「无尽漂移___Endless_Drift」1.mp3` · `2.mp3` | **双** | 86 | 5.4M / 5.6M | ✅ |
 | 7 | 结算 / 陨落 | 「余晖 / Afterglow」 | `「余晖___Afterglow」.mp3` | 单 | 76 | 5.5M | ✅ |
 
 ---
