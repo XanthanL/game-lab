@@ -4525,20 +4525,22 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船首破锋尖角（实体楔形角）+ 锋尖充能光点，速度越快越亮 —— 提醒玩家"我能撞人"
+  if(P.ram>0){ // 冲角装甲：船头前方的破锋锋芒 —— 悬空脱开的锋角，像船首劈开星尘的前锋面
     const rc=P.ramMax?'255,215,94':hullGlow();
     const charge=0.35+0.45*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
+    const bob=Math.sin(G.t*6)*1.3; // 锋芒前后浮沉：像在破风呼吸
+    const bx=19+bob; // 底边与船首留出空隙，不从船体内长出
     ctx.globalCompositeOperation='lighter';
-    // 外层宽角：半透明楔形包络
-    ctx.fillStyle=`rgba(${rc},${0.16*charge})`;
-    ctx.beginPath();ctx.moveTo(10,-6.5);ctx.lineTo(30,0);ctx.lineTo(10,6.5);ctx.closePath();ctx.fill();
-    // 内层亮角：坚实的破锋本体
+    // 外层包络：宽阔的劈风气流面
+    ctx.fillStyle=`rgba(${rc},${0.13*charge})`;
+    ctx.beginPath();ctx.moveTo(bx,-6.4);ctx.lineTo(bx+15,0);ctx.lineTo(bx,6.4);ctx.closePath();ctx.fill();
+    // 内层锋芒：纤细修长的亮色前锋角
     ctx.fillStyle=`rgba(${rc},${0.5*charge})`;
-    ctx.beginPath();ctx.moveTo(12,-3.6);ctx.lineTo(28,0);ctx.lineTo(12,3.6);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(bx+0.5,-2.6);ctx.lineTo(bx+14,0);ctx.lineTo(bx+0.5,2.6);ctx.closePath();ctx.fill();
     // 锋尖充能光点：即将撞上什么时的"就绪"信号
     const tw=0.7+0.3*Math.sin(G.t*8);
     ctx.fillStyle=`rgba(${rc},${0.55*charge*tw})`;
-    ctx.beginPath();ctx.arc(28,0,1.6+0.7*charge,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.arc(bx+14,0,1.5+0.7*charge,0,TAU);ctx.fill();
     ctx.globalCompositeOperation='source-over';
   }
   ctx.restore();ctx.globalAlpha=1;
