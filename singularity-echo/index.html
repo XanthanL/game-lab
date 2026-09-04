@@ -366,8 +366,8 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div id="enleft" class="mono" hidden data-page-node-id="Y1t6xUsdakK5ABCNAcKzAN">剩余 0</div>
   </div>
   <div class="hud-btns" data-page-node-id="Akeo8WmMHPJkClO1jVFaWD">
-    <button id="btnMute" title="音效 M" data-page-node-id="WxYGd7PwyFAET48AykU7EJ">♪</button>
-    <button id="btnPause" title="暂停 P" data-page-node-id="LYOBORHBGELnwvSG0NJryG">Ⅱ</button>
+    <button id="btnMute" title="音效 M" data-i18n-t="hud_mute" data-page-node-id="WxYGd7PwyFAET48AykU7EJ">♪</button>
+    <button id="btnPause" title="暂停 P" data-i18n-t="hud_pause" data-page-node-id="LYOBORHBGELnwvSG0NJryG">Ⅱ</button>
   </div>
 </div>
 
@@ -595,6 +595,7 @@ const I18N_EN={
  st_sub:'Audio',
  st_note:'BGM switches with the scene: menu / cruise / combat / colossus / endless / results.<br>First playback needs one click or keypress to unlock browser audio.',
  st_back:'BACK',
+ hud_mute:'Sound — M',hud_pause:'Pause — P',
 };
 
 /* ---- 动态文案英文表：模块分级描述 / 协同 / 编队 / 拾取（运行时经 T() 取词） ---- */
@@ -648,12 +649,31 @@ const SQUADS_EN={
 };
 const PU_EN={boost:'Thrust Overdrive',heal:'Field Repair',rate:'Fire Overdrive',
  shield:'Phase Barrier',invuln:'Invuln Field',level:'Data Inject'};
+/* 船体卡片：介绍与解锁条件的英文（openHulls 经 T() 取词） */
+const HULL_EN={
+ peregrine:'Standard patrol hull — speed, firepower and armor in balance',
+ rapier:'Glass cannon: +18% speed & agility, +15% fire rate, -20% max hull',
+ bulwark:'Heavy armor: +45% hull, 30 starting shield, -12% speed',
+ raven:'Colossus hunter: +10% crit, +50% crit damage, +40% pickup, +6% top speed',
+ swarm:'Drone carrier: starts with 1 drone · +30% drone power, +50% pickup, +8% fire rate, -10% max hull',
+ nemesis:'Final wreck: a touch better everywhere, +12% fire rate, +30% pickup, +10% max hull',
+};
+const HULL_LOCK_EN={
+ raven:'Clear wave 15 — shatter the Twin Rocks to unlock',
+ swarm:()=>`Lifetime kills ${SWARM_KILLS} to unlock — progress ${loadStats().k}`,
+ nemesis:'Clear wave 30 — shatter the Nemesis Echo to unlock',
+};
 function applyI18n(){
   document.documentElement.lang=LANG==='en'?'en':'zh-CN';
   for(const k in I18N_EN){
     const elm=document.querySelector('[data-i18n="'+k+'"]');if(!elm)continue;
     if(!elm.dataset.zhHtml)elm.dataset.zhHtml=elm.innerHTML;
     elm.innerHTML=LANG==='en'?I18N_EN[k]:elm.dataset.zhHtml;
+  }
+  /* title 属性文案（HUD 按钮等）：data-i18n-t 查 I18N_EN，中文原文缓存于 dataset */
+  for(const e of document.querySelectorAll('[data-i18n-t]')){
+    if(!e.dataset.zhTitle)e.dataset.zhTitle=e.title;
+    e.title=LANG==='en'?(I18N_EN[e.dataset.i18nT]||e.dataset.zhTitle):e.dataset.zhTitle;
   }
   const lb=LANG==='en'?'🌐 中文 ▸ 简体中文':'🌐 EN ▸ ENGLISH';
   for(const id of['btnLang','btnLangP']){const b=$(id);if(b)b.textContent=lb;}
@@ -1526,7 +1546,7 @@ function slotView(){ // 存档管理的合并视图：进行中档（nova-save�
 function refreshContinue(){
   const s=loadSave();
   el.btnContinue.hidden=!s;
-  if(s)el.btnContinue.textContent=`继续漂移 · WAVE ${s.w} · ${fmtT(s.t)} ▸ C`;
+  if(s)el.btnContinue.textContent=T(`继续漂移 · WAVE ${s.w} · ${fmtT(s.t)} ▸ C`,`RESUME DRIFT · WAVE ${s.w} · ${fmtT(s.t)} ▸ C`);
 }
 function resumeRun(){
   fireOn=false;el.firebtn.classList.remove('hot');
@@ -1968,8 +1988,10 @@ function openHulls(){
     const locked=!hullUnlocked(h.id);
     if(locked)div.classList.add('lock');
     const note=typeof h.lockNote==='function'?h.lockNote():h.lockNote;
+    const lk=HULL_LOCK_EN[h.id];
+    const noteEn=typeof lk==='function'?lk():(lk||note);
     div.innerHTML=`<canvas class="hullcv" width="150" height="92"></canvas><h3>${T(h.zh,h.en)}</h3><div class="en">${h.en}</div>
-      <p>${locked?note:h.desc}</p>`;
+      <p>${locked?T(note,noteEn):T(h.desc,HULL_EN[h.id]||h.desc)}</p>`;
     // 机库预览：与游戏内同一套轮廓绘制（出厂 tier1 形态）
     const cc=div.querySelector('.hullcv').getContext('2d');
     cc.translate(75,46);cc.rotate(-Math.PI/2);cc.scale(2,2);
@@ -2492,7 +2514,7 @@ function director(dt){
 function waveClear(){
   Wv.cleared=true;Wv.between=2.6;
   G.score+=40*Wv.n;ftext(P.x,P.y-40,'+'+40*Wv.n,'255,215,94');
-  banner('WAVE CLEAR','区域清空 · 奖励 +'+40*Wv.n);
+  banner('WAVE CLEAR',T('区域清空 · 奖励 +'+40*Wv.n,'sector clear · bonus +'+40*Wv.n));
   G.mode='inter';
 }
 
@@ -2560,8 +2582,8 @@ function hurtAst(a,dmg,hx,hy,crit){
         ring(a.x,a.y,a.r*rg.rr*1.5,'120,255,220');
         shake(9);sfx.boom(2);
         let left=0;for(const q of a.rings)if(q.hp>0)left++;
-        if(left===0)banner('WARDEN EXPOSED','护盾环全毁 —— 本体暴露，全力输出');
-        else banner('RING DOWN','护盾环破碎 —— 剩余 '+left+' 重');
+        if(left===0)banner('WARDEN EXPOSED',T('护盾环全毁 —— 本体暴露，全力输出','All shield rings down — the core is exposed, unload on it'));
+        else banner('RING DOWN',T('护盾环破碎 —— 剩余 '+left+' 重','A shield ring shattered — '+left+' left'));
       }
       return;
     }
@@ -2578,21 +2600,21 @@ function bossStageCheck(a){
   const f=a.hp/a.maxHp;
   const k=a.bossKind;
   if(k==='nemesis'){ // 终局 Boss 有三个阶段
-    if(a.stage===0&&f<=0.66){bossStage(a,1,'NEMESIS · PHASE II','它开始模仿你的火力与走位');return;}
-    if(a.stage===1&&f<=0.33){bossStage(a,2,'NEMESIS · FINAL PHASE','网格弹幕 —— 撑住最后一段');return;}
+    if(a.stage===0&&f<=0.66){bossStage(a,1,'NEMESIS · PHASE II',T('它开始模仿你的火力与走位','It begins to mirror your fire and movement'));return;}
+    if(a.stage===1&&f<=0.33){bossStage(a,2,'NEMESIS · FINAL PHASE',T('网格弹幕 —— 撑住最后一段','Grid barrage — hold the last stretch'));return;}
     return;
   }
   if(a.stage>=1)return;
   if(k==='warden'){
-    if(f<=0.5)bossStage(a,1,'WARDEN OVERLOAD','狱卒过载 —— 护盾环加速，弹幕加密');
+    if(f<=0.5)bossStage(a,1,'WARDEN OVERLOAD',T('狱卒过载 —— 护盾环加速，弹幕加密','Warden overload — rings spin faster, barrage thickens'));
   }else if(k==='hydra'){
-    if(f<=0.5)bossStage(a,1,'HYDRA ENRAGED','核心网络过载 —— 喷吐更凶，召唤更密');
+    if(f<=0.5)bossStage(a,1,'HYDRA ENRAGED',T('核心网络过载 —— 喷吐更凶，召唤更密','Core network overloaded — denser spits, heavier summons'));
   }else if(k==='eye'){
-    if(f<=0.5)bossStage(a,1,'THE GAZE','凝视降临 —— 追踪激光束锁定你');
+    if(f<=0.5)bossStage(a,1,'THE GAZE',T('凝视降临 —— 追踪激光束锁定你','The Gaze descends — a tracking beam has locked on'));
   }else if(k==='twin'){
-    if(f<=0.5)bossStage(a,1,'TWIN FURY','母岩狂暴 —— 冲撞与召唤加剧');
+    if(f<=0.5)bossStage(a,1,'TWIN FURY',T('母岩狂暴 —— 冲撞与召唤加剧','Rock fury — harder rams, heavier summons'));
   }else if(k==='rock'){
-    if(f<=0.5)bossStage(a,1,'ROCK FURY','母岩狂暴 —— 召唤与冲撞加剧');
+    if(f<=0.5)bossStage(a,1,'ROCK FURY',T('母岩狂暴 —— 召唤与冲撞加剧','Rock fury — heavier summons, harder rams'));
   }
 }
 function killAst(a){
@@ -2621,7 +2643,7 @@ function killAst(a){
     for(let k=0;k<2;k++)spawnAst(3,a.x+rand(-40,40),a.y+rand(-40,40));
     spawnPickup(true);
     G.pickups.push({type:'heal',x:a.x+rand(-20,20),y:a.y+rand(-20,20),t:0,life:15});
-    banner('COLOSSUS DOWN','精英巨像已击碎 —— 厚赏已结算');
+    banner('COLOSSUS DOWN',T('精英巨像已击碎 —— 厚赏已结算','Champion colossus shattered — rich salvage settled'));
   }
   if(a.boss){ // Boss：必掉 2 个数据注入（直升两级）
     for(let k=0;k<2;k++)G.pickups.push({type:'level',x:a.x+rand(-34,34),y:a.y+rand(-34,34),t:0,life:20});
@@ -2632,17 +2654,17 @@ function killAst(a){
     if(k==='twin'){
       // 同胞狂暴：击碎其一，另一只攻速与移速暴涨
       const others=G.asteroids.filter(o=>o!==a&&o.boss&&o.bossKind==='twin');
-      for(const o of others)if(o.stage<1)bossStage(o,1,'TWIN FURY','同胞陨落 —— 残留的母岩陷入狂暴');
+      for(const o of others)if(o.stage<1)bossStage(o,1,'TWIN FURY',T('同胞陨落 —— 残留的母岩陷入狂暴','Its twin has fallen — the remaining rock is enraged'));
       if(!others.length){
-        banner('TWIN ROCKS DOWN','双子母岩已击碎');
-        if(unlockHull('raven'))banner('HULL UNLOCKED','新船体「玄鸦」已解锁 —— 机库中查看');
+        banner('TWIN ROCKS DOWN',T('双子母岩已击碎','The Twin Rocks are shattered'));
+        if(unlockHull('raven'))banner('HULL UNLOCKED',T('新船体「玄鸦」已解锁 —— 机库中查看','New hull RAVEN unlocked — check the hangar'));
       }
     }
-    else if(k==='eye')banner('VOID EYE CLOSED','虚空之眼已闭合');
-    else if(k==='hydra')banner('HYDRA PRIME SLAIN','九首巨兽核心已击碎');
-    else if(k==='warden')banner('WARDEN DOWN','环带狱卒已停摆');
-    else if(k==='nemesis')banner('NEMESIS SILENCED','终焉回响消散 —— 星域肃清');
-    else banner('MOTHER ROCK DOWN','母岩已击碎');
+    else if(k==='eye')banner('VOID EYE CLOSED',T('虚空之眼已闭合','The Void Eye is closed'));
+    else if(k==='hydra')banner('HYDRA PRIME SLAIN',T('九首巨兽核心已击碎','The Hydra Prime cores are shattered'));
+    else if(k==='warden')banner('WARDEN DOWN',T('环带狱卒已停摆','The Orbital Warden has stopped'));
+    else if(k==='nemesis')banner('NEMESIS SILENCED',T('终焉回响消散 —— 星域肃清','The Nemesis Echo fades — the sector is cleared'));
+    else banner('MOTHER ROCK DOWN',T('母岩已击碎','The Mother Rock is shattered'));
     if(Wv.n>=WIN_WAVE&&!G.endless){sweepField();G.winT=1.6;}
   }
 }
@@ -4096,14 +4118,14 @@ function resolveCard(i){
   if(maxed){
     recountMax();
     sfx.max();
-    banner(c.zh+' · MAX','模块到达 LV6 —— 性能质变，火力镀金');
+    banner(T(c.zh,c.en)+' · MAX',T('模块到达 LV6 —— 性能质变，火力镀金','Module at LV6 — a qualitative leap, gilded firepower'));
     BGM.flare('evolve',26); // 镀金质变：临时切入「镀金裂变」，约 26s 后回到阶段曲组
     ring(P.x,P.y,26,'255,215,94');ring(P.x,P.y,52,'255,215,94');
     burst(P.x,P.y,26,320,0.8,'255,215,94',2.6);
     shake(8);
   }else if(got.length){
     sfx.max();
-    banner('协同 · '+got[0].zh,got[0].d);
+    banner(T('协同','SYNERGY')+' · '+T(got[0].zh,(SYN_EN[got[0].id]||[])[0]||got[0].zh),T(got[0].d,(SYN_EN[got[0].id]||[])[1]||got[0].d));
     ring(P.x,P.y,30,'150,238,255');ring(P.x,P.y,46,'150,238,255');
     burst(P.x,P.y,18,280,0.7,'150,238,255',2.2);
     shake(5);
@@ -4224,8 +4246,9 @@ function moduleDetail(m,n){
     const on=G.syn[s.id]?'':T('（未激活）',' (inactive)');
     pair+=`<div class="pair">⚡ ${T(s.zh,sen[0]||s.zh)} <b>${o.g} ${T(o.zh,o.en)}</b>${on}</div>`;
   }
-  return `<em class="detail"><h4>${m.g} ${m.zh} · ${mx?'MAX':'LV'+n}</h4>`+
-    `<div class="lv">${mx?'✦ MAX 质变已激活':'下一级：'+((m.lv&&m.lv[n])?m.lv[n]:'')}</div>`+
+  const nextTxt=(m.lv&&m.lv[n])?T(m.lv[n],(LV_EN[m.id]||[])[n]||m.lv[n]):'';
+  return `<em class="detail"><h4>${m.g} ${T(m.zh,m.en)} · ${mx?'MAX':'LV'+n}</h4>`+
+    `<div class="lv">${mx?T('✦ MAX 质变已激活','✦ MAX transformation active'):T('下一级：','Next: ')+nextTxt}</div>`+
     `<p>${lvTxt}</p>${stat}${pair}</em>`;
 }
 function buildChips(){
@@ -4243,8 +4266,8 @@ function buildChips(){
   };
   let out='';
   const ab=grp('ability'),st=grp('stat');
-  if(ab)out+=`<div class="chipgrp t-a">能力型</div>`+ab;
-  if(st)out+=`<div class="chipgrp t-s">数值型</div>`+st;
+  if(ab)out+=`<div class="chipgrp t-a">${T('能力型','ABILITY')}</div>`+ab;
+  if(st)out+=`<div class="chipgrp t-s">${T('数值型','STAT')}</div>`+st;
   return out;
 }
 function showOver(){
@@ -4260,7 +4283,7 @@ function showOver(){
   el.stKills.textContent=G.kills;
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
   el.stTime.textContent=m+':'+String(s).padStart(2,'0');
-  el.overChips.innerHTML=buildChips()||'<span>裸船出战</span>';
+  el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   el.over.hidden=false;
   el.hud.hidden=true;
 }
@@ -4291,7 +4314,7 @@ function continueEndless(){
   el.victory.hidden=true;
   el.hud.hidden=false;
   G.mode='inter';Wv.between=1.4;
-  banner('ENDLESS DRIFT','无尽漂移 —— 星域之外，更深更远');
+  banner('ENDLESS DRIFT',T('无尽漂移 —— 星域之外，更深更远','Endless drift — beyond the sector, deeper and farther'));
   sfx.ui();
 }
 function toMenu(){
@@ -4390,8 +4413,8 @@ function drawLogbook(){
   }).join('');
   const sw=s.k;
   el.lbSwarm.innerHTML=sw<SWARM_KILLS
-    ? `<i>蜂群母舰解锁进度 · ${fmt(sw)} / ${fmt(SWARM_KILLS)}</i>`
-    : `<i>蜂群母舰 · 已解锁</i>`;
+    ? `<i>${T('蜂群母舰解锁进度','Drone carrier unlock progress')} · ${fmt(sw)} / ${fmt(SWARM_KILLS)}</i>`
+    : `<i>${T('蜂群母舰','Drone carrier')} · ${T('已解锁','unlocked')}</i>`;
 }
 
 $('btnLaunch').addEventListener('click',openHulls);
@@ -4431,8 +4454,8 @@ el.saveList.addEventListener('click',e=>{
   const del=e.target.closest('[data-del]');
   if(!del)return;
   if(del.dataset.arm){delSlot(del.dataset.del);return;} // 第二次点击才真删
-  del.dataset.arm='1';del.textContent='确认?';
-  setTimeout(()=>{if(del.isConnected){delete del.dataset.arm;del.textContent='删除';}},4000);
+  del.dataset.arm='1';del.textContent=T('确认?','SURE?');
+  setTimeout(()=>{if(del.isConnected){delete del.dataset.arm;del.textContent=T('删除','DEL');}},4000);
 });
 $('btnPause').addEventListener('click',()=>{
   if(G.mode==='pause')resumeGame();else pauseGame();
@@ -5019,7 +5042,7 @@ function drawShip(){
     for(let pass=0;pass<passes;pass++){
       const wBase=(pass===0?19:(pass===1?7.2:2.6));
       const cols=TR[pass];
-      const aBase=(isG?0.45:(pass===0?0.22:(pass===1?0.38:0.62)))*movK*(boost?1.3:1);
+      const aBase=(pass===0?0.22:(pass===1?0.38:0.62))*movK*(boost?1.3:1);
       ctx.strokeStyle=`rgba(${cols},1)`;
       for(let c=0;c<CH;c++){
         const i0=Math.round(last*c/CH),i1=Math.round(last*(c+1)/CH);
@@ -5450,7 +5473,7 @@ function updateHUD(){
     if(HUDC.el!==''){HUDC.el='';el.enleft.hidden=true;}
   }else{
     const left=Wv.qA.length+Wv.qE.length+G.warns.length+G.asteroids.length+G.enemies.length;
-    s='剩余 '+left;
+    s=T('剩余 '+left,'LEFT '+left);
     if(HUDC.el!==s){HUDC.el=s;el.enleft.textContent=s;}
     if(el.enleft.hidden)el.enleft.hidden=false;
   }
