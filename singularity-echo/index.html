@@ -35,8 +35,10 @@ body{
 [hidden]{display:none!important}
 .mono{font-family:ui-monospace,Consolas,"Cascadia Mono",monospace}
 canvas#cv{position:fixed;inset:0;display:block}
-canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
-#fxFluid{z-index:1;mix-blend-mode:screen;opacity:.85}
+canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-events:none}
+/* canvas 是替换元素：inset:0 不会拉伸它（只会保持 300×150 固有尺寸缩在角落），
+   必须显式给 width/height 才能真正满屏 */
+#fxFluid{z-index:1;opacity:.85}
 #fxProton{z-index:2}
 
 /* ---------- HUD ---------- */
@@ -545,6 +547,26 @@ const TAU=Math.PI*2;
 const rand=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
 const irand=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
 
+/* ================= 致命错误屏显诊断 =================
+   白屏/黑屏类故障（GPU 上下文丢失、渲染崩溃）在玩家侧只有一块白幕，
+   无从知道原因 —— 任何未捕获异常直接打到屏幕左上角，让故障自己显形。 */
+(function(){
+  let box=null,seen=0;
+  window.showFatal=function(msg){
+    try{
+      if(!box){box=document.createElement('div');
+        box.style.cssText='position:fixed;top:10px;left:10px;z-index:99999;max-width:90vw;'
+          +'background:rgba(20,4,8,.92);border:1px solid #ff5a5a;border-radius:6px;'
+          +'color:#ffd9d9;font:11px/1.5 monospace;padding:8px 12px;white-space:pre-wrap;pointer-events:none';
+        document.body.appendChild(box);}
+      if(++seen>6)return; // 防刷屏
+      box.textContent+=('['+(seen)+'] '+String(msg).slice(0,300)+'\n');
+    }catch(_e){}
+  };
+  window.addEventListener('error',e=>showFatal(e.message+' @'+(e.lineno||'?')));
+  window.addEventListener('unhandledrejection',e=>showFatal((e.reason&&e.reason.message)||e.reason));
+})();
+
 /* ================= i18n：中 / EN 切换 =================
    LANG 持久化在 nova-lang；T(zh,en) 供动态渲染器取词；
    静态界面靠 data-i18n 标记 + I18N_EN 字典整块替换（zh 形态首次运行时缓存于 dataset）。 */
@@ -574,6 +596,58 @@ const I18N_EN={
  st_note:'BGM switches with the scene: menu / cruise / combat / colossus / endless / results.<br>First playback needs one click or keypress to unlock browser audio.',
  st_back:'BACK',
 };
+
+/* ---- 动态文案英文表：模块分级描述 / 协同 / 编队 / 拾取（运行时经 T() 取词） ---- */
+const LV_EN={
+ hull:['+20 max hull, repair 20','+20 max hull, repair 20','+20 max hull, repair 20','+20 max hull, repair 20','+20 max hull, repair 20','MAX: +60 more hull & repair 60 — the hull turns gilded'],
+ thruster:['+7% speed & thrust','+7% speed & thrust','+7% speed & thrust','+7% speed & thrust','+7% speed & thrust','MAX: +20% speed, +10% turn — the exhaust turns golden'],
+ loader:['+9% fire rate','+9% fire rate','+9% fire rate','+9% fire rate','+9% fire rate','MAX: +30% more rate — golden muzzle flash'],
+ warhead:['+11% all damage','+11% all damage','+11% all damage','+11% all damage','+11% all damage','MAX: +40% more damage — maximum charge'],
+ twin:['Add one barrel','+6% fire rate','Add one barrel','+6% rate, tighter spread','+12% bullet speed','MAX: 4th barrel + 12% rate — golden tracer salvo'],
+ pierce:['Pierce +1 target','Pierce +1 target','Pierce +1 target','Pierce +1 target','Pierce +1 target','MAX: +3 more pierce — gilded core, straight through'],
+ ricochet:['Bullets bounce off walls +1 time','Bounce +1','Bounce +1','Bounce +1','Bounce +1','MAX: +3 bounces — every wall is a weapon'],
+ frag:['Hits explode: radius 52, 55% splash','Radius 64, splash 70%','Radius 78, splash 85%','Radius 92, splash 100%','Radius 108, splash 120%','MAX: radius 150, splash 180% — golden shockwave'],
+ guided:['Bullets steer toward the nearest enemy','Guidance search +80','Sharper steering','Search range +100','Sharper steering still','MAX: near-fullscreen search, extreme turn — nothing escapes'],
+ crit:['+8% crit chance','+8% crit chance','+8% crit chance','+8% crit chance','+8% crit chance','MAX: +15% crit, crit damage 3x to 4.5x'],
+ magnet:['+22% XP & pickup radius','+22% pickup radius','+22% pickup radius','+22% pickup radius','+22% pickup radius','MAX: +55% more — nothing in the sector is out of reach'],
+ drone:['Add 1 orbiting drone that fires for you','Drone fire rate & damage up','Add 1 more drone','Drone fire rate & damage up again','Add 1 more drone (3 total)','MAX: +2 drones at once (5 total) + golden AP rounds'],
+ aegis:['+25 shield, regenerates 4s out of combat','+25 shield','+25 shield','+25 shield','+25 shield','MAX: +75 more shield, double regen — gilded barrier'],
+ ram:['Ramming damages enemies, collision self-dmg -40%; fire rate halved (once only)','Ram damage up; self-dmg -65%','Ram damage up','Ram damage up; self-dmg -75%','Ram damage up','MAX: piercing ram — massive impact damage, golden bow cone'],
+ regen:['Regenerate 0.9 hull/sec','+0.9/sec','+0.9/sec','+0.9/sec','+0.9/sec','MAX: +4 more/sec — a nano-swarm coats the hull'],
+ leech:['Kills restore 1.2% max hull','+1.2% per kill','+1.2% per kill','+1.2% per kill','+1.2% per kill','MAX: +4.8% more — live off the kill'],
+ tesla:['Arc every 2.2s, chains 2 targets','Arc cooldown -0.3s','Chain +1 target','Cooldown another -0.3s','Chain +1 target (4 total)','MAX: chains 6 targets + sharp cooldown cut — golden storm'],
+ stasis:['Enemies within 260 are slowed','Field radius 300','Stronger slow','Field radius 350','Stronger slow still','MAX: radius 440, near-freeze — golden field'],
+ backshot:['Each volley adds a round from the stern','Stern gun damage up','Add another stern gun','Stern damage up again','Third stern gun','MAX: five stern guns at full power — no blind spots'],
+ lance:['When its CD is ready, your next active shot becomes a piercing rail laser','Lance cooldown -0.6s','Lance damage up','Cooldown another -0.6s','Lance damage up again','MAX: the railgun pierces the whole field + sharp CD cut — the Judgement'],
+ overdrive:['+7% rate, +6% dmg, -8 max hull','+7% rate, +6% dmg, -8 hull','+7% rate, +6% dmg, -8 hull','+7% rate, +6% dmg, -8 hull','+7% rate, +6% dmg, -8 hull','MAX: +20% rate, +15% dmg, -18 hull — the reactor burns golden'],
+ phase:['+0.2s invulnerability after being hit','+0.2s i-frames','+0.2s i-frames','+0.2s i-frames','+0.2s i-frames','MAX: +0.8s more — a golden afterimage on every hit'],
+ deathtrail:['+8% speed, -10% rate — the wake burns enemies and dissolves their bullets; the faster you go, the longer it grows','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','MAX: +12% speed, -10% rate — the neon wake detonates sideways as it fades'],
+ nova:['Shockwave every 7s: damages and knocks back nearby foes','Shockwave cooldown -1s','Bigger radius & damage','Cooldown another -1s','Radius & damage up again','MAX: golden oscillation — far bigger, and it erases enemy bullets'],
+ blink:['Every 14s: auto-blinks out of shield-breaking hits — the hit is voided, +0.8s invuln','Blink cooldown -2s','Longer blink, +0.2s invuln','Cooldown another -2s','2s engine overdrive after blinking','MAX: golden annihilation burst at the exit point, sharp CD cut'],
+ mine:['Every 6s drop a mag-mine: pulls enemies in, area blast (max 2 active)','Blast damage & radius up','Drops more often','More damage, max 3 active','Wider magnet pull','MAX: golden storm — far bigger blast, erases bullets (max 4)'],
+ repair:['Repair 45% hull instantly'],
+};
+const SYN_EN={
+ storm:['Static Storm','Arc cooldown -0.35s — frozen foes are yours to chain'],
+ bulwark_ram:['Ram Aegis','+20 shield cap, refilled on the spot — ram them, the shield can take it'],
+ blink_ram:['Blink Ram','Enemies along your blink path take full ram damage — phased, you are the shell'],
+ blink_arc:['Blink Arc','Each blink looses an arc along its trail, searing foes in passing'],
+ nova_stasis:['Resonant Pulse','Shockwave deals x1.6 damage and x1.8 knockback to slowed enemies — frozen bodies shatter'],
+ pulse_swarm:['Pulse Swarm','Each shockwave instantly reloads all drones — the swarm fires with every pulse'],
+ judge_frost:['Frozen Judgement','The Orbital Lance deals +60% damage to slowed enemies — freeze first, pierce after'],
+ rear_lance:['Parthian Lance','Firing the lance also launches one from the stern — judgement fore and aft'],
+ molten_ram:['Molten Ram','Ram impacts detonate a death-wake burst at the impact point — the burn follows the blow'],
+ vent_wake:['Venting Wake','Taking shield damage vents searing fire all around — even the shield fights back'],
+ swarm_arc:['Thunder Swarm','Arc cooldown -0.3s, drone power +0.2 — swarm and coil resonate as one'],
+ ignite:['Ignition Mines','The death wake detonates mag-mines early, +50% blast damage — flame sweeps the minefield'],
+};
+const SQUADS_EN={
+ swarm:['Swarm','dense small units'],gunline:['Gunline','ranged fire suppression'],
+ rush:['Rush','high-speed closing in'],fortress:['Fortress','heavy armor & turret line'],
+ trick:['Trickery','phase, mimicry & ambush'],mixed:['Combined','all-type joint formation'],
+};
+const PU_EN={boost:'Thrust Overdrive',heal:'Field Repair',rate:'Fire Overdrive',
+ shield:'Phase Barrier',invuln:'Invuln Field',level:'Data Inject'};
 function applyI18n(){
   document.documentElement.lang=LANG==='en'?'en':'zh-CN';
   for(const k in I18N_EN){
@@ -965,6 +1039,12 @@ function fSplat(sx,sy,dx,dy,rgb,intensity){
   blit(dye.write);dye.swap();
 }
 try{fOk=initGL();if(fOk){fResize();initFBOs();}}catch(e){fOk=false;}
+/* GPU 驱动重置 / 显存吃紧时 WebGL 上下文可能丢失：部分驱动会把丢失的层呈现为
+   白幕盖住整页 —— 立即下线流体层（游戏本体不受影响），绝不让它挂着变白 */
+fxc.addEventListener('webglcontextlost',e=>{
+  e.preventDefault();
+  if(fOk){fOk=false;fxc.style.display='none';showFatal('WebGL fluid context lost — nebula layer disabled');}
+},false);
 
 /* ---------- proton particles ---------- */
 const hasP=typeof window.Proton==='function';
@@ -1055,6 +1135,9 @@ const api={
   },
   frame(dt,mode){
     if(mode==='pause')return;
+    if(fOk&&gl&&gl.isContextLost()){ // 事件之外兜底：上下文已丢就主动摘层，防白幕常驻
+      fOk=false;fxc.style.display='none';showFatal('WebGL fluid context lost (poll) — nebula layer disabled');
+    }
     splatsThisFrame=0;
     if(fOk){
       fResize();
@@ -1475,7 +1558,7 @@ function resumeRun(){
   el.hulls.hidden=true;el.victory.hidden=true;
   el.hud.hidden=false;el.firebtn.hidden=!isTouch;
   buildWave(s.w||1);
-  banner('DRIFT RESUMED','缓存进度已接续 —— WAVE '+(s.w||1));
+  banner('DRIFT RESUMED',T('缓存进度已接续 —— WAVE ','Saved drift resumed — WAVE ')+(s.w||1));
   sfx.ui();
 }
 window.addEventListener('pagehide',saveRun);
@@ -1869,7 +1952,7 @@ function flushStats(){
   s.k+=dk;s.t+=dt;s.sc+=dsc;s.w=Math.max(s.w,Wv.n);
   saveStats(s);
   if(before<SWARM_KILLS&&s.k>=SWARM_KILLS){ // 蜂群解锁时刻
-    banner('NEW HULL · 蜂群','累计击坠 '+SWARM_KILLS+' 达成 —— 无人机母舰已解锁');
+    banner('NEW HULL · '+T('蜂群','Swarm'),T('累计击坠 '+SWARM_KILLS+' 达成 —— 无人机母舰已解锁','Lifetime kills reached '+SWARM_KILLS+' — the drone carrier is unlocked'));
     sfx.victory();
     ring(P.x,P.y,30,'190,255,110');ring(P.x,P.y,52,'190,255,110');
     burst(P.x,P.y,20,300,0.8,'190,255,110',2.4);
@@ -2322,12 +2405,12 @@ function buildWave(n){
     for(let i=0;i<1+(n/8|0);i++)Wv.qE.push('seeker');
     for(let i=0;i<Math.min(1+(n/10|0),4);i++)Wv.qE.push(pick(enUnlocked(n).slice(-4)));
     const bz=BOSS_ZH[bossKind]||'母岩';
-    if(bossKind==='twin')banner('TWIN ROCKS','双子母岩接近 —— 两只都要击碎，碎其一则另一狂暴');
-    else if(bossKind==='eye')banner('VOID EYE','虚空之眼已睁开 —— 提防它的凝视与螺旋弹幕');
-    else if(bossKind==='hydra')banner('HYDRA PRIME','九首巨兽苏醒 —— 三颗核心共享生命网络');
-    else if(bossKind==='warden')banner('ORBITAL WARDEN','环带狱卒降临 —— 先击穿三重护盾环的缺口');
-    else if(bossKind==='nemesis')banner('NEMESIS','终焉回响 —— 它会模仿你的一切');
-    else banner('MOTHER ROCK',bz+'接近 —— 击碎它');
+    if(bossKind==='twin')banner('TWIN ROCKS',T('双子母岩接近 —— 两只都要击碎，碎其一则另一狂暴','Twin Rocks approach — shatter both; breaking one enrages the other'));
+    else if(bossKind==='eye')banner('VOID EYE',T('虚空之眼已睁开 —— 提防它的凝视与螺旋弹幕','The Void Eye is open — beware its gaze and spiral barrage'));
+    else if(bossKind==='hydra')banner('HYDRA PRIME',T('九首巨兽苏醒 —— 三颗核心共享生命网络','Hydra Prime awakens — three cores share one life-web'));
+    else if(bossKind==='warden')banner('ORBITAL WARDEN',T('环带狱卒降临 —— 先击穿三重护盾环的缺口','Orbital Warden descends — breach a gap in the triple shield rings first'));
+    else if(bossKind==='nemesis')banner('NEMESIS',T('终焉回响 —— 它会模仿你的一切','Nemesis Echo — it mirrors everything you do'));
+    else banner('MOTHER ROCK',T(bz+'接近 —— 击碎它',(BOSS_NAME[bossKind]||'MOTHER ROCK')+' approaches — shatter it'));
   }else{
     const pool=enUnlocked(n);
     const wish=(sq.w||[]).filter(t=>pool.indexOf(t)>=0);
@@ -2344,9 +2427,11 @@ function buildWave(n){
     for(let i=0;i<big;i++)Wv.qA.push(3);
     for(let i=0;i<med;i++)Wv.qA.push(2);
     for(let i=0;i<small;i++)Wv.qA.push(1);
-    const sub=Wv.champ?('精英巨像压阵 · '+sq.zh+'编队 — '+sq.desc):(sq.zh+'编队 — '+sq.desc);
-    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,'进入'+sec.zh+' —— 敌型谱系扩充');
-    else if(Wv.early)banner('WAVE '+n,'肃清区域内全部目标后推进 — '+sub);
+    const szen=SQUADS_EN[sq.id]||[];
+    const sub=(Wv.champ?T('精英巨像压阵 · ','Champion colossus leads · '):'')+
+      T(sq.zh,szen[0]||sq.zh)+T('编队',' formation')+' — '+T(sq.desc,szen[1]||sq.desc);
+    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,T('进入'+sec.zh+' —— 敌型谱系扩充','Entering the '+sec.en+' — new enemy types join the pool'));
+    else if(Wv.early)banner('WAVE '+n,T('肃清区域内全部目标后推进 — ','Clear all hostiles to advance — ')+sub);
     else banner('WAVE '+n,sub);
   }
   if(!Wv.boss)shuffle(Wv.qA);
@@ -2377,7 +2462,7 @@ function director(dt){
     else if(s==='champ'){ // 精英巨像：弱一档的巨像，压阵但不锁进度
       const p=edgePoint();
       const c=spawnAst(4,p.x,p.y,Wv.champ,true);
-      banner('COLOSSUS','精英巨像压阵 —— 击碎它有厚赏');
+      banner('COLOSSUS',T('精英巨像压阵 —— 击碎它有厚赏','A champion colossus leads the wave — rich salvage for breaking it'));
       shake(6);
     }
     else{const p=viewPoint();spawnAst(s,p.x,p.y);}
@@ -2448,7 +2533,7 @@ function updatePickups(dt){
       else if(u.type==='invuln'){P.invuln=4;P.invPick=4;}
       else if(u.type==='level'){gainXp(Math.max(1,P.xpNext-P.xp));}
       else{P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);}
-      ftext(P.x,P.y-30,def.zh+(def.suf||''),def.c);
+      ftext(P.x,P.y-30,T(def.zh,PU_EN[u.type]||def.zh)+(def.suf||''),def.c);
       burst(u.x,u.y,12,200,0.5,def.c,2);
       ring(u.x,u.y,10,def.c);
       shake(3);sfx.pickup();
@@ -2933,7 +3018,7 @@ function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作�
   if(P.blink>=5)P.boostT=Math.max(P.boostT,2); // 折跃后引擎超频
   ring(ox,oy,30,c);burst(ox,oy,12,220,0.45,c,2.2);
   ring(nx,ny,16,c);shake(5);sfx.zap();
-  ftext(ox,oy-26,'相位折跃',gold?'255,215,94':'150,220,255');
+  ftext(ox,oy-26,T('相位折跃','PHASE BLINK'),gold?'255,215,94':'150,220,255');
   if(gold){ // 金色湮灭：折跃起点炸开湮灭风暴
     const rr=120,dd=P.dmg*6;
     ring(ox,oy,rr,'255,215,94');burst(ox,oy,16,260,0.5,'255,215,94',2.6);
@@ -3958,10 +4043,11 @@ function renderCards(){
       if(isMax)div.classList.add('mx');
       let pips='';
       for(let k=1;k<=c.max;k++)pips+=`<i class="${k<=cur?'on':''}${k===c.max?' cap':''}"></i>`;
-      const lvTxt=(c.lv&&c.lv[cur])?c.lv[cur]:c.desc;
+      const lvTxt=(c.lv&&c.lv[cur])?T(c.lv[cur],(LV_EN[c.id]||[])[cur]||c.lv[cur])
+        :T(c.desc,(LV_EN[c.id]||[])[0]||c.desc);
       const sn=synFor(c.id);
       const synHtml=sn.length
-        ?`<div class="syn">⚡ ${T('协同','SYNERGY')} · ${sn[0].zh}<span>${sn[0].d}</span></div>`:'';
+        ?`<div class="syn">⚡ ${T('协同','SYNERGY')} · ${T(sn[0].zh,(SYN_EN[sn[0].id]||[])[0]||sn[0].zh)}<span>${T(sn[0].d,(SYN_EN[sn[0].id]||[])[1]||sn[0].d)}</span></div>`:'';
       div.innerHTML=`<div class="g">${isMax?'✦':c.g}</div><h3>${T(c.zh,c.en)}</h3>
         <div class="en">${isMax?'MAX · LV'+next:c.en+' · LV'+next}${tag}</div>
         <p>${lvTxt}</p>${synHtml}<div class="pips">${pips}</div>`;
@@ -4087,54 +4173,56 @@ function resumeGame(){G.mode=G.prevMode;el.pause.hidden=true;BGM.dim(false);}
 function synListHtml(){
   if(!P)return '';
   const act=SYN.filter(s=>G.syn[s.id]);
-  if(!act.length)return `<i>协同 0/${SYN.length} —— 装配成对的模块即可触发</i>`;
-  return `<b>协同 ${act.length}/${SYN.length}</b>`+act.map(s=>{
-    const a=MOD_BY_ID[s.a],b=MOD_BY_ID[s.b];
-    return `<span class="schip">${s.zh}<em class="detail"><h4>⚡ ${s.zh}</h4>`+
-      `<div class="lv">${a.g} ${a.zh} + ${b.g} ${b.zh}</div><p>${s.d}</p></em></span>`;
+  if(!act.length)return `<i>${T('协同','SYNERGY')} 0/${SYN.length} —— ${T('装配成对的模块即可触发','fit paired modules to trigger')}</i>`;
+  return `<b>${T('协同','SYNERGY')} ${act.length}/${SYN.length}</b>`+act.map(s=>{
+    const a=MOD_BY_ID[s.a],b=MOD_BY_ID[s.b],sen=SYN_EN[s.id]||[];
+    return `<span class="schip">${T(s.zh,sen[0]||s.zh)}<em class="detail"><h4>⚡ ${T(s.zh,sen[0]||s.zh)}</h4>`+
+      `<div class="lv">${a.g} ${T(a.zh,a.en)} + ${b.g} ${T(b.zh,b.en)}</div><p>${T(s.d,sen[1]||s.d)}</p></em></span>`;
   }).join('');
 }
 /* 模块条目详情：当前等级效果文案 + 该模块的关键实时数值（有状态、有特效说明） */
 function moduleDetail(m,n){
   const mx=n>=m.max;
-  const lvTxt=(m.lv&&m.lv[n-1])?m.lv[n-1]:(m.desc||'');
+  const lvTxt=(m.lv&&m.lv[n-1])?T(m.lv[n-1],(LV_EN[m.id]||[])[n-1]||m.lv[n-1])
+    :T(m.desc||'',(LV_EN[m.id]||[])[0]||m.desc||'');
   let stat='';
   const S=(t)=>stat+=`<p>${t}</p>`;
   switch(m.id){
-    case 'hull':S(`船体 ${Math.round(P.hp)} / ${Math.round(P.maxHp)}`);break;
-    case 'thruster':S(`极速 ${Math.round(P.maxSpeed)} · 转向 ${P.turn.toFixed(1)}`);break;
-    case 'loader':S(`射速 ${P.fireRate.toFixed(1)}/s`);break;
-    case 'warhead':S(`伤害 ${P.dmg.toFixed(2)}`);break;
-    case 'twin':S(`枪管 ${P.barrels} · 弹速 ${Math.round(P.bspd)}`);break;
-    case 'pierce':S(`穿透 ${P.pierce}`);break;
-    case 'ricochet':S(`反弹 ${P.ricochet}`);break;
-    case 'frag':S(`爆炸范围 ${Math.round(P.splashR)} · 溅射 ${Math.round(P.splashDmg)}`);break;
-    case 'guided':S(`制导强度 ${P.homing} · 搜索 ${Math.round(P.homeR)}`);break;
-    case 'crit':S(`暴击 ${Math.round(P.crit*100)}% · 暴伤 ×${P.critMul}`);break;
-    case 'magnet':S(`拾取半径 ${Math.round(P.magnet)}`);break;
-    case 'regen':S(`回复 ${P.regen.toFixed(1)}/s`);break;
-    case 'leech':S(`击坠回复 ${((P.leech||0)*1.2).toFixed(1)}% 最大船体`);break;
-    case 'overdrive':S(`射速 ${P.fireRate.toFixed(1)}/s · 伤害 ${P.dmg.toFixed(2)} · 船体上限 ${Math.round(P.maxHp)}`);break;
-    case 'phase':S(`受击无敌 ${(0.9+P.phase).toFixed(1)}s`);break;
-    case 'drone':S(`无人机 ${G.drones.length} 架 · 火力 ${(P.dronePow*100|0)}% · 射速 ${P.droneCd.toFixed(2)}s`);break;
-    case 'aegis':S(`护盾 ${Math.round(P.shield)} / ${Math.round(P.shieldMax)} · 脱战回复 ${P.shieldRegen.toFixed(0)}/s`);break;
-    case 'ram':S(`冲角伤害 ${Math.round(ramDmg())} · 碰撞受伤 -${P.ram>=4?75:(P.ram>=2?65:40)}%`);break;
-    case 'tesla':S(`电弧 ${1+P.tesla} 链 · 伤害 ${Math.round(P.dmg*(1.1+0.7*P.tesla))} · 冷却 ${P.teslaCd.toFixed(2)}s`);break;
-    case 'stasis':S(`范围 ${P.stasisR} · 减速强度 ${P.stasisPow.toFixed(1)}`);break;
-    case 'backshot':S(`尾炮 ${P.backshot} 门 · 火力 ${(P.backPow*100|0)}%`);break;
-    case 'lance':S(`长枪伤害 ${Math.round(P.dmg*(4+1.5*P.lance))} · 冷却 ${P.lanceCd.toFixed(1)}s`);break;
-    case 'deathtrail':S(`灼烧 ${DEATHTRAIL[P.death].dmg+P.deathBonus}/0.2s · 极速 ${Math.round(P.maxSpeed)} · 射速 ${P.fireRate.toFixed(1)}/s`);break;
-    case 'nova':S(`范围 ${NOVA_LV[P.nova-1][1]} · 伤害 ${Math.round(P.dmg*NOVA_LV[P.nova-1][2])} · 冷却 ${NOVA_LV[P.nova-1][0]}s`);break;
-    case 'blink':S(`折跃距离 ${BLINK_LV[P.blink-1][1]} · 冷却 ${BLINK_LV[P.blink-1][0]}s · 就绪 ${P.blinkT>0?Math.ceil(P.blinkT)+'s':'√'}`);break;
-    case 'mine':S(`爆炸范围 ${MINE_LV[P.mine-1][1]} · 伤害 ${Math.round(MINE_LV[P.mine-1][2]*P.dmg)} · 场上 ${G.mines.length}/${MINE_LV[P.mine-1][3]}`);break;
+    case 'hull':S(T(`船体`,`Hull`)+` ${Math.round(P.hp)} / ${Math.round(P.maxHp)}`);break;
+    case 'thruster':S(T(`极速`,`Top spd`)+` ${Math.round(P.maxSpeed)} · `+T(`转向`,`turn`)+` ${P.turn.toFixed(1)}`);break;
+    case 'loader':S(T(`射速`,`Rate`)+` ${P.fireRate.toFixed(1)}/s`);break;
+    case 'warhead':S(T(`伤害`,`Damage`)+` ${P.dmg.toFixed(2)}`);break;
+    case 'twin':S(T(`枪管`,`Barrels`)+` ${P.barrels} · `+T(`弹速`,`bullet spd`)+` ${Math.round(P.bspd)}`);break;
+    case 'pierce':S(T(`穿透`,`Pierce`)+` ${P.pierce}`);break;
+    case 'ricochet':S(T(`反弹`,`Bounces`)+` ${P.ricochet}`);break;
+    case 'frag':S(T(`爆炸范围`,`Blast radius`)+` ${Math.round(P.splashR)} · `+T(`溅射`,`splash`)+` ${Math.round(P.splashDmg)}`);break;
+    case 'guided':S(T(`制导强度`,`Guidance`)+` ${P.homing} · `+T(`搜索`,`search`)+` ${Math.round(P.homeR)}`);break;
+    case 'crit':S(T(`暴击`,`Crit`)+` ${Math.round(P.crit*100)}% · `+T(`暴伤`,`crit dmg`)+` x${P.critMul}`);break;
+    case 'magnet':S(T(`拾取半径`,`Magnet`)+` ${Math.round(P.magnet)}`);break;
+    case 'regen':S(T(`回复`,`Regen`)+` ${P.regen.toFixed(1)}/s`);break;
+    case 'leech':S(T(`击坠回复`,`Kill-heal`)+` ${((P.leech||0)*1.2).toFixed(1)}% `+T(`最大船体`,`max hull`));break;
+    case 'overdrive':S(T(`射速`,`Rate`)+` ${P.fireRate.toFixed(1)}/s · `+T(`伤害`,`dmg`)+` ${P.dmg.toFixed(2)} · `+T(`船体上限`,`hull cap`)+` ${Math.round(P.maxHp)}`);break;
+    case 'phase':S(T(`受击无敌`,`Hit i-frames`)+` ${(0.9+P.phase).toFixed(1)}s`);break;
+    case 'drone':S(T(`无人机`,`Drones`)+` ${G.drones.length} · `+T(`火力`,`power`)+` ${(P.dronePow*100|0)}% · `+T(`射速`,`rate`)+` ${P.droneCd.toFixed(2)}s`);break;
+    case 'aegis':S(T(`护盾`,`Shield`)+` ${Math.round(P.shield)} / ${Math.round(P.shieldMax)} · `+T(`脱战回复`,`regen`)+` ${P.shieldRegen.toFixed(0)}/s`);break;
+    case 'ram':S(T(`冲角伤害`,`Ram dmg`)+` ${Math.round(ramDmg())} · `+T(`碰撞受伤`,`collision taken`)+` -${P.ram>=4?75:(P.ram>=2?65:40)}%`);break;
+    case 'tesla':S(T(`电弧`,`Arc`)+` ${1+P.tesla} `+T(`链`,`chains`)+` · `+T(`伤害`,`dmg`)+` ${Math.round(P.dmg*(1.1+0.7*P.tesla))} · `+T(`冷却`,`cd`)+` ${P.teslaCd.toFixed(2)}s`);break;
+    case 'stasis':S(T(`范围`,`Radius`)+` ${P.stasisR} · `+T(`减速强度`,`slow`)+` ${P.stasisPow.toFixed(1)}`);break;
+    case 'backshot':S(T(`尾炮`,`Stern guns`)+` ${P.backshot} · `+T(`火力`,`power`)+` ${(P.backPow*100|0)}%`);break;
+    case 'lance':S(T(`长枪伤害`,`Lance dmg`)+` ${Math.round(P.dmg*(4+1.5*P.lance))} · `+T(`冷却`,`cd`)+` ${P.lanceCd.toFixed(1)}s`);break;
+    case 'deathtrail':S(T(`灼烧`,`Burn`)+` ${DEATHTRAIL[P.death].dmg+P.deathBonus}/0.2s · `+T(`极速`,`top spd`)+` ${Math.round(P.maxSpeed)} · `+T(`射速`,`rate`)+` ${P.fireRate.toFixed(1)}/s`);break;
+    case 'nova':S(T(`范围`,`Radius`)+` ${NOVA_LV[P.nova-1][1]} · `+T(`伤害`,`dmg`)+` ${Math.round(P.dmg*NOVA_LV[P.nova-1][2])} · `+T(`冷却`,`cd`)+` ${NOVA_LV[P.nova-1][0]}s`);break;
+    case 'blink':S(T(`折跃距离`,`Blink dist`)+` ${BLINK_LV[P.blink-1][1]} · `+T(`冷却`,`cd`)+` ${BLINK_LV[P.blink-1][0]}s · `+T(`就绪`,`ready`)+` ${P.blinkT>0?Math.ceil(P.blinkT)+'s':'√'}`);break;
+    case 'mine':S(T(`爆炸范围`,`Blast`)+` ${MINE_LV[P.mine-1][1]} · `+T(`伤害`,`dmg`)+` ${Math.round(MINE_LV[P.mine-1][2]*P.dmg)} · `+T(`场上`,`active`)+` ${G.mines.length}/${MINE_LV[P.mine-1][3]}`);break;
   }
   // 该模块参与的协同（含未触发的，供玩家查看构筑方向）
   const syns=SYN.filter(s=>s.a===m.id||s.b===m.id);
   let pair='';
   for(const s of syns){
     const o=MOD_BY_ID[s.a===m.id?s.b:s.a];
-    const on=G.syn[s.id]?'':'（未激活）';
-    pair+=`<div class="pair">⚡ ${s.zh} <b>${o.g} ${o.zh}</b>${on}</div>`;
+    const sen=SYN_EN[s.id]||[];
+    const on=G.syn[s.id]?'':T('（未激活）',' (inactive)');
+    pair+=`<div class="pair">⚡ ${T(s.zh,sen[0]||s.zh)} <b>${o.g} ${T(o.zh,o.en)}</b>${on}</div>`;
   }
   return `<em class="detail"><h4>${m.g} ${m.zh} · ${mx?'MAX':'LV'+n}</h4>`+
     `<div class="lv">${mx?'✦ MAX 质变已激活':'下一级：'+((m.lv&&m.lv[n])?m.lv[n]:'')}</div>`+
@@ -4192,7 +4280,7 @@ function showVictory(){
   el.vKills.textContent=G.kills;
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
   el.vTime.textContent=m+':'+String(s).padStart(2,'0');
-  el.vicChips.innerHTML=buildChips()||'<span>裸船出战</span>';
+  el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   el.victory.hidden=false;
   el.hud.hidden=true;
   sfx.victory();
