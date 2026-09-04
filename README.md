@@ -19,7 +19,7 @@ same one-line brief.
 
 | | What it is | Path |
 |---|---|---|
-| **新星漂移**<br>*Nova Drift* | Inertia-drift asteroid-belt survival in the spirit of Chasing Carrots' *Nova Drift*: three starting hulls, rocks split when shattered, seven enemy hulls — including tadpole swarms that turn faster, hit harder and arrive in bigger clumps every wave — and a build picked one-of-three per level from 22 modules that level up to LV6, each maxing into a gold breakthrough upgrade; boost, repair and overdrive pickups spawn on the field. Offscreen targets glow as faint same-color dots on the screen edge; ESC opens a pause panel with the full build and stats plus a restart; runs auto-cache and resume after a refresh or close. A mother-class boss — Mother Rock, Twin Rocks or the Void Eye — rises every 5th wave; clearing wave 15 opens endless drift. A 112 KB page with procedural WebAudio, a vendored particle engine and an adapted WebGL fluid nebula that sheds its own layers when a GPU can't keep up; keyboard + mouse or touch. | [`/nova-drift/`](https://xanthanl.github.io/game-lab/nova-drift/) |
+| **奇点回响**<br>*Singularity Echo* | Inertia-drift asteroid-belt survival roguelike: three starting hulls, rocks split when shattered, twenty enemy types — including tadpole swarms that turn faster, hit harder and arrive in bigger clumps every wave — and a build picked one-of-three per level from 27 modules that level up to LV6, each maxing into a gold breakthrough upgrade; boost, repair and overdrive pickups spawn on the field. Offscreen targets glow as faint same-color dots on the screen edge; ESC opens a pause panel with the full build and stats plus a restart; runs auto-cache and resume after a refresh or close. A colossus boss — Mother Rock, Void Eye, Twin Rocks, Hydra Prime, Orbital Warden or Nemesis — rises every 5th wave; clearing wave 30 opens endless drift. A 260 KB page with procedural WebAudio, a vendored particle engine and an adapted WebGL fluid nebula that sheds its own layers when a GPU can't keep up; keyboard + mouse or touch. | [`/singularity-echo/`](https://xanthanl.github.io/game-lab/singularity-echo/) |
 | **微软大战代码**<br>*Microsoft vs. Code* | A meme-born PvZ parody with the whole meta-game ported to programmer lore: 5 chapters × 2 levels, each chapter a computing scenario (offline mode, merge-conflict waterway, legacy-code fog, a CORS wall where only lobbed bug reports work), 11 cards, 11 enemies, star drops, an npm shop run by the rubber duck, a side-project garden watered with `git commit`, a per-row Ctrl+Z rescue, and a mobile card dock. | [`/microsoft-vs-code/`](https://xanthanl.github.io/game-lab/microsoft-vs-code/) |
 | **植物大战僵尸**<br>*Plants vs Zombies* | Full recreation: 23 levels, 6 worlds, 26 plants, 17 zombies, 2 bosses, sun economy and wave pacing. Every sprite is drawn in vector code — not one game image in the folder. | [`/PVZ/`](https://xanthanl.github.io/game-lab/PVZ/) |
 | **强渡火星**<br>*Forcing Mars* | Slay-the-Spire-like deckbuilder: 30 cards, 12 relics, 6 potions, 4 classes, descending 3 layers from the Martian surface to a 2,000 m core. Real ending, bilingual. | [`/forcing-mars/`](https://xanthanl.github.io/game-lab/forcing-mars/) |
@@ -67,7 +67,7 @@ game-lab/
 ├── PVZ/                  canvas tower defense              (static)
 ├── microsoft-vs-code/    meme parody tower defense         (static)
 ├── Vampire-2D/           single-file survivor              (static)
-├── nova-drift/           asteroid survival, vendored FX    (static)
+├── singularity-echo/   asteroid survival, vendored FX    (static)
 ├── europa/               1444 grand strategy               (static)
 ├── persona/              11 pixel stage plays + sub-index  (static)
 ├── ascii-art/            ASCII text studio                 (static)
@@ -98,7 +98,7 @@ you a dashboard with every stylesheet and chunk 404ing — the page opens, but l
 Everything else uses relative paths and survives either way.
 
 The single-file games (`cursed-house`, `Vampire-2D`) and `ascii-art` have no external assets
-at all, and `nova-drift` keeps its one dependency vendored beside the page — double-clicking
+at all, and `singularity-echo` keeps its one dependency vendored beside the page — double-clicking
 any of their `index.html` over `file://` also just works, handy when you only want to play.
 
 For the three build-based projects, install and rebuild in their own folder:
@@ -143,11 +143,11 @@ repo and live on Pages; if a project is not on it, it is not in the repo either.
 
 - Original code and writing, apart from: *Forcing Mars* art/audio produced from prompts
   (manifest in `forcing-mars/ART_ASSETS.md`), `shuyan-travel` vendoring Leaflet (BSD-2), and
-  `nova-drift` vendoring Proton (MIT) plus a nebula layer adapted from
+  `singularity-echo` vendoring Proton (MIT) plus a nebula layer adapted from
   PavelDoGreat/WebGL-Fluid-Simulation (MIT).
 - *Plants vs Zombies* here is a mechanics study with **vector art drawn from scratch** — no
   original assets are included.
-- *Nova Drift* here is a mechanics homage to the game by Chasing Carrots — all art is
+- *Singularity Echo* began as a mechanics homage to Chasing Carrots' *Nova Drift* — all art is
   canvas-drawn code and all sound is synthesized in WebAudio; nothing is copied.
 - The `persona/` folders keep their agent and model names as issued; they are results, not
   branding.

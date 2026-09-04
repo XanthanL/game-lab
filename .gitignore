@@ -81,6 +81,6 @@ europa/tools/_tmp_*.mjs
 europa/tools/preview*
 europa/tools/*small*
 
-# ============ nova-drift 子项目：截图验证临时产物 ============
+# ============ singularity-echo（原 nova-drift）子项目：截图验证临时产物 ============
 # 浏览器截图 / 断言测试产物，不进仓库。
-nova-drift/.tmp_test/
+singularity-echo/.tmp_test/

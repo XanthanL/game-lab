@@ -24,8 +24,8 @@ PROJECTS = [
          meta="幸存者类 · 浏览器即玩", url="XANTHANL.GITHUB.IO / GAME-LAB"),
     dict(out="shuyan-travel/og.jpg", word="SHUYAN",      cn="树言 · 旅记",
          meta="徒步对角线 · 真实旅途记录", url="XANTHANL.GITHUB.IO / GAME-LAB"),
-    dict(out="nova-drift/og.jpg",      word="NOVA DRIFT",  cn="新星漂移",
-         meta="街机太空射击 · 浏览器即玩", url="XANTHANL.GITHUB.IO / GAME-LAB"),
+    dict(out="singularity-echo/og.jpg", word="SINGULARITY ECHO", cn="奇点回响",
+         meta="星域 roguelike 弹幕射击 · 浏览器即玩", url="XANTHANL.GITHUB.IO / GAME-LAB"),
 ]
 
 
@@ -77,8 +77,14 @@ def build_card(w=1200, h=630, word="", cn="", meta="", url="", cw=640, ch=430):
 
     d = ImageDraw.Draw(im)
 
-    # 4) 文字（长标题自动缩字号，保证不溢出 640px 卡片）
-    f_word = G.font("C:/Windows/Fonts/georgia.ttf", 70 if len(word) > 9 else 80)
+    # 4) 文字（长标题按实测字宽自动缩字号，保证不溢出 640px 卡片）
+    word_size = 30
+    for s in range(80, 29, -2):
+        f_try = G.font("C:/Windows/Fonts/georgia.ttf", s)
+        if sum(f_try.getlength(c) for c in word) + 6 * max(len(word) - 1, 0) <= 600:
+            word_size = s
+            break
+    f_word = G.font("C:/Windows/Fonts/georgia.ttf", word_size)
     f_cn = G.font("C:/Windows/Fonts/msyh.ttc", 34)
     f_meta = G.font("C:/Windows/Fonts/msyh.ttc", 20)
     f_lat = G.font("C:/Windows/Fonts/arial.ttf", 19)
