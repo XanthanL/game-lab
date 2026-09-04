@@ -146,7 +146,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 /* ---------- level-up cards ---------- */
 .cards-in{text-align:center;margin:auto;padding:20px 0}
 #cardrow,#hullrow{display:flex;gap:18px;margin-top:34px;justify-content:center;flex-wrap:wrap}
-.card{width:196px;padding:22px 18px 20px;background:rgba(8,13,26,.82);border:1px solid var(--line);
+.card{width:196px;height:264px;padding:22px 18px 18px;display:flex;flex-direction:column;
+  background:rgba(8,13,26,.82);border:1px solid var(--line);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-radius:10px;cursor:pointer;text-align:center;
   transition:transform .16s ease,border-color .16s,box-shadow .16s}
@@ -165,7 +166,8 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .tag.ability{color:#b48cff;border:1px solid rgba(180,140,255,.5);background:rgba(180,140,255,.08)}
 .tag.stat{color:#9fc6d8;border:1px solid rgba(159,198,216,.45);background:rgba(159,198,216,.06)}
 .card.mx .tag.ability{color:#ffd75e;border-color:rgba(255,215,94,.5)}
-.card p{font-size:12.5px;line-height:1.65;color:#a9c2d2;margin-top:12px;min-height:42px}
+.card p{font-size:12.5px;line-height:1.6;color:#a9c2d2;margin-top:12px;flex:1 1 auto;
+  display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
 .card .syn{margin-top:10px;padding:7px 8px;border:1px solid rgba(150,238,255,.45);
   background:rgba(120,225,255,.09);font-size:11px;line-height:1.5;color:#8fe6ff;letter-spacing:.06em}
 .card .syn span{display:block;margin-top:2px;color:#6f9fae;font-size:10.5px;letter-spacing:0}
@@ -177,6 +179,29 @@ canvas.fx{position:fixed;inset:0;display:block;pointer-events:none}
 .card.mx .g{color:var(--amber);text-shadow:0 0 16px rgba(255,215,94,.7)}
 .card.mx .en{color:rgba(255,215,94,.85)}
 .card.mx:hover{border-color:var(--amber);box-shadow:0 10px 34px rgba(255,215,94,.24)}
+/* 选牌动效：被抽中的卡"抽取"上浮放大淡出，其余退场 —— 证明点击已生效 */
+.card.drawn{animation:cardDrawn .44s cubic-bezier(.2,.7,.3,1) forwards;z-index:3}
+@keyframes cardDrawn{
+  0%{transform:translateY(0) scale(1);opacity:1;box-shadow:0 10px 30px rgba(111,231,255,.16)}
+  38%{transform:translateY(-12px) scale(1.1);opacity:1;box-shadow:0 0 34px rgba(111,231,255,.5);filter:brightness(1.35)}
+  100%{transform:translateY(-30px) scale(1.18);opacity:0;box-shadow:0 0 44px rgba(111,231,255,.6);filter:brightness(1.6)}
+}
+.card.mx.drawn{animation-name:cardDrawnMx}
+@keyframes cardDrawnMx{
+  0%{transform:translateY(0) scale(1);opacity:1;box-shadow:0 0 26px rgba(255,215,94,.14)}
+  38%{transform:translateY(-12px) scale(1.1);opacity:1;box-shadow:0 0 38px rgba(255,215,94,.55);filter:brightness(1.4)}
+  100%{transform:translateY(-30px) scale(1.18);opacity:0;box-shadow:0 0 48px rgba(255,215,94,.65);filter:brightness(1.65)}
+}
+.card.fade{opacity:0;transform:scale(.84);transition:opacity .32s ease,transform .32s ease;pointer-events:none}
+/* 手机端手牌模式：卡片用绝对定位+内联 transform 跟手，抽取动效只发光淡出不抢 transform */
+#cardrow.deck .card.drawn,#hullrow.deck .card.drawn{animation:cardDrawnTouch .44s ease forwards}
+@keyframes cardDrawnTouch{
+  0%{opacity:1}
+  38%{opacity:1;filter:brightness(1.4);box-shadow:0 0 34px rgba(111,231,255,.5)}
+  100%{opacity:0;filter:brightness(1.6)}
+}
+#cardrow.deck .card.fade,#hullrow.deck .card.fade{transform:none!important;opacity:0;
+  transition:opacity .32s ease;pointer-events:none}
 .card.mx .pips i.on{background:var(--amber);box-shadow:0 0 8px rgba(255,215,94,.9)}
 .keyhint{margin-top:26px;font-size:11px;letter-spacing:.22em;color:rgba(207,227,239,.35)}
 .keyhint .mh{display:none} /* 手机提示默认隐藏，窄屏反转 */
@@ -1320,7 +1345,7 @@ const G={
   runId:0,runStart:0, // 当前漂移的唯一 id / 开始时刻（时间戳），多存档管理用
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
-  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],
+  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],
 };
 try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
 
@@ -1370,7 +1395,7 @@ function resumeRun(){
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
   G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.winT=0;
-  G.deathTrail.length=0;G.dtFx.length=0;
+  G.deathTrail.length=0;G.dtFx.length=0;G.ghosts.length=0;
   G.pending=0;G.shake=0;G.slowT=0;
   G.build=Object.assign({},s.b||{});
   P=newPlayer();G.player=P;
@@ -1465,6 +1490,8 @@ let P=null;
 const REPAIR={id:'repair',zh:'应急维修',en:'Field Repair',g:'✚',max:Infinity,type:'stat',
   desc:'立即修复 45% 船体',apply:()=>{P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.45);}};
 /* type: 'stat' = 数值型（只改数字），'ability' = 能力型（解锁新机制） */
+/* tr = 环绕残影采样点（扁平 x,y），flash = 开火枪口闪光计时 */
+function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0};}
 const MODULES=[
   {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',max:6,type:'stat',
     lv:['最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20',
@@ -1519,21 +1546,23 @@ const MODULES=[
     lv:['新增 1 架环绕你自动开火的无人机','无人机射速与火力提升','再新增 1 架无人机',
         '无人机射速与火力再提升','再新增 1 架无人机（共 3 架）',
         'MAX：一次列装 2 架（共 5 架）+ 金色穿甲弹'],
-    apply:n=>{if(n===1||n===3||n===5)G.drones.push({a:rand(TAU),cd:rand(0.5)});
+    apply:n=>{if(n===1||n===3||n===5)G.drones.push(mkDrone());
       else if(n===2){P.dronePow=0.75;P.droneCd=0.5;}
       else if(n===4){P.dronePow=0.9;P.droneCd=0.44;}
-      else{G.drones.push({a:rand(TAU),cd:rand(0.5)});G.drones.push({a:rand(TAU),cd:rand(0.5)});
+      else{G.drones.push(mkDrone());G.drones.push(mkDrone());
         P.dronePow=1.2;P.droneCd=0.36;P.droneMax=true;}}},
   {id:'aegis',zh:'能量护盾',en:'Aegis Shield',g:'◇',max:6,type:'ability',
     lv:['护盾 +25，脱战 4 秒后自动回复','护盾 +25','护盾 +25','护盾 +25','护盾 +25',
         'MAX：护盾再 +75，回复速度翻倍 —— 金光护体'],
     apply:n=>{const v=n<6?25:75;P.shieldMax+=v;P.shield+=v;if(n===6)P.shieldRegen=26;}},
   {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:6,type:'ability',
-    lv:['撞击即可杀伤敌人，碰撞自伤降低；射速 -10%','冲角杀伤提升；射速 -10%','冲角杀伤提升，自伤再降；射速 -10%',
-        '冲角杀伤提升；射速 -10%','冲角杀伤提升；射速 -10%','MAX：冲角贯通 —— 撞击伤害暴增，金色的破锋尖角'],
+    lv:['撞击即可杀伤敌人，碰撞自伤 -40%；射速减半（仅此一次）','冲角杀伤提升；碰撞自伤 -65%',
+        '冲角杀伤提升','冲角杀伤提升；碰撞自伤 -75%','冲角杀伤提升',
+        'MAX：冲角贯通 —— 撞击伤害暴增，船首亮出金色的破风尖锥'],
     apply:n=>{P.ram=n<6?n:n+3;if(n===6)P.ramMax=true;
-      // 冲角流派以射速换撞击威力（续档重放按级重放，乘法叠加保持一致）
-      P.fireRate*=0.9;}},
+      // 冲角流派以射速换撞击威力：仅在装配首级时一次性减半，后续升级不再减速
+      // （续档按 k=1..n 逐级重放，因此减半只会发生一次）
+      if(n===1)P.fireRate*=0.5;}},
   {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',max:6,type:'stat',
     lv:['每秒回复 0.9 点船体','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9',
         'MAX：每秒再 +4 —— 纳米虫群铺满船壳'],
@@ -1721,7 +1750,7 @@ const HULLS=[
     apply:()=>{P.crit+=0.10;P.critMul+=0.5;P.magnet*=1.4;P.maxSpeed*=1.06;},
     lockNote:'肃清第 15 波 · 击碎双子母岩后解锁'},
   {id:'swarm',zh:'蜂群',en:'Swarm',g:'⁂',desc:'无人机母舰：开局自带 1 架无人机 · 无人机火力 +30%、拾取 +50%、射速 +8%，最大船体 -10%',
-    apply:()=>{G.drones.push({a:rand(TAU),cd:rand(0.5)});P.dronePow*=1.3;P.magnet*=1.5;P.fireRate*=1.08;
+    apply:()=>{G.drones.push(mkDrone());P.dronePow*=1.3;P.magnet*=1.5;P.fireRate*=1.08;
       P.maxHp=Math.round(P.maxHp*0.9);P.hp=P.maxHp;},
     lockNote:()=>`累计击坠 ${SWARM_KILLS} 架后解锁 —— 当前进度 ${loadStats().k}`},
   {id:'nemesis',zh:'回响',en:'Nemesis',g:'◈',desc:'终焉残骸：全属性小幅提升、射速 +12%、拾取 +30%，最大船体 +10%',
@@ -2722,6 +2751,20 @@ function fireLance(){
   }
   shake(5);sfx.lance();
 }
+/* 电弧抖动：一次性生成归一化偏移，存活期内复用 —— 放电通道形状稳定，
+   不再每帧 rand() 乱跳（省算力，观感也更接近真实的击穿路径） */
+const BOLT_SEG=7;
+function boltJit(){
+  const n=BOLT_SEG-1,j=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const w=Math.sin(Math.PI*(i+1)/(n+1)); // 中段偏移最大，两端收拢到起点/终点
+    j[i]=w*rand(0.4,1)*(i%2?1:-1);
+  }
+  return j;
+}
+/* 兜底：万一某条 bolt 没带 jit（旧存档/未来新增调用点），用确定的锯齿而不是画成直线 */
+const ZERO_JIT=(()=>{const n=BOLT_SEG-1,j=new Float32Array(n);
+  for(let i=0;i<n;i++)j[i]=Math.sin(Math.PI*(i+1)/(n+1))*(i%2?0.7:-0.7);return j;})();
 function teslaZap(){
   const targets=[];
   const pool=[].concat(G.asteroids,G.enemies);
@@ -2737,7 +2780,8 @@ function teslaZap(){
     }
     if(!best)break;
     targets.push(best);
-    G.bolts.push({x1:from.x,y1:from.y,x2:best.x,y2:best.y,t:0.22,max:0.22,gold:P.teslaMax||undefined});
+    G.bolts.push({x1:from.x,y1:from.y,x2:best.x,y2:best.y,t:0.22,max:0.22,
+      gold:P.teslaMax||undefined,jit:boltJit()});
     if(best.size!==undefined)hurtAst(best,dmg,best.x,best.y,false);
     else hurtEn(best,dmg,best.x,best.y,false);
     burst(best.x,best.y,5,140,0.3,P.teslaMax?'255,215,94':'165,236,255',1.8);
@@ -2818,6 +2862,11 @@ function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作�
     for(const t of G.asteroids.slice())if(d2(t.x,t.y,ox,oy)<(rr+t.r)*(rr+t.r))hurtAst(t,dd,t.x,t.y,false);
   }
   const dx=nx-ox,dy=ny-oy,len2=(dx*dx+dy*dy)||1;
+  for(let i=0;i<4;i++){ // 相位残影：沿折跃路径留下渐隐的船体轮廓
+    const f=i/3;
+    G.ghosts.push({x:ox+dx*f,y:oy+dy*f,ang:P.angle,t:0,max:0.34+0.1*f,gold:gold});
+  }
+  if(G.ghosts.length>8)G.ghosts.splice(0,G.ghosts.length-8); // 连折时裁掉最旧的，硬上限 8
   if(G.syn.blink_ram){ // 折跃冲撞：相位状态下的你是一发炮弹
     const rd=ramDmg();
     for(const e of G.enemies.slice()){
@@ -2832,7 +2881,8 @@ function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作�
   }
   if(G.syn.blink_arc){ // 闪现电弧：沿折跃轨迹放电
     const dm=P.dmg*(1.0+0.5*P.tesla);
-    G.bolts.push({x1:ox,y1:oy,x2:nx,y2:ny,t:0.25,max:0.25,gold:P.teslaMax||undefined});
+    G.bolts.push({x1:ox,y1:oy,x2:nx,y2:ny,t:0.25,max:0.25,
+      gold:P.teslaMax||undefined,jit:boltJit()});
     for(const e of G.enemies.slice()){
       const t2=clamp(((e.x-ox)*dx+(e.y-oy)*dy)/len2,0,1);
       if(d2(ox+dx*t2,oy+dy*t2,e.x,e.y)<(e.r+26)*(e.r+26))hurtEn(e,dm,e.x,e.y,false);
@@ -3028,8 +3078,10 @@ function droneBulletVis(){
 function updateDrones(dt){
   for(const d of G.drones){
     d.a+=1.7*dt;d.cd-=dt;
+    if(d.flash>0)d.flash-=dt;
     const dx=P.x+Math.cos(d.a)*48,dy=P.y+Math.sin(d.a)*48;
     d.x=dx;d.y=dy;
+    d.tr.push(dx,dy);if(d.tr.length>10)d.tr.splice(0,2); // 环绕残影：只留最近 5 个采样点
     if(d.cd<=0){
       let best=null,bd=480*480;
       for(const t of G.asteroids){const q=d2(dx,dy,t.x,t.y);if(q<bd){bd=q;best=t;}}
@@ -3039,7 +3091,7 @@ function updateDrones(dt){
         G.bullets.push({x:dx,y:dy,vx:Math.cos(a)*600,vy:Math.sin(a)*600,r:2.4,
           dmg:P.dmg*P.dronePow,life:0.8,pierce:P.droneMax?1:0,ric:0,homing:0,splashR:0,splashDmg:0,
           crit:0,critMul:1,hit:new Set(),src:'d',gold:P.droneMax||undefined,vis:droneBulletVis()});
-        d.cd=P.droneCd;sfx.droneShot();
+        d.cd=P.droneCd;d.flash=0.1;sfx.droneShot();
       }else d.cd=0.2;
     }
   }
@@ -3723,7 +3775,11 @@ function updateWarns(dt){
 }
 
 function ramDmg(){return (2+2.6*P.ram)*P.dmg*(P.ramMax?1.5:1);}
-function ramFx(){if(P.ramMax)burst(P.x,P.y,8,220,0.4,'255,215,94',2);}
+function ramFx(){ // 撞击：破风锥被压到极限后炸开的碎屑；MAX 额外一圈金色激波环
+  const c=P.ramMax?'255,215,94':hullGlow();
+  if(P.ramMax){ring(P.x,P.y,24,c);burst(P.x,P.y,9,250,0.42,c,2.4);}
+  else burst(P.x,P.y,5,190,0.3,c,1.5);
+}
 function collidePlayer(){
   const inv=P.invuln>0; // 无敌期间不受伤，但冲角依然生效
   if(inv&&P.ram<=0)return;
@@ -3771,6 +3827,10 @@ function updateParts(dt){
   for(let i=G.bolts.length-1;i>=0;i--){
     G.bolts[i].t-=dt;
     if(G.bolts[i].t<=0)G.bolts.splice(i,1);
+  }
+  for(let i=G.ghosts.length-1;i>=0;i--){
+    G.ghosts[i].t+=dt;
+    if(G.ghosts[i].t>=G.ghosts[i].max)G.ghosts.splice(i,1);
   }
   for(let i=G.texts.length-1;i>=0;i--){
     const t=G.texts[i];
@@ -3829,15 +3889,26 @@ function renderCards(){
 }
 /* 刷新本次升级的三张卡（每次升级限一次） */
 function rerollCards(){
-  if(G.mode!=='levelup'||G.rerolled)return;
+  if(G.mode!=='levelup'||G.rerolled||cardPicking)return;
   G.rerolled=true;
   G.choices=rollChoices();
   renderCards();
   deckify(el.cardrow); // 手机端：重新发牌
   sfx.ui();
 }
+let cardPicking=false; // 选牌动画进行中：阻止重复点击 / 键盘误触
 function pickCard(i){
-  if(G.mode!=='levelup')return;
+  if(G.mode!=='levelup'||cardPicking)return;
+  const c=G.choices[i];
+  if(!c)return;
+  cardPicking=true;
+  // 抽取动效：被点的卡"抽出"上浮放大淡出，其余退场，证明点击已生效
+  const cards=[...el.cardrow.children];
+  cards.forEach((cd,j)=>cd.classList.add(j===i?'drawn':'fade'));
+  sfx.ui(); // 立即音频反馈
+  setTimeout(()=>{ cardPicking=false; resolveCard(i); }, 440);
+}
+function resolveCard(i){
   const c=G.choices[i];
   if(!c)return;
   let maxed=false;
@@ -3891,7 +3962,7 @@ function startGame(hull){
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
   G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
-  G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;
+  G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.ghosts.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
@@ -4787,21 +4858,71 @@ function drawShip(){
     ctx.globalCompositeOperation='source-over';
   }
   drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
-  if(P.ram>0){ // 冲角装甲：船头前方顶着一个大开口中括号 > —— 简洁直白的"我能撞人"提示
+  if(P.ram>0){ // 冲角装甲：船首前方的动态破风锥 —— 弓形激波 + 排开的气流线 + 驻点辉光
     const rc=P.ramMax?'255,215,94':hullGlow();
-    const charge=0.35+0.5*Math.min(1,spd/Math.max(1,P.maxSpeed)); // 充能随速度抬升：冲撞前最亮
-    const bx=22,tip=bx+9,dy=9; // 开口大的 > 形：尖角顶在船首正前，两撇向斜后张开包住船头
-    ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=`rgba(${rc},${0.85*charge})`;ctx.lineWidth=2;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(bx,-dy);ctx.lineTo(tip,0);ctx.lineTo(bx,dy);ctx.stroke();
-    ctx.globalCompositeOperation='source-over';
+    const mach=Math.min(1,spd/Math.max(1,P.maxSpeed)); // 速度归一：越快锥越尖越亮
+    const charge=0.28+0.72*mach;
+    // 马赫角随速度收窄：低速钝而远、高速尖而贴，激波锥顶点随速度前推
+    const tipX=17+9*mach, spanY=17-6*mach, back=7+5*mach;
+    ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+    // 激波面：外薄淡 → 内亮锐，等级越高层数越厚（LV4+ 三层）；掉帧时降级减层
+    const layers=Math.max(1,(P.ram>=4?3:2)-(qTier>=1?1:0));
+    for(let i=0;i<layers;i++){
+      const k=layers<2?0:i/(layers-1);       // 0 外层 → 1 内层
+      const t=tipX-k*3.4, s=spanY-k*2.8, b=back-k*1.4;
+      const a=(0.14+0.52*charge)*(0.34+0.66*k)*(P.ramMax?1.18:1);
+      ctx.strokeStyle=`rgba(${rc},${a})`;
+      ctx.lineWidth=(P.ramMax?2.3:1.8)-k*0.7;
+      ctx.beginPath();
+      ctx.moveTo(t-b,-s);
+      ctx.quadraticCurveTo(t-b*0.05,-s*0.26,t,0);   // 上翼 → 顶点（顶点切线近竖直）
+      ctx.quadraticCurveTo(t-b*0.05,s*0.26,t-b,s);  // 顶点 → 下翼
+      ctx.stroke();
+    }
+    // 气流线：被劈开的气流沿船身向后掠过并向外扩散，相位循环
+    let NL=2+Math.round(3*mach)+(P.ram>=4?1:0);
+    if(qTier>=1)NL=Math.min(NL,3); // 降级：流线封顶 3 条
+    const flow=G.t*(1.5+2.1*mach);
+    ctx.lineWidth=1.1;
+    for(let i=0;i<NL;i++){
+      const ph=(flow+i/NL)%1, side=i%2?1:-1;
+      const fx=tipX*0.82-ph*34, fy=side*(4+13*ph), fl=4+9*ph;
+      const a=Math.sin(Math.PI*ph)*0.42*charge;      // 中段最亮，两端淡入淡出
+      ctx.strokeStyle=`rgba(${rc},${a})`;
+      ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx-fl,fy+side*fl*0.16);ctx.stroke();
+    }
+    if(P.ramMax){ // MAX：金色火花沿激波面向后跳
+      const sp=(G.t*7)%1;
+      ctx.fillStyle=`rgba(255,232,158,${0.55*(1-sp)})`;
+      ctx.beginPath();ctx.arc(tipX-sp*9,(sp*2-1)*spanY*0.5,1.5,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(tipX-sp*9,(1-sp*2)*spanY*0.5,1.5,0,TAU);ctx.fill();
+    }
+    // 驻点辉光：气流在锥尖的滞止点，随速度脉动
+    const sg=0.5+0.5*Math.sin(G.t*7);
+    ctx.fillStyle=`rgba(${rc},${0.3*charge*(0.65+0.35*sg)})`;
+    ctx.beginPath();ctx.arc(tipX,0,2+1.2*sg,0,TAU);ctx.fill();
+    ctx.globalCompositeOperation='source-over';ctx.lineCap='butt';
   }
   ctx.restore();ctx.globalAlpha=1;
   const shTot=p.shield+p.shieldTmp,shCap=p.shieldMax+p.shieldTmpMax;
-  if(shTot>0){ // 护盾环：颜色与船身辉光一致
-    ctx.strokeStyle=`rgba(${hullGlow()},${0.2+0.4*shTot/Math.max(1,shCap)})`;
-    ctx.lineWidth=1.6;
+  if(shTot>0){ // 护盾：主环 + 反向旋转的六边形能量桁架，充盈度越高越亮
+    const k=shTot/Math.max(1,shCap),gc=hullGlow();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(${gc},${0.16+0.4*k})`;ctx.lineWidth=1.6;
     ctx.beginPath();ctx.arc(p.x,p.y,21,0,TAU);ctx.stroke();
+    const hr=18+2*Math.sin(G.t*2.2); // 桁架半径随呼吸微涨落
+    const hxB=qTier>=1?1:2; // 掉帧时只保留一层六边形
+    for(let i=0;i<hxB;i++){ // 内外双框反向自转，形成能量场的结构感
+      const rot=G.t*(i?-0.34:0.5)+i*0.52, rr=hr-i*4.5;
+      ctx.strokeStyle=`rgba(${gc},${(0.09+0.19*k)*(i?0.68:1)})`;ctx.lineWidth=1;
+      ctx.beginPath();
+      for(let j=0;j<6;j++){
+        const a=rot+j/6*TAU, hx=p.x+Math.cos(a)*rr, hy=p.y+Math.sin(a)*rr;
+        j?ctx.lineTo(hx,hy):ctx.moveTo(hx,hy);
+      }
+      ctx.closePath();ctx.stroke();
+    }
+    ctx.globalCompositeOperation='source-over';
   }
   if(p.shieldTmp>0){ // 临时屏障：外圈虚线环（同色更亮）
     ctx.strokeStyle=`rgba(${hullGlow()},${0.34+0.26*Math.sin(G.t*6)})`;
@@ -4814,13 +4935,27 @@ function drawShip(){
     ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(p.x,p.y,29,0,TAU);ctx.stroke();
   }
-  if(p.stasis>0){
+  if(p.stasis>0){ // 静止场：双层反向自转的场环 + 向内收拢的减速刻度辐条
     const sc=p.stasisMax?'255,215,94':'190,120,255';
-    ctx.strokeStyle=`rgba(${sc},${0.1+0.05*Math.sin(G.t*2)})`;
-    ctx.lineWidth=1;
-    ctx.setLineDash([4,10]);
-    ctx.beginPath();ctx.arc(p.x,p.y,p.stasisR,0,TAU);ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<2;i++){ // 外环正转、内环反转，虚线密度区分层次
+      const rr=p.stasisR*(i?0.6:1), rot=G.t*(i?-0.24:0.14);
+      ctx.strokeStyle=`rgba(${sc},${(i?0.08:0.12)+0.05*Math.sin(G.t*2+i)})`;
+      ctx.lineWidth=1;ctx.setLineDash(i?[3,13]:[5,11]);
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(rot);
+      ctx.beginPath();ctx.arc(0,0,rr,0,TAU);ctx.stroke();ctx.restore();
+    }
+    // 辐条：从场缘向内收拢，长度呼吸涨落，读作"把敌人往里拖住"
+    const NR=Math.max(4,(p.stasisMax?12:8)-(qTier>=2?6:(qTier>=1?3:0))); // 降级时抽稀辐条
+    ctx.setLineDash([]);ctx.strokeStyle=`rgba(${sc},0.1)`;ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<NR;i++){
+      const a=i/NR*TAU+G.t*0.1, c0=Math.cos(a),s0=Math.sin(a);
+      const r1=p.stasisR*0.92, r0=r1-9-4*Math.sin(G.t*2.4+i);
+      ctx.moveTo(p.x+c0*r0,p.y+s0*r0);ctx.lineTo(p.x+c0*r1,p.y+s0*r1);
+    }
+    ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
   }
   if(p.maxN>0){
     const pl=0.5+0.3*Math.sin(G.t*3);
@@ -4938,6 +5073,16 @@ function draw(){
     if(d.x===undefined)continue;
     // 无人机配色跟随当前船体
     const dTint=HULL_TINT[(G.lastHull&&G.lastHull.id)||'peregrine']||HULL_TINT.peregrine;
+    const dgc=P.droneMax?'255,215,94':dTint.glow;
+    // 环绕残影：沿轨道采样点由远及近渐亮，读作高速环绕的运动模糊
+    if(d.tr&&d.tr.length>=6){
+      ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+      ctx.strokeStyle=`rgba(${dgc},0.13)`;ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.moveTo(d.tr[0],d.tr[1]);
+      for(let i=2;i<d.tr.length;i+=2)ctx.lineTo(d.tr[i],d.tr[i+1]);
+      ctx.stroke();
+      ctx.globalCompositeOperation='source-over';ctx.lineCap='butt';
+    }
     ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a*2);
     ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,5);ctx.lineTo(-5,-5);ctx.closePath();
     ctx.fillStyle=dTint.fill;ctx.fill();
@@ -4947,6 +5092,15 @@ function draw(){
     }else{
       ctx.strokeStyle=`rgba(${dTint.glow},0.3)`;ctx.lineWidth=4;ctx.stroke();
       ctx.strokeStyle=dTint.line;ctx.lineWidth=1.4;ctx.stroke();
+    }
+    if(d.flash>0){ // 开火枪口闪光：机首方向的一小簇亮斑，0.1s 内衰减
+      const fk=d.flash/0.1;
+      ctx.globalCompositeOperation='lighter';
+      ctx.fillStyle=`rgba(${dgc},${0.75*fk})`;
+      ctx.beginPath();ctx.arc(8,0,1.6+2.6*fk,0,TAU);ctx.fill();
+      ctx.strokeStyle=`rgba(${dgc},${0.5*fk})`;ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(8+7*fk,0);ctx.stroke();
+      ctx.globalCompositeOperation='source-over';
     }
     ctx.restore();
   }
@@ -4958,17 +5112,26 @@ function draw(){
   }
   for(const b of G.bullets){
     const a=Math.atan2(b.vy,b.vx);
-    if(b.lance){ // 轨道长枪：粗长贯穿刺
+    if(b.lance){ // 轨道长枪：外辉光 → 中层 → 亮芯三层，枪尖带驻点亮点
       const lc=P.lanceMax?'255,215,94':'190,240,255';
-      ctx.strokeStyle=`rgba(${lc},0.35)`;ctx.lineWidth=8;
-      ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*18,b.y-Math.sin(a)*18);ctx.lineTo(b.x,b.y);ctx.stroke();
-      ctx.strokeStyle=P.lanceMax?'#ffe9a8':'#eafcff';ctx.lineWidth=2.6;
-      ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*15,b.y-Math.sin(a)*15);ctx.lineTo(b.x,b.y);ctx.stroke();
-    }else if(b.back){ // 尾炮：金色短弹
+      const ca=Math.cos(a),sa=Math.sin(a);
+      ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+      ctx.strokeStyle=`rgba(${lc},0.24)`;ctx.lineWidth=10;
+      ctx.beginPath();ctx.moveTo(b.x-ca*20,b.y-sa*20);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.strokeStyle=`rgba(${lc},0.55)`;ctx.lineWidth=4.2;
+      ctx.beginPath();ctx.moveTo(b.x-ca*18,b.y-sa*18);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.strokeStyle=P.lanceMax?'#ffe9a8':'#eafcff';ctx.lineWidth=2.2;
+      ctx.beginPath();ctx.moveTo(b.x-ca*16,b.y-sa*16);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.fillStyle=P.lanceMax?'rgba(255,233,168,0.9)':'rgba(234,252,255,0.9)';
+      ctx.beginPath();ctx.arc(b.x,b.y,2.6,0,TAU);ctx.fill();
+      ctx.globalCompositeOperation='source-over';ctx.lineCap='butt';
+    }else if(b.back){ // 尾炮：金色短弹 + 一小簇尾焰
       ctx.strokeStyle='rgba(255,215,94,0.35)';ctx.lineWidth=4;
       ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*7,b.y-Math.sin(a)*7);ctx.lineTo(b.x,b.y);ctx.stroke();
       ctx.strokeStyle='#ffe9a8';ctx.lineWidth=1.8;
       ctx.beginPath();ctx.moveTo(b.x-Math.cos(a)*6,b.y-Math.sin(a)*6);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.fillStyle='rgba(255,240,190,0.7)';
+      ctx.beginPath();ctx.arc(b.x-Math.cos(a)*8,b.y-Math.sin(a)*8,1.5,0,TAU);ctx.fill();
     }else{
       drawBulletVis(b,a,b.vis||droneBulletVis());
     }
@@ -4976,16 +5139,32 @@ function draw(){
   for(const lt of G.bolts){
     const k=lt.t/lt.max;
     const c=lt.gold?'255,215,94':'165,236,255';
-    ctx.strokeStyle=`rgba(${c},${0.85*k})`;ctx.lineWidth=1.8;
-    ctx.beginPath();ctx.moveTo(lt.x1,lt.y1);
-    const seg=5,dx=(lt.x2-lt.x1)/seg,dy=(lt.y2-lt.y1)/seg;
+    const jit=lt.jit||ZERO_JIT,seg=jit.length+1;
+    const dx=(lt.x2-lt.x1)/seg,dy=(lt.y2-lt.y1)/seg;
     const l=Math.hypot(dx,dy)||1,px=-dy/l,py=dx/l;
-    for(let i=1;i<seg;i++){
-      const j=(i%2?1:-1)*rand(3,9);
-      ctx.lineTo(lt.x1+dx*i+px*j,lt.y1+dy*i+py*j);
+    const amp=Math.min(11,l*0.17); // 幅度随链长自适应，短链不至于炸毛
+    ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineJoin='round';
+    for(let pass=0;pass<2;pass++){ // 外层辉光 → 内层亮芯
+      ctx.strokeStyle=`rgba(${c},${(pass?0.92:0.24)*k})`;
+      ctx.lineWidth=pass?1.7:5.5;
+      ctx.beginPath();ctx.moveTo(lt.x1,lt.y1);
+      for(let i=1;i<seg;i++){
+        const j=jit[i-1]*amp;
+        ctx.lineTo(lt.x1+dx*i+px*j,lt.y1+dy*i+py*j);
+      }
+      ctx.lineTo(lt.x2,lt.y2);ctx.stroke();
     }
-    ctx.lineTo(lt.x2,lt.y2);ctx.stroke();
+    ctx.globalCompositeOperation='source-over';ctx.lineCap='butt';ctx.lineJoin='miter';
   }
+  for(const g of G.ghosts){ // 折跃残影：沿路径渐隐的船体轮廓，能量感的相位拖影
+    const k=1-g.t/g.max;
+    ctx.save();ctx.translate(g.x,g.y);ctx.rotate(g.ang);
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.34*k*k;
+    drawHullBody(ctx,(G.lastHull&&G.lastHull.id)||'peregrine',shipTier());
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   if(G.mode!=='menu'&&P&&(G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='pause'))drawShip();
   for(const p of G.parts){
     const k=1-p.t/p.max;
