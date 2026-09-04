@@ -58,8 +58,11 @@
     </div>
   </div>
 
-  <!-- ============ HERO：仅三枚分区导航按钮 ============ -->
+  <!-- ============ HERO：标题 + 一句话介绍 + 三枚分区导航 ============ -->
   <header class="hero">
+    <h1 class="hero-title" data-zh="GAME LAB" data-en="GAME LAB">GAME LAB</h1>
+    <p class="lede" data-zh="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。"
+       data-en="7 web games, 11 pixel stage plays, plus a handful of self-built sites and tools. Fully static — no install required.">7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。</p>
     <nav class="toc" aria-label="目录">
       <a class="glass" href="#games"><span data-zh="游戏" data-en="Games">游戏</span> <em>07</em></a>
       <a class="glass" href="#plays"><span data-zh="实验" data-en="Experiments">实验</span> <em>02</em></a>
@@ -249,6 +252,31 @@
 
 </div>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "GAME LAB",
+  "description": "7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"item":{"@type":"WebApplication","name":"新星漂移 / Nova Drift","url":"https://xanthanl.github.io/game-lab/nova-drift/"}},
+    {"@type":"ListItem","position":2,"item":{"@type":"WebApplication","name":"微软大战代码 / Microsoft vs. Code","url":"https://xanthanl.github.io/game-lab/microsoft-vs-code/"}},
+    {"@type":"ListItem","position":3,"item":{"@type":"WebApplication","name":"植物大战僵尸 / Plants vs Zombies","url":"https://xanthanl.github.io/game-lab/PVZ/"}},
+    {"@type":"ListItem","position":4,"item":{"@type":"WebApplication","name":"强渡火星 / Forcing Mars","url":"https://xanthanl.github.io/game-lab/forcing-mars/"}},
+    {"@type":"ListItem","position":5,"item":{"@type":"WebApplication","name":"咒 · 怨宅 / JYU / Cursed House","url":"https://xanthanl.github.io/game-lab/cursed-house/"}},
+    {"@type":"ListItem","position":6,"item":{"@type":"WebApplication","name":"欧陆风云 · 1444 / Europa 1444","url":"https://xanthanl.github.io/game-lab/europa/"}},
+    {"@type":"ListItem","position":7,"item":{"@type":"WebApplication","name":"Vampire 2D","url":"https://xanthanl.github.io/game-lab/Vampire-2D/"}},
+    {"@type":"ListItem","position":8,"item":{"@type":"WebApplication","name":"像素舞台剧 · 十一部 / Eleven Pixel Stage Plays","url":"https://xanthanl.github.io/game-lab/persona/"}},
+    {"@type":"ListItem","position":9,"item":{"@type":"WebApplication","name":"ASCII ∴ LAB","url":"https://xanthanl.github.io/game-lab/ascii-art/"}},
+    {"@type":"ListItem","position":10,"item":{"@type":"WebApplication","name":"树言 · 旅记 / Shuyan Travel","url":"https://xanthanl.github.io/game-lab/shuyan-travel/"}},
+    {"@type":"ListItem","position":11,"item":{"@type":"WebApplication","name":"Electric Mirage","url":"https://xanthanl.github.io/game-lab/XanthanLMusic/dist/"}},
+    {"@type":"ListItem","position":12,"item":{"@type":"WebApplication","name":"金价观象台 / Gold Observatory","url":"https://xanthanl.github.io/game-lab/golden-wind/out/"}},
+    {"@type":"ListItem","position":13,"item":{"@type":"WebApplication","name":"ARH — 意识形态坐标测试 / Ideology Coordinate Test","url":"https://xanthanl.github.io/game-lab/ARH/dist/"}}
+  ]
+}
+</script>
+
 <script src="./assets/i18n.js"></script>
+<script src="./assets/interactions.js"></script>
 </body>
 </html>

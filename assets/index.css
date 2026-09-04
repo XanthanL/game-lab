@@ -68,6 +68,10 @@
   --glass-border: var(--d-glass-border);
   --sec-img-o: var(--d-sec-img-o);
 
+  /* 交互特效：指针光斑 + 点击涟漪（暗色默认） */
+  --spot-c: rgba(255, 255, 255, 0.10);
+  --ripple-c: rgba(255, 255, 255, 0.45);
+
   --serif: "Times New Roman", "Songti SC", "Noto Serif SC", serif;
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Courier New", monospace;
@@ -81,6 +85,9 @@
   --line: var(--l-line); --line-2: var(--l-line-2); --accent: var(--l-accent);
   --card-bg: var(--l-card-bg);
   --glass-border: var(--l-glass-border); --sec-img-o: var(--l-sec-img-o);
+  /* 交互特效：亮色下的光斑/涟漪用墨色，避免过曝 */
+  --spot-c: rgba(0, 0, 0, 0.06);
+  --ripple-c: rgba(0, 0, 0, 0.14);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
@@ -89,6 +96,8 @@
     --line: var(--l-line); --line-2: var(--l-line-2); --accent: var(--l-accent);
     --card-bg: var(--l-card-bg);
     --glass-border: var(--l-glass-border); --sec-img-o: var(--l-sec-img-o);
+    --spot-c: rgba(0, 0, 0, 0.06);
+    --ripple-c: rgba(0, 0, 0, 0.14);
   }
 }
 
@@ -139,18 +148,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 /* 卡片正文：置于玻璃本体与 ::after 高光之间，保证文字清晰 */
 .card > *, .row > * { position: relative; z-index: 2; }
 
-/* 封面图：绝对定位铺在卡片顶部，向下渐隐融入玻璃卡身 */
-.card-cover {
-  position: absolute; z-index: 0; top: 0; left: 0; right: 0; height: 150px;
-  background: var(--cover, #26262b) var(--pos, center) / cover no-repeat;
-  transform: scale(1); transform-origin: center;
-  transition: transform .9s var(--ease);
-}
-.card-cover::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 36%, var(--card-bg) 100%);
-}
-.card:hover .card-cover { transform: scale(1.06); }
+/* 卡片目前均为纯文字，封面图样式已省略 */
 /* 分类标签：浮在卡身顶部左端的玻璃药丸 */
 .card-tag {
   z-index: 3; align-self: flex-start;
@@ -162,8 +160,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 }
 /* 精选卡：更高的卡身，无封面 */
 .card-feat { min-height: 240px; }
-/* 次要条目：不配封面，维持紧凑的文字行 */
-.card.is-quiet .card-cover { display: none; }
+/* 次要条目：维持紧凑的文字行 */
 
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--pad); }
 
@@ -459,6 +456,12 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 26px; }
 .lede { max-width: 46ch; font-size: 15.5px; line-height: 1.8; color: var(--ink-2); }
 .lede b { color: var(--ink); font-weight: 500; }
+.hero-title {
+  font-family: var(--serif); font-weight: 600;
+  font-size: clamp(40px, 8vw, 86px); line-height: 1.02; letter-spacing: 0.01em;
+  margin-bottom: 16px;
+}
+.hero .lede { margin-bottom: 24px; }
 .btn {
   display: inline-flex; align-items: center; gap: 12px; padding: 13px 24px;
   border-radius: 100px; color: var(--ink); background: transparent;
@@ -487,6 +490,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   margin-top: clamp(80px, 12vh, 140px);
   padding: 36px calc(var(--pad) * 0.6) 44px;
   position: relative; isolation: isolate;
+  content-visibility: auto; contain-intrinsic-size: auto 640px;
 }
 /* 第一个板块（游戏）：与 Hero 之间的间距，等同板块之间的间距 */
 .sec:first-of-type {
@@ -552,14 +556,14 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .card-title { font-family: var(--serif); font-size: 21px; font-weight: 500; line-height: 1.35; }
 .card-feat .card-title { font-size: clamp(26px, 3.2vw, 34px); }
 .card-what {
-  font-size: 13px; line-height: 1.65; color: var(--ink-3);
+  font-size: 13px; line-height: 1.65; color: var(--ink-2);
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card-feat .card-what { font-size: 14px; -webkit-line-clamp: 4; }
 .card-meta {
   display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ink-3);
+  text-transform: uppercase; color: var(--ink-2);
 }
 .card-go { font-size: 12px; transition: transform .5s var(--ease), color .4s var(--ease); }
 .card:hover .card-go { transform: translateX(5px); color: var(--ink); }
@@ -634,3 +638,57 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   .toc { gap: 10px; }
   .toc a { padding: 10px 16px; }
 }
+
+/* ============ 交互增强：指针光斑 + 点击涟漪 ============
+   玻璃表面的液态高光跟随指针（liquid-glass 质感），按下处扩散墨色涟漪。
+   全部尊重 prefers-reduced-motion：JS 不绑定监听、CSS 过渡已全局降级。 */
+/* overflow:hidden 仅给需要裁切涟漪的元素；灯泡开关的火花、品牌圆点的光晕不能被裁掉 */
+.card, .toc a, .foot-meta a, .btn {
+  position: relative; overflow: hidden;
+}
+/* 卡片：指针光斑（投在封面与正文之间） */
+.card::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  border-radius: inherit; opacity: 0;
+  background: radial-gradient(240px 240px at var(--mx, 50%) var(--my, 50%),
+    var(--spot-c, rgba(255, 255, 255, 0.10)), transparent 62%);
+  transition: opacity .45s var(--ease);
+}
+.card:hover::before, .card:focus-visible::before { opacity: 1; }
+.card:hover, .card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--glass), 0 10px 30px -14px var(--spot-c, rgba(255, 255, 255, 0.25));
+  border-color: var(--line-2);
+}
+.card:active { transform: translateY(-1px) scale(.985); }
+/* 目录按钮：指针光斑 + 悬浮提亮 + 编号强调 */
+.toc a::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit; opacity: 0;
+  background: radial-gradient(170px 170px at var(--mx, 50%) var(--my, 50%),
+    var(--spot-c, rgba(255, 255, 255, 0.12)), transparent 62%);
+  transition: opacity .45s var(--ease);
+}
+.toc a > * { position: relative; z-index: 1; }
+.toc a:hover::before, .toc a:focus-visible::before { opacity: 1; }
+.toc a:hover, .toc a:focus-visible {
+  transform: translateY(-2px); color: var(--ink);
+  box-shadow: var(--glass), 0 8px 22px -10px var(--spot-c, rgba(255, 255, 255, 0.30));
+  border-color: var(--line-2);
+}
+.toc a em { transition: color .4s var(--ease); }
+.toc a:hover em, .toc a:focus-visible em { color: var(--ink-2); }
+/* 品牌圆点：悬浮轻微放大 + 光晕 */
+.brand-dot { transition: transform .45s var(--ease), box-shadow .45s var(--ease); }
+.brand:hover .brand-dot, .brand:focus-visible .brand-dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 4px rgba(140, 140, 150, 0.22), 0 0 14px 2px var(--accent);
+}
+/* 点击涟漪：在按下处扩散的墨色圆点 */
+.ripple-dot {
+  position: absolute; z-index: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, var(--ripple-c, rgba(255, 255, 255, 0.45)) 0%, transparent 62%);
+  transform: scale(0); opacity: .7;
+  animation: rippleGo .6s var(--ease) forwards;
+}
+@keyframes rippleGo { to { transform: scale(1); opacity: 0; } }
