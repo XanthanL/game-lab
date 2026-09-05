@@ -4,17 +4,20 @@
 <meta charset="utf-8" data-page-node-id="iRkzW7utOLdRHctJFRm4N2" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" data-page-node-id="XSkTIsltcH1wawrlk0ibsW" />
 <meta name="theme-color" content="#04060d" data-page-node-id="AFmjwH0FYvteTQp3iVXgoq" />
-<meta name="description" content="奇点回响 SINGULARITY ECHO — 浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" data-page-node-id="BgxhUl9n5XW0XgRh0bGTHZ" />
+<meta name="description" content="奇点回响 SINGULARITY ECHO — 漂移、射击、进化。30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="BgxhUl9n5XW0XgRh0bGTHZ" />
 <meta property="og:type" content="website" data-page-node-id="vN2udEWhboCI4xwak1PnQA" />
 <meta property="og:title" content="奇点回响 · SINGULARITY ECHO" data-page-node-id="NHzcA1ddp9auCjTEAdHmkM" />
-<meta property="og:description" content="浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" data-page-node-id="FGtnKc8qlLAmEi3VsXloTf" />
-<meta property="og:image" content="https://xanthanl.github.io/game-lab/singularity-echo/og.jpg" data-page-node-id="3zWR9e2YOayMxiw60yaNyE" />
-<meta property="og:image:width" content="1200" data-page-node-id="wjDK026Kn7PqrnUztXYsMl" />
-<meta property="og:image:height" content="630" data-page-node-id="7VhxvFycl6inYS3DbpHbKe" />
-<meta property="og:image:alt" content="奇点回响 SINGULARITY ECHO — 街机太空射击浏览器游戏" data-page-node-id="YWxrnDldvAlQvcnEGZKbfi" />
+<meta property="og:description" content="漂移、射击、进化 —— 30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="FGtnKc8qlLAmEi3VsXloTf" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/singularity-echo/thumb.jpg" data-page-node-id="3zWR9e2YOayMxiw60yaNyE" />
+<meta property="og:image:width" content="1080" data-page-node-id="wjDK026Kn7PqrnUztXYsMl" />
+<meta property="og:image:height" content="1080" data-page-node-id="7VhxvFycl6inYS3DbpHbKe" />
+<meta property="og:image:alt" content="回响 NEMESIS 船体卡片 —— 奇点回响街机太空射击游戏封面" data-page-node-id="YWxrnDldvAlQvcnEGZKbfi" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/singularity-echo/og.jpg" data-page-node-id="nb0aOgFallbackImage" />
+<meta property="og:image:width" content="1200" data-page-node-id="nb0bOgFallbackWidth" />
+<meta property="og:image:height" content="630" data-page-node-id="nb0cOgFallbackHeight" />
 <meta name="twitter:card" content="summary_large_image" data-page-node-id="mfcqNmpMQjDbORb4Xh7ljE" />
 <meta name="twitter:title" content="奇点回响 · SINGULARITY ECHO" data-page-node-id="ORQZCM9NTzF6wCTAg7D25A" />
-<meta name="twitter:description" content="浏览器即玩的街机太空射击游戏，纯静态部署，无需安装。" data-page-node-id="QKqw8yEsVsmCVbhVILdqvi" />
+<meta name="twitter:description" content="漂移、射击、进化 —— 30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="QKqw8yEsVsmCVbhVILdqvi" />
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/singularity-echo/og.jpg" data-page-node-id="MRrRgqj1M41miyE8K9CuEQ" />
 <title>奇点回响 · SINGULARITY ECHO — GAME LAB</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M28 16 L6 27 L11 16 L6 5 Z' fill='none' stroke='%236fe7ff' stroke-width='2.4'/%3E%3C/svg%3E" data-page-node-id="tvwd3XoGT4FTuDyAVIeJ81" />
@@ -51,19 +54,40 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #shieldbar{width:min(220px,34vw);height:5px;margin-top:3px;background:rgba(255,255,255,.06);
   border:1px solid rgba(111,231,255,.4);transform:skewX(-16deg);overflow:hidden}
 #shieldbar i{background:linear-gradient(90deg,#2f9fd6,#a5ecff);display:block;height:100%;transition:width .12s linear}
-/* 能力型装配框：经验条下方一排 6 格，展示已拥有的能力图标与等级 */
-#abrow{display:flex;gap:5px;margin-top:7px}
-#abrow .ab{width:29px;height:29px;position:relative;display:flex;align-items:center;justify-content:center;
+/* 装配框：能力型一行、数值型一行（共用同一套图标样式，按所在行调色）；CD 由 .cd + --cdp 驱动 */
+#abrow,#strow{display:flex;gap:5px}
+#abrow{margin-top:7px}
+#strow{margin-top:4px}
+#abrow .ab,#strow .ab{width:29px;height:29px;position:relative;display:flex;align-items:center;justify-content:center;
   border:2px solid rgba(111,231,255,.4);background:rgba(255,255,255,.04);transform:skewX(-16deg);
   font-size:20px;font-weight:800;color:#cfeeff;text-shadow:0 0 7px rgba(111,231,255,.55)}
-#abrow .ab span{transform:skewX(16deg)}
-#abrow .ab i{position:absolute;right:2px;bottom:0;transform:skewX(16deg);font-style:normal;
+#abrow .ab span,#strow .ab span{transform:skewX(16deg)}
+#abrow .ab i.lv,#strow .ab i.lv{position:absolute;right:2px;bottom:0;transform:skewX(16deg);font-style:normal;
   font-family:'JetBrains Mono',monospace;font-size:8px;line-height:1;color:rgba(255,255,255,.5)}
 #abrow .ab.mx{border-color:rgba(255,215,94,.6);color:#ffe9a8;text-shadow:0 0 6px rgba(255,215,94,.5)}
-#abrow .ab.mx i{color:var(--amber)}
+#abrow .ab.mx i.lv{color:var(--amber)}
 #abrow .ab.ready{border-color:rgba(111,231,255,.95);color:#eafcff;
   box-shadow:0 0 11px rgba(111,231,255,.65);animation:abReady 1.1s ease-in-out infinite}
 @keyframes abReady{50%{box-shadow:0 0 4px rgba(111,231,255,.3)}}
+/* 数值型：略小、冷色调，与能力型图标错开避免视觉混淆；MAX 镀金改为紫色高亮以再次区分 */
+#strow .ab{width:24px;height:24px;font-size:15px;border-color:rgba(159,198,216,.32);
+  color:#9fc6d8;text-shadow:0 0 5px rgba(159,198,216,.4);background:rgba(255,255,255,.025)}
+#strow .ab i.lv{font-size:7px;color:rgba(159,198,216,.6)}
+#strow .ab.mx{border-color:rgba(180,140,255,.55);color:#d3c2ff;text-shadow:0 0 6px rgba(180,140,255,.42)}
+#strow .ab.mx i.lv{color:#c6a8ff}
+/* CD 阴影转圈：conic-gradient 暗影扇形按 --cdp 收缩；扇形收缩 = 冷却推进，前缘有一道细亮边作为"刻度"。
+   透明度随 .cding 切换，避免就绪态残留阴影。 */
+.ab .cd{position:absolute;inset:-2px;pointer-events:none;opacity:0;transition:opacity .15s ease;
+  background:conic-gradient(from 0deg,rgba(2,5,11,.78) 0deg,rgba(2,5,11,.78) var(--cdp,0deg),rgba(2,5,11,0) var(--cdp,0deg))}
+.ab .cd::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:conic-gradient(from 0deg,rgba(160,225,255,0) 0deg,rgba(160,225,255,0) max(0deg,calc(var(--cdp,0deg) - 3deg)),rgba(160,225,255,.75) var(--cdp,0deg),rgba(160,225,255,0) var(--cdp,0deg))}
+.ab.cding .cd{opacity:1}
+.ab.cding{box-shadow:inset 0 0 8px rgba(0,0,0,.55),0 0 6px rgba(111,231,255,.18)}
+.ab.cding>span,.ab.cding>i.lv{opacity:.38;transition:opacity .15s}
+@media (prefers-reduced-motion:reduce){
+  #abrow .ab.ready{animation:none}
+  .ab .cd,.ab.cding>span,.ab.cding>i.lv{transition:none}
+}
 .xprow{display:flex;align-items:center;gap:10px;margin-top:9px}
 #lv{font-size:12px;letter-spacing:.14em;color:var(--amber)}
 .bar.xp{height:6px;border-color:rgba(255,215,94,.3)}
@@ -99,6 +123,35 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #flash{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0;
   background:radial-gradient(ellipse at center,rgba(255,60,40,0) 40%,rgba(255,50,30,.35));
   transition:opacity .35s ease}
+
+/* ---------- boot / loading ---------- */
+#boot{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 45%,#070d1a 0%,#04060d 62%,#02040a 100%);
+  transition:opacity .5s ease}
+#boot.out{opacity:0;pointer-events:none}
+.boot-in{text-align:center;width:min(86vw,440px)}
+.boot-mark{font-size:clamp(30px,7.4vw,46px);font-weight:500;letter-spacing:.22em;text-indent:.22em;
+  color:#eaf7ff;text-shadow:0 0 14px rgba(111,231,255,.7),0 0 46px rgba(111,231,255,.28);line-height:1.1}
+.boot-mark .en{display:block;font-size:clamp(9px,1.7vw,12px);font-weight:400;letter-spacing:.5em;
+  text-indent:.5em;color:var(--dim);margin-top:12px;text-shadow:none}
+.boot-bar{position:relative;height:3px;margin-top:32px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(111,231,255,.22);transform:skewX(-16deg);overflow:hidden}
+.boot-bar i{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,#2a7fa8 0%,#6fe7ff 75%,#d8f8ff 100%);
+  box-shadow:0 0 12px rgba(111,231,255,.7);transition:width .3s cubic-bezier(.3,.8,.3,1)}
+.boot-bar::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent 0%,rgba(111,231,255,.32) 50%,transparent 100%);
+  animation:bootSweep 1.4s linear infinite}
+@keyframesbootSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.boot-meta{display:flex;justify-content:space-between;margin-top:12px;font-size:10.5px;
+  letter-spacing:.2em;color:#9fc6d8;font-family:ui-monospace,Consolas,monospace}
+.boot-meta .pct{color:var(--amber)}
+.boot-hint{margin-top:22px;font-size:10px;letter-spacing:.24em;color:rgba(207,227,239,.32);
+  font-family:ui-monospace,Consolas,monospace}
+@media (prefers-reduced-motion:reduce){
+  #boot{transition:none}
+  .boot-bar::after{animation:none;opacity:0}
+}
 
 /* ---------- overlays ---------- */
 .overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-start;overflow:auto;padding:28px 16px;
@@ -164,7 +217,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .card h3{font-size:16px;font-weight:600;letter-spacing:.1em;margin-top:12px;color:#eaf7ff}
 .card .hullcv{display:block;margin:0 auto;width:150px;height:92px}
 .card.lock{filter:saturate(0.25) brightness(0.75);cursor:not-allowed}
-.card.lock h3::after{content:' 🔒';font-size:12px;color:var(--dim)}
 #vicUnlock{margin-top:14px;font-size:12.5px;letter-spacing:.18em;color:var(--amber);
   animation:unlockPulse 1.6s ease-in-out infinite}
 @keyframes unlockPulse{50%{opacity:0.45}}
@@ -248,8 +300,13 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .chips{margin:14px 0 24px;display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
 .chips span{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:#9fc6d8}
 .chips span.mx{color:var(--amber);border-color:rgba(255,215,94,.55);text-shadow:0 0 8px rgba(255,215,94,.4)}
-.chipgrp{flex-basis:100%;font-size:10.5px;letter-spacing:.3em;color:var(--dim);margin-top:4px}
+.chipgrp{flex-basis:100%;font-size:10.5px;letter-spacing:.3em;color:var(--dim);margin-top:8px;
+  display:flex;justify-content:space-between;align-items:center;text-indent:.3em}
 .chipgrp.t-a{color:#8fd4ff}
+.chipgrp.t-s{color:#9fc6d8}
+.chipgrp em{font-style:normal;font-family:ui-monospace,Consolas,monospace;color:#6f8da0;
+  letter-spacing:.1em;font-size:10px;text-indent:0}
+.chipgrp em.full{color:var(--amber);text-shadow:0 0 8px rgba(255,215,94,.4)}
 /* 模块条：图标 + 名称 + 六格斜杠进度（第 6 格金色 = MAX 质变格），整体平行四边形风格 */
 .chips .mchip{display:flex;align-items:center;gap:9px;border:none;border-radius:0;
   border-left:2px solid rgba(111,231,255,.35);border-right:2px solid rgba(111,231,255,.15);
@@ -344,6 +401,16 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 </head>
 <body data-page-node-id="zVbLntBG4MiTB6pYFWIi24">
 
+<!-- boot / loading（在 <body> 顶端，确保浏览器首次绘制即出现读条，不依赖脚本执行顺序） -->
+<div id="boot" data-page-node-id="nb00TXa9Z7p4YhUpBvK4fR">
+  <div class="boot-in" data-page-node-id="nb01eA6uLmVcEjYsR3DqTw">
+    <div class="boot-mark" data-page-node-id="nb02XJqKfP4wZnG2sL8aHb">奇点回响<span class="en" data-page-node-id="nb03UdGrVeMyXb1TnHzW8s">SINGULARITY ECHO</span></div>
+    <div class="boot-bar" data-page-node-id="nb04BmYhWvTnRqKcZxFp3L"><i id="bootBar" data-page-node-id="nb05CgHpMfXn2WvYrL8sQ9"></i></div>
+    <div class="boot-meta" data-page-node-id="nb06FzTqYwRvNcMhKp2Lp1"><span id="bootPhase" data-page-node-id="nb07BgMvFnTzYxWcQhR4Lp">INITIALIZING</span><span class="pct" id="bootPct" data-page-node-id="nb08HdWnKzMqYvRcTfL9bX">0%</span></div>
+    <div class="boot-hint" data-page-node-id="nb09PzXnMqYvRcTfL9bXH">DRIFT PROTOCOL // SECTOR 7G — LINK STABLE</div>
+  </div>
+</div>
+
 <canvas id="cv" data-page-node-id="oL7ws4874VklGTwYjAygHn"></canvas>
 <canvas id="fxFluid" class="fx" data-page-node-id="c70Ufc4wwOL3VZeMm5CApC"></canvas>
 <canvas id="fxProton" class="fx" data-page-node-id="LnCWltbBQgGyUBHE65xGGH"></canvas>
@@ -356,6 +423,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div id="shieldbar" hidden data-page-node-id="0eqAKSUO7Hg9jeQeJaUFca"><i style="width:100%" data-page-node-id="1MntG9xvVhIjndZScABHwk"></i></div>
     <div class="xprow" data-page-node-id="eyWYCUnI8zOelcWKTcT1xA"><span id="lv" class="mono" data-page-node-id="iXcZgY5H5ATXYCEtp2BlHH">LV 1</span><div class="bar xp" data-page-node-id="G6dyR6Hi0JKyd5dlTy9H8k"><i id="xpbar" style="width:0%" data-page-node-id="LS19vBWzwgorO6h62s699q"></i></div></div>
     <div id="abrow" hidden data-page-node-id="C5s330H6LRLaA9BSskERcs"></div>
+    <div id="strow" hidden data-page-node-id="q1xXrIwW3YDEOOeGuYzNr6"></div>
   </div>
   <div class="hud-tc" data-page-node-id="hjDqBirevBSuWc8Uzd2shN"><div id="bossname" class="mono" hidden data-page-node-id="2vfRUQnCFQqGBacViVHvLq"></div><div id="bossbar" hidden data-page-node-id="tmAIgQwgQdSZZ9rJkrqlIO"><i style="width:100%" data-page-node-id="3oT2ag0DeCVC9KCuNOD7bX"></i></div></div>
   <div class="hud-tr" data-page-node-id="HMKpSNkLUSzlNgMsa7N6iA">
@@ -403,7 +471,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div class="ctrls" data-page-node-id="EGW2Dg60uNqjxnAFAdyAYw">
       <div data-i18n="m_ctrl1" data-page-node-id="sSe0Miss5WkTcGzVv6TvWF"><b data-page-node-id="sndeubaROL8qwTurdbdL9F">键鼠</b> — WASD / 方向键 推进转向 · 鼠标瞄准 · 空格或按住左键射击</div>
       <div data-i18n="m_ctrl2" data-page-node-id="D3YpeeElXqD1v7RHhjFFVb"><b data-page-node-id="SZoeoAMOdaGCkrmPV5zPfR">触屏</b> — 左半屏拖动 = 方向与推力 · 右下 FIRE 射击</div>
-      <div data-i18n="m_ctrl3" data-page-node-id="iETCILE5ceKb0chkcBK5AX"><b data-page-node-id="15iYRmcNie4uMYOqzCzwqM">通用</b> — P / ESC 暂停 · M 静音 · O 设置（BGM/SFX 音量） · 进度自动缓存，关页后可续 · 撞墙会减速，撞上敌人会掉血</div>
     </div>
     <div id="menuBest" class="mono" data-page-node-id="FChkP6ugCq4fFtWOTlP2AI"></div>
   </div>
@@ -577,7 +644,6 @@ const I18N_EN={
  m_launch:'LAUNCH ▸',m_resume:'RESUME ▸ C',m_saves:'SAVES ▸',m_log:'LOG ▸',m_settings:'SETTINGS ▸',
  m_ctrl1:'<b>KB&amp;M</b> — WASD / Arrows to thrust &amp; turn · aim with mouse · hold LMB or Space to fire',
  m_ctrl2:'<b>TOUCH</b> — drag left half of the screen to steer &amp; thrust · FIRE button at bottom-right',
- m_ctrl3:'<b>GENERAL</b> — P / ESC pause · M mute · O settings · progress autosaves · walls slow you down, enemies hurt',
  h_sub:'Choose your hull — defeat colossi to unlock more',
  h_kd:'1 – 5 or tap to choose',h_mh:'◀ swipe to browse ▶ · tap to launch',
  lu_sub:'Level up — pick a module',lu_kd:'1 / 2 / 3 or tap to pick · R to reroll',lu_mh:'◀ swipe to browse ▶ · tap to pick',
@@ -702,7 +768,7 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d');
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
-  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),wave:$('wavelabel'),enleft:$('enleft'),
+  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),strow:$('strow'),wave:$('wavelabel'),enleft:$('enleft'),
   bossName:$('bossname'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
   cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),dataChips:$('dataChips'),
@@ -1519,6 +1585,7 @@ function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null
 function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
 function saveRun(){
   if(!P||(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='pause'&&G.mode!=='levelup'))return;
+  flushStats(); // 暂停/退出/关闭页面时同步提交局外统计，避免末段数据丢失
   const s={v:1,id:G.runId,st:G.runStart,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
     hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
@@ -1802,6 +1869,10 @@ const MODULES=[
     apply:n=>{P.mine=n;if(n===6)P.mineMax=true;}},
 ];
 const MOD_BY_ID={};for(const m of MODULES)MOD_BY_ID[m.id]=m;
+/* 模块类型归一化：未显式标注 type 的模块一律视为数值型 —— ESC/机库/分级计数都依赖此字段 */
+for(const m of MODULES)if(m.type!=='ability')m.type='stat';
+/* 装配上限：能力型与数值型各最多持有 6 种（拿满后刷新不再补新种类，只补已有种类的等级） */
+const ABILITY_CAP=6,STAT_CAP=6;
 
 /* ============================== 模块协同 ==============================
    协同只在「能力型 × 能力型」之间触发 —— 数值型是纯粹的数字成长，不参与联动。
@@ -1862,7 +1933,6 @@ function synById(id){return SYN.find(s=>s.id===id);}
    能力型与数值型都最多装配 6 种：拿满后不再出现该类新模块，只刷已拥有且未满级的。
    未全 max 时每次刷新至少 2 张能力型（能力池不足时以实际数量为限）。 */
 function rollChoices(){
-  const ABILITY_CAP=6,STAT_CAP=6;
   const ownedAbilities=new Set(),ownedStats=new Set();
   for(const m of MODULES){
     if((G.build[m.id]||0)>0){
@@ -1978,6 +2048,29 @@ function flushStats(){
     burst(P.x,P.y,20,300,0.8,'190,255,110',2.4);
   }
 }
+/* 机库预览预渲染缓存：每艘船两个形态（locked 暗剪影 / tier1 满色）画进离屏贴图，开图鉴时直贴
+   —— 既加快了面板打开，也避免 game-loop 期间打开图鉴造成的初次绘制延迟 */
+const HULL_PRE={};
+function prewarmHulls(){
+  for(const h of HULLS){
+    for(const[tier,key]of [[0,'lock'],[1,'full']]){
+      const k=2,c=document.createElement('canvas');
+      c.width=150*k;c.height=92*k;
+      const g=c.getContext('2d');
+      g.translate(75*k,46*k);g.rotate(-Math.PI/2);g.scale(2*k,2*k);
+      drawHullBody(g,h.id,tier);
+      (HULL_PRE[h.id]=HULL_PRE[h.id]||{})[key]=c;
+    }
+  }
+}
+function drawHullCache(g,id,tier){
+  const cache=HULL_PRE[id];
+  if(!cache)return false;
+  const c=cache[tier>=1?'full':'lock'];
+  if(!c)return false;
+  g.drawImage(c,0,0,150,92);
+  return true;
+}
 function openHulls(){
   G.mode='hulls';
   el.menu.hidden=true;
@@ -1992,10 +2085,12 @@ function openHulls(){
     const noteEn=typeof lk==='function'?lk():(lk||note);
     div.innerHTML=`<canvas class="hullcv" width="150" height="92"></canvas><h3>${T(h.zh,h.en)}</h3><div class="en">${h.en}</div>
       <p>${locked?T(note,noteEn):T(h.desc,HULL_EN[h.id]||h.desc)}</p>`;
-    // 机库预览：与游戏内同一套轮廓绘制（出厂 tier1 形态）
+    // 优先贴预渲染贴图（开图鉴瞬时显示），缺图时回落实时绘制
     const cc=div.querySelector('.hullcv').getContext('2d');
-    cc.translate(75,46);cc.rotate(-Math.PI/2);cc.scale(2,2);
-    drawHullBody(cc,h.id,locked?0:1);
+    if(!drawHullCache(cc,h.id,locked?0:1)){
+      cc.translate(75,46);cc.rotate(-Math.PI/2);cc.scale(2,2);
+      drawHullBody(cc,h.id,locked?0:1);
+    }
     div.addEventListener('click',()=>{
       if(locked){sfx.ui();return;}
       pickHull(i);
@@ -3951,11 +4046,15 @@ function updateShards(dt){
   }
 }
 
+/* 30 级后每级经验需求固定为 30 级的数值（按升级曲线 r=round(r*1.13+2)、r1=12 递推 29 次得到 r30=961） */
+const XP_CAP=(()=>{let r=12;for(let i=0;i<29;i++)r=Math.round(r*1.13+2);return r;})();
+
 function gainXp(v){
   P.xp+=v;
   while(P.xp>=P.xpNext){
     P.xp-=P.xpNext;P.level++;
     P.xpNext=Math.round(P.xpNext*1.13+2); // 升级曲线放缓（原 1.18+3）：更快成型构筑
+    if(P.level>=30)P.xpNext=XP_CAP;        // 30 级及其之后固定为 30 级的经验值
     G.pending++;
   }
   if(G.pending>0&&(G.mode==='play'||G.mode==='inter'))openLevelUp();
@@ -4252,26 +4351,28 @@ function moduleDetail(m,n){
     `<p>${lvTxt}</p>${stat}${pair}</em>`;
 }
 function buildChips(){
-  // 能力型与数值型分组：每模块一行 —— 图标 + 名称 + 六格斜杠进度（第 6 格金色 = MAX 质变格）
+  // 装配上限：能力型 / 数值型 各 6 种；同一份 chip 渲染逻辑跑两遍，仅分组标题区分（数值型徽色与能力型错开，避免视觉混淆）
   const grp=t=>{
-    let out='';
+    let html='',count=0;
     for(const id in G.build){
-      const m=MOD_BY_ID[id];if(!m||m.type!==t)continue;
+      const m=MOD_BY_ID[id];if(!m||m.type!==t)continue;count++;
       const n=G.build[id],mx=n>=m.max;
-      let pips='';
-      for(let k=1;k<=m.max;k++)pips+=`<i class="${k<=n?'on':''}"></i>`;
-      out+=`<div class="mchip${mx?' mx':''}" data-mod="${id}"><b>${m.g}</b><span>${T(m.zh,m.en)}</span><em class="pips">${pips}</em>${moduleDetail(m,n)}</div>`;
+      let pips='';for(let k=1;k<=m.max;k++)pips+=`<i class="${k<=n?'on':''}"></i>`;
+      html+=`<div class="mchip${mx?' mx':''}" data-mod="${id}"><b>${m.g}</b><span>${T(m.zh,m.en)}</span><em class="pips">${pips}</em>${moduleDetail(m,n)}</div>`;
     }
-    return out;
+    const cap=t==='ability'?ABILITY_CAP:STAT_CAP;
+    const full=count>=cap;
+    return {html,count,cap,full};
   };
-  let out='';
   const ab=grp('ability'),st=grp('stat');
-  if(ab)out+=`<div class="chipgrp t-a">${T('能力型','ABILITY')}</div>`+ab;
-  if(st)out+=`<div class="chipgrp t-s">${T('数值型','STAT')}</div>`+st;
+  let out='';
+  if(ab.html)out+=`<div class="chipgrp t-a"><b>${T('能力型','ABILITY')}</b><em class="${ab.full?'full':''}">${ab.count}/${ab.cap}</em></div>`+ab.html;
+  if(st.html)out+=`<div class="chipgrp t-s"><b>${T('数值型','STAT')}</b><em class="${st.full?'full':''}">${st.count}/${st.cap}</em></div>`+st.html;
   return out;
 }
 function showOver(){
   G.mode='over';
+  flushStats(); // 坠毁结算前提交末段统计，否则最后一波击坠/得分/时长会丢失
   clearSave();
   removeSlotArch(G.runId); // 坠毁结算：漂移终结，归档同 id 一并清除
   const isBest=G.score>G.best;
@@ -4307,6 +4408,7 @@ function showVictory(){
   el.victory.hidden=false;
   el.hud.hidden=true;
   sfx.victory();
+  flushStats(); // 通关结算提交末段统计（含 +8000 通关奖励），否则直接回主菜单会丢失
 }
 function continueEndless(){
   if(G.mode!=='victory')return;
@@ -4331,8 +4433,7 @@ function toMenu(){
 }
 /* 菜单数据 chips：随内容扩充自动更新 */
 function refreshMenuMeta(){
-  const hullN=HULLS.filter(h=>hullUnlocked(h.id)).length;
-  el.dataChips.innerHTML=`<span>${T('船体','HULLS')} ${hullN}/${HULLS.length}</span><span>${T('模块','MODULES')} ${MODULES.length}</span>`+
+  el.dataChips.innerHTML=`<span>${T('模块','MODULES')} ${MODULES.length}</span>`+
     `<span>${T('敌型','FOES')} ${EN_LIST.length}</span><span>${T('巨像','COLOSSI')} ${Object.keys(BOSS_AT).length}</span>`+
     `<span>${T('星区','SECTORS')} ${SECTORS.length}</span><span>${T('波次','WAVES')} ${WIN_WAVE} + ∞</span>`;
 }
@@ -4409,7 +4510,7 @@ function drawLogbook(){
   el.lbBest.textContent=fmt(G.best);
   el.lbHulls.innerHTML=HULLS.map(h=>{
     const ok=hullUnlocked(h.id);
-    return `<span class="${ok?'mx':''}">${ok?(h.g+' '+T(h.zh,h.en)):'🔒 '+T(h.zh,h.en)}</span>`;
+    return `<span class="${ok?'mx':''}">${h.g} ${T(h.zh,h.en)}</span>`;
   }).join('');
   const sw=s.k;
   el.lbSwarm.innerHTML=sw<SWARM_KILLS
@@ -5444,23 +5545,32 @@ function updateHUD(){
     w=hudW('sh',clamp(shTot/shCap*100,0,100));
     if(w)el.shieldFill.style.width=HUDC.sh;
   }
-  // 能力型装配框：build 变化时才重建（G.build 按获得顺序遍历）；轨道长枪就绪状态也进入 key，便于即时高亮
-  let abKey='';
-  for(const k in G.build){const m=MOD_BY_ID[k];if(m&&m.type==='ability'){
-    abKey+=k+':'+G.build[k]+';';
-    if(k==='lance')abKey+=P.lance>0&&P.lanceT<=0?'R':'r';
-  }}
+  // 装配框：能力型一行、数值型一行（共用同一份图标渲染，按 type 调色）；build 变化时才重建
+  // —— 轨道长枪的「就绪」高亮也进入 key，让 ready 类即时生效
+  let abKey='',stKey='';
+  for(const k in G.build){const m=MOD_BY_ID[k];if(!m)continue;
+    if(m.type==='ability'){abKey+=k+':'+G.build[k]+';';if(k==='lance')abKey+=P.lance>0&&P.lanceT<=0?'R':'r';}
+    else stKey+=k+':'+G.build[k]+';';
+  }
   if(HUDC.ab!==abKey){
     HUDC.ab=abKey;
-    let abHtml='';
-    for(const k in G.build){
-      const m=MOD_BY_ID[k];if(!m||m.type!=='ability')continue;
-      const n=G.build[k],mx=n>=m.max;
-      const ready=k==='lance'&&P.lance>0&&P.lanceT<=0;
-      abHtml+=`<div class="ab${mx?' mx':''}${ready?' ready':''}" title="${T(m.zh,m.en)} LV${n}${ready?T(' · 就绪：下一发附魔为轨道长枪',' · READY: next shot becomes the railgun'):''}"><span>${m.g}</span><i>${mx?'MAX':'lv'+n}</i></div>`;
-    }
-    el.abrow.innerHTML=abHtml;el.abrow.hidden=!abHtml;
+    let h='';
+    for(const k in G.build){const m=MOD_BY_ID[k];if(!m||m.type!=='ability')continue;
+      const n=G.build[k],mx=n>=m.max,ready=k==='lance'&&P.lance>0&&P.lanceT<=0;
+      h+=abIconHtml(m,n,ready);}
+    el.abrow.innerHTML=h;el.abrow.hidden=!h;
+    refreshCdEls();
   }
+  if(HUDC.st!==stKey){
+    HUDC.st=stKey;
+    let h='';
+    for(const k in G.build){const m=MOD_BY_ID[k];if(!m||m.type!=='stat')continue;
+      const n=G.build[k],mx=n>=m.max;
+      h+=abIconHtml(m,n,false);}
+    el.strow.innerHTML=h;el.strow.hidden=!h;
+    refreshCdEls();
+  }
+  tickCdIcons();
   let s='LV '+P.level;
   if(HUDC.lv!==s){HUDC.lv=s;el.lv.textContent=s;}
   w=hudW('xp',clamp(P.xp/P.xpNext*100,0,100));
@@ -5496,6 +5606,53 @@ function updateHUD(){
   if(HUDC.bs!==s){HUDC.bs=s;el.best.textContent=s;}
   s=fmtT(G.runT);
   if(HUDC.pt!==s){HUDC.pt=s;el.ptime.textContent=s;}
+}
+/* 装配框图标 HTML（能力型与数值型共用同一份结构，仅 class/容器区分） */
+const CD_MOD_IDS={tesla:1,lance:1,nova:1,blink:1,mine:1};
+function abIconHtml(m,n,ready){
+  const mx=n>=m.max;
+  const cls=`ab${mx?' mx':''}${ready?' ready':''}`;
+  const tag=m.id==='lance'&&ready?T(' · 就绪：下一发附魔为轨道长枪',' · READY: next shot becomes the railgun'):'';
+  return `<div class="${cls}" data-mod="${m.id}" title="${T(m.zh,m.en)} LV${n}${tag}">`+
+    `<span>${m.g}</span><i class="lv">${mx?'MAX':'lv'+n}</i>`+
+    (CD_MOD_IDS[m.id]?`<i class="cd"></i>`:'')+`</div>`;
+}
+/* 取某个能力型模块当前的冷却进度：[剩余秒, 总秒]，未解锁 / 无 CD 返回 null */
+function modCd(id){
+  if(!P)return null;
+  switch(id){
+    case 'tesla': if(P.tesla<=0)return null; return [P.teslaT,P.teslaCd];
+    case 'lance': if(P.lance<=0)return null; return [P.lanceT,P.lanceCd];
+    case 'nova':  if(P.nova<=0)return null;  return [P.novaT,NOVA_LV[P.nova-1][0]];
+    case 'blink': if(P.blink<=0)return null; return [P.blinkT,BLINK_LV[P.blink-1][0]];
+    case 'mine':  if(P.mine<=0)return null;  return [P.mineT,MINE_LV[P.mine-1][0]];
+  }
+  return null;
+}
+/* 重建装配框后重建 CD 元素索引，避免旧引用指向已 detach 的节点 */
+let CD_ELS={};
+function refreshCdEls(){
+  CD_ELS={};
+  for(const row of[el.abrow,el.strow]){
+    for(const b of row.querySelectorAll('.ab[data-mod]')){
+      const cd=b.querySelector('.cd');if(cd)CD_ELS[b.dataset.mod]={box:b,cd,last:-1};
+    }
+  }
+}
+/* 每帧把各 CD 进度写到 --cdp；只有量化值变化时才写 style，避免抖动与额外开销 */
+function tickCdIcons(){
+  for(const id in CD_ELS){
+    const e=CD_ELS[id],c=modCd(id);
+    if(!c||c[1]<=0){
+      if(e.last!==0){e.last=0;e.box.classList.remove('cding');e.cd.style.setProperty('--cdp','0deg');}
+      continue;
+    }
+    const f=clamp(c[0]/c[1],0,1);
+    const q=Math.round(f*360); // 0.5° 量化足以流畅，少写 DOM
+    if(e.last!==q){e.last=q;
+      e.box.classList.add('cding');
+      e.cd.style.setProperty('--cdp',q+'deg');}
+  }
 }
 
 /* ============================== main loop ============================== */
@@ -5556,11 +5713,46 @@ function frame(now){
 }
 
 /* ============================== boot ============================== */
-menuScene();
-el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
-refreshMenuMeta();
-refreshContinue();
-requestAnimationFrame(frame);
+const BOOT_STEPS=[
+  {zh:'星场烘焙',en:'BAKING STARFIELD',run:()=>{if(!STAR_TILES.length)throw new Error('starfield empty');}},
+  {zh:'视口与特效管线',en:'FX PIPELINE',run:()=>{resize();}},
+  {zh:'舰船图鉴预渲染',en:'HULL ATLAS',run:()=>{prewarmHulls();}},
+  {zh:'音频总线',en:'AUDIO BUS',run:()=>{AU.ensure();}},
+  {zh:'曲库预热',en:'WARMING AUDIO',run:async()=>{try{await BGM._load(BGM.groups.menu.urls[0]);}catch(e){}}},
+  {zh:'存档校验',en:'SAVE CHECK',run:()=>{refreshContinue();refreshMenuMeta();}},
+];
+const bootEl=$('boot'),bootBar=$('bootBar'),bootPhase=$('bootPhase'),bootPct=$('bootPct');
+/* 让出 2 个 RAF，确保进度条样式与文案真实落地浏览器再推进（避免单帧吞步骤） */
+const bootPaint=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+function bootSet(p,phase){
+  bootBar.style.width=(p*100).toFixed(1)+'%';
+  bootPct.textContent=Math.round(p*100)+'%';
+  if(phase)bootPhase.textContent=phase;
+}
+async function boot(){
+  bootSet(0.06,T('初始化','INITIALIZING'));
+  await bootPaint();
+  for(let i=0;i<BOOT_STEPS.length;i++){
+    const s=BOOT_STEPS[i],label=T(s.zh,s.en);
+    bootSet((i+0.4)/BOOT_STEPS.length,label);
+    await bootPaint();
+    try{await s.run();}catch(e){console.warn('boot step failed:',s.en,e);}
+    bootSet((i+1)/BOOT_STEPS.length,label);
+    await bootPaint();
+  }
+  bootSet(1,T('链路就绪','LINK STABLE'));
+  await new Promise(r=>setTimeout(r,260));
+  // 准备菜单与最佳成绩
+  menuScene();
+  el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+  refreshMenuMeta();
+  refreshContinue();
+  // 读条淡出 → 主循环启动
+  bootEl.classList.add('out');
+  setTimeout(()=>{bootEl.hidden=true;},520);
+  requestAnimationFrame(frame);
+}
+boot();
 
 /* small test hook (console) */
 window.NOVA={
