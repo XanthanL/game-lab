@@ -470,7 +470,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     </div>
     <div class="ctrls" data-page-node-id="EGW2Dg60uNqjxnAFAdyAYw">
       <div data-i18n="m_ctrl1" data-page-node-id="sSe0Miss5WkTcGzVv6TvWF"><b data-page-node-id="sndeubaROL8qwTurdbdL9F">键鼠</b> — WASD / 方向键 推进转向 · 鼠标瞄准 · 空格或按住左键射击</div>
-      <div data-i18n="m_ctrl2" data-page-node-id="D3YpeeElXqD1v7RHhjFFVb"><b data-page-node-id="SZoeoAMOdaGCkrmPV5zPfR">触屏</b> — 左半屏拖动 = 方向与推力 · 右下 FIRE 射击</div>
+      <div data-i18n="m_ctrl2" data-page-node-id="D3YpeeElXqD1v7RHhjFFVb"><b data-page-node-id="SZoeoAMOdaGCkrmPV5zPfR">触屏</b> — 点 FIRE 开关射击 · 按钮之外任意位置拖动 = 方向与推力</div>
     </div>
     <div id="menuBest" class="mono" data-page-node-id="FChkP6ugCq4fFtWOTlP2AI"></div>
   </div>
@@ -643,7 +643,7 @@ const T=(zh,en)=>LANG==='en'?en:zh;
 const I18N_EN={
  m_launch:'LAUNCH ▸',m_resume:'RESUME ▸ C',m_saves:'SAVES ▸',m_log:'LOG ▸',m_settings:'SETTINGS ▸',
  m_ctrl1:'<b>KB&amp;M</b> — WASD / Arrows to thrust &amp; turn · aim with mouse · hold LMB or Space to fire',
- m_ctrl2:'<b>TOUCH</b> — drag left half of the screen to steer &amp; thrust · FIRE button at bottom-right',
+ m_ctrl2:'<b>TOUCH</b> — tap FIRE to toggle shooting · drag anywhere else to steer &amp; thrust',
  h_sub:'Choose your hull — defeat colossi to unlock more',
  h_kd:'1 – 5 or tap to choose',h_mh:'◀ swipe to browse ▶ · tap to launch',
  lu_sub:'Level up — pick a module',lu_kd:'1 / 2 / 3 or tap to pick · R to reroll',lu_mh:'◀ swipe to browse ▶ · tap to pick',
@@ -1635,6 +1635,7 @@ function resumeRun(){
   recountMax();
   G.syn={};G.synQ=[];checkSynergies();G.synQ=[]; // 续档重算协同加成，但不弹提示
   P.level=s.lv||1;P.xp=s.xp||0;P.xpNext=s.xpN||12;
+  if(P.level>=30&&P.xpNext>XP_CAP)P.xpNext=XP_CAP; // 30 级后固定经验需求（兼容旧存档）
   P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
   G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
   G.runId=s.id;G.runStart=s.st||s.id; // 续用该漂移的原 id / 开始时刻，自动保存与归档清理才能对上号
@@ -2223,6 +2224,12 @@ function setTouch(v){
   if(!v){el.joybase.hidden=true;joy.on=false;}
 }
 function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying';}
+// 判断触点是否落在 FIRE 按钮上（含少量容差），按钮外一律归为方向/推力
+function isFireBtn(x,y){
+  if(el.firebtn.hidden)return false;
+  const r=el.firebtn.getBoundingClientRect();
+  return x>=r.left-12&&x<=r.right+12&&y>=r.top-12&&y<=r.bottom+12;
+}
 
 window.addEventListener('keydown',e=>{
   const inInput=e.target&&e.target.tagName==='INPUT'; // 滑条聚焦时保留方向键原生行为
@@ -2269,7 +2276,8 @@ window.addEventListener('touchstart',e=>{
   AU.ensure();
   for(const t of e.changedTouches){
     if(t.clientY<70&&t.clientX>VW-120)continue; // hud buttons
-    if(t.clientX>VW*0.55){fireOn=!fireOn;el.firebtn.classList.toggle('hot',fireOn);}
+    // FIRE 按钮 = 唯一开火开关；按钮之外的任意位置都作为方向/推力
+    if(isFireBtn(t.clientX,t.clientY)){fireOn=!fireOn;el.firebtn.classList.toggle('hot',fireOn);}
     else if(joy.id===null){
       joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.dx=0;joy.dy=0;joy.on=true;
       el.joybase.hidden=false;el.joybase.style.left=joy.ox+'px';el.joybase.style.top=joy.oy+'px';
