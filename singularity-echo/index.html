@@ -4,10 +4,10 @@
 <meta charset="utf-8" data-page-node-id="iRkzW7utOLdRHctJFRm4N2" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" data-page-node-id="XSkTIsltcH1wawrlk0ibsW" />
 <meta name="theme-color" content="#04060d" data-page-node-id="AFmjwH0FYvteTQp3iVXgoq" />
-<meta name="description" content="奇点回响 SINGULARITY ECHO — 漂移、射击、进化。30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="BgxhUl9n5XW0XgRh0bGTHZ" />
+<meta name="description" content="奇点回响 — 霓虹街机风太空弹幕射击。漂移走位、弹幕求生、Roguelite 构筑流派，浏览器即玩。" data-page-node-id="BgxhUl9n5XW0XgRh0bGTHZ" />
 <meta property="og:type" content="website" data-page-node-id="vN2udEWhboCI4xwak1PnQA" />
 <meta property="og:title" content="奇点回响 · SINGULARITY ECHO" data-page-node-id="NHzcA1ddp9auCjTEAdHmkM" />
-<meta property="og:description" content="漂移、射击、进化 —— 30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="FGtnKc8qlLAmEi3VsXloTf" />
+<meta property="og:description" content="霓虹街机风太空弹幕射击。漂移走位、弹幕求生、Roguelite 构筑流派，浏览器即玩。" data-page-node-id="FGtnKc8qlLAmEi3VsXloTf" />
 <meta property="og:image" content="https://xanthanl.github.io/game-lab/singularity-echo/thumb.jpg" data-page-node-id="3zWR9e2YOayMxiw60yaNyE" />
 <meta property="og:image:width" content="1080" data-page-node-id="wjDK026Kn7PqrnUztXYsMl" />
 <meta property="og:image:height" content="1080" data-page-node-id="7VhxvFycl6inYS3DbpHbKe" />
@@ -17,9 +17,9 @@
 <meta property="og:image:height" content="630" data-page-node-id="nb0cOgFallbackHeight" />
 <meta name="twitter:card" content="summary_large_image" data-page-node-id="mfcqNmpMQjDbORb4Xh7ljE" />
 <meta name="twitter:title" content="奇点回响 · SINGULARITY ECHO" data-page-node-id="ORQZCM9NTzF6wCTAg7D25A" />
-<meta name="twitter:description" content="漂移、射击、进化 —— 30 波敌军与巨像，5 台可解锁船体，数十种模块与协同。浏览器即玩，无需安装。" data-page-node-id="QKqw8yEsVsmCVbhVILdqvi" />
+<meta name="twitter:description" content="霓虹街机风太空弹幕射击。漂移走位、弹幕求生、Roguelite 构筑流派，浏览器即玩。" data-page-node-id="QKqw8yEsVsmCVbhVILdqvi" />
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/singularity-echo/og.jpg" data-page-node-id="MRrRgqj1M41miyE8K9CuEQ" />
-<title>奇点回响 · SINGULARITY ECHO — GAME LAB</title>
+<title>奇点回响</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M28 16 L6 27 L11 16 L6 5 Z' fill='none' stroke='%236fe7ff' stroke-width='2.4'/%3E%3C/svg%3E" data-page-node-id="tvwd3XoGT4FTuDyAVIeJ81" />
 <style>
 :root{
@@ -1789,7 +1789,7 @@ const REPAIR={id:'repair',zh:'应急维修',en:'Field Repair',g:'✚',max:Infini
   desc:'立即修复 45% 船体',apply:()=>{P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.45);}};
 /* type: 'stat' = 数值型（只改数字），'ability' = 能力型（解锁新机制） */
 /* tr = 环绕残影采样点（扁平 x,y），flash = 开火枪口闪光计时 */
-function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0};}
+function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0,fa:0};}
 const MODULES=[
   {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',max:6,type:'stat',
     lv:['最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20',
@@ -3453,6 +3453,7 @@ function updateDrones(dt){
       for(const t of G.enemies){const q=d2(dx,dy,t.x,t.y);if(q<bd){bd=q;best=t;}}
       if(best){
         const a=angTo(dx,dy,best.x,best.y);
+        d.fa=a; // 记录射向：枪口闪光沿实际弹道方向绘制
         G.bullets.push({x:dx,y:dy,vx:Math.cos(a)*600,vy:Math.sin(a)*600,r:2.4,
           dmg:P.dmg*P.dronePow,life:0.8,pierce:P.droneMax?1:0,ric:0,homing:0,splashR:0,splashDmg:0,
           crit:0,critMul:1,hit:new Set(),src:'d',gold:P.droneMax||undefined,vis:droneBulletVis()});
@@ -5498,26 +5499,39 @@ function draw(){
       ctx.stroke();
       ctx.globalCompositeOperation='source-over';ctx.lineCap='butt';
     }
-    ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a*2);
-    ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,5);ctx.lineTo(-5,-5);ctx.closePath();
+    ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.a+Math.PI/2); // 机头朝环绕切线方向，读作护航战机
+    // 机身：镖形主体 + 前掠双翼 + 外倾尾鳍（复用船体三层描边：填充 → 宽辉光 → 亮线）
+    ctx.beginPath();
+    ctx.moveTo(9,0);ctx.lineTo(3,2.2);ctx.lineTo(1,6.5);ctx.lineTo(-3,6.5);ctx.lineTo(-2,2.4);
+    ctx.lineTo(-6.5,4.6);ctx.lineTo(-5,0);ctx.lineTo(-6.5,-4.6);ctx.lineTo(-2,-2.4);
+    ctx.lineTo(-3,-6.5);ctx.lineTo(1,-6.5);ctx.lineTo(3,-2.2);ctx.closePath();
     ctx.fillStyle=dTint.fill;ctx.fill();
-    if(P.droneMax){
-      ctx.strokeStyle='rgba(255,215,94,0.35)';ctx.lineWidth=4;ctx.stroke();
-      ctx.strokeStyle='#ffe9a8';ctx.lineWidth=1.4;ctx.stroke();
-    }else{
-      ctx.strokeStyle=`rgba(${dTint.glow},0.3)`;ctx.lineWidth=4;ctx.stroke();
-      ctx.strokeStyle=dTint.line;ctx.lineWidth=1.4;ctx.stroke();
-    }
-    if(d.flash>0){ // 开火枪口闪光：机首方向的一小簇亮斑，0.1s 内衰减
-      const fk=d.flash/0.1;
+    ctx.strokeStyle=`rgba(${dgc},0.3)`;ctx.lineWidth=4;ctx.stroke();
+    ctx.strokeStyle=P.droneMax?'#ffe9a8':dTint.line;ctx.lineWidth=1.3;ctx.stroke();
+    // 翼尖航行灯（左右各一）
+    ctx.fillStyle=`rgba(${dgc},0.85)`;
+    ctx.beginPath();ctx.arc(-1,5.2,0.9,0,TAU);ctx.fill();
+    ctx.beginPath();ctx.arc(-1,-5.2,0.9,0,TAU);ctx.fill();
+    // 传感器目镜（机首）
+    ctx.fillStyle='#e8fbff';
+    ctx.beginPath();ctx.ellipse(4.2,0,2.1,1.3,0,0,TAU);ctx.fill();
+    // 尾部引擎微焰：双鳍之间的排气锥，高频闪烁
+    const th=0.6+0.4*Math.sin(G.t*30+d.a*7);
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=`rgba(${dgc},${0.55*th})`;
+    ctx.beginPath();ctx.moveTo(-5.5,1.5);ctx.lineTo(-9-2.5*th,0);ctx.lineTo(-5.5,-1.5);ctx.closePath();ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.restore();
+    // 开火枪口闪光：沿实际射向（d.fa）绘制，与弹道一致；0.1s 内衰减
+    if(d.flash>0&&d.fa!==undefined){
+      const fk=d.flash/0.1,mx=d.x+Math.cos(d.fa)*9,my=d.y+Math.sin(d.fa)*9;
       ctx.globalCompositeOperation='lighter';
       ctx.fillStyle=`rgba(${dgc},${0.75*fk})`;
-      ctx.beginPath();ctx.arc(8,0,1.6+2.6*fk,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(mx,my,1.6+2.6*fk,0,TAU);ctx.fill();
       ctx.strokeStyle=`rgba(${dgc},${0.5*fk})`;ctx.lineWidth=1.4;
-      ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(8+7*fk,0);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(mx+Math.cos(d.fa)*7*fk,my+Math.sin(d.fa)*7*fk);ctx.stroke();
       ctx.globalCompositeOperation='source-over';
     }
-    ctx.restore();
   }
   for(const b of G.ebullets){
     ctx.fillStyle='rgba(255,120,70,0.3)';

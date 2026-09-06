@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="Ex7Tv6U8lpbOtrVrCYuqBJ">
+<head data-page-node-id="RZWD4cKfvMp4tL3tNnvo8t">
+<meta charset="utf-8" data-page-node-id="GEUExHLENNKbmsCUXkz41Z">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" data-page-node-id="DickAeHgPUkeahlgQ2Nzfo">
+<title>singularity-echo · 背景原型 (原生 Canvas 2D · 零依赖)</title>
+<style>
+  :root{ --bg0:#04060f; --bg1:#0a1024; }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(120% 90% at 70% 15%, #16204a 0%, transparent 55%),
+      radial-gradient(100% 80% at 20% 90%, #1a0f2e 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg0));
+    overflow:hidden; color:#cfe9ff;
+    font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  #bg{ position:fixed; inset:0; z-index:0; display:block; }
+  /* 2D 游戏画面占位：正式接入时把游戏 canvas 放这里（z-index 高于背景） */
+  #game-layer{ position:fixed; inset:0; z-index:1; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  #game-layer .hint{
+    border:1px solid rgba(111,231,255,.25); background:rgba(7,13,24,.35);
+    padding:10px 16px; letter-spacing:.04em; font-size:13px; color:#9fc7e6; backdrop-filter:blur(2px);
+  }
+  /* 轻微暗角，强化纵深 */
+  #vignette{ position:fixed; inset:0; z-index:1; pointer-events:none;
+    box-shadow: inset 0 0 220px 40px rgba(0,0,0,.65); }
+  #hud{ position:fixed; left:14px; bottom:12px; z-index:2; font:12px/1.6 ui-monospace,monospace; color:#7fa6c4; }
+  #hud b{color:#6fe7ff}
+  #hud .warn{color:#ffd75e}
+</style>
+</head>
+<body data-page-node-id="gk8C4EwUQuCw6asdluAgKX">
+<canvas id="bg" data-page-node-id="4JgmWSvVsUBajMRBmPAdRM"></canvas>
+<div id="vignette" data-page-node-id="KtVME3jDAztYDJC3wdVXkC"></div>
+<div id="game-layer" data-page-node-id="XbpCKc2QMaK3Nh9YFlvOf4"><div class="hint" data-page-node-id="0ClfkPTYJA3B2RmQN9iMOw">此处叠放 2D 游戏 canvas（singularity-echo 主画面）</div></div>
+<div id="hud" data-page-node-id="iciHzHKrUx4qWJ2MfUWVGJ">原生 Canvas 2D · 零依赖背景原型 — 移动鼠标 / 触摸查看视差纵深<br data-page-node-id="dsy7dje0rc7C32K1SwcPkf">
+层级：远景星点 → 星云(流动) → <b data-page-node-id="h2TSbQinA6tT04gTWg1KFN">巨行星</b> → 中层星尘 → 近景碎片<br data-page-node-id="qaxkwk7NTBISwXLI4z82Bo">
+<span class="warn" data-page-node-id="rbcxLRu3thTF86oPhOnJnP">已去除外部 CDN 依赖，双击本文件即可运行，无加载失败风险。</span></div>
+
+<script>
+(function(){
+  "use strict";
+  const cv = document.getElementById('bg');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+
+  // ---------- 离屏纹理生成 ----------
+  function makeCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  // 软边圆点（星点 / 辉光）
+  function softDot(size, rgb){
+    const c = makeCanvas(size, size), g = c.getContext('2d');
+    const r = size/2;
+    const grd = g.createRadialGradient(r, r, 0, r, r, r);
+    grd.addColorStop(0, `rgba(${rgb},1)`);
+    grd.addColorStop(.4, `rgba(${rgb},.6)`);
+    grd.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = grd; g.fillRect(0, 0, size, size);
+    return c;
+  }
+  // 巨行星：径向光照 + 大气带（球体体积感）
+  function planetTex(d){
+    const c = makeCanvas(d, d), g = c.getContext('2d');
+    const r = d/2;
+    const grd = g.createRadialGradient(d*0.38, d*0.34, r*0.1, r, r, r);
+    grd.addColorStop(0, '#8fc1ff');
+    grd.addColorStop(.45, '#3f6fd6');
+    grd.addColorStop(.8, '#22306e');
+    grd.addColorStop(1, '#0c1230');
+    g.fillStyle = grd; g.beginPath(); g.arc(r, r, r, 0, Math.PI*2); g.fill();
+    g.save();
+    g.beginPath(); g.arc(r, r, r, 0, Math.PI*2); g.clip();
+    g.globalAlpha = .12; g.strokeStyle = '#bcd8ff'; g.lineWidth = 2;
+    for(let k=0;k<5;k++){ g.beginPath(); g.ellipse(r, r, r*0.96, r*(0.2+k*0.16), 0, 0, Math.PI*2); g.stroke(); }
+    g.restore();
+    return c;
+  }
+  // 星云：多团径向渐变 blob
+  function nebulaTex(size){
+    const c = makeCanvas(size, size), g = c.getContext('2d');
+    const blobs = [['90,140,255',.5], ['180,90,220',.4], ['60,200,200',.35]];
+    for(const [col, a] of blobs){
+      for(let b=0;b<7;b++){
+        const x = Math.random()*size, y = Math.random()*size, r = 60 + Math.random()*170;
+        const grd = g.createRadialGradient(x, y, 0, x, y, r);
+        grd.addColorStop(0, `rgba(${col},${a})`);
+        grd.addColorStop(1, `rgba(${col},0)`);
+        g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+      }
+    }
+    return c;
+  }
+
+  const T = {};
+  function buildTextures(){
+    T.starFar = softDot(64, '200,225,255');
+    T.starMid = softDot(64, '255,240,210');
+    T.debris  = softDot(64, '180,200,230');
+    T.planet  = planetTex(512);
+    T.glow    = softDot(256, '120,170,255');
+    T.neb     = nebulaTex(512);
+  }
+
+  // ---------- 图层数据 ----------
+  let farStars = [], midStars = [], debris = [];
+  const rnd = (a, b) => a + Math.random()*(b - a);
+  function initLayers(){
+    farStars = []; for(let i=0;i<220;i++) farStars.push({ x:rnd(-W*0.25, W*1.5), y:rnd(0, H), s:rnd(6,18)/64, a:rnd(0.5,1) });
+    midStars = []; for(let i=0;i<120;i++) midStars.push({ x:rnd(0, W), y:rnd(0, H), s:rnd(3,10)/64, a:rnd(0.4,0.9) });
+    debris   = []; for(let i=0;i<14;i++)  debris.push({ x:rnd(0, W), y:rnd(0, H), s:rnd(8,30)/64, vx:rnd(0.2,0.8)*(Math.random()<.5?-1:1), a:rnd(0.5,1) });
+  }
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W*DPR; cv.height = H*DPR;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    initLayers();
+  }
+
+  // ---------- 视差 ----------
+  let px = 0, py = 0; // 指针归一化 -1..1
+  const DEPTH = { far:0.18, neb:0.4, pl:0.55, mid:0.9, near:1.8 };
+  const off = { far:0, neb:0, pl:0, mid:0, near:0 };
+  function setPointer(cx, cy){ px = (cx/W - 0.5)*2; py = (cy/H - 0.5)*2; }
+  addEventListener('pointermove', e => setPointer(e.clientX, e.clientY));
+  addEventListener('touchmove', e => { if(e.touches[0]) setPointer(e.touches[0].clientX, e.touches[0].clientY); }, { passive:true });
+
+  // ---------- 绘制 ----------
+  function lerp(k, target){ off[k] += (target - off[k]) * 0.05; }
+
+  function drawStars(arr, tex, ox, oy, drift){
+    ctx.globalCompositeOperation = 'lighter';
+    for(const s of arr){
+      drift(s);
+      const x = s.x + ox, y = s.y + oy;
+      if(x < -30 || x > W + 30 || y < -30 || y > H + 30) continue;
+      ctx.globalAlpha = s.a;
+      const sz = 64 * s.s;
+      ctx.drawImage(tex, x - sz/2, y - sz/2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+
+    lerp('far',  -px*DEPTH.far*60);  lerp('neb',  -px*DEPTH.neb*60);
+    lerp('pl',   -px*DEPTH.pl*80);   lerp('mid', -px*DEPTH.mid*70);
+    lerp('near', -px*DEPTH.near*120);
+    const oyFar = -py*DEPTH.far*30, oyPl = -py*DEPTH.pl*40;
+
+    // 1. 远景星点
+    drawStars(farStars, T.starFar, off.far, oyFar, s => { s.x -= 0.05; if(s.x < -W*0.25) s.x = W*1.5; });
+    // 2. 星云（缓慢旋转 + 漂移，lighter 叠加成流动感）
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.5;
+    const nsc = Math.max(W, H) / 512 * 1.4;
+    const nw = 512 * nsc, nh = 512 * nsc;
+    const nt = performance.now();
+    ctx.translate(W/2 + off.neb, H*0.42 + oyFar*0.6);
+    ctx.rotate(Math.sin(nt * 0.00004) * 0.05 + nt * 0.000008);
+    ctx.drawImage(T.neb, -nw/2, -nh/2, nw, nh);
+    ctx.restore();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+    // 3. 巨行星（辉光呼吸 + 本体 + 行星环）
+    const cx = W*0.72 + off.pl, cy = H*0.30 + oyPl;
+    const pr = Math.min(W, H) * 0.42;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const ga = 0.45 + Math.sin(nt * 0.001) * 0.06;
+    ctx.globalAlpha = ga;
+    const gsz = pr * 2.6;
+    ctx.drawImage(T.glow, cx - gsz/2, cy - gsz/2, gsz, gsz);
+    ctx.restore();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(T.planet, cx - pr, cy - pr, pr*2, pr*2);
+    // 行星环
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.35);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = 'rgba(159,199,255,0.7)';
+    ctx.lineWidth = Math.max(3, pr*0.03);
+    ctx.beginPath(); ctx.ellipse(0, 0, pr*1.5, pr*0.42, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+    // 4. 中层星尘
+    drawStars(midStars, T.starMid, off.mid, 0, s => { s.x -= 0.18; if(s.x < 0) s.x = W; });
+    // 5. 近景碎片
+    drawStars(debris, T.debris, off.near, 0, s => { s.x += s.vx; if(s.x < -40) s.x = W+40; if(s.x > W+40) s.x = -40; });
+
+    requestAnimationFrame(draw);
+  }
+
+  buildTextures();
+  resize();
+  addEventListener('resize', resize);
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
