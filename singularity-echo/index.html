@@ -279,6 +279,58 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .statgrid b{display:block;font-size:18px;color:#dcedf5;font-weight:500}
 .statline{margin:10px auto 0;font-size:11.5px;letter-spacing:.08em;color:#9fc6d8;line-height:1.9;
   font-family:ui-monospace,Consolas,monospace}
+/* ---------- logbook：四边形 / 直角数据表风格（不用圆角） ---------- */
+#logbook .panel{border-radius:0;padding:34px 30px 26px;max-width:min(94vw,560px);
+  border:1px solid rgba(111,231,255,.3);position:relative}
+#logbook .panel::before,#logbook .panel::after{ /* 对角 L 形角标，强化方形轮廓 */
+  content:'';position:absolute;width:15px;height:15px;border:1px solid rgba(111,231,255,.55)}
+#logbook .panel::before{left:-1px;top:-1px;border-right:0;border-bottom:0}
+#logbook .panel::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+/* 分区标题：■ 标题 ———— 英文小标 */
+.lb-sec{display:flex;align-items:center;gap:9px;margin:26px 0 11px;
+  font-size:10.5px;letter-spacing:.34em;color:#8fb6c8}
+.lb-sec i{width:9px;height:9px;flex:none;
+  border:1px solid rgba(111,231,255,.6);background:rgba(111,231,255,.16)}
+.lb-sec span{text-indent:.34em}
+.lb-sec::after{content:'';flex:1;height:1px;background:var(--line)}
+.lb-sec em{flex:none;order:1;font-style:normal;font-size:9px;letter-spacing:.24em;
+  color:var(--dim);font-family:ui-monospace,Consolas,monospace}
+/* 数据表：网格 + 1px 分隔线拼成整块表格，无圆角 */
+#logbook .statgrid{grid-template-columns:repeat(3,1fr);gap:0;margin:0;
+  border:1px solid var(--line);background:rgba(111,231,255,.025)}
+#logbook .statgrid>div{padding:15px 8px 13px;
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  font-size:10.5px;letter-spacing:.14em;color:var(--dim);line-height:1.5}
+#logbook .statgrid>div:nth-child(3n){border-right:0}
+#logbook .statgrid>div:nth-child(n+4){border-bottom:0}
+#logbook .statgrid b{display:block;font-size:21px;color:#dcedf5;font-weight:500;
+  letter-spacing:.04em;margin-bottom:3px;text-shadow:0 0 12px rgba(111,231,255,.22)}
+#logbook .statgrid span{display:block}
+/* 船体图鉴：直角方块 */
+#logbook .chips{gap:6px;margin:0 0 6px}
+#logbook .chips span{border-radius:0;padding:6px 11px;letter-spacing:.12em;
+  border-color:rgba(111,231,255,.25);background:rgba(111,231,255,.04)}
+#logbook .chips span.mx{border-color:rgba(255,215,94,.55);background:rgba(255,215,94,.06)}
+#logbook .synlist{margin:14px 0 22px}
+#logbook .synlist i{display:block;font-style:normal;font-size:11px;letter-spacing:.14em;
+  color:#9fc6d8;border:1px solid var(--line);border-left:2px solid rgba(111,231,255,.5);
+  background:rgba(111,231,255,.04);padding:10px 13px;text-align:left}
+@media (max-width:640px){ /* 窄屏 2 列时重算分隔线，避免断边 */
+  #logbook .statgrid>div:nth-child(3n){border-right:1px solid var(--line)}
+  #logbook .statgrid>div:nth-child(2n){border-right:0}
+  #logbook .statgrid>div:nth-child(n+4){border-bottom:1px solid var(--line)}
+  #logbook .statgrid>div:nth-child(n+5){border-bottom:0}
+  #logbook .statgrid b{font-size:19px}
+}
+/* 手机端：ESC/结算面板里的能力型·数值型模块条，强制每行两枚，不退化成单列 */
+@media (max-width:640px){
+  .chips{justify-content:flex-start}
+  .chips .mchip{box-sizing:border-box;flex:0 1 calc(50% - 4px);max-width:calc(50% - 4px);padding:5px 9px}
+  .chips .mchip b{flex:none}
+  .chips .mchip span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chips .mchip .pips{flex:none}
+  .chipgrp{margin-top:11px}
+}
 /* ---------- 存档管理 ---------- */
 .saves-panel{max-width:min(92vw,560px)}
 #saveList{display:flex;flex-direction:column;gap:8px;margin:20px 0 4px;max-height:48vh;overflow:auto;text-align:left}
@@ -493,10 +545,10 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div id="vicBonus" class="mono" style="margin-top:6px;font-size:12px;letter-spacing:.2em;color:var(--amber)" data-page-node-id="BdeGBYbvvyQhjVGfpKVl4u"></div>
     <div id="vicUnlock" hidden data-i18n="v_unlock" data-page-node-id="aqL49jvtXLhTZkeLI6bwGf">NEW HULL UNLOCKED — 回响 NEMESIS 已加入机库</div>
     <div class="statgrid" data-page-node-id="IQEOo5TwbLqLqFuAnG7pjV">
-      <div data-i18n="v_wave" data-page-node-id="9DXVtiarzfB8DEul5EJk14"><b id="vWave" class="mono" data-page-node-id="lf2eqcaFoQXYLdydFL6voI">15</b>波次</div>
-      <div data-i18n="v_lvl" data-page-node-id="tic8FvXsXHRkv9s32viN7R"><b id="vLevel" class="mono" data-page-node-id="wdG4JzWdVVjisTu0TwWmwf">1</b>等级</div>
-      <div data-i18n="v_kills" data-page-node-id="8Nv72PKn9gJxqPBPQLvImS"><b id="vKills" class="mono" data-page-node-id="HLqCXkUmVmwBqqvCslUch8">0</b>击坠</div>
-      <div data-i18n="v_time" data-page-node-id="lHlqgWIbJCVfFD1LXGHISX"><b id="vTime" class="mono" data-page-node-id="PqNhO5BOOBL0GNtwHN6RJG">0:00</b>用时</div>
+      <div data-page-node-id="9DXVtiarzfB8DEul5EJk14"><b id="vWave" class="mono" data-page-node-id="lf2eqcaFoQXYLdydFL6voI">15</b><span data-i18n="v_wave">波次</span></div>
+      <div data-page-node-id="tic8FvXsXHRkv9s32viN7R"><b id="vLevel" class="mono" data-page-node-id="wdG4JzWdVVjisTu0TwWmwf">1</b><span data-i18n="v_lvl">等级</span></div>
+      <div data-page-node-id="8Nv72PKn9gJxqPBPQLvImS"><b id="vKills" class="mono" data-page-node-id="HLqCXkUmVmwBqqvCslUch8">0</b><span data-i18n="v_kills">击坠</span></div>
+      <div data-page-node-id="lHlqgWIbJCVfFD1LXGHISX"><b id="vTime" class="mono" data-page-node-id="PqNhO5BOOBL0GNtwHN6RJG">0:00</b><span data-i18n="v_time">用时</span></div>
     </div>
     <div class="chips" id="vicChips" data-page-node-id="zQdalkxTO6KYnPktwhxJDY"></div>
     <div class="row-btns" data-page-node-id="7QUW3tU7uFmNCZnkL9lPDq">
@@ -511,10 +563,10 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
   <div class="panel" data-page-node-id="XKbhUpFykWCeGCfBKDEzz5">
     <h2 data-page-node-id="LGlxRTbMujV2ZdAIAhI2NR">PAUSED<span data-i18n="p_sub" data-page-node-id="RKxaiSvmDALNr5sQ65Cyfa">已暂停 —— ESC 继续 · R 重开 · Q 返回主菜单</span></h2>
     <div class="statgrid" data-page-node-id="KY1EBFseg4LiJFJ1DFBtaQ">
-      <div data-i18n="p_wave" data-page-node-id="8v6tOqvu9sHgyZhDtifT9Y"><b id="pWave" class="mono" data-page-node-id="BizaVuERFcJjPH0n7gJouf">1</b>波次</div>
-      <div data-i18n="p_lvl" data-page-node-id="fmjArA05GhfQv6KDXC6eqR"><b id="pLevel" class="mono" data-page-node-id="BN5TP0ceGjbB7Ej78BU3iV">1</b>等级</div>
-      <div data-i18n="p_kills" data-page-node-id="KxmqCGDs4ZHQAHQv5Vuekf"><b id="pKills" class="mono" data-page-node-id="9UNHrGrZA64gMYM1G9cGwH">0</b>击坠</div>
-      <div data-i18n="p_time" data-page-node-id="QqYGW1Y9TNFNiKG68k8uns"><b id="pTime" class="mono" data-page-node-id="WvjXhdLSqas9lnumrBhkCJ">0:00</b>用时</div>
+      <div data-page-node-id="8v6tOqvu9sHgyZhDtifT9Y"><b id="pWave" class="mono" data-page-node-id="BizaVuERFcJjPH0n7gJouf">1</b><span data-i18n="p_wave">波次</span></div>
+      <div data-page-node-id="fmjArA05GhfQv6KDXC6eqR"><b id="pLevel" class="mono" data-page-node-id="BN5TP0ceGjbB7Ej78BU3iV">1</b><span data-i18n="p_lvl">等级</span></div>
+      <div data-page-node-id="KxmqCGDs4ZHQAHQv5Vuekf"><b id="pKills" class="mono" data-page-node-id="9UNHrGrZA64gMYM1G9cGwH">0</b><span data-i18n="p_kills">击坠</span></div>
+      <div data-page-node-id="QqYGW1Y9TNFNiKG68k8uns"><b id="pTime" class="mono" data-page-node-id="WvjXhdLSqas9lnumrBhkCJ">0:00</b><span data-i18n="p_time">用时</span></div>
     </div>
     <div class="statline" id="pStats" data-page-node-id="CwuMheZsCunYg9TSRvh6Uj"></div>
     <div class="chips" id="pauseChips" data-page-node-id="sl4bCAI9AVZJUmaB1Vu9Is"></div>
@@ -535,10 +587,10 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div id="overScore" class="mono" data-page-node-id="KVUK03rXXPPDkBBdDbJlK7">0</div>
     <div id="newBest" hidden data-i18n="o_best" data-page-node-id="jVSsA2QIxg1EePBVhlsFfl">NEW BEST · 新纪录</div>
     <div class="statgrid" data-page-node-id="DsJUQoRXStoN7hbVCpH00L">
-      <div data-i18n="o_wave" data-page-node-id="Cnc9hgUCs5SQaUVDJ7HWKh"><b id="stWave" class="mono" data-page-node-id="CvyfCWX80A31mqmGKnCsZU">1</b>波次</div>
-      <div data-i18n="o_lvl" data-page-node-id="MVTKQ15kwzY0ZRtJY2r7Kz"><b id="stLevel" class="mono" data-page-node-id="6uFFiQoGXSPqj3HFFcQo53">1</b>等级</div>
-      <div data-i18n="o_kills" data-page-node-id="clmGKbKEuT9UsotnObUXb3"><b id="stKills" class="mono" data-page-node-id="GvSQwDYBDEZWE0VqnQ5pCA">0</b>击坠</div>
-      <div data-i18n="o_time" data-page-node-id="TTlNj556XjVjBxTlevLa76"><b id="stTime" class="mono" data-page-node-id="GltXqLrxX8FtotqwyAHz88">0:00</b>存活</div>
+      <div data-page-node-id="Cnc9hgUCs5SQaUVDJ7HWKh"><b id="stWave" class="mono" data-page-node-id="CvyfCWX80A31mqmGKnCsZU">1</b><span data-i18n="o_wave">波次</span></div>
+      <div data-page-node-id="MVTKQ15kwzY0ZRtJY2r7Kz"><b id="stLevel" class="mono" data-page-node-id="6uFFiQoGXSPqj3HFFcQo53">1</b><span data-i18n="o_lvl">等级</span></div>
+      <div data-page-node-id="clmGKbKEuT9UsotnObUXb3"><b id="stKills" class="mono" data-page-node-id="GvSQwDYBDEZWE0VqnQ5pCA">0</b><span data-i18n="o_kills">击坠</span></div>
+      <div data-page-node-id="TTlNj556XjVjBxTlevLa76"><b id="stTime" class="mono" data-page-node-id="GltXqLrxX8FtotqwyAHz88">0:00</b><span data-i18n="o_time">存活</span></div>
     </div>
     <div class="chips" id="overChips" data-page-node-id="xFgESe1KjP3AK1NdCfFW1F"></div>
     <div class="row-btns" data-page-node-id="wRCzBhpF708lrY3uZVh9eX">
@@ -556,14 +608,16 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 <div id="logbook" class="overlay" hidden data-page-node-id="5MFmfcKXaXDCrZfCXBY0Ly">
   <div class="panel" data-page-node-id="F68Iifjb1bLzy7pCiSM2sE">
     <h2 data-page-node-id="DdF7PNXZPomsskZc080PxV">LOGBOOK<span data-i18n="lb_sub" data-page-node-id="gKlIjmForZ4K9HpgweL29E">航行日志 —— 跨出击累计数据</span></h2>
+    <div class="lb-sec" data-i18n="lb_sec1" data-page-node-id="lbsec1"><i></i><span>累计记录</span><em>LIFETIME</em></div>
     <div class="statgrid" data-page-node-id="rTLu8aYvTX4Vz4YzLkpse8">
-      <div data-i18n="lb_k" data-page-node-id="sXcm18T82kKt5PSboS0yYE"><b id="lbKills" class="mono" data-page-node-id="sQJ3VlmIlt9CSzNZ9KKlBU">0</b>累计击坠</div>
-      <div data-i18n="lb_g" data-page-node-id="rxdSqNOHqpGtoLlekM9yDv"><b id="lbGames" class="mono" data-page-node-id="l3lnKUL0IV2dWe9tUx8Rdj">0</b>出击场次</div>
-      <div data-i18n="lb_w" data-page-node-id="KLGfL2Fh8op3VQCqDtAynT"><b id="lbWave" class="mono" data-page-node-id="T2ftr1iSuMpaDOHk2319X2">0</b>最远波次</div>
-      <div data-i18n="lb_t" data-page-node-id="R8CGvliAWPyYVFo6R63V1c"><b id="lbTime" class="mono" data-page-node-id="iGsEyIR0GgFjRCVOvFPlVs">0:00</b>累计漂移</div>
-      <div data-i18n="lb_s" data-page-node-id="Gve8KQ0RS4onIb4RwqzqaH"><b id="lbScoreSum" class="mono" data-page-node-id="VLje0UIlCEjAiDDGSBoq1c">0</b>累计得分</div>
-      <div data-i18n="lb_b" data-page-node-id="Wj1B0pu5DZ7BhFMEOILLh1"><b id="lbBest" class="mono" data-page-node-id="zH4l9XXhsuI9cSXX7psYYk">0</b>最高得分</div>
+      <div data-page-node-id="sXcm18T82kKt5PSboS0yYE"><b id="lbKills" class="mono" data-page-node-id="sQJ3VlmIlt9CSzNZ9KKlBU">0</b><span data-i18n="lb_k">累计击坠</span></div>
+      <div data-page-node-id="rxdSqNOHqpGtoLlekM9yDv"><b id="lbGames" class="mono" data-page-node-id="l3lnKUL0IV2dWe9tUx8Rdj">0</b><span data-i18n="lb_g">出击场次</span></div>
+      <div data-page-node-id="KLGfL2Fh8op3VQCqDtAynT"><b id="lbWave" class="mono" data-page-node-id="T2ftr1iSuMpaDOHk2319X2">0</b><span data-i18n="lb_w">最远波次</span></div>
+      <div data-page-node-id="R8CGvliAWPyYVFo6R63V1c"><b id="lbTime" class="mono" data-page-node-id="iGsEyIR0GgFjRCVOvFPlVs">0:00</b><span data-i18n="lb_t">累计漂移</span></div>
+      <div data-page-node-id="Gve8KQ0RS4onIb4RwqzqaH"><b id="lbScoreSum" class="mono" data-page-node-id="VLje0UIlCEjAiDDGSBoq1c">0</b><span data-i18n="lb_s">累计得分</span></div>
+      <div data-page-node-id="Wj1B0pu5DZ7BhFMEOILLh1"><b id="lbBest" class="mono" data-page-node-id="zH4l9XXhsuI9cSXX7psYYk">0</b><span data-i18n="lb_b">最高得分</span></div>
     </div>
+    <div class="lb-sec" data-i18n="lb_sec2" data-page-node-id="lbsec2"><i></i><span>船体图鉴</span><em>HULLS</em></div>
     <div class="chips" id="lbHulls" data-page-node-id="L9CF8H1c9DSR1DuqkFeom1"></div>
     <div class="synlist" id="lbSwarm" data-page-node-id="MBKWAxldSyCc5kqIwOanrC"></div>
     <div class="row-btns" data-page-node-id="Y1FUfV8tabhHh347u4aXN6">
@@ -656,6 +710,9 @@ const I18N_EN={
  v_wave:'WAVE',v_lvl:'LEVEL',v_kills:'KILLS',v_time:'TIME',v_endless:'ENDLESS ▸ E',v_menu:'TITLE',
  lb_sub:'Logbook — lifetime totals across runs',
  lb_k:'TOTAL KILLS',lb_g:'RUNS',lb_w:'FARTHEST WAVE',lb_t:'TOTAL DRIFT',lb_s:'TOTAL SCORE',lb_b:'BEST SCORE',
+ lb_sec1:'<i></i><span>LIFETIME</span><em>TOTALS</em>',lb_sec2:'<i></i><span>HULLS</span><em>CODEX</em>',
+ v_wave:'WAVE',v_lvl:'LEVEL',v_kills:'KILLS',v_time:'TIME',
+ o_wave:'WAVE',o_lvl:'LEVEL',o_kills:'KILLS',o_time:'SURVIVED',
  lb_back:'BACK ▸ ESC',
  s_sub:'Saves — drifts autosaved when you left mid-run',s_back:'BACK ▸ ESC',
  st_sub:'Audio',
@@ -743,6 +800,17 @@ function applyI18n(){
   }
   const lb=LANG==='en'?'🌐 中文 ▸ 简体中文':'🌐 EN ▸ ENGLISH';
   for(const id of['btnLang','btnLangP']){const b=$(id);if(b)b.textContent=lb;}
+  rebindEls();
+}
+/* applyI18n 用 innerHTML 重建带 data-i18n 容器的内容，容器内部带 id 的元素会变成游离节点，
+   导致 el.* 缓存的引用全部失效 —— 航行日志与暂停面板的数值因此永远停在初始的 0。此处按 id 重绑。 */
+function rebindEls(){
+  for(const k in el){
+    const v=el[k];
+    if(v&&v.nodeType===1&&v.id){const n=$(v.id);if(n)el[k]=n;}
+  }
+  el.shieldFill=$('shieldbar').querySelector('i');
+  el.bossFill=$('bossbar').querySelector('i');
 }
 function setLang(l){
   if(l===LANG)return;
@@ -2033,14 +2101,18 @@ function loadStats(){
 function saveStats(s){try{localStorage.setItem(STAT_KEY,JSON.stringify(s));}catch(e){}}
 function flushStats(){
   if(!P||!G.statOn)return;
-  const dk=G.kills-(G.statK||0);
+  const dk=Math.max(0,G.kills-(G.statK||0));
   const dt=Math.max(0,G.runT-(G.statRT||0));
   const dsc=Math.max(0,G.score-(G.statSc||0));
-  if(dk<=0&&dt<1&&dsc<=0)return;
-  const before=loadStats().k;
-  G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;
   const s=loadStats();
-  s.k+=dk;s.t+=dt;s.sc+=dsc;s.w=Math.max(s.w,Wv.n);
+  const newW=Wv.n>(s.w||0);
+  // 原「dt<1 就不写入」会把每次结算不足 1 秒的漂移时长整段吞掉，改为各维度独立、有增量就记
+  if(dk<=0&&dt<=0&&dsc<=0&&!newW)return;
+  const before=s.k;
+  G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;
+  s.k+=dk;s.t+=dt;s.sc+=dsc;if(newW)s.w=Wv.n;
+  // 最高分随进度实时刷新：即使中途关页/未走到结算界面也不会丢
+  if(G.score>G.best){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   saveStats(s);
   if(before<SWARM_KILLS&&s.k>=SWARM_KILLS){ // 蜂群解锁时刻
     banner('NEW HULL · '+T('蜂群','Swarm'),T('累计击坠 '+SWARM_KILLS+' 达成 —— 无人机母舰已解锁','Lifetime kills reached '+SWARM_KILLS+' — the drone carrier is unlocked'));
@@ -2899,6 +2971,7 @@ function drainPlayer(dmg){
 
 function die(){
   G.mode='dying';G.deathT=1.5;
+  flushStats(); // 坠毁瞬间即提交统计：dying 阶段关页/刷新也不会丢掉最后一波数据
   el.cards.hidden=true;
   burst(P.x,P.y,46,420,1.1,'120,225,255',3);
   burst(P.x,P.y,24,260,0.9,'255,255,255',2);
@@ -4283,15 +4356,15 @@ function startGame(hull){
 function pauseGame(){
   if(G.mode!=='play'&&G.mode!=='inter')return;
   G.prevMode=G.mode;G.mode='pause';
-  el.pWave.textContent=Wv.n;
-  el.pLevel.textContent=P.level;
-  el.pKills.textContent=G.kills;
-  el.pTime.textContent=fmtT(G.runT);
-  el.pStats.textContent=T(
+  setStat('pWave',Wv.n);
+  setStat('pLevel',P.level);
+  setStat('pKills',G.kills);
+  setStat('pTime',fmtT(G.runT));
+  setStat('pStats',T(
     `伤害 ${P.dmg.toFixed(2)} · 射速 ${P.fireRate.toFixed(1)}/s · 极速 ${Math.round(P.maxSpeed)} · `+
     `暴击 ${Math.round(P.crit*100)}% · 穿透 ${P.pierce} · 枪管 ${P.barrels} · 拾取半径 ${Math.round(P.magnet)}`,
     `DMG ${P.dmg.toFixed(2)} · RATE ${P.fireRate.toFixed(1)}/s · TOP SPD ${Math.round(P.maxSpeed)} · `+
-    `CRIT ${Math.round(P.crit*100)}% · PIERCE ${P.pierce} · BARRELS ${P.barrels} · MAGNET ${Math.round(P.magnet)}`);
+    `CRIT ${Math.round(P.crit*100)}% · PIERCE ${P.pierce} · BARRELS ${P.barrels} · MAGNET ${Math.round(P.magnet)}`));
   el.pauseChips.innerHTML=buildChips()||`<span>${T('尚未装配模块','No modules fitted')}</span>`;
   el.pauseSyn.innerHTML=synListHtml()||'';
   el.pause.hidden=false;
@@ -4387,11 +4460,11 @@ function showOver(){
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   el.overScore.textContent=fmt(G.score);
   el.newBest.hidden=!isBest;
-  el.stWave.textContent=Wv.n;
-  el.stLevel.textContent=P.level;
-  el.stKills.textContent=G.kills;
+  setStat('stWave',Wv.n);
+  setStat('stLevel',P.level);
+  setStat('stKills',G.kills);
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
-  el.stTime.textContent=m+':'+String(s).padStart(2,'0');
+  setStat('stTime',m+':'+String(s).padStart(2,'0'));
   el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   el.over.hidden=false;
   el.hud.hidden=true;
@@ -4407,11 +4480,11 @@ function showVictory(){
   el.vicUnlock.hidden=!nu;
   el.vicScore.textContent=fmt(G.score);
   el.vicBonus.textContent='SECTOR BONUS +8,000';
-  el.vWave.textContent=Wv.n;
-  el.vLevel.textContent=P.level;
-  el.vKills.textContent=G.kills;
+  setStat('vWave',Wv.n);
+  setStat('vLevel',P.level);
+  setStat('vKills',G.kills);
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
-  el.vTime.textContent=m+':'+String(s).padStart(2,'0');
+  setStat('vTime',m+':'+String(s).padStart(2,'0'));
   el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   el.victory.hidden=false;
   el.hud.hidden=true;
@@ -4428,6 +4501,7 @@ function continueEndless(){
   sfx.ui();
 }
 function toMenu(){
+  flushStats(); // 从暂停/结算直接回主菜单时补提交（G.mode 变更前的最后一次机会）
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
@@ -4508,14 +4582,17 @@ function delSlot(id){
   renderSaves();
   refreshContinue();
 }
+// 直接按 id 写入「实时 DOM 节点」，不依赖缓存的 el.* 引用 ——
+// 即使未来某处重建了面板 HTML 导致旧引用脱离 DOM，这里也永远写到可见节点，杜绝“数值永远停在 0”。
+function setStat(id,v){const e=$(id);if(e)e.textContent=v;}
 function drawLogbook(){
   const s=loadStats();
-  el.lbKills.textContent=fmt(s.k);
-  el.lbGames.textContent=fmt(s.g);
-  el.lbWave.textContent=s.w;
-  el.lbTime.textContent=fmtT(s.t);
-  el.lbScoreSum.textContent=fmt(s.sc);
-  el.lbBest.textContent=fmt(G.best);
+  setStat('lbKills',fmt(s.k));
+  setStat('lbGames',fmt(s.g));
+  setStat('lbWave',s.w);
+  setStat('lbTime',fmtT(s.t));
+  setStat('lbScoreSum',fmt(s.sc));
+  setStat('lbBest',fmt(G.best));
   el.lbHulls.innerHTML=HULLS.map(h=>{
     const ok=hullUnlocked(h.id);
     return `<span class="${ok?'mx':''}">${h.g} ${T(h.zh,h.en)}</span>`;
@@ -4595,7 +4672,9 @@ el.sfxVol.addEventListener('input',()=>{ // SFX 音量：实时生效并持久�
   el.sfxVal.textContent=el.sfxVol.value+'%';
 });
 el.sfxVol.addEventListener('change',()=>sfx.ui()); // 松手播放试听音
-document.addEventListener('visibilitychange',()=>BGM.onVisibility(document.hidden));
+document.addEventListener('visibilitychange',()=>{BGM.onVisibility(document.hidden);if(document.hidden)flushStats();});
+// 关闭/切走页面（移动端常直接杀后台）时补提交最后一次统计，避免末段击坠与时长丢失
+window.addEventListener('pagehide',()=>{flushStats();});
 
 /* ============================== update ============================== */
 function updateWorld(dt){
