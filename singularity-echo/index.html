@@ -407,6 +407,15 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .chips .mchip .detail p{margin:0;color:#9fd4e8}
 .chips .mchip .detail .pair{margin-top:5px;color:#8fe6ff;font-size:10.5px}
 .chips .mchip .detail .pair b{color:#e8f7ff}
+/* ---------- 模块条响应式堆叠：窄屏（手机竖屏）时每行只放一枚，名称完整不被省略 ----------
+   默认（宽屏 / 640px 两列）两枚一行；容器被 JS 加上 .stack 后整列垂直排列。
+   触发条件见 fitChips()：视口 ≤480px，或实测模块名被截断（英文长名 / 分屏窄栏） */
+.chips.stack{justify-content:flex-start}
+.chips.stack .mchip{box-sizing:border-box;flex:0 1 100%;max-width:100%;
+  padding:6px 13px;gap:10px;text-align:left}
+.chips.stack .mchip span{flex:1 1 auto;min-width:0;overflow:visible;
+  text-overflow:clip;white-space:nowrap}
+.chips.stack .mchip .pips{flex:none;margin-left:auto}
 @media (hover:hover){
   .chips .mchip:hover .detail,.synlist .schip:hover .detail{display:block}
 }
@@ -819,7 +828,17 @@ function setLang(l){
   refreshMenuMeta();               // 菜单 chips 立即换语言
   if(G.mode==='saves')renderSaves();
   if(!el.cards.hidden){renderCards();deckify(el.cardrow);} // 升级面板开着：换语言重绘 + 重排手牌
+  repaintBuildChips();                     // 暂停/结算面板开着：模块条换语言重绘 + 重新判定堆叠
   sfx.ui();
+}
+/* 已打开的 暂停 / 坠毁 / 通关 面板里重绘模块条（语言切换后调用） */
+function repaintBuildChips(){
+  if(el.pause.hidden&&el.over.hidden&&el.victory.hidden)return;
+  if(G.build){
+    if(!el.pause.hidden){el.pauseChips.innerHTML=buildChips()||`<span>${T('尚未装配模块','No modules fitted')}</span>`;fitChips(el.pauseChips);}
+    if(!el.over.hidden){el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;fitChips(el.overChips);}
+    if(!el.victory.hidden){el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;fitChips(el.vicChips);}
+  }
 }
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -4367,6 +4386,7 @@ function pauseGame(){
     `DMG ${P.dmg.toFixed(2)} · RATE ${P.fireRate.toFixed(1)}/s · TOP SPD ${Math.round(P.maxSpeed)} · `+
     `CRIT ${Math.round(P.crit*100)}% · PIERCE ${P.pierce} · BARRELS ${P.barrels} · MAGNET ${Math.round(P.magnet)}`));
   el.pauseChips.innerHTML=buildChips()||`<span>${T('尚未装配模块','No modules fitted')}</span>`;
+  fitChips(el.pauseChips); // 绘制后立刻判定是否窄屏堆叠，避免先两列后跳列的闪动
   el.pauseSyn.innerHTML=synListHtml()||'';
   el.pause.hidden=false;
   saveRun();
@@ -4452,6 +4472,27 @@ function buildChips(){
   if(st.html)out+=`<div class="chipgrp t-s"><b>${T('数值型','STAT')}</b><em class="${st.full?'full':''}">${st.count}/${st.cap}</em></div>`+st.html;
   return out;
 }
+/* ESC 暂停 / 结算面板的模块条自适应：
+   并行两枚一行时模块名会被 ellipsis 截断，这里根据视口宽度与实际截断情况切换单列堆叠。
+   判据 1 —— 视口 ≤480px（手机竖屏）直接堆叠；
+   判据 2 —— 更宽时若实测名称出现溢出截断（英文长名 / 分屏窄栏 / 大字号），同样堆叠。 */
+const NARROW_CHIPS=window.matchMedia('(max-width:480px)');
+function fitChips(box){
+  if(!box)return;
+  box.classList.remove('stack');                 // 先回到默认布局再测量
+  const names=box.querySelectorAll('.mchip>span');
+  if(!names.length)return;                       // 无模块条（裸船提示 / 图鉴）无需处理
+  let stack=NARROW_CHIPS.matches;
+  if(!stack)for(const s of names){if(s.scrollWidth>s.clientWidth+1){stack=true;break;}}
+  if(stack)box.classList.add('stack');
+}
+function fitOpenChips(){                          // 只看当前可见面板，避免无谓回流
+  if(!el.pause.hidden)fitChips(el.pauseChips);
+  if(!el.over.hidden)fitChips(el.overChips);
+  if(!el.victory.hidden)fitChips(el.vicChips);
+}
+window.addEventListener('resize',fitOpenChips);
+window.addEventListener('orientationchange',fitOpenChips);
 function showOver(){
   G.mode='over';
   flushStats(); // 坠毁结算前提交末段统计，否则最后一波击坠/得分/时长会丢失
@@ -4467,6 +4508,7 @@ function showOver(){
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
   setStat('stTime',m+':'+String(s).padStart(2,'0'));
   el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
+  fitChips(el.overChips);
   el.over.hidden=false;
   el.hud.hidden=true;
 }
@@ -4487,6 +4529,7 @@ function showVictory(){
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
   setStat('vTime',m+':'+String(s).padStart(2,'0'));
   el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
+  fitChips(el.vicChips);
   el.victory.hidden=false;
   el.hud.hidden=true;
   sfx.victory();
