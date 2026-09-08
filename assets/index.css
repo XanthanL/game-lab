@@ -174,6 +174,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3);
 }
 .topbar a { color: var(--ink-3); text-decoration: none; border-bottom: 1px solid transparent; transition: color .4s var(--ease), border-color .4s var(--ease); }
+.topbar-right { display: flex; align-items: center; justify-content: flex-end; gap: 20px; flex-wrap: wrap; }
+@media (max-width: 560px) { .topbar-right { gap: 12px; } }
 .topbar a:hover { color: var(--ink); border-color: var(--line-2); }
 /* 品牌字标：左上角 Logo，点回首页 */
 .topbar .brand { color: var(--ink); font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; display: inline-flex; align-items: center; gap: 9px; }
@@ -215,6 +217,104 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 :root:not([data-lang="en"]) .ls-zh { color: var(--ink); }
 :root[data-lang="en"] .ls-en { color: var(--ink); }
 :root[data-lang="en"] .ls-knob { left: calc(50% + var(--ls-pad)); }
+
+/* ============ 风格切换 · 平铺版（首页 hero 里，七档全展开）============
+   顶栏放不下七档，hero 里放得下：一整排胶囊按钮，名字写全，点了直接切。
+   外观同样只吃皮肤变量，所以七套皮肤各自换装；选中态 = 用满血 --glass
+   （比常态的 --glass-sm 更"实"），再点亮前面那颗小圆点。 */
+.skin-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin: 0 0 30px;
+}
+.skin-label {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--ink-3); margin-right: 2px;
+}
+.skin-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 15px; border-radius: 999px; cursor: pointer;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+  color: var(--ink-2);
+  border: 1px double var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-sm);
+  -webkit-tap-highlight-color: transparent;
+  transition: color .4s var(--ease), box-shadow .4s var(--ease),
+              transform .4s var(--ease), background .4s var(--ease);
+}
+.skin-chip::before {
+  content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: .25;
+}
+.skin-chip:hover, .skin-chip:focus-visible { color: var(--ink); transform: translateY(-2px); }
+.skin-chip:active { transform: translateY(0); }
+.skin-chip[aria-pressed="true"] { color: var(--ink); box-shadow: var(--glass); }
+.skin-chip[aria-pressed="true"]::before { opacity: 1; box-shadow: 0 0 0 3px var(--spot-c); }
+@media (max-width: 560px) {
+  .skin-bar { gap: 8px; margin-bottom: 26px; }
+  .skin-chip { padding: 8px 12px; font-size: 9.5px; letter-spacing: 0.04em; }
+}
+
+/* ============ 风格切换：胶囊下拉菜单（7 档）============
+   原来是一枚四档分段滑钮；加到 7 档后 390px 顶栏放不下（每格不足 20px），
+   改成下拉：胶囊按钮常显当前风格简称，点开是菜单，选中项前面亮一个圆点。
+   外观全部复用皮肤变量（--glass-bg / --glass-border / --glass-sm / --ink），
+   所以每套皮肤自动换装，不必为菜单单独写七份样式。 */
+.style-menu { position: relative; flex: 0 0 auto; }
+.sm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-width: 82px; height: 28px; padding: 0 12px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border-radius: 999px; border: 1px double var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-sm);
+  transition: box-shadow .4s var(--ease), background .4s var(--ease), color .4s var(--ease);
+}
+.sm-caret { font-size: 8px; line-height: 1; opacity: .55; transition: transform .3s var(--ease); }
+.style-menu.is-open .sm-caret { transform: rotate(180deg); }
+.sm-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  display: none; min-width: 196px; padding: 6px;
+  border-radius: 16px; border: 1px solid var(--glass-border);
+  background-color: var(--bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass);
+}
+.style-menu.is-open .sm-panel { display: block; animation: smPop .28s var(--ease) both; }
+@keyframes smPop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+.sm-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 11px; border: 0; border-radius: 10px;
+  background: transparent; cursor: pointer; text-align: left;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+  color: var(--ink-2);
+  transition: background .3s var(--ease), color .3s var(--ease);
+}
+.sm-item::before {
+  content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: .22;
+}
+.sm-item:hover, .sm-item:focus-visible { background: var(--spot-c); color: var(--ink); }
+.sm-item[aria-selected="true"] { color: var(--ink); }
+.sm-item[aria-selected="true"]::before { opacity: 1; box-shadow: 0 0 0 3px var(--spot-c); }
+@media (max-width: 480px) {
+  .sm-btn { min-width: 72px; padding: 0 9px; font-size: 9px; }
+  .sm-panel { min-width: 178px; }
+}
+/* 默认（玻璃）皮肤下拉：跟其它玻璃组件一样的半透明 + 微模糊 */
+:root[data-style="glass"] .sm-panel {
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+/* 更窄的屏：GitHub 链接收起（社交入口，非必需），顶栏允许换行 */
+@media (max-width: 480px) {
+  .topbar-right a[href*="github"] { display: none; }
+  .topbar { flex-wrap: wrap; gap: 10px 16px; }
+  .topbar-right { gap: 10px; }
+}
 
 /* ============ 主题切换：灯泡开关 ============
    造型与点亮逻辑参考 CodePen "Pure CSS Bulb Switch"
@@ -490,7 +590,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   margin-top: clamp(80px, 12vh, 140px);
   padding: 36px calc(var(--pad) * 0.6) 44px;
   position: relative; isolation: isolate;
-  content-visibility: auto; contain-intrinsic-size: auto 640px;
 }
 /* 第一个板块（游戏）：与 Hero 之间的间距，等同板块之间的间距 */
 .sec:first-of-type {
@@ -692,3 +791,1352 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   animation: rippleGo .6s var(--ease) forwards;
 }
 @keyframes rippleGo { to { transform: scale(1); opacity: 0; } }
+
+/* ==================================================================
+   风格 B：新拟物 Neumorphism（<html data-style="soft">）
+   ------------------------------------------------------------------
+   与「液态玻璃」共用同一套 DOM、同一套布局、同一套字号与间距，
+   只替换「表面」：底色与卡面同色，层次全靠双向投影
+     --glass     外凸（抬起，用于卡片）
+     --glass-sm  外凸小号（药丸 / 开关旋钮）
+     --glass-in  内凹（按下、凹槽、开关轨道）
+   背景图与光晕层全部关闭——新拟物需要绝对均匀的底色，
+   否则双向投影会在明暗不均的地方露馅。亮 / 暗两套配色跟随 data-theme。
+   默认仍是 glass，原风格一行未动。
+   ================================================================== */
+:root[data-style="soft"] {
+  color-scheme: dark;
+  /* —— 暗色新拟物：底色 #2b2f36，暗面比底色深、亮面比底色浅 —— */
+  --bg: #2b2f36;
+  --ink: #e2e6ee;
+  --ink-2: #a5acb9;
+  --ink-3: #7b8391;
+  --line: rgba(226, 230, 238, 0.10);
+  --line-2: rgba(226, 230, 238, 0.20);
+  --accent: #e2e6ee;
+  --card-bg: var(--bg);          /* 卡面 = 底色，这是新拟物的前提 */
+  --glass-border: transparent;   /* 不要描边，靠投影分界 */
+  --glass-bg: transparent;
+  --glass-blur: none;            /* 不要 backdrop 折射 */
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 255, 255, 0.05);
+  --ripple-c: rgba(255, 255, 255, 0.09);
+  --nm-d: #1e2127;
+  --nm-l: #383d47;
+  --glass:    9px 9px 18px var(--nm-d), -9px -9px 18px var(--nm-l);
+  --glass-sm: 3px 3px 7px var(--nm-d), -3px -3px 7px var(--nm-l);
+  --glass-in: inset 4px 4px 8px var(--nm-d), inset -4px -4px 8px var(--nm-l);
+}
+:root[data-style="soft"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #e7eaf0;
+  --ink: #3b4150;
+  --ink-2: #6d7583;
+  --ink-3: #99a0af;
+  --line: rgba(59, 65, 80, 0.12);
+  --line-2: rgba(59, 65, 80, 0.22);
+  --accent: #3b4150;
+  --card-bg: var(--bg);
+  --spot-c: rgba(59, 65, 80, 0.07);
+  --ripple-c: rgba(59, 65, 80, 0.11);
+  --nm-d: #c3c8d4;
+  --nm-l: #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="soft"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #e7eaf0;
+    --ink: #3b4150;
+    --ink-2: #6d7583;
+    --ink-3: #99a0af;
+    --line: rgba(59, 65, 80, 0.12);
+    --line-2: rgba(59, 65, 80, 0.22);
+    --accent: #3b4150;
+    --card-bg: var(--bg);
+    --spot-c: rgba(59, 65, 80, 0.07);
+    --ripple-c: rgba(59, 65, 80, 0.11);
+    --nm-d: #c3c8d4;
+    --nm-l: #ffffff;
+  }
+}
+
+/* 关掉玻璃专属的装饰层：45° 双端高光、指针光斑、分区背景图、hero 光晕
+   —— 新拟物与粗野主义都不需要，它们要的是绝对平的底 */
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .glass::after,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .card::after,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .row::after,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .card::before,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .toc a::before,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .hero::before,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .hero::after,
+:root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
+        [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .sec::before { display: none; }
+/* 三套「核」系（梦核 / 池核 / 怪核）同样不需要玻璃装饰层 */
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .glass::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .card::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .row::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .card::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .toc a::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .hero::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .hero::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .sec::before { display: none; }
+
+/* 卡片：悬停 = 抬起（投影放大），按下 = 压进表面（转内凹） */
+:root[data-style="soft"] .card:hover,
+:root[data-style="soft"] .card:focus-visible {
+  transform: translateY(-2px);
+  border-color: transparent;
+  box-shadow: 14px 14px 28px var(--nm-d), -14px -14px 28px var(--nm-l);
+}
+:root[data-style="soft"] .card:active {
+  transform: translateY(0);
+  box-shadow: var(--glass-in);
+}
+/* 分类药丸：小球状凸起 */
+:root[data-style="soft"] .card-tag {
+  background: var(--bg); border-color: transparent;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--glass-sm);
+}
+/* 目录药丸 / 按钮：常态微凸，悬停再抬一点，按下凹陷 */
+:root[data-style="soft"] .toc a { box-shadow: var(--glass-sm); }
+:root[data-style="soft"] .toc a:hover,
+:root[data-style="soft"] .toc a:focus-visible {
+  border-color: transparent;
+  box-shadow: 5px 5px 11px var(--nm-d), -5px -5px 11px var(--nm-l);
+}
+:root[data-style="soft"] .toc a:active {
+  box-shadow: inset 3px 3px 6px var(--nm-d), inset -3px -3px 6px var(--nm-l);
+}
+:root[data-style="soft"] .btn { background: var(--bg); box-shadow: var(--glass-sm); }
+:root[data-style="soft"] .btn:hover,
+:root[data-style="soft"] .btn:focus-visible {
+  box-shadow: 5px 5px 11px var(--nm-d), -5px -5px 11px var(--nm-l);
+}
+:root[data-style="soft"] .btn:active { box-shadow: var(--glass-in); }
+/* 条目行（persona / 404）：常态平贴，悬停压成凹槽 */
+:root[data-style="soft"] .row { border-bottom-color: transparent; box-shadow: none; }
+:root[data-style="soft"] .row:hover,
+:root[data-style="soft"] .row:focus-visible { box-shadow: var(--glass-in); }
+/* 开关：轨道压成凹槽，旋钮变成小圆凸 */
+:root[data-style="soft"] .ls-track,
+:root[data-style="soft"] .bs-track {
+  background: var(--bg);
+  box-shadow: var(--glass-in);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="soft"] .ls-knob {
+  background: var(--bg);
+  box-shadow: 2px 2px 4px var(--nm-d), -2px -2px 4px var(--nm-l);
+}
+/* 品牌圆点与页脚大字：做成压印 / 浮雕的实体感 */
+:root[data-style="soft"] .brand-dot {
+  box-shadow: 2px 2px 4px var(--nm-d), -2px -2px 4px var(--nm-l);
+}
+:root[data-style="soft"] .brand:hover .brand-dot,
+:root[data-style="soft"] .brand:focus-visible .brand-dot { box-shadow: var(--glass-in); }
+:root[data-style="soft"] .foot-word {
+  text-shadow: 1px 1px 1px var(--nm-l), -1px -1px 1px var(--nm-d);
+}
+
+/* ==================================================================
+   风格 C：新粗野 Neo-brutalism（<html data-style="raw">）
+   ------------------------------------------------------------------
+   与上面两种完全相反的处理方式，正好凑成三种"表面"的对照：
+     玻璃 = 半透明 + 模糊 + 内高光（光穿过材料）
+     拟物 = 同色底 + 双向柔投影（材料被光捏出形状）
+     粗野 = 纯色块 + 2px 硬边 + 0 模糊的偏移硬投影（不要假装材料）
+   关键实现只有三条：
+     1. --raw-line  边框与投影共用的"墨线色"（亮色下是纯黑，暗色下是米白）
+     2. --glass*    全部改成 blur = 0 的硬投影：6px 6px 0
+     3. --raw-r     圆角从 24px 收到 6px，圆角也是"软"的一部分
+   卡片是纯色不透明（≠ 底色，这是和新拟物的分水岭），
+   交互用「位移 + 投影互补」表达：hover 抬起则投影变大，active 压下去则投影归零。
+   唯一的一点彩色 --accent（酸黄）只放在标签、旋钮、选中态这种强调位。
+   ================================================================== */
+:root[data-style="raw"] {
+  color-scheme: dark;
+  --bg: #141416;
+  --ink: #f4f2ec;
+  --ink-2: #b9b5ab;
+  --ink-3: #8a867e;
+  --line: rgba(244, 242, 236, 0.18);
+  --line-2: rgba(244, 242, 236, 0.34);
+  --accent: #ffd400;
+  --card-bg: #1e1e22;              /* 纯色不透明，且 ≠ 底色 */
+  --glass-border: var(--raw-line);
+  --glass-bg: transparent;
+  --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 212, 0, 0.10);
+  --ripple-c: rgba(255, 212, 0, 0.24);
+  --raw-line: #f4f2ec;             /* 墨线：边框 + 硬投影同一个颜色 */
+  --raw-r: 6px;
+  --glass:    6px 6px 0 var(--raw-line);
+  --glass-sm: 3px 3px 0 var(--raw-line);
+  --glass-in: inset 3px 3px 0 var(--raw-line);
+}
+:root[data-style="raw"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f1ea;
+  --ink: #111111;
+  --ink-2: #4a4a47;
+  --ink-3: #7c7c77;
+  --line: rgba(17, 17, 17, 0.18);
+  --line-2: rgba(17, 17, 17, 0.38);
+  --accent: #ffd400;
+  --card-bg: #ffffff;
+  --glass-border: var(--raw-line);
+  --spot-c: rgba(17, 17, 17, 0.07);
+  --ripple-c: rgba(17, 17, 17, 0.16);
+  --raw-line: #111111;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="raw"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f2f1ea;
+    --ink: #111111;
+    --ink-2: #4a4a47;
+    --ink-3: #7c7c77;
+    --line: rgba(17, 17, 17, 0.18);
+    --line-2: rgba(17, 17, 17, 0.38);
+    --accent: #ffd400;
+    --card-bg: #ffffff;
+    --glass-border: var(--raw-line);
+    --spot-c: rgba(17, 17, 17, 0.07);
+    --ripple-c: rgba(17, 17, 17, 0.16);
+    --raw-line: #111111;
+  }
+}
+
+/* 所有面板：2px 实线硬边 + 小圆角（24px → 6px） */
+:root[data-style="raw"] .glass,
+:root[data-style="raw"] .card,
+:root[data-style="raw"] .row {
+  border: 2px solid var(--raw-line);
+  border-radius: var(--raw-r);
+}
+/* 卡片：hover 抬起（位移 -2 / 投影 9px），active 压到底（位移 +3 / 投影归零） */
+:root[data-style="raw"] .card:hover,
+:root[data-style="raw"] .card:focus-visible {
+  transform: translate(-2px, -2px);
+  border-color: var(--raw-line);
+  box-shadow: 9px 9px 0 var(--raw-line);
+}
+:root[data-style="raw"] .card:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--raw-line);
+}
+/* 分类标签：酸黄贴纸 + 硬边 + 硬投影 */
+:root[data-style="raw"] .card-tag {
+  background: var(--accent); color: #111111;
+  border: 2px solid var(--raw-line); border-radius: 4px;
+  font-weight: 700; box-shadow: 2px 2px 0 var(--raw-line);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 目录药丸 / 按钮：同样的小圆角 + 硬投影 */
+:root[data-style="raw"] .toc a { border-radius: var(--raw-r); box-shadow: var(--glass-sm); }
+:root[data-style="raw"] .toc a:hover,
+:root[data-style="raw"] .toc a:focus-visible {
+  transform: translate(-1px, -1px);
+  border-color: var(--raw-line);
+  box-shadow: 5px 5px 0 var(--raw-line);
+}
+:root[data-style="raw"] .toc a:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--raw-line);
+}
+:root[data-style="raw"] .btn {
+  background: var(--card-bg); border: 2px solid var(--raw-line);
+  border-radius: var(--raw-r); box-shadow: var(--glass-sm);
+}
+:root[data-style="raw"] .btn:hover,
+:root[data-style="raw"] .btn:focus-visible {
+  transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--raw-line);
+}
+:root[data-style="raw"] .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+/* 条目行：常态平贴，悬停整块弹起 */
+:root[data-style="raw"] .row { border-bottom-color: transparent; box-shadow: none; }
+:root[data-style="raw"] .row:hover,
+:root[data-style="raw"] .row:focus-visible {
+  transform: translate(-1px, -1px); box-shadow: var(--glass-sm);
+}
+/* 开关：轨道 = 硬边方槽，旋钮 = 酸黄小块 */
+:root[data-style="raw"] .ls-track,
+:root[data-style="raw"] .bs-track {
+  background: var(--card-bg);
+  border: 2px solid var(--raw-line); border-radius: 8px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="raw"] .ls-knob {
+  background: var(--accent);
+  border: 2px solid var(--raw-line); border-radius: 5px;
+  box-shadow: 2px 2px 0 var(--raw-line);
+}
+/* 分区标题的分隔线加粗，这是粗野派最爱的一条重线 */
+:root[data-style="raw"] .sec-head { border-bottom: 3px solid var(--raw-line); }
+/* 品牌圆点：从圆点变成一枚酸黄小方块 */
+:root[data-style="raw"] .brand-dot {
+  border-radius: 2px; background: var(--accent);
+  border: 2px solid var(--raw-line); box-shadow: 2px 2px 0 var(--raw-line);
+}
+:root[data-style="raw"] .brand:hover .brand-dot,
+:root[data-style="raw"] .brand:focus-visible .brand-dot {
+  box-shadow: 0 0 0 var(--raw-line);
+}
+:root[data-style="raw"] ::selection { background: var(--accent); color: #111111; }
+
+/* ==================================================================
+   风格 D：砼核 Concretecore（<html data-style="crete">）
+   ------------------------------------------------------------------
+   砼 = 混凝土。砼核（Concretecore / Cementcore）是中文互联网的核式美学：
+   粗野主义建筑的极端演绎——巨大混凝土巨构、空旷廊桥、废墟、苏联风、
+   阈限空间、低饱和、疏离感。注意它和上面的「新粗野」不是一回事：
+     raw   = 网页 UI 界的 neo-brutalism：酸黄、贴纸、活泼、在跟你玩
+     crete = 建筑氛围的 concretecore：冷灰、巨构、空旷、不需要你
+   四种风格第一次从「表面光学」转向「材料 + 尺度」，关键实现三条：
+     1. 材料：整页铺一层 SVG feTurbulence 噪点（--crete-noise），
+        用 position:fixed + mix-blend-mode:overlay 覆盖全屏，
+        于是卡片、文字、顶栏全都沾上同一层水泥颗粒——不是贴图，是材质。
+     2. 光：body 上两道 115°/295° 的固定渐变（--crete-hi / --crete-lo），
+        模拟阳光斜射在混凝土墙面上缓慢变化的光影；background-attachment:fixed
+        让它不随内容滚动，像光不动、人在走。
+     3. 尺度：圆角归零 + 超长的柔投影（0 26px 50px -26px）+ 标题转无衬线 800
+        ——巨构感靠「厚度与投影」，不是靠字号。
+   ================================================================== */
+:root[data-style="crete"] {
+  color-scheme: dark;
+  --bg: #26282a;                 /* 湿冷混凝土 */
+  --ink: #e0e1dc;
+  --ink-2: #a0a3a0;
+  --ink-3: #75786f;
+  --line: rgba(224, 225, 220, 0.10);
+  --line-2: rgba(224, 225, 220, 0.24);
+  --accent: #b9bcb4;
+  --card-bg: #303234;            /* 另一块混凝土板，比底稍浅 */
+  --glass-border: rgba(0, 0, 0, 0.5);   /* 浇筑缝：一道暗线，不是描边 */
+  --glass-bg: transparent;
+  --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 255, 255, 0.04);
+  --ripple-c: rgba(255, 255, 255, 0.08);
+  --crete-hi: rgba(255, 255, 255, 0.07);
+  --crete-lo: rgba(0, 0, 0, 0.38);
+  --crete-grain: 0.09;
+  /* 水泥颗粒：feTurbulence 分形噪点，去饱和后平铺 160px */
+  --crete-noise: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* 巨构投影：长、柔、深；再压一道 inset 顶部亮边 = 板的厚度 */
+  --glass:    0 26px 50px -26px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-sm: 0 8px 18px -10px rgba(0, 0, 0, 0.70),  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-in: inset 0 3px 10px rgba(0, 0, 0, 0.55),  inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+:root[data-style="crete"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #a9aaa3;                 /* 干水泥灰 */
+  --ink: #16171a;
+  --ink-2: #43453f;
+  --ink-3: #6b6d66;
+  --line: rgba(20, 20, 20, 0.16);
+  --line-2: rgba(20, 20, 20, 0.32);
+  --accent: #16171a;
+  --card-bg: #b3b4ad;
+  --glass-border: rgba(0, 0, 0, 0.35);
+  --spot-c: rgba(0, 0, 0, 0.08);
+  --ripple-c: rgba(0, 0, 0, 0.16);
+  --crete-hi: rgba(255, 255, 255, 0.32);
+  --crete-lo: rgba(0, 0, 0, 0.16);
+  --crete-grain: 0.15;
+  --glass:    0 26px 50px -24px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --glass-sm: 0 8px 18px -10px rgba(0, 0, 0, 0.35),  inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  --glass-in: inset 0 3px 10px rgba(0, 0, 0, 0.28),  inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="crete"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #a9aaa3;
+    --ink: #16171a;
+    --ink-2: #43453f;
+    --ink-3: #6b6d66;
+    --line: rgba(20, 20, 20, 0.16);
+    --line-2: rgba(20, 20, 20, 0.32);
+    --accent: #16171a;
+    --card-bg: #b3b4ad;
+    --glass-border: rgba(0, 0, 0, 0.35);
+    --spot-c: rgba(0, 0, 0, 0.08);
+    --ripple-c: rgba(0, 0, 0, 0.16);
+    --crete-hi: rgba(255, 255, 255, 0.32);
+    --crete-lo: rgba(0, 0, 0, 0.16);
+    --crete-grain: 0.15;
+    --glass:    0 26px 50px -24px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    --glass-sm: 0 8px 18px -10px rgba(0, 0, 0, 0.35),  inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    --glass-in: inset 0 3px 10px rgba(0, 0, 0, 0.28),  inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* 整页：斜射光（两道固定渐变，光不动、人在走） */
+:root[data-style="crete"] body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(115deg, var(--crete-hi) 0%, transparent 44%),
+    linear-gradient(295deg, var(--crete-lo) 0%, transparent 58%);
+  background-attachment: fixed;
+}
+/* 水泥颗粒：fixed 全屏 + overlay 混合，让所有元素沾上同一层材质 */
+:root[data-style="crete"] body::after {
+  content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background-image: var(--crete-noise);
+  opacity: var(--crete-grain);
+  mix-blend-mode: overlay;
+}
+/* 面板：零圆角 + 浇筑缝，厚度与体量交给投影 */
+:root[data-style="crete"] .glass,
+:root[data-style="crete"] .card,
+:root[data-style="crete"] .row {
+  border-radius: 0;
+  border: 1px solid var(--glass-border);
+}
+/* 卡片：hover 抬得更高、投影拉得更长（体量感），active 压回并转内凹 */
+:root[data-style="crete"] .card:hover,
+:root[data-style="crete"] .card:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--glass-border);
+  box-shadow: 0 40px 70px -30px rgba(0, 0, 0, 0.80), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+:root[data-style="crete"] .card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.70), inset 0 2px 8px rgba(0, 0, 0, 0.40);
+}
+/* 分类标签：凿进墙里的凹槽 */
+:root[data-style="crete"] .card-tag {
+  border-radius: 0; background: transparent;
+  border: 1px solid var(--line-2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 目录药丸 / 按钮：同样归零圆角，hover 用更长的投影 */
+:root[data-style="crete"] .toc a { border-radius: 0; }
+:root[data-style="crete"] .toc a:hover,
+:root[data-style="crete"] .toc a:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--line-2);
+  box-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.70), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+:root[data-style="crete"] .toc a:active { transform: none; box-shadow: var(--glass-in); }
+:root[data-style="crete"] .btn {
+  border-radius: 0; border: 1px solid var(--glass-border);
+  background: var(--card-bg); box-shadow: var(--glass-sm);
+}
+:root[data-style="crete"] .btn:active { box-shadow: var(--glass-in); }
+/* 条目行：常态平贴，悬停压成凹槽 */
+:root[data-style="crete"] .row { border-bottom-color: var(--line); box-shadow: none; }
+:root[data-style="crete"] .row:hover,
+:root[data-style="crete"] .row:focus-visible { box-shadow: var(--glass-in); }
+/* 开关：轨道 = 凿出来的槽，旋钮 = 一小块混凝土板 */
+:root[data-style="crete"] .ls-track,
+:root[data-style="crete"] .bs-track {
+  border-radius: 2px; background: var(--bg);
+  border: 1px solid var(--glass-border); box-shadow: var(--glass-in);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="crete"] .ls-knob {
+  border-radius: 1px; background: var(--card-bg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+/* 尺度感：标题转无衬线 800 大写，像浇在墙上的字；分区线加粗 */
+:root[data-style="crete"] .hero-title,
+:root[data-style="crete"] .sec-head h2,
+:root[data-style="crete"] .foot-word {
+  font-family: var(--sans);
+  font-weight: 800; letter-spacing: -0.03em; text-transform: uppercase;
+}
+:root[data-style="crete"] .hero-title { text-shadow: 0 3px 0 rgba(0, 0, 0, 0.28); }
+:root[data-style="crete"] .foot-word { text-shadow: 0 4px 0 rgba(0, 0, 0, 0.22); }
+:root[data-style="crete"] .sec-head { border-bottom-width: 2px; }
+/* 品牌圆点：从圆点变成一枚空心小方块（混凝土不做圆的东西） */
+:root[data-style="crete"] .brand-dot {
+  border-radius: 0; background: transparent;
+  border: 2px solid var(--ink); box-shadow: none;
+}
+:root[data-style="crete"] .brand:hover .brand-dot,
+:root[data-style="crete"] .brand:focus-visible .brand-dot {
+  background: var(--ink); box-shadow: none;
+}
+
+/* ---- 平铺风格条在各皮肤下的形状（复用各皮肤自己的语言）---- */
+:root[data-style="raw"] .skin-chip { border-radius: 6px; border: 2px solid var(--raw-line); }
+:root[data-style="raw"] .skin-chip::before { border-radius: 1px; }
+:root[data-style="crete"] .skin-chip { border-radius: 0; }
+:root[data-style="crete"] .skin-chip::before { border-radius: 0; }
+:root[data-style="w10"] .skin-chip { border-radius: 0; }
+:root[data-style="w10"] .skin-chip::before { border-radius: 0; }
+/* Win10 是唯一一套没有投影的皮肤：选中态改成"描边换成强调色" */
+:root[data-style="w10"] .skin-chip[aria-pressed="true"] {
+  border-color: var(--accent); color: var(--accent); box-shadow: none;
+}
+:root[data-style="w10"] .skin-chip[aria-pressed="true"]::before { background: var(--accent); }
+/* XP：选中档做成蓝色标题栏（跟 XP 菜单里的高亮项一个做法） */
+:root[data-style="xp"] .skin-chip {
+  border-radius: 4px; border: 1px solid var(--xp-edge);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="xp"] .skin-chip::before { border-radius: 0; }
+:root[data-style="xp"] .skin-chip[aria-pressed="true"] {
+  color: #ffffff; border-color: var(--xp-bar2); box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg,
+    var(--xp-bar1) 0%, var(--xp-bar1) 44%, var(--xp-bar2) 52%, var(--xp-bar2) 100%);
+}
+:root[data-style="xp"] .skin-chip[aria-pressed="true"]::before { background: #ffffff; box-shadow: none; }
+
+/* ==================================================================
+   风格 E：Windows XP · Luna（<html data-style="xp">）
+   ------------------------------------------------------------------
+   亮色 = Luna 蓝（米色桌面 + 白窗口 + 蓝色标题栏 + 立体描边）
+   暗色 = Royale Noir（微软做过却没正式发布的黑蓝 XP 主题）
+   XP 的四件套：
+     ① 立体描边：inset 上白 / 下灰，1px，模拟 3D 边框（--glass / --glass-sm）
+     ② 蓝色渐变：标题栏、按钮、标签都是「亮→暗→亮」的四段渐变
+     ③ 字体：正文 Tahoma，标题 Trebuchet MS Bold（Luna 的标题栏字）
+     ④ 圆角 8px（XP 窗口的圆角）+ 主按钮做成绿色「开始」按钮
+   ================================================================== */
+:root[data-style="xp"] {
+  color-scheme: dark;
+  --ui: Tahoma, "Microsoft YaHei", "PingFang SC", sans-serif;
+  --ui-title: "Trebuchet MS", Tahoma, "Microsoft YaHei", sans-serif;
+  --sans: var(--ui); --mono: var(--ui); --serif: var(--ui-title);
+  /* —— 暗色：Royale Noir —— */
+  --bg: #121417;
+  --ink: #e8eaee;
+  --ink-2: #b6bbc4;
+  --ink-3: #868d99;
+  --line: rgba(232, 234, 238, 0.12);
+  --line-2: rgba(232, 234, 238, 0.26);
+  --accent: #5b9bf7;
+  --card-bg: #1d2026;
+  --glass-border: #3d434c;
+  --glass-bg: transparent;
+  --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 255, 255, 0.06);
+  --ripple-c: rgba(255, 255, 255, 0.12);
+  --xp-bar1: #5b9bf7; --xp-bar2: #0b4fd0;   /* 标题栏渐变两端（Luna 蓝）*/
+  --xp-edge: #3a4150;                        /* 3D 边框灰 */
+  --xp-hi: rgba(255, 255, 255, 0.18);        /* 立体描边 · 亮边 */
+  --xp-lo: rgba(0, 0, 0, 0.60);              /* 立体描边 · 暗边 */
+  --glass:    inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+  --glass-sm: inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+  --glass-in: inset 2px 2px 4px rgba(0, 0, 0, 0.55), inset -1px -1px 0 var(--xp-hi);
+}
+:root[data-style="xp"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #ece9d8;                 /* XP 米色桌面 */
+  --ink: #1b1b1b;
+  --ink-2: #3f3f3f;
+  --ink-3: #7b7869;
+  --line: rgba(0, 0, 0, 0.13);
+  --line-2: rgba(0, 0, 0, 0.30);
+  --accent: #1a47a3;
+  --card-bg: #ffffff;            /* 窗口 = 纯白 */
+  --glass-border: #aca899;
+  --spot-c: rgba(0, 0, 0, 0.07);
+  --ripple-c: rgba(0, 0, 0, 0.14);
+  --xp-bar1: #4f9bff; --xp-bar2: #0b4fd0;
+  --xp-edge: #aca899;
+  --xp-hi: #ffffff;
+  --xp-lo: #cfc9b8;
+  --glass:    inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+  --glass-sm: inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+  --glass-in: inset 2px 2px 4px rgba(0, 0, 0, 0.22), inset -1px -1px 0 #ffffff;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="xp"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #ece9d8;
+    --ink: #1b1b1b; --ink-2: #3f3f3f; --ink-3: #7b7869;
+    --line: rgba(0, 0, 0, 0.13); --line-2: rgba(0, 0, 0, 0.30);
+    --accent: #1a47a3;
+    --card-bg: #ffffff;
+    --glass-border: #aca899;
+    --spot-c: rgba(0, 0, 0, 0.07);
+    --ripple-c: rgba(0, 0, 0, 0.14);
+    --xp-bar1: #4f9bff; --xp-bar2: #0b4fd0;
+    --xp-edge: #aca899; --xp-hi: #ffffff; --xp-lo: #cfc9b8;
+    --glass:    inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+    --glass-sm: inset 1px 1px 0 var(--xp-hi), inset -1px -1px 0 var(--xp-lo);
+    --glass-in: inset 2px 2px 4px rgba(0, 0, 0, 0.22), inset -1px -1px 0 #ffffff;
+  }
+}
+/* 窗口：8px 圆角 + 1px 3D 灰边 + 立体描边 */
+:root[data-style="xp"] .glass,
+:root[data-style="xp"] .card,
+:root[data-style="xp"] .row {
+  border-radius: 8px;
+  border: 1px solid var(--xp-edge);
+  box-shadow: var(--glass);
+}
+:root[data-style="xp"] .card:hover,
+:root[data-style="xp"] .card:focus-visible { transform: translateY(-2px); }
+/* 分类标签 = 蓝色标题栏药丸（白字 + 立体高光） */
+:root[data-style="xp"] .card-tag {
+  border-radius: 4px; border: 1px solid var(--xp-bar2);
+  background: linear-gradient(180deg,
+    var(--xp-bar1) 0%, var(--xp-bar1) 44%, var(--xp-bar2) 52%, var(--xp-bar2) 100%);
+  color: #ffffff; font-weight: 700; letter-spacing: 0.06em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.35);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 主按钮 = XP 绿色「开始」按钮：左直角、右侧大圆角 */
+:root[data-style="xp"] .btn {
+  border-radius: 4px 14px 14px 4px;
+  border: 1px solid #164a16;
+  background: linear-gradient(180deg, #6ec96e 0%, #3f9c3f 45%, #2d822d 55%, #55b455 100%);
+  color: #ffffff; font-weight: 700; font-size: 11.5px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+:root[data-style="xp"] .btn:hover,
+:root[data-style="xp"] .btn:focus-visible {
+  background: linear-gradient(180deg, #7dd67d 0%, #47a847 45%, #348c34 55%, #5fbe5f 100%);
+}
+/* 目录药丸 / 开关轨道 = XP 立体按钮 */
+:root[data-style="xp"] .toc a { border-radius: 4px; border: 1px solid var(--xp-edge); }
+:root[data-style="xp"] .toc a:hover,
+:root[data-style="xp"] .toc a:focus-visible { box-shadow: var(--glass-in); }
+:root[data-style="xp"] .ls-track,
+:root[data-style="xp"] .bs-track,
+:root[data-style="xp"] .sm-btn {
+  border-radius: 4px; border: 1px solid var(--xp-edge); background: var(--card-bg);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="xp"] .ls-knob,
+:root[data-style="xp"] .bs-bulb {
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--xp-bar1) 0%, var(--xp-bar2) 100%);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4);
+}
+/* 下拉菜单 = XP 菜单：白底、灰边、左侧一条浅灰图标槽 */
+:root[data-style="xp"] .sm-panel {
+  border-radius: 0; border: 1px solid var(--xp-edge);
+  background-color: var(--card-bg);
+  background-image: linear-gradient(90deg, var(--bg) 0 24px, transparent 24px);
+  padding: 4px 4px 4px 0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.28);
+}
+:root[data-style="xp"] .sm-item { border-radius: 0; padding-left: 28px; }
+:root[data-style="xp"] .sm-item[aria-selected="true"] { background: var(--xp-bar2); color: #fff; }
+:root[data-style="xp"] .sm-item[aria-selected="true"]::before { box-shadow: none; background: #fff; }
+/* 标题：Trebuchet MS Bold（Luna 标题栏字体） */
+:root[data-style="xp"] .hero-title,
+:root[data-style="xp"] .sec-head h2,
+:root[data-style="xp"] .card-title,
+:root[data-style="xp"] .foot-word { font-family: var(--ui-title); font-weight: 700; }
+:root[data-style="xp"] .hero-title { letter-spacing: -0.01em; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65); }
+:root[data-style="xp"] .brand-dot { border-radius: 0; box-shadow: none; background: var(--xp-bar1); }
+
+/* —— XP 进阶：分区标题 / 卡片标题栏 / 顶栏 都做成 Luna 蓝标题栏 —— */
+/* 分区标题：整条蓝色标题栏，白字，顶部一道高光 */
+:root[data-style="xp"] .sec-head {
+  background: linear-gradient(180deg, #5b9bf7 0%, #1f6fe5 50%, #0b4fd0 100%);
+  border: 1px solid #0a3d91; border-bottom: 1px solid #0a3d91; border-radius: 6px;
+  padding: 11px 16px 12px; margin-bottom: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+:root[data-style="xp"] .sec-head h2,
+:root[data-style="xp"] .sec-head .sec-idx,
+:root[data-style="xp"] .sec-head .sec-count { color: #ffffff; }
+:root[data-style="xp"] .sec-head h2 { font-family: var(--ui-title); font-weight: 700; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); }
+:root[data-style="xp"] .sec-head h2 .en { color: rgba(255, 255, 255, 0.82); }
+/* 卡片：顶部拉出一条蓝色标题栏（card-top 满铺卡片上沿），白字 */
+:root[data-style="xp"] .card { overflow: hidden; }
+:root[data-style="xp"] .card-top {
+  margin: -20px -22px 16px; padding: 9px 18px;
+  border-radius: 7px 7px 0 0;
+  background: linear-gradient(180deg, #5b9bf7 0%, #1f6fe5 50%, #0b4fd0 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+:root[data-style="xp"] .card-top .card-tag,
+:root[data-style="xp"] .card-top .card-num,
+:root[data-style="xp"] .card-top .card-go { color: #ffffff; }
+:root[data-style="xp"] .card-tag {
+  background: none; border: 0; box-shadow: none; padding: 0;
+  font-weight: 700; letter-spacing: 0.08em; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+:root[data-style="xp"] .card:hover .card-go { color: #ffffff; }
+/* 顶栏：Luna 蓝标题栏，内部控件给奶白底保证可读 */
+:root[data-style="xp"] .topbar {
+  background: linear-gradient(180deg, #5b9bf7 0%, #1f6fe5 50%, #0b4fd0 100%);
+  border-radius: 8px; padding: 13px 18px; margin: 0 0 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+:root[data-style="xp"] .topbar a,
+:root[data-style="xp"] .topbar .brand { color: #ffffff; }
+:root[data-style="xp"] .topbar a:hover { color: #ffffff; border-color: rgba(255, 255, 255, 0.6); }
+:root[data-style="xp"] .brand-dot { background: #ffffff; box-shadow: none; }
+:root[data-style="xp"] .lang-switch,
+:root[data-style="xp"] .bulb-switch {
+  background: var(--card-bg); border: 1px solid var(--xp-edge); border-radius: 4px;
+  box-shadow: var(--glass); color: var(--ink);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="xp"] .lang-switch .ls-opt { color: var(--ink-2); }
+
+/* ==================================================================
+   风格 F：Windows 7 · Aero（<html data-style="w7">）
+   ------------------------------------------------------------------
+   Frutiger Aero：毛玻璃 + 高光 + 蓝色外发光 + Segoe UI Light 大标题。
+     · 卡面是「真玻璃」：backdrop-filter blur(14px) + 顶部高光渐变
+     · --card-bg 直接是一整条 Aero 玻璃渐变（上亮 45%、腰线 50%、下亮）
+     · 蓝：#2d7dd2；外发光一律用 rgba(24,64,110,·)，不用纯黑投影
+     · 壁纸：body 上两团固定不动的蓝色光晕（background-attachment: fixed
+       这样滚动时"光不动、人在走"，跟真壁纸一个道理）
+   ================================================================== */
+:root[data-style="w7"] {
+  color-scheme: dark;
+  --ui: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --sans: var(--ui); --mono: var(--ui); --serif: var(--ui);
+  /* —— 暗色：夜航 Aero —— */
+  --bg: #0d1b2c;
+  --ink: #eaf4fd;
+  --ink-2: #b3cde6;
+  --ink-3: #7d9bb8;
+  --line: rgba(234, 244, 253, 0.14);
+  --line-2: rgba(234, 244, 253, 0.30);
+  --accent: #6fc0f5;
+  --card-bg: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.07) 44%,
+    rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.10) 100%);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-bg: rgba(255, 255, 255, 0.10);
+  --glass-blur: blur(14px) saturate(160%);
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 255, 255, 0.08);
+  --ripple-c: rgba(255, 255, 255, 0.16);
+  --aero-glow: rgba(51, 138, 214, 0.45);
+  --aero-haze: rgba(20, 74, 130, 0.55);
+  --glass:    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+              0 10px 30px -12px rgba(0, 0, 0, 0.65),
+              0 0 22px -6px var(--aero-glow);
+  --glass-sm: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 3px 10px -4px rgba(0, 0, 0, 0.6);
+  --glass-in: inset 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+:root[data-style="w7"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #e9f3fb;
+  --ink: #16324d;
+  --ink-2: #4a6b8a;
+  --ink-3: #7c9ab5;
+  --line: rgba(22, 50, 77, 0.14);
+  --line-2: rgba(22, 50, 77, 0.30);
+  --accent: #1f6fb2;
+  --card-bg: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.52) 44%,
+    rgba(255, 255, 255, 0.32) 50%, rgba(255, 255, 255, 0.62) 100%);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --spot-c: rgba(22, 50, 77, 0.07);
+  --ripple-c: rgba(22, 50, 77, 0.14);
+  --aero-glow: rgba(122, 190, 235, 0.55);
+  --aero-haze: rgba(150, 205, 240, 0.60);
+  --glass:    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+              0 10px 28px -12px rgba(24, 64, 110, 0.45),
+              0 0 20px -6px var(--aero-glow);
+  --glass-sm: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px -4px rgba(24, 64, 110, 0.35);
+  --glass-in: inset 0 2px 7px rgba(24, 64, 110, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="w7"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #e9f3fb;
+    --ink: #16324d; --ink-2: #4a6b8a; --ink-3: #7c9ab5;
+    --line: rgba(22, 50, 77, 0.14); --line-2: rgba(22, 50, 77, 0.30);
+    --accent: #1f6fb2;
+    --card-bg: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.52) 44%,
+      rgba(255, 255, 255, 0.32) 50%, rgba(255, 255, 255, 0.62) 100%);
+    --glass-border: rgba(255, 255, 255, 0.85);
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --spot-c: rgba(22, 50, 77, 0.07);
+    --ripple-c: rgba(22, 50, 77, 0.14);
+    --aero-glow: rgba(122, 190, 235, 0.55);
+    --aero-haze: rgba(150, 205, 240, 0.60);
+    --glass:    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+                0 10px 28px -12px rgba(24, 64, 110, 0.45),
+                0 0 20px -6px var(--aero-glow);
+    --glass-sm: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 10px -4px rgba(24, 64, 110, 0.35);
+    --glass-in: inset 0 2px 7px rgba(24, 64, 110, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+}
+/* 壁纸：两团固定光晕（不随滚动）+ 底部一片海蓝 */
+:root[data-style="w7"] body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(70% 46% at 50% 104%, var(--aero-glow) 0%, transparent 72%),
+    radial-gradient(58% 40% at 10% 2%, var(--aero-haze) 0%, transparent 70%),
+    radial-gradient(46% 34% at 92% 12%, var(--aero-haze) 0%, transparent 70%);
+  background-attachment: fixed;
+}
+:root[data-style="w7"] .glass,
+:root[data-style="w7"] .card,
+:root[data-style="w7"] .row {
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+:root[data-style="w7"] .card:hover,
+:root[data-style="w7"] .card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+              0 18px 38px -14px rgba(24, 64, 110, 0.55),
+              0 0 26px -6px var(--aero-glow);
+}
+:root[data-style="w7"] .card:active { box-shadow: var(--glass-in); }
+/* 分类标签 = Aero 蓝色任务栏按钮 */
+:root[data-style="w7"] .card-tag {
+  border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(180deg, #9fd3f7 0%, #56a6e2 48%, #2d7dd2 52%, #6cb6ec 100%);
+  color: #ffffff; font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 1px 3px rgba(20, 60, 110, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 按钮 / 药丸：Aero 玻璃 */
+:root[data-style="w7"] .btn,
+:root[data-style="w7"] .toc a { border-radius: 6px; border: 1px solid var(--glass-border); }
+:root[data-style="w7"] .btn:hover,
+:root[data-style="w7"] .toc a:hover,
+:root[data-style="w7"] .btn:focus-visible,
+:root[data-style="w7"] .toc a:focus-visible { background: var(--glass-bg); }
+:root[data-style="w7"] .row:hover,
+:root[data-style="w7"] .row:focus-visible { background: var(--glass-bg); border-bottom-color: transparent; }
+:root[data-style="w7"] .sm-panel {
+  border-radius: 8px;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 18px 40px -14px rgba(20, 60, 110, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+/* 标题：Segoe UI Light + 蓝色外发光（Aero 的标志性光晕） */
+:root[data-style="w7"] .hero-title,
+:root[data-style="w7"] .sec-head h2,
+:root[data-style="w7"] .foot-word {
+  font-weight: 300; letter-spacing: -0.02em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 22px var(--aero-glow);
+}
+:root[data-style="w7"] .card-title { font-weight: 400; }
+:root[data-style="w7"] .brand-dot { box-shadow: 0 0 10px 2px var(--aero-glow); }
+
+/* ==================================================================
+   风格 G：Windows 10 · Metro / MDL2（<html data-style="w10">）
+   ------------------------------------------------------------------
+   与前六种全反着来：扁平、直角、无渐变、无投影、无高光。
+     · --glass / --glass-sm 一律 none——这是唯一一套「完全没有 box-shadow」的皮肤
+     · 唯一强调色 #0078d7（暗色下换成 #4cc2ff）
+     · 交互不靠「抬起」：hover 只是边框变成强调色 + 一圈极淡的底影，
+       Metro 里元素不会浮起来，字块是贴着平面的
+     · 圆角全部归零：卡片、药丸、按钮、开关、菜单
+   ================================================================== */
+:root[data-style="w10"] {
+  color-scheme: dark;
+  --ui: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --sans: var(--ui); --mono: var(--ui); --serif: var(--ui);
+  /* —— 暗色：Win10 深色（#000/#1f1f1f 两级灰） —— */
+  --bg: #1f1f1f;
+  --ink: #ffffff;
+  --ink-2: #cccccc;
+  --ink-3: #8a8a8a;
+  --line: #333333;
+  --line-2: #4a4a4a;
+  --accent: #4cc2ff;
+  --card-bg: #2b2b2b;
+  --glass-border: #3d3d3d;
+  --glass-bg: transparent;
+  --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 255, 255, 0.06);
+  --ripple-c: rgba(255, 255, 255, 0.14);
+  --glass: none;
+  --glass-sm: none;
+  --glass-in: none;
+}
+:root[data-style="w10"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f2f2;
+  --ink: #1a1a1a;
+  --ink-2: #4d4d4d;
+  --ink-3: #767676;
+  --line: #e2e2e2;
+  --line-2: #c9c9c9;
+  --accent: #0078d7;
+  --card-bg: #ffffff;
+  --glass-border: #e2e2e2;
+  --spot-c: rgba(0, 0, 0, 0.05);
+  --ripple-c: rgba(0, 0, 0, 0.10);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="w10"]:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f2f2f2;
+    --ink: #1a1a1a; --ink-2: #4d4d4d; --ink-3: #767676;
+    --line: #e2e2e2; --line-2: #c9c9c9;
+    --accent: #0078d7;
+    --card-bg: #ffffff;
+    --glass-border: #e2e2e2;
+    --spot-c: rgba(0, 0, 0, 0.05);
+    --ripple-c: rgba(0, 0, 0, 0.10);
+  }
+}
+/* 一切归零：直角 + 1px 细边 + 无任何投影 */
+:root[data-style="w10"] .glass,
+:root[data-style="w10"] .card,
+:root[data-style="w10"] .row,
+:root[data-style="w10"] .toc a,
+:root[data-style="w10"] .btn,
+:root[data-style="w10"] .card-tag,
+:root[data-style="w10"] .ls-track,
+:root[data-style="w10"] .bs-track,
+:root[data-style="w10"] .sm-btn,
+:root[data-style="w10"] .sm-panel {
+  border-radius: 0;
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* Metro 的 hover：不抬起，只把边框换成强调色 + 一道极淡的落影 */
+:root[data-style="w10"] .card:hover,
+:root[data-style="w10"] .card:focus-visible {
+  transform: none;
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+}
+:root[data-style="w10"] .card:active { border-color: var(--accent); box-shadow: none; }
+/* 分类标签 = 实色磁贴 */
+:root[data-style="w10"] .card-tag {
+  background: var(--accent); border-color: var(--accent);
+  color: #ffffff; font-weight: 600; letter-spacing: 0.1em;
+}
+/* 按钮 / 目录：描边式按钮，hover 时反白成实色 */
+:root[data-style="w10"] .btn,
+:root[data-style="w10"] .toc a { color: var(--ink); transition: background .2s linear, color .2s linear, border-color .2s linear; }
+:root[data-style="w10"] .btn:hover,
+:root[data-style="w10"] .btn:focus-visible,
+:root[data-style="w10"] .toc a:hover,
+:root[data-style="w10"] .toc a:focus-visible {
+  transform: none; background: var(--accent); border-color: var(--accent); color: #ffffff;
+}
+:root[data-style="w10"] .row { border-bottom-color: var(--line); }
+:root[data-style="w10"] .row:hover,
+:root[data-style="w10"] .row:focus-visible {
+  padding-left: 12px; background: var(--spot-c); border-bottom-color: transparent;
+}
+:root[data-style="w10"] .sm-panel { background-color: var(--card-bg); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22); }
+:root[data-style="w10"] .sm-item { border-radius: 0; }
+:root[data-style="w10"] .sm-item::before { border-radius: 0; }
+:root[data-style="w10"] .sm-item[aria-selected="true"] { color: var(--accent); }
+/* 开关：旋钮变成强调色的实心方块 */
+:root[data-style="w10"] .ls-knob,
+:root[data-style="w10"] .bs-bulb { border-radius: 0; background: var(--accent); box-shadow: none; }
+:root[data-style="w10"] .brand-dot { border-radius: 0; background: var(--accent); box-shadow: none; }
+:root[data-style="w10"] ::selection { background: var(--accent); color: #ffffff; }
+/* 标题：Segoe UI Semibold，无阴影无发光——扁平就是不加修饰 */
+:root[data-style="w10"] .hero-title,
+:root[data-style="w10"] .sec-head h2,
+:root[data-style="w10"] .card-title,
+:root[data-style="w10"] .foot-word {
+  font-family: var(--ui); font-weight: 600; letter-spacing: -0.02em; text-shadow: none;
+}
+:root[data-style="w10"] .card-title { font-weight: 600; }
+
+/* ==================================================================
+   风格 H：梦核 · Dreamcore（<html data-style="dream">）
+   ------------------------------------------------------------------
+   阈限 / 超现实 / 千禧怀旧：暖奶油底 + 柔粉 + 婴儿蓝，超大圆角、柔散投影、
+   轻微暗角与模糊辉光，像一场不肯醒的梦。配色走低饱和粉彩。
+   ================================================================== */
+:root[data-style="dream"] {
+  --ui: "PingFang SC", "Microsoft YaHei", var(--sans), sans-serif;
+  --sans: var(--ui); --mono: "PingFang SC", var(--mono), sans-serif; --serif: "Songti SC", Georgia, serif;
+  /* —— 暗色：深梅子 —— */
+  --bg: #241d2b;
+  --ink: #f6e7ef; --ink-2: #c9b2c2; --ink-3: #8d7686;
+  --line: rgba(246, 231, 239, 0.12); --line-2: rgba(246, 231, 239, 0.26);
+  --accent: #f4a8c8;
+  --card-bg: #312638;
+  --glass-border: rgba(244, 168, 200, 0.35);
+  --glass-bg: rgba(255, 255, 255, 0.06); --glass-blur: blur(6px);
+  --sec-img-o: 0; --spot-c: rgba(244, 168, 200, 0.18); --ripple-c: rgba(244, 168, 200, 0.20);
+  --dream-r: 26px;
+  --dream-shadow: 0 20px 44px -20px rgba(244, 168, 200, 0.45);
+  --dream-glow: radial-gradient(120% 80% at 50% -10%, rgba(244, 168, 200, 0.22), transparent 60%);
+}
+:root[data-style="dream"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6ece1;
+  --ink: #5a4051; --ink-2: #8a7180; --ink-3: #b39caa;
+  --line: rgba(90, 64, 81, 0.14); --line-2: rgba(90, 64, 81, 0.30);
+  --accent: #e98ab0;
+  --card-bg: #fdf7f1;
+  --glass-border: rgba(233, 138, 176, 0.45);
+  --glass-bg: rgba(255, 255, 255, 0.55); --glass-blur: blur(6px);
+  --sec-img-o: 0; --spot-c: rgba(233, 138, 176, 0.25); --ripple-c: rgba(233, 138, 176, 0.22);
+  --dream-shadow: 0 20px 44px -20px rgba(233, 138, 176, 0.55);
+  --dream-glow: radial-gradient(120% 80% at 50% -10%, rgba(233, 138, 176, 0.30), transparent 60%);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="dream"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #f6ece1; --ink: #5a4051; --ink-2: #8a7180; --ink-3: #b39caa;
+    --line: rgba(90, 64, 81, 0.14); --line-2: rgba(90, 64, 81, 0.30);
+    --accent: #e98ab0; --card-bg: #fdf7f1;
+    --glass-border: rgba(233, 138, 176, 0.45);
+    --glass-bg: rgba(255, 255, 255, 0.55); --glass-blur: blur(6px);
+    --sec-img-o: 0; --spot-c: rgba(233, 138, 176, 0.25); --ripple-c: rgba(233, 138, 176, 0.22);
+    --dream-shadow: 0 20px 44px -20px rgba(233, 138, 176, 0.55);
+    --dream-glow: radial-gradient(120% 80% at 50% -10%, rgba(233, 138, 176, 0.30), transparent 60%);
+  }
+}
+:root[data-style="dream"] body { background-image: var(--dream-glow); }
+:root[data-style="dream"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: radial-gradient(130% 120% at 50% 45%, transparent 55%, rgba(40, 28, 40, 0.18) 100%);
+  mix-blend-mode: multiply;
+}
+:root[data-style="dream"] .glass,
+:root[data-style="dream"] .card,
+:root[data-style="dream"] .row {
+  border-radius: var(--dream-r); border: 1px solid var(--glass-border);
+  box-shadow: var(--dream-shadow);
+}
+:root[data-style="dream"] .card:hover,
+:root[data-style="dream"] .card:focus-visible { transform: translateY(-3px); }
+:root[data-style="dream"] .card-tag {
+  border-radius: 999px; border: 1px solid var(--glass-border);
+  background: rgba(233, 138, 176, 0.16); color: var(--accent);
+  font-weight: 700; letter-spacing: 0.06em;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="dream"] .btn {
+  border-radius: 999px; border: 1px solid var(--glass-border);
+  background: var(--accent); color: #ffffff; font-weight: 700;
+  box-shadow: 0 8px 20px -8px rgba(233, 138, 176, 0.7);
+}
+:root[data-style="dream"] .toc a { border-radius: 999px; border: 1px solid var(--glass-border); }
+:root[data-style="dream"] .toc a:hover { box-shadow: var(--dream-shadow); }
+:root[data-style="dream"] .ls-track,
+:root[data-style="dream"] .bs-track,
+:root[data-style="dream"] .sm-btn { border-radius: 999px; border: 1px solid var(--glass-border); }
+:root[data-style="dream"] .hero-title,
+:root[data-style="dream"] .sec-head h2,
+:root[data-style="dream"] .foot-word {
+  font-family: var(--serif); font-weight: 600; text-shadow: 0 0 18px rgba(233, 138, 176, 0.45);
+}
+
+/* ==================================================================
+   风格 I：池核 · Poolcore（<html data-style="pool">）
+   ------------------------------------------------------------------
+   空泳池 / 阈限水空间：青蓝水色 + 白瓷砖 + 砖缝线 + 水波高光。卡面像一块
+   瓷砖，2px 彩色描边当砖缝，body 铺一层 32px 网格 = 池底马赛克。
+   ================================================================== */
+:root[data-style="pool"] {
+  --ui: "PingFang SC", "Microsoft YaHei", var(--sans), sans-serif;
+  /* —— 暗色：深水 —— */
+  --bg: #07272c;
+  --ink: #d6f3f6; --ink-2: #8fd3db; --ink-3: #4f9aa3;
+  --line: rgba(214, 243, 246, 0.12); --line-2: rgba(214, 243, 246, 0.26);
+  --accent: #2fd6e6;
+  --card-bg: #0d3a41;
+  --glass-border: rgba(47, 214, 230, 0.40);
+  --glass-bg: rgba(255, 255, 255, 0.05); --glass-blur: blur(4px);
+  --sec-img-o: 0; --spot-c: rgba(47, 214, 230, 0.20); --ripple-c: rgba(47, 214, 230, 0.20);
+  --pool-r: 12px;
+  --pool-shadow: 0 12px 26px -12px rgba(47, 214, 230, 0.50);
+  --pool-grid: repeating-linear-gradient(0deg, transparent 0 31px, rgba(47, 214, 230, 0.14) 31px 32px),
+               repeating-linear-gradient(90deg, transparent 0 31px, rgba(47, 214, 230, 0.14) 31px 32px);
+}
+:root[data-style="pool"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #cdeef0;
+  --ink: #0e4a52; --ink-2: #2c727d; --ink-3: #5c97a0;
+  --line: rgba(14, 74, 82, 0.16); --line-2: rgba(14, 74, 82, 0.32);
+  --accent: #0fb6c9;
+  --card-bg: #ffffff;
+  --glass-border: rgba(15, 182, 201, 0.45);
+  --glass-bg: rgba(255, 255, 255, 0.5); --glass-blur: blur(4px);
+  --sec-img-o: 0; --spot-c: rgba(15, 182, 201, 0.25); --ripple-c: rgba(15, 182, 201, 0.22);
+  --pool-shadow: 0 12px 26px -12px rgba(15, 182, 201, 0.60);
+  --pool-grid: repeating-linear-gradient(0deg, transparent 0 31px, rgba(15, 182, 201, 0.18) 31px 32px),
+               repeating-linear-gradient(90deg, transparent 0 31px, rgba(15, 182, 201, 0.18) 31px 32px);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="pool"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #cdeef0; --ink: #0e4a52; --ink-2: #2c727d; --ink-3: #5c97a0;
+    --line: rgba(14, 74, 82, 0.16); --line-2: rgba(14, 74, 82, 0.32);
+    --accent: #0fb6c9; --card-bg: #ffffff;
+    --glass-border: rgba(15, 182, 201, 0.45);
+    --glass-bg: rgba(255, 255, 255, 0.5); --glass-blur: blur(4px);
+    --sec-img-o: 0; --spot-c: rgba(15, 182, 201, 0.25); --ripple-c: rgba(15, 182, 201, 0.22);
+    --pool-shadow: 0 12px 26px -12px rgba(15, 182, 201, 0.60);
+    --pool-grid: repeating-linear-gradient(0deg, transparent 0 31px, rgba(15, 182, 201, 0.18) 31px 32px),
+                 repeating-linear-gradient(90deg, transparent 0 31px, rgba(15, 182, 201, 0.18) 31px 32px);
+  }
+}
+:root[data-style="pool"] body { background-image: var(--pool-grid); background-size: 32px 32px; }
+:root[data-style="pool"] .glass,
+:root[data-style="pool"] .card,
+:root[data-style="pool"] .row {
+  border-radius: var(--pool-r); border: 2px solid var(--glass-border);
+  box-shadow: var(--pool-shadow);
+}
+:root[data-style="pool"] .card:hover,
+:root[data-style="pool"] .card:focus-visible { transform: translateY(-2px); }
+:root[data-style="pool"] .card-tag {
+  border-radius: 999px; border: 1px solid var(--glass-border);
+  background: rgba(15, 182, 201, 0.16); color: var(--accent);
+  font-weight: 700; letter-spacing: 0.06em;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="pool"] .btn {
+  border-radius: 999px; border: 2px solid var(--glass-border);
+  background: var(--accent); color: #ffffff; font-weight: 700;
+  box-shadow: 0 8px 18px -8px rgba(15, 182, 201, 0.7);
+}
+:root[data-style="pool"] .toc a { border-radius: var(--pool-r); border: 2px solid var(--glass-border); }
+:root[data-style="pool"] .toc a:hover { box-shadow: var(--pool-shadow); }
+:root[data-style="pool"] .ls-track,
+:root[data-style="pool"] .bs-track,
+:root[data-style="pool"] .sm-btn { border-radius: var(--pool-r); border: 2px solid var(--glass-border); }
+:root[data-style="pool"] .hero-title,
+:root[data-style="pool"] .sec-head h2,
+:root[data-style="pool"] .foot-word {
+  font-family: var(--sans); font-weight: 700; text-shadow: 0 2px 0 rgba(15, 182, 201, 0.18);
+}
+
+/* ==================================================================
+   风格 J：怪核 · Weirdcore（<html data-style="weird">）
+   ------------------------------------------------------------------
+   诡异 / 阈限 / 「这是真的吗？」：临床白（或近黑）+ 硬黑边 + 4px 硬投影 +
+   等宽字 + 红蓝错位辉光 + 扫描线。刻意不做任何柔化，越「不对劲」越对。
+   唯一强彩 = 警示红（这是怪核的招牌，破一次站规的「去红」仅限此皮肤内）。
+   ================================================================== */
+:root[data-style="weird"] {
+  --ui: var(--mono); --sans: var(--mono); --serif: var(--mono); --mono: "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+  /* —— 暗色：近黑 —— */
+  --bg: #0b0b0c;
+  --ink: #f2f0ec; --ink-2: #b8b6b0; --ink-3: #6c6a66;
+  --line: rgba(242, 240, 236, 0.16); --line-2: rgba(242, 240, 236, 0.36);
+  --accent: #ff3b4e;
+  --card-bg: #141416;
+  --glass-border: #f2f0ec; --glass-bg: #141416; --glass-blur: none;
+  --sec-img-o: 0; --spot-c: rgba(255, 59, 78, 0.20); --ripple-c: rgba(255, 59, 78, 0.20);
+  --weird-r: 2px;
+  --weird-shadow: 4px 4px 0 var(--accent);
+}
+:root[data-style="weird"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #efece6;
+  --ink: #0d0d0f; --ink-2: #3a3a3e; --ink-3: #74747a;
+  --line: rgba(13, 13, 15, 0.18); --line-2: rgba(13, 13, 15, 0.40);
+  --accent: #d22b3c;
+  --card-bg: #ffffff;
+  --glass-border: #0d0d0f; --glass-bg: #ffffff; --glass-blur: none;
+  --sec-img-o: 0; --spot-c: rgba(210, 43, 60, 0.22); --ripple-c: rgba(210, 43, 60, 0.20);
+  --weird-shadow: 4px 4px 0 #0d0d0f;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="weird"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #efece6; --ink: #0d0d0f; --ink-2: #3a3a3e; --ink-3: #74747a;
+    --line: rgba(13, 13, 15, 0.18); --line-2: rgba(13, 13, 15, 0.40);
+    --accent: #d22b3c; --card-bg: #ffffff;
+    --glass-border: #0d0d0f; --glass-bg: #ffffff; --glass-blur: none;
+    --sec-img-o: 0; --spot-c: rgba(210, 43, 60, 0.22); --ripple-c: rgba(210, 43, 60, 0.20);
+    --weird-shadow: 4px 4px 0 #0d0d0f;
+  }
+}
+:root[data-style="weird"] body { font-family: var(--mono); }
+:root[data-style="weird"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply; opacity: 0.5;
+}
+:root[data-style="weird"] .glass,
+:root[data-style="weird"] .card,
+:root[data-style="weird"] .row {
+  border-radius: var(--weird-r); border: 1.5px solid var(--glass-border);
+  box-shadow: var(--weird-shadow);
+}
+:root[data-style="weird"] .card:hover,
+:root[data-style="weird"] .card:focus-visible { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--glass-border); }
+:root[data-style="weird"] .card-tag {
+  border-radius: 2px; border: 1.5px solid var(--accent);
+  background: var(--accent); color: #ffffff; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="weird"] .btn {
+  border-radius: 2px; border: 1.5px solid var(--glass-border);
+  background: var(--ink); color: var(--bg); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  box-shadow: var(--weird-shadow);
+}
+:root[data-style="weird"] .btn:hover,
+:root[data-style="weird"] .btn:focus-visible { box-shadow: 6px 6px 0 var(--accent); }
+:root[data-style="weird"] .toc a { border-radius: 2px; border: 1.5px solid var(--glass-border); }
+:root[data-style="weird"] .toc a:hover,
+:root[data-style="weird"] .toc a:focus-visible { box-shadow: var(--weird-shadow); }
+:root[data-style="weird"] .ls-track,
+:root[data-style="weird"] .bs-track,
+:root[data-style="weird"] .sm-btn { border-radius: 2px; border: 1.5px solid var(--glass-border); }
+:root[data-style="weird"] .ls-knob,
+:root[data-style="weird"] .bs-bulb { border-radius: 0; background: var(--accent); box-shadow: none; }
+:root[data-style="weird"] .sec-head h2 { color: var(--ink); font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+:root[data-style="weird"] .sec-head h2 .en { color: var(--accent); }
+:root[data-style="weird"] .hero-title,
+:root[data-style="weird"] .foot-word {
+  font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  text-shadow: 2px 0 var(--accent), -2px 0 #19c3d6;
+}
+:root[data-style="weird"] .brand-dot { border-radius: 0; background: var(--accent); box-shadow: none; }
+
+/* —— 三套「核」的平铺风格条 chip 各自动一下 —— */
+:root[data-style="dream"] .skin-chip { border-radius: 22px; }
+:root[data-style="dream"] .skin-chip[aria-pressed="true"] { box-shadow: var(--dream-shadow); }
+:root[data-style="dream"] .skin-chip[aria-pressed="true"]::before { background: var(--accent); }
+:root[data-style="pool"] .skin-chip { border-radius: 12px; border: 2px solid var(--glass-border); }
+:root[data-style="pool"] .skin-chip[aria-pressed="true"] { box-shadow: var(--pool-shadow); }
+:root[data-style="pool"] .skin-chip[aria-pressed="true"]::before { background: var(--accent); }
+:root[data-style="weird"] .skin-chip { border-radius: 2px; border: 1.5px solid var(--glass-border); }
+:root[data-style="weird"] .skin-chip[aria-pressed="true"] { box-shadow: var(--weird-shadow); }
+:root[data-style="weird"] .skin-chip[aria-pressed="true"]::before { background: var(--accent); }
+
+/* ==================================================================
+   风格 H：Windows Classic（<html data-style="classic">）
+   ------------------------------------------------------------------
+   复刻 95/98/2000 的银灰桌面：
+     · 底色 = #c0c0c0，卡面 = 纯白窗口客户区
+     · 立体感全靠 2px 硬边描边（左上白 / 右下深灰）
+     · 活动标题栏 = 海军蓝 #000080，白字加粗
+     · 按钮 = 灰色突起，按下时翻成凹陷
+     · 所有圆角归零；字体用 Tahoma / MS Sans Serif
+   ================================================================== */
+:root[data-style="classic"] {
+  color-scheme: light;
+  --ui: "Tahoma", "MS Sans Serif", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --sans: var(--ui); --mono: var(--ui); --serif: "Times New Roman", "Songti SC", serif;
+  --bg: #c0c0c0;
+  --ink: #000000;
+  --ink-2: #222222;
+  --ink-3: #555555;
+  --line: #808080;
+  --line-2: #a0a0a0;
+  --accent: #000080;
+  --card-bg: #ffffff;
+  --glass-border: #808080;
+  --glass-bg: transparent;
+  --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(0, 0, 0, 0.06);
+  --ripple-c: rgba(0, 0, 0, 0.14);
+  --glass: none;
+  --glass-sm: none;
+  --glass-in: none;
+  --classic-hi: #ffffff;
+  --classic-lo: #808080;
+  --classic-shadow: #404040;
+}
+:root[data-style="classic"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #2a2a2a;
+  --ink: #ffffff;
+  --ink-2: #e0e0e0;
+  --ink-3: #a0a0a0;
+  --line: #606060;
+  --line-2: #505050;
+  --accent: #a5b3ff;
+  --card-bg: #404040;
+  --classic-hi: #707070;
+  --classic-lo: #1a1a1a;
+  --classic-shadow: #101010;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-style="classic"]:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #2a2a2a; --ink: #ffffff; --ink-2: #e0e0e0; --ink-3: #a0a0a0;
+    --line: #606060; --line-2: #505050; --accent: #a5b3ff; --card-bg: #404040;
+    --classic-hi: #707070; --classic-lo: #1a1a1a; --classic-shadow: #101010;
+  }
+}
+/* 通用 3D 突起框 */
+:root[data-style="classic"] .glass,
+:root[data-style="classic"] .card,
+:root[data-style="classic"] .row,
+:root[data-style="classic"] .toc a,
+:root[data-style="classic"] .btn,
+:root[data-style="classic"] .ls-track,
+:root[data-style="classic"] .bs-track,
+:root[data-style="classic"] .sm-btn,
+:root[data-style="classic"] .sm-panel,
+:root[data-style="classic"] .skin-chip {
+  border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: none;
+  border: 2px solid;
+  border-top-color: var(--classic-hi);
+  border-left-color: var(--classic-hi);
+  border-right-color: var(--classic-shadow);
+  border-bottom-color: var(--classic-shadow);
+}
+/* 卡片：纯白窗口 + 海军蓝标题栏式 tag */
+:root[data-style="classic"] .card,
+:root[data-style="classic"] .row { background: var(--card-bg); }
+:root[data-style="classic"] .card-tag {
+  border-radius: 0;
+  background: var(--accent); color: #ffffff; font-weight: 700;
+  border: 2px solid; border-top-color: var(--classic-hi); border-left-color: var(--classic-hi);
+  border-right-color: var(--classic-shadow); border-bottom-color: var(--classic-shadow);
+}
+/* 按钮 / 目录 / 风格 chip：灰色突起，按下凹陷 */
+:root[data-style="classic"] .btn,
+:root[data-style="classic"] .toc a,
+:root[data-style="classic"] .skin-chip { background: var(--bg); color: var(--ink); }
+:root[data-style="classic"] .btn:hover,
+:root[data-style="classic"] .btn:focus-visible,
+:root[data-style="classic"] .toc a:hover,
+:root[data-style="classic"] .toc a:focus-visible,
+:root[data-style="classic"] .skin-chip:hover,
+:root[data-style="classic"] .skin-chip:focus-visible { transform: none; }
+:root[data-style="classic"] .btn:active,
+:root[data-style="classic"] .toc a:active,
+:root[data-style="classic"] .skin-chip:active,
+:root[data-style="classic"] .skin-chip[aria-pressed="true"] {
+  transform: translate(1px, 1px);
+  border-top-color: var(--classic-shadow);
+  border-left-color: var(--classic-shadow);
+  border-right-color: var(--classic-hi);
+  border-bottom-color: var(--classic-hi);
+}
+:root[data-style="classic"] .skin-chip[aria-pressed="true"]::before { background: var(--accent); }
+/* 开关：方轨道 + 方旋钮 */
+:root[data-style="classic"] .ls-track,
+:root[data-style="classic"] .bs-track { background: var(--card-bg); }
+:root[data-style="classic"] .ls-knob,
+:root[data-style="classic"] .bs-bulb { border-radius: 0; background: var(--bg); box-shadow: none; }
+:root[data-style="classic"] .sm-panel { background-color: var(--card-bg); }
+:root[data-style="classic"] .sm-item { border-radius: 0; }
+:root[data-style="classic"] .sm-item[aria-selected="true"] { background: var(--accent); color: #ffffff; }
+:root[data-style="classic"] ::selection { background: var(--accent); color: #ffffff; }
+/* 标题：Tahoma 粗体，无衬线 */
+:root[data-style="classic"] .hero-title,
+:root[data-style="classic"] .sec-head h2,
+:root[data-style="classic"] .card-title,
+:root[data-style="classic"] .foot-word {
+  font-family: var(--ui); font-weight: 700; letter-spacing: 0; text-shadow: none;
+}
+:root[data-style="classic"] .sec-head h2 .en { color: var(--ink-3); }
+:root[data-style="classic"] .brand-dot { border-radius: 0; background: var(--ink); box-shadow: none; }
+:root[data-style="classic"] .foot-word { color: var(--ink-2); }

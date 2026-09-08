@@ -41,6 +41,11 @@
       t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }
     d.setAttribute("data-theme", t);
+    /* 风格：glass 液态玻璃（默认）、soft 新拟物、raw 新粗野、crete 砼核、
+       xp Windows XP Luna、w7 Windows 7 Aero、w10 Windows 10 Metro */
+    var st = localStorage.getItem("gl-style");
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird"];
+    d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "glass");
   } catch (e) {}
 })();
 </script>
@@ -52,7 +57,7 @@
 
   <div class="topbar" data-page-node-id="BHvLgbcNIPdecoCuP8z2YW">
     <a class="brand" href="./" data-page-node-id="Z9SkGlu3hvqGBnw0dpta0y"><span class="brand-dot" data-page-node-id="JjBTvi1gzDQD6J4AFCM5ax"></span>GAME LAB</a>
-    <div style="display:flex;align-items:center;gap:20px" data-page-node-id="g97U4JaOJqBwk3g1EidhEx">
+    <div class="topbar-right" data-page-node-id="g97U4JaOJqBwk3g1EidhEx">
       <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener" data-page-node-id="BYVFGJaMOd3TcKYhSQF6xU">GitHub</a>
       <button id="langToggle" class="lang-switch" type="button" data-page-node-id="T2fwlC1RXnWzPjlS2WDfIJ">中</button>
     </div>
@@ -63,6 +68,8 @@
     <h1 class="hero-title" data-zh="GAME LAB" data-en="GAME LAB" data-page-node-id="WLfEMQzGCr3yz092sUVAL8">GAME LAB</h1>
     <p class="lede" data-zh="7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。"
        data-en="7 web games, 11 pixel stage plays, plus a handful of self-built sites and tools. Fully static — no install required." data-page-node-id="8UywuezZ8WKykF6vp2NGXV">7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。</p>
+    <!-- 风格切换：七档平铺（按钮由 assets/i18n.js 注入） -->
+    <div class="skin-bar" id="skinBar" role="group" aria-label="风格切换"></div>
     <nav class="toc" aria-label="目录" data-page-node-id="reoduuCZslQA6vO3WAp5a6">
       <a class="glass" href="#games" data-page-node-id="XMK7TGUP37bMnLsCzFKRDk"><span data-zh="游戏" data-en="Games" data-page-node-id="VSgb6l7I9uwiXAODhIXAE0">游戏</span> <em data-page-node-id="oH16Ztl7DgBoJbXLTfgGRK">07</em></a>
       <a class="glass" href="#plays" data-page-node-id="QBy4AKwOIjmnJkFHhcHOAh"><span data-zh="实验" data-en="Experiments" data-page-node-id="sU5qJjIDHGdXf4pT2b4csQ">实验</span> <em data-page-node-id="bqKJCmXLfwj6rIimgx0rtK">02</em></a>

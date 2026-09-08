@@ -76,6 +76,122 @@
     });
   }
 
+  /* ---------- 风格：7 套皮肤 ---------- */
+  var SKEY = "gl-style";
+  /* 顺序 = 显示顺序。
+     chip  平铺按钮上的名字（写全）  short 顶栏下拉里的简称  full 无障碍标签用的全名 */
+  var STYLES = ["glass", "soft", "raw", "crete", "xp", "w7", "w10", "classic", "dream", "pool", "weird"];
+  var SMETA = {
+    glass: { short: { zh: "玻璃",  en: "GLAS"  }, chip: { zh: "液态玻璃",    en: "Liquid Glass" }, full: { zh: "液态玻璃 · Liquid Glass", en: "Liquid Glass" } },
+    soft:  { short: { zh: "拟物",  en: "SOFT"  }, chip: { zh: "新拟物",      en: "Neumorphism" },   full: { zh: "新拟物 · Neumorphism",    en: "Neumorphism" } },
+    raw:   { short: { zh: "粗野",  en: "BRUT"  }, chip: { zh: "新粗野",      en: "Neo-brutalism" }, full: { zh: "新粗野 · Neo-brutalism",  en: "Neo-brutalism" } },
+    crete: { short: { zh: "砼核",  en: "CONC"  }, chip: { zh: "砼核",        en: "Concretecore" },  full: { zh: "砼核 · Concretecore",     en: "Concretecore" } },
+    xp:    { short: { zh: "XP",    en: "XP"    }, chip: { zh: "Windows XP",  en: "Windows XP" },    full: { zh: "Windows XP · Luna",       en: "Windows XP · Luna" } },
+    w7:    { short: { zh: "Win7",  en: "WIN7"  }, chip: { zh: "Windows 7",   en: "Windows 7" },     full: { zh: "Windows 7 · Aero",        en: "Windows 7 · Aero" } },
+    w10:     { short: { zh: "Win10",   en: "WIN10"   }, chip: { zh: "Windows 10",    en: "Windows 10" },      full: { zh: "Windows 10 · Metro",         en: "Windows 10 · Metro" } },
+    classic: { short: { zh: "Classic", en: "CLASSIC" }, chip: { zh: "Windows 经典",  en: "Windows Classic" }, full: { zh: "Windows 经典 · Classic",     en: "Windows Classic" } },
+    dream:   { short: { zh: "梦核",    en: "DREAM"   }, chip: { zh: "梦核",          en: "Dreamcore" },       full: { zh: "梦核 · Dreamcore",           en: "Dreamcore" } },
+    pool:  { short: { zh: "池核",  en: "POOL"  }, chip: { zh: "池核",        en: "Poolcore" },      full: { zh: "池核 · Poolcore",         en: "Poolcore" } },
+    weird: { short: { zh: "怪核",  en: "WEIRD" }, chip: { zh: "怪核",        en: "Weirdcore" },     full: { zh: "怪核 · Weirdcore",        en: "Weirdcore" } }
+  };
+  /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
+  var skinBar = document.getElementById("skinBar");
+  function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "glass"; }
+  function currentStyle() { return normStyle(root.getAttribute("data-style")); }
+  function setStyle(s, persist) {
+    s = normStyle(s);
+    root.setAttribute("data-style", s);
+    if (persist) { try { localStorage.setItem(SKEY, s); } catch (e) {} }
+    labelStyle();
+  }
+  function labelStyle() {
+    var cur = currentStyle();
+    /* 平铺版：只同步每颗按钮的按下态，名字由 apply() 按 data-zh/data-en 翻译 */
+    if (skinBar) {
+      STYLES.forEach(function (s) {
+        var b = skinBar.querySelector('.skin-chip[data-style="' + s + '"]');
+        if (b) b.setAttribute("aria-pressed", s === cur ? "true" : "false");
+      });
+      return;
+    }
+    if (!styleBtn) return;
+    var zh = "当前风格：" + SMETA[cur].full.zh + "，点击选择其它风格";
+    var en = "Skin: " + SMETA[cur].full.en + " — pick another one";
+    var face = styleBtn.querySelector(".sm-cur");
+    if (face) face.textContent = SMETA[cur].short[lang];
+    var trigger = styleBtn.querySelector(".sm-btn");
+    if (trigger) {
+      trigger.setAttribute("aria-label", lang === "zh" ? zh : en);
+      trigger.setAttribute("title", lang === "zh" ? zh : en);
+    }
+    STYLES.forEach(function (s) {
+      var b = styleBtn.querySelector('.sm-item[data-style="' + s + '"]');
+      if (b) b.setAttribute("aria-selected", s === cur ? "true" : "false");
+    });
+  }
+  function closeMenu() {
+    if (!styleBtn) return;
+    styleBtn.classList.remove("is-open");
+    var t = styleBtn.querySelector(".sm-btn");
+    if (t) t.setAttribute("aria-expanded", "false");
+  }
+
+  /* 平铺版（优先）：把七颗按钮塞进 hero 里的 #skinBar */
+  if (skinBar) {
+    skinBar.insertAdjacentHTML("afterbegin",
+      '<span class="skin-label" data-zh="风格" data-en="Skin">风格</span>');
+    skinBar.insertAdjacentHTML("beforeend", STYLES.map(function (s) {
+      return '<button type="button" class="skin-chip" data-style="' + s + '" aria-pressed="false">' +
+               '<span data-zh="' + SMETA[s].chip.zh + '" data-en="' + SMETA[s].chip.en + '">' +
+                 SMETA[s].chip.zh +
+               '</span></button>';
+    }).join(""));
+    skinBar.addEventListener("click", function (e) {
+      var chip = e.target.closest ? e.target.closest(".skin-chip") : null;
+      if (chip) setStyle(chip.getAttribute("data-style"), true);
+    });
+  }
+
+  /* 兜底：顶栏胶囊下拉菜单（404 / persona 子页没有 #skinBar 时用） */
+  var styleBtn = skinBar ? null : document.getElementById("styleToggle");
+  if (!skinBar && !styleBtn) {
+    var host = document.getElementById("langToggle");
+    if (host && host.parentNode) {
+      styleBtn = document.createElement("div");
+      styleBtn.id = "styleToggle";
+      styleBtn.className = "style-menu";
+      var items = STYLES.map(function (s) {
+        return '<button type="button" class="sm-item" role="option" aria-selected="false" data-style="' + s + '">' +
+                 '<span data-zh="' + SMETA[s].full.zh + '" data-en="' + SMETA[s].full.en + '">' + SMETA[s].full.zh + '</span>' +
+               '</button>';
+      }).join("");
+      styleBtn.innerHTML =
+        '<button type="button" class="sm-btn" aria-haspopup="listbox" aria-expanded="false">' +
+          '<span class="sm-cur">玻璃</span><span class="sm-caret" aria-hidden="true">&#9662;</span>' +
+        '</button>' +
+        '<div class="sm-panel" role="listbox">' + items + '</div>';
+      host.parentNode.insertBefore(styleBtn, themeBtn || host);
+    }
+  }
+  if (styleBtn) {
+    styleBtn.addEventListener("click", function (e) {
+      var item = e.target.closest ? e.target.closest(".sm-item") : null;
+      if (item) { setStyle(item.getAttribute("data-style"), true); closeMenu(); return; }
+      if (e.target.closest && e.target.closest(".sm-btn")) {
+        var open = !styleBtn.classList.contains("is-open");
+        styleBtn.classList.toggle("is-open", open);
+        var t = styleBtn.querySelector(".sm-btn");
+        if (t) t.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (styleBtn && !styleBtn.contains(e.target)) closeMenu();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMenu();
+    });
+  }
+
   /* 语言切换：把 #langToggle 改成与灯泡同风格的玻璃滑钮（注入一次） */
   var langBtn = document.getElementById("langToggle");
   if (langBtn) {
@@ -93,6 +209,12 @@
   if (mq && mq.addEventListener) {
     mq.addEventListener("change", function () { if (!storedTheme()) setTheme(sysTheme(), false); });
   }
+  /* 风格：head 里的预置脚本通常已写好；没有就按 localStorage 兜底（默认液态玻璃） */
+  if (!root.getAttribute("data-style")) {
+    var ss = null; try { ss = localStorage.getItem(SKEY); } catch (e) {}
+    root.setAttribute("data-style", normStyle(ss));
+  }
+  labelStyle();
 
   function apply() {
     root.lang = lang === "zh" ? "zh-CN" : "en";
@@ -124,6 +246,7 @@
       btn.setAttribute("aria-label", lang === "zh" ? "切换到英文 / Switch to English" : "切换到中文 / Switch to Chinese");
     }
     labelTheme();
+    labelStyle();
   }
 
   var btn = document.getElementById("langToggle");

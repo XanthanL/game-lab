@@ -43,7 +43,7 @@
     setTimeout(clean, 800); // 兜底清理
   }
   var targets = document.querySelectorAll(
-    '.toc a, .card, .lang-switch, .bulb-switch, .brand, .foot-meta a, .btn'
+    '.card, .lang-switch, .sm-btn, .skin-chip, .bulb-switch, .brand, .foot-meta a, .btn'
   );
   Array.prototype.forEach.call(targets, function (el) {
     el.addEventListener('pointerdown', ripple);
