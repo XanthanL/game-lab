@@ -5491,6 +5491,149 @@ function drawLances(){
   }
   ctx.restore();
 }
+/* ---- 机身细节层 ----
+   静态细节（明暗面 / 纵向桁条 / 蒙皮肋骨 / 散热格栅 / 检修盖 / 机首警示条 / 座舱玻璃）
+   按「船体 × 等级」烘焙成离屏图，每帧只 drawImage 一次，零额外开销。
+   HULL_GEO 的 ribs 只需近似采样 [x, 该处半宽]：所有细节都画在 hullPath 的 clip 内，
+   超出机身的部分会被自动裁成蒙皮轮廓，因此同一套线条能天然贴合六种船型。 */
+const HULL_GEO={
+  peregrine:{n:18,t:-12,cy:6, gx:-10.4,ribs:[[13,3.2],[7,5.6],[0,7.4],[-5,8.8],[-9,5.4]]},
+  rapier:   {n:22,t:-15,cy:10,gx:-13.2,ribs:[[17,1.8],[9,2.8],[0,3.6],[-7,5.2],[-12,6.6]]},
+  bulwark:  {n:13,t:-12,cy:5, gx:-10.4,ribs:[[10,4.6],[6,8.6],[0,11.2],[-5,9.6],[-9,6.4]]},
+  raven:    {n:17,t:-14,cy:6, gx:-12.2,ribs:[[13,2.8],[6,4.8],[0,6.6],[-5,10.6],[-10,7.0]]},
+  swarm:    {n:14,t:-16,cy:7, gx:-13.8,ribs:[[11,3.0],[5,5.4],[-1,6.4],[-6,7.6],[-11,4.2]]},
+  nemesis:  {n:20,t:-16,cy:9, gx:-13.8,ribs:[[15,3.4],[8,5.4],[1,7.6],[-4,10.6],[-9,7.0]]},
+};
+function hullHalf(id,x){ // 机身在 x 处的半宽（ribs 线性插值）
+  const r=(HULL_GEO[id]||HULL_GEO.peregrine).ribs;
+  if(x>=r[0][0])return r[0][1];
+  for(let i=1;i<r.length;i++){
+    if(x>=r[i][0]){
+      const a=r[i-1],b=r[i],d=b[0]-a[0];
+      return a[1]+(b[1]-a[1])*(d?(x-a[0])/d:0);
+    }
+  }
+  return r[r.length-1][1]*0.4;
+}
+const HULL_DETAIL={};
+const HULL_DET_PX=88;                       // 细节层逻辑边长（覆盖最大机身）
+function hullDetailSprite(id,tier){
+  const key=id+'|'+tier;
+  if(HULL_DETAIL[key])return HULL_DETAIL[key];
+  const tint=HULL_TINT[id]||HULL_TINT.peregrine;
+  const geo=HULL_GEO[id]||HULL_GEO.peregrine;
+  const S=HULL_DET_PX,R=2;                  // 2× 超采样，DPR=2 下依然锐利
+  const cv=document.createElement('canvas');cv.width=cv.height=S*R;
+  const g=cv.getContext('2d');
+  g.scale(R,R);g.translate(S/2,S/2);
+  g.save();hullPath(g,id);g.clip();
+  const G2=tint.glow,L=tint.line,B='0,0,0';
+  const full=()=>g.fillRect(-S/2,-S/2,S,S);
+  /* ① 体积明暗：顶部受光 → 底部环境反光 → 机首迎光 */
+  let gr=g.createLinearGradient(0,-13,0,1);
+  gr.addColorStop(0,'rgba(255,255,255,0.15)');gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr;full();
+  gr=g.createLinearGradient(0,0,0,13);
+  gr.addColorStop(0,`rgba(${G2},0)`);gr.addColorStop(1,`rgba(${G2},0.17)`);
+  g.fillStyle=gr;full();
+  gr=g.createRadialGradient(geo.n*0.84,0,0,geo.n*0.84,0,12);
+  gr.addColorStop(0,`rgba(${G2},0.22)`);gr.addColorStop(1,`rgba(${G2},0)`);
+  g.fillStyle=gr;full();
+  g.lineCap='butt';
+  /* ② 纵向桁条：暗槽 + 上缘高光，勾出机身的长度感 */
+  for(let s=-1;s<=1;s+=2){
+    for(let pass=0;pass<2;pass++){
+      g.beginPath();
+      for(let i=0;i<=12;i++){
+        const x=geo.n-(geo.n-geo.t)*i/12, y=s*hullHalf(id,x)*0.46-(pass?0.75:0);
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.strokeStyle=pass?`rgba(${L},0.11)`:'rgba(0,0,0,0.30)';
+      g.lineWidth=pass?0.7:1.0;g.stroke();
+    }
+  }
+  /* ③ 蒙皮肋骨：随曲面外凸的接缝，暗缝 + 迎光侧高光 */
+  for(const[rx,ry]of geo.ribs){
+    const bow=Math.max(1.2,ry*0.24);
+    g.beginPath();g.moveTo(rx,-ry);g.quadraticCurveTo(rx+bow,0,rx,ry);
+    g.strokeStyle=`rgba(${B},0.34)`;g.lineWidth=1;g.stroke();
+    g.beginPath();g.moveTo(rx+0.9,-ry*0.95);g.quadraticCurveTo(rx+bow+0.9,0,rx+0.9,ry*0.95);
+    g.strokeStyle=`rgba(${L},0.14)`;g.lineWidth=0.7;g.stroke();
+  }
+  /* ④ 龙骨线：机首到机尾的中轴暗带 + 上侧细高光（座舱段由座舱覆盖） */
+  g.beginPath();g.moveTo(geo.n*0.5,0);g.lineTo(geo.t+1.5,0);
+  g.strokeStyle=`rgba(${B},0.20)`;g.lineWidth=1.5;g.stroke();
+  g.beginPath();g.moveTo(geo.n*0.5,-0.95);g.lineTo(geo.t+1.5,-0.95);
+  g.strokeStyle=`rgba(${L},0.12)`;g.lineWidth=0.6;g.stroke();
+  /* ⑤ 尾部散热格栅 */
+  const gy=Math.min(2.6,hullHalf(id,geo.gx)*0.44);
+  for(let i=0;i<4;i++){
+    const x=geo.gx+i*1.25;
+    g.beginPath();g.moveTo(x,-gy);g.lineTo(x,gy);
+    g.strokeStyle=`rgba(${G2},${0.32-i*0.055})`;g.lineWidth=0.8;g.stroke();
+  }
+  /* ⑥ 检修盖板：暗描边 + 上缘挑光 */
+  const px=geo.t*0.44,py=hullHalf(id,px)*0.52;
+  g.beginPath();g.rect(px-1.7,py-1.1,3.4,2.2);
+  g.strokeStyle=`rgba(${B},0.28)`;g.lineWidth=0.7;g.stroke();
+  g.beginPath();g.moveTo(px-1.7,py-1.1);g.lineTo(px+1.7,py-1.1);
+  g.strokeStyle=`rgba(${L},0.18)`;g.lineWidth=0.6;g.stroke();
+  /* ⑦ 机首警示斜纹（双舷对称） */
+  for(let i=0;i<2;i++){
+    const x=geo.n-5.4+i*2.2,y=hullHalf(id,x)*0.52;
+    g.beginPath();g.moveTo(x,-y);g.lineTo(x+1.15,-y+0.95);
+    g.moveTo(x,y);g.lineTo(x+1.15,y-0.95);
+    g.strokeStyle=`rgba(${G2},0.30)`;g.lineWidth=0.8;g.stroke();
+  }
+  if(tier>=3){ /* ⑧ 高等级追加：腹部分块装甲板 */
+    const ax=geo.t*0.7,ay=hullHalf(id,ax);
+    g.beginPath();g.moveTo(ax+3,-ay*0.5);g.lineTo(ax+8.4,-ay*0.34);
+    g.lineTo(ax+8.4,ay*0.34);g.lineTo(ax+3,ay*0.5);g.closePath();
+    g.fillStyle=`rgba(${B},0.22)`;g.fill();
+    g.strokeStyle=`rgba(${L},0.13)`;g.lineWidth=0.6;g.stroke();
+  }
+  /* ⑨ 蒙皮内缘厚度：clip 后描粗边，只留下内侧一圈柔光 */
+  hullPath(g,id);g.strokeStyle=`rgba(${L},0.14)`;g.lineWidth=2.8;g.stroke();
+  /* ⑩ 座舱：凹槽 + 渐变玻璃 + 斜向反光 + 前后缘框（取代原先的纯白椭圆） */
+  g.save();g.translate(geo.cy,0);
+  // 座舱尺寸随该处机身半宽收缩，窄机身（如轻剑剑身）也不会被蒙皮裁成扁条
+  const chy=Math.max(1.15,Math.min(1.9,hullHalf(id,geo.cy)*0.78)),chx=chy*1.53,k=chx/2.9;
+  g.beginPath();g.ellipse(0,0,chx+0.6,chy+0.5,0,0,TAU);g.fillStyle='rgba(4,10,18,0.9)';g.fill();
+  const cg=g.createLinearGradient(-2*k,-1.7*k,2.4*k,1.9*k);
+  cg.addColorStop(0,'#f6ffff');cg.addColorStop(0.44,'#a9e6ff');cg.addColorStop(1,'#2a6c8d');
+  g.beginPath();g.ellipse(0,0,chx,chy,0,0,TAU);g.fillStyle=cg;g.fill();
+  g.save();g.beginPath();g.ellipse(0,0,chx,chy,0,0,TAU);g.clip();
+  g.beginPath();g.moveTo(-2.3*k,1.5*k);g.lineTo(0.35*k,-1.7*k);g.lineTo(1.45*k,-1.7*k);g.lineTo(-1.2*k,1.5*k);g.closePath();
+  g.fillStyle='rgba(255,255,255,0.72)';g.fill();
+  g.beginPath();g.moveTo(1.1*k,1.7*k);g.lineTo(2.7*k,-0.45*k);g.lineTo(3.1*k,-0.45*k);g.lineTo(1.5*k,1.7*k);g.closePath();
+  g.fillStyle='rgba(255,255,255,0.34)';g.fill();
+  g.restore();
+  g.beginPath();g.ellipse(0,0,chx+0.3,chy+0.25,0,0,TAU);
+  g.strokeStyle=`rgba(${G2},0.55)`;g.lineWidth=0.7;g.stroke();
+  g.beginPath();g.ellipse(0.28,0,chx+0.3,chy+0.25,0,0,TAU);
+  g.strokeStyle=`rgba(${B},0.32)`;g.lineWidth=0.6;g.stroke();
+  g.restore();
+  g.restore();
+  HULL_DETAIL[key]=cv;return cv;
+}
+/* 机身能量导管流光：两舷各一段亮流沿导管循环前掠（实时，仅两笔，clip 保证不溢出蒙皮） */
+function hullFlow(c,id,tint){
+  const geo=HULL_GEO[id]||HULL_GEO.peregrine,span=geo.n-geo.t;
+  c.save();hullPath(c,id);c.clip();
+  c.globalCompositeOperation='lighter';c.lineCap='round';
+  for(let s=-1;s<=1;s+=2){
+    const ph=((G.t*0.5+(s>0?0.5:0))%1+1)%1;
+    const x1=geo.t+span*ph,x0=x1-span*0.26;
+    c.strokeStyle=`rgba(${tint.glow},${Math.sin(Math.PI*ph)*0.42})`;c.lineWidth=1.5;
+    c.beginPath();
+    for(let i=0;i<=4;i++){
+      const x=x0+(x1-x0)*i/4,y=s*hullHalf(id,x)*0.46;
+      i?c.lineTo(x,y):c.moveTo(x,y);
+    }
+    c.stroke();
+  }
+  c.restore();
+}
 function drawHullBody(c,id,tier){
   const tint=HULL_TINT[id]||HULL_TINT.peregrine;
   const locked=tier<=0;
@@ -5506,16 +5649,17 @@ function drawHullBody(c,id,tier){
   path();c.fillStyle=tint.fill;c.fill();
   c.strokeStyle=edge;c.lineWidth=5;path();c.stroke();
   c.strokeStyle=line;c.lineWidth=1.6;path();c.stroke();
+  // 机身细节层：烘焙的面板线/明暗/座舱 + 实时导管流光（裁剪在蒙皮内）
+  c.save();path();c.clip();
+  c.drawImage(hullDetailSprite(id,tier),-HULL_DET_PX/2,-HULL_DET_PX/2,HULL_DET_PX,HULL_DET_PX);
+  if(tier>=2)hullFlow(c,id,tint);
+  c.restore();
   // 舷侧亮点
   c.fillStyle=`rgba(${tint.glow},0.85)`;
   const dots=id==='rapier'?[[10,1.6],[10,-1.6]]:id==='bulwark'?[[2,6],[2,-6],[-6,6],[-6,-6]]
     :id==='raven'?[[-4,4],[-4,-4]]:id==='swarm'?[[-8,5],[-8,-5],[0,4],[0,-4]]
     :id==='nemesis'?[[-2,3.6],[-2,-3.6],[8,0]]:[[-2,3.4],[-2,-3.4]];
   for(const[dx,dy]of dots){c.beginPath();c.arc(dx,dy,1.1,0,TAU);c.fill();}
-  // 座舱
-  c.fillStyle='#e8fbff';
-  const cx=id==='rapier'?10:id==='bulwark'?5:id==='swarm'?7:id==='nemesis'?9:6;
-  c.beginPath();c.ellipse(cx,0,2.9,1.9,0,0,TAU);c.fill();
   if(tier>=2){ // 翼刃前缘装饰线
     c.strokeStyle=line;c.lineWidth=1;c.beginPath();
     if(id==='bulwark'){c.moveTo(10,2);c.lineTo(-5,2);c.moveTo(10,-2);c.lineTo(-5,-2);}
@@ -5897,9 +6041,13 @@ function draw(){
     ctx.fillStyle=`rgba(${dgc},0.85)`;
     ctx.beginPath();ctx.arc(-1,5.2,0.9,0,TAU);ctx.fill();
     ctx.beginPath();ctx.arc(-1,-5.2,0.9,0,TAU);ctx.fill();
-    // 传感器目镜（机首）
+    // 传感器目镜（机首）：镜面 + 斜向反光 + 镜圈，与主机座舱同一套玻璃质感
     ctx.fillStyle='#e8fbff';
     ctx.beginPath();ctx.ellipse(4.2,0,2.1,1.3,0,0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.8)';
+    ctx.beginPath();ctx.moveTo(3.2,0.9);ctx.lineTo(4.6,-0.7);ctx.lineTo(5.2,-0.7);ctx.lineTo(3.8,0.9);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=`rgba(${dgc},0.5)`;ctx.lineWidth=0.6;
+    ctx.beginPath();ctx.ellipse(4.2,0,2.3,1.45,0,0,TAU);ctx.stroke();
     // 尾部引擎微焰：双鳍之间的排气锥，高频闪烁
     const th=0.6+0.4*Math.sin(G.t*30+d.a*7);
     ctx.globalCompositeOperation='lighter';
