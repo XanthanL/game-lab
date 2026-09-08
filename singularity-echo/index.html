@@ -101,7 +101,12 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .hud-tr{position:absolute;top:12px;right:64px;text-align:right;
   display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 #score{font-size:clamp(17px,2.4vw,23px);letter-spacing:.12em;margin-right:-.12em;
-  color:#eaf7ff;text-shadow:0 0 12px rgba(111,231,255,.4);line-height:1.15}
+  color:#eaf7ff;text-shadow:0 0 12px rgba(111,231,255,.4);line-height:1.15;
+  transform-origin:right center}
+/* 得分跳变：一次过冲回弹。用 animation 而非 transition——动画跑完自动归位，
+   不需要手动摘 class，重复触发只需 remove + 强制回流 + add。 */
+#score.pop{animation:scorePop .34s cubic-bezier(.2,2.4,.4,1)}
+@keyframes scorePop{0%{transform:scale(1)}36%{transform:scale(1.16)}100%{transform:scale(1)}}
 #wavelabel{font-size:clamp(10px,1.5vw,13px);letter-spacing:.3em;margin-right:-.3em;
   color:#9fe0f2;line-height:1.4}
 #best{font-size:clamp(9px,1.35vw,11.5px);letter-spacing:.14em;margin-right:-.14em;
@@ -123,6 +128,46 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #flash{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0;
   background:radial-gradient(ellipse at center,rgba(255,60,40,0) 40%,rgba(255,50,30,.35));
   transition:opacity .35s ease}
+
+/* ---------- 屏幕质感叠层 ----------
+   扫描线/危险脉冲/慢动作晕统一压在 HUD 之下（z-index 4），保证 HUD 文字始终清晰可读。
+   canvas 内已有一层 VIGN 暗角，这里不再重复叠暗角，只补 CRT 与情绪层。 */
+#scan{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:.045;
+  background:repeating-linear-gradient(0deg,#dff2ff 0 1px,transparent 1px 3px);
+  mix-blend-mode:overlay}
+#danger{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;
+  background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(255,45,70,.45) 100%);
+  transition:opacity .32s ease-out}
+#slowfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;
+  background:radial-gradient(ellipse at 50% 50%,transparent 42%,rgba(130,90,255,.32) 100%);
+  transition:opacity .16s ease-out}
+@media (prefers-reduced-motion:reduce){
+  #scan{opacity:.028}
+  #danger,#slowfx{transition:none}
+  #score{transition:none}
+  #score.pop{transform:none}
+}
+
+/* ---------- 状态化准星 ----------
+   键鼠模式下取代系统光标：细环 + 上下短竖线，随开火收缩、濒死转红。
+   只做 pointer-events:none 的视觉层，不接管命中判定（判定仍走 mouse.sx/sy）。 */
+#aim{position:fixed;left:0;top:0;z-index:9;width:26px;height:26px;margin:-13px 0 0 -13px;
+  border:1px solid rgba(160,235,255,.7);border-radius:50%;pointer-events:none;
+  opacity:0;visibility:hidden;
+  box-shadow:0 0 10px rgba(111,231,255,.3);
+  transition:opacity .22s,visibility .22s,width .11s,height .11s,margin .11s,border-color .2s,box-shadow .2s;
+  will-change:transform}
+#aim.on{opacity:1;visibility:visible}
+#aim i{position:absolute;inset:5px;border:1px solid rgba(160,235,255,.28);border-radius:50%}
+#aim i::before,#aim i::after{content:'';position:absolute;left:50%;width:1px;height:5px;
+  margin-left:-.5px;background:rgba(160,235,255,.7)}
+#aim i::before{top:-9px}#aim i::after{bottom:-9px}
+#aim.fire{width:17px;height:17px;margin:-8.5px 0 0 -8.5px;
+  border-color:rgba(234,247,255,1);box-shadow:0 0 18px rgba(111,231,255,.85)}
+#aim.danger{border-color:rgba(255,92,73,.95);box-shadow:0 0 18px rgba(255,92,73,.65)}
+#aim.danger i::before,#aim.danger i::after{background:rgba(255,120,100,.85)}
+body.playing{cursor:none}
+@media (pointer:coarse){#aim{display:none}body.playing{cursor:auto}}
 
 /* ---------- boot / loading ---------- */
 #boot{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
@@ -146,8 +191,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .boot-meta{display:flex;justify-content:space-between;margin-top:12px;font-size:10.5px;
   letter-spacing:.2em;color:#9fc6d8;font-family:ui-monospace,Consolas,monospace}
 .boot-meta .pct{color:var(--amber)}
-.boot-hint{margin-top:22px;font-size:10px;letter-spacing:.24em;color:rgba(207,227,239,.32);
-  font-family:ui-monospace,Consolas,monospace}
 @media (prefers-reduced-motion:reduce){
   #boot{transition:none}
   .boot-bar::after{animation:none;opacity:0}
@@ -157,14 +200,36 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-start;overflow:auto;padding:28px 16px;
   background:radial-gradient(ellipse at center,rgba(4,8,16,.5),rgba(3,5,10,.86));
   backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+/* 浮层入场：hidden 属性 = display:none，取消隐藏即重启动画，无需 JS 配合。
+   过冲曲线 (1.1) 让面板"落位"而非"淡入"，是质感差异最明显的一处。 */
+.overlay:not([hidden]){animation:panelIn .36s cubic-bezier(.16,1.08,.3,1) both}
+.overlay:not([hidden])>*:not([hidden]){animation:panelIn .42s cubic-bezier(.16,1.08,.3,1) both}
+.overlay:not([hidden])>*:nth-child(2){animation-delay:.04s}
+.overlay:not([hidden])>*:nth-child(3){animation-delay:.08s}
+.overlay:not([hidden])>*:nth-child(4){animation-delay:.12s}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px) scale(.985)}
+  to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .overlay:not([hidden]),.overlay:not([hidden])>*:not([hidden]){animation:none}
+}
 .overlay h2{font-weight:200;letter-spacing:.4em;text-indent:.4em;font-size:clamp(20px,3.4vw,30px);
   color:#eaf7ff;text-align:center}
 .overlay h2 span{display:block;font-size:12px;letter-spacing:.3em;color:var(--dim);margin-top:10px;text-indent:.3em}
 
 .btn{background:transparent;border:1px solid var(--cyan);color:#d9f6ff;padding:13px 44px;
   font-size:14px;letter-spacing:.32em;text-indent:.32em;cursor:pointer;border-radius:4px;
-  transition:background .15s,box-shadow .15s;font-family:inherit}
+  transition:background .15s,box-shadow .15s,transform .18s ease-out;font-family:inherit;
+  will-change:transform}
 .btn:hover{background:rgba(111,231,255,.12);box-shadow:0 0 26px rgba(111,231,255,.3)}
+/* 指针聚光：--mx/--my 由 JS 在 pointermove 时写入，形成跟随光标的柔光斑。
+   纯伪元素实现，不占布局、不拦事件（pointer-events:none）。 */
+.btn,.card{position:relative}
+.btn::after,.card::after{content:'';position:absolute;inset:0;pointer-events:none;
+  border-radius:inherit;opacity:0;transition:opacity .28s ease;
+  background:radial-gradient(180px circle at var(--mx,50%) var(--my,50%),
+    rgba(150,235,255,.14),rgba(150,235,255,.05) 45%,transparent 72%)}
+.btn:hover::after,.card:hover::after{opacity:1}
+@media (prefers-reduced-motion:reduce){.btn{transition:background .15s,box-shadow .15s}}
 .btn.ghost{border-color:var(--line);color:var(--dim)}
 .btn.ghost:hover{border-color:var(--dim);background:rgba(255,255,255,.04);box-shadow:none}
 .btn:disabled{opacity:.38;cursor:default;pointer-events:none}
@@ -184,14 +249,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .wordmark .en{display:block;font-size:clamp(10.5px,1.9vw,14px);font-weight:400;letter-spacing:.52em;text-indent:.52em;
   color:var(--dim);margin-top:14px;text-shadow:none}
 .tagline{font-size:13.5px;line-height:1.9;color:var(--dim);margin:26px auto 34px;max-width:460px}
-.sysline{margin:28px auto 0;font-size:11px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
-.sysline .blink{color:var(--cyan);margin-right:9px;animation:blink 1.1s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-.datachips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px auto 8px}
-.datachips span{font-size:10.5px;letter-spacing:.16em;color:#9fc6d8;border:1px solid var(--line);
-  border-radius:3px;padding:4px 11px;background:rgba(10,17,26,0.5)}
-.ctrls{margin-top:34px;font-size:12px;color:var(--dim);letter-spacing:.06em;line-height:2.1}
-.ctrls b{color:#9fc6d8;font-weight:500}
 #menuBest{margin-top:22px;font-size:12px;letter-spacing:.2em;color:var(--amber)}
 
 /* ---------- settings ---------- */
@@ -212,7 +269,12 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-radius:10px;cursor:pointer;text-align:center;
   transition:transform .16s ease,border-color .16s,box-shadow .16s}
+/* 顶缘高光：一条 1px 渐变亮边，模拟玻璃上沿受光。::before 不干扰 ::after 的聚光。 */
+.card::before{content:'';position:absolute;left:14px;right:14px;top:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(180,235,255,.55),transparent);opacity:.5;
+  transition:opacity .18s}
 .card:hover{transform:translateY(-7px);border-color:var(--cyan);box-shadow:0 10px 30px rgba(111,231,255,.16)}
+.card:hover::before{opacity:1}
 .card .g{font-size:30px;color:var(--cyan);text-shadow:0 0 14px rgba(111,231,255,.6)}
 .card h3{font-size:16px;font-weight:600;letter-spacing:.1em;margin-top:12px;color:#eaf7ff}
 .card .hullcv{display:block;margin:0 auto;width:150px;height:92px}
@@ -468,7 +530,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
     <div class="boot-mark" data-page-node-id="nb02XJqKfP4wZnG2sL8aHb">奇点回响<span class="en" data-page-node-id="nb03UdGrVeMyXb1TnHzW8s">SINGULARITY ECHO</span></div>
     <div class="boot-bar" data-page-node-id="nb04BmYhWvTnRqKcZxFp3L"><i id="bootBar" data-page-node-id="nb05CgHpMfXn2WvYrL8sQ9"></i></div>
     <div class="boot-meta" data-page-node-id="nb06FzTqYwRvNcMhKp2Lp1"><span id="bootPhase" data-page-node-id="nb07BgMvFnTzYxWcQhR4Lp">INITIALIZING</span><span class="pct" id="bootPct" data-page-node-id="nb08HdWnKzMqYvRcTfL9bX">0%</span></div>
-    <div class="boot-hint" data-page-node-id="nb09PzXnMqYvRcTfL9bXH">DRIFT PROTOCOL // SECTOR 7G — LINK STABLE</div>
   </div>
 </div>
 
@@ -476,6 +537,8 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 <canvas id="fxFluid" class="fx" data-page-node-id="c70Ufc4wwOL3VZeMm5CApC"></canvas>
 <canvas id="fxProton" class="fx" data-page-node-id="LnCWltbBQgGyUBHE65xGGH"></canvas>
 <div id="flash" data-page-node-id="2zxd2AVCInenIzxj5tMB7F"></div>
+<div id="scan"></div><div id="danger"></div><div id="slowfx"></div>
+<div id="aim"><i></i></div>
 
 <!-- HUD -->
 <div id="hud" hidden data-page-node-id="Kl56VMTELL55ugfde6Yjcg">
@@ -519,8 +582,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 <div id="menu" class="overlay" data-page-node-id="ZQc7DJWPiBiLVnZBi8i2ku">
   <div class="menu-in" data-page-node-id="8KzC5f7NwXkJnCbdrXytOu">
     <div class="wordmark" data-page-node-id="6l1UYIuAH8t384c4qa7gEI">奇点回响<span class="en" data-page-node-id="0uA2jGFkIrUGwEVU9tUeE0">SINGULARITY ECHO</span></div>
-    <div class="sysline mono" data-page-node-id="NRqmQRKVQ7MMiOTsoMKGI7"><span class="blink" data-page-node-id="0lJQROxuBvEpNNnUfi6vCL">▮</span>DRIFT PROTOCOL // SECTOR 7G — LINK STABLE — 30 WAVES TO CLEAR</div>
-    <div class="datachips mono" id="dataChips" data-page-node-id="sed3EJCiywpi0GZG47Jo3b"></div>
     <div class="menu-actions" data-page-node-id="pMqoAhVD7PAPFB5Luxb6sy">
       <button id="btnLaunch" class="btn" data-i18n="m_launch" data-page-node-id="aV5dF8XRuZsW7M1KtlJEDX">LAUNCH ▸ 出击</button>
       <button id="btnContinue" class="btn ghost" hidden data-i18n="m_resume" data-page-node-id="BYU3FTlwdVGSljwm5aRuAR">继续漂移 ▸ C</button>
@@ -528,10 +589,6 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
       <button id="btnLogbook" class="btn ghost" data-i18n="m_log" data-page-node-id="dWzHTpgncosz0SYYwdM33Z">LOG ▸ 航行日志</button>
       <button id="btnSettings" class="btn ghost" data-i18n="m_settings" data-page-node-id="GAEvA4l94BsYjWwrpZ9eN3">SETTINGS ▸ 设置</button>
       <button id="btnLang" class="btn ghost langbtn" data-i18n="m_lang">🌐 EN ▸ ENGLISH</button>
-    </div>
-    <div class="ctrls" data-page-node-id="EGW2Dg60uNqjxnAFAdyAYw">
-      <div data-i18n="m_ctrl1" data-page-node-id="sSe0Miss5WkTcGzVv6TvWF"><b data-page-node-id="sndeubaROL8qwTurdbdL9F">键鼠</b> — WASD / 方向键 推进转向 · 鼠标瞄准 · 空格或按住左键射击</div>
-      <div data-i18n="m_ctrl2" data-page-node-id="D3YpeeElXqD1v7RHhjFFVb"><b data-page-node-id="SZoeoAMOdaGCkrmPV5zPfR">触屏</b> — 点 FIRE 开关射击 · 按钮之外任意位置拖动 = 方向与推力</div>
     </div>
     <div id="menuBest" class="mono" data-page-node-id="FChkP6ugCq4fFtWOTlP2AI"></div>
   </div>
@@ -858,7 +915,7 @@ const el={
   lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),strow:$('strow'),wave:$('wavelabel'),enleft:$('enleft'),
   bossName:$('bossname'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
-  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),dataChips:$('dataChips'),
+  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
   pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
@@ -866,7 +923,8 @@ const el={
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
   lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
-  flash:$('flash'),joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
+  flash:$('flash'),scan:$('scan'),danger:$('danger'),slowfx:$('slowfx'),aim:$('aim'),
+  joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
   btnReroll:$('btnReroll'),
   saves:$('saves'),saveList:$('saveList'),
   settings:$('settings'),bgmVol:$('bgmVol'),sfxVol:$('sfxVol'),bgmVal:$('bgmVal'),sfxVal:$('sfxVal'),
@@ -876,7 +934,13 @@ const el={
 /* ============================== canvas ============================== */
 const WORLD={w:2600,h:1700};
 let VW=0,VH=0,DPR=1,VIGN=null,qTier=0;
-const cam={x:WORLD.w/2,y:WORLD.h/2};
+const cam={x:WORLD.w/2,y:WORLD.h/2,zoom:1,kick:0,ox:0,oy:0};
+/* 全屏后处理状态：bloom 泛光脉冲（0~1）、glitch 色差强度（0~1）。
+   两者都只在 >0 时才进入后处理分支，静止时零开销。 */
+const PP={bloom:0,glitch:0};
+function camKick(v){cam.kick=clamp(cam.kick+v,-0.030,0.048);}
+function ppBloom(v){if(v>PP.bloom)PP.bloom=v;}
+function ppGlitch(v){if(v>PP.glitch)PP.glitch=v;}
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,qTier>=2?1:2);
   VW=window.innerWidth;VH=window.innerHeight;
@@ -1396,22 +1460,68 @@ const NEB_SPR=NEBULAE.map(n=>{
 
 /* ============================== audio ============================== */
 const AU={ctx:null,master:null,bgm:null,nbuf:null,muted:false,lastShot:0,
-  bgmVol:0.18,sfxVol:0.5,
+  bgmVol:0.18,sfxVol:0.5,lp:null,comp:null,conv:null,wetIn:null,wetOut:null,rvOk:false,muffle:0,
   ensure(){
     const C=window.AudioContext||window.webkitAudioContext;
     if(!C)return;
     if(!this.ctx){
-      this.ctx=new C();
-      this.master=this.ctx.createGain();this.master.gain.value=this.sfxVol;
-      this.master.connect(this.ctx.destination);
-      this.bgm=this.ctx.createGain();this.bgm.gain.value=this.bgmVol;
-      this.bgm.connect(this.ctx.destination);
-      const len=this.ctx.sampleRate|0;
-      this.nbuf=this.ctx.createBuffer(1,len,this.ctx.sampleRate);
+      const c=new C();this.ctx=c;
+      /* 母带链（仅 sfx 分支）：master(音量) → lowpass(子弹时间闷化) → compressor(防削波) → destination
+         注意：BGM 走独立 this.bgm 直连 destination，刻意不进母带链 ——
+         mp3 已自带混响与母带处理，再过卷积/压缩会糊成一团。 */
+      this.comp=c.createDynamicsCompressor();
+      try{
+        this.comp.threshold.value=-14;this.comp.knee.value=24;
+        this.comp.ratio.value=8;this.comp.attack.value=0.003;this.comp.release.value=0.22;
+      }catch(e){}
+      this.comp.connect(c.destination);
+      this.lp=c.createBiquadFilter();this.lp.type='lowpass';
+      this.lp.frequency.value=18000;this.lp.Q.value=0.7;
+      this.lp.connect(this.comp);
+      this.master=c.createGain();this.master.gain.value=this.sfxVol;
+      this.master.connect(this.lp);
+      this.bgm=c.createGain();this.bgm.gain.value=this.bgmVol;
+      this.bgm.connect(c.destination);
+      /* 混响发送（仅 sfx）：wetOut 汇回 master，使湿信号同样受 sfxVol 与 mute 控制 */
+      try{
+        this.conv=c.createConvolver();
+        this.wetIn=c.createGain();this.wetIn.gain.value=1;
+        this.wetOut=c.createGain();this.wetOut.gain.value=0.42;
+        this.conv.buffer=this.makeIR();
+        this.wetIn.connect(this.conv);this.conv.connect(this.wetOut);
+        this.wetOut.connect(this.master);
+        this.rvOk=true;
+      }catch(e){this.rvOk=false;}
+      const len=c.sampleRate|0;
+      this.nbuf=c.createBuffer(1,len,c.sampleRate);
       const d=this.nbuf.getChannelData(0);
       for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
     }
     if(this.ctx.state==='suspended')this.ctx.resume();
+  },
+  /* 程序生成脉冲响应：指数衰减噪声。移动端缩短时长以控制 CPU（Convolver 在移动端开销大） */
+  makeIR(){
+    const c=this.ctx;
+    const mob=/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||navigator.maxTouchPoints>1;
+    const dur=mob?0.55:1.6;
+    const n=Math.max(1,(c.sampleRate*dur)|0);
+    const ir=c.createBuffer(1,n,c.sampleRate);
+    const d=ir.getChannelData(0);
+    for(let i=0;i<n;i++){
+      const t=i/n;
+      d[i]=(Math.random()*2-1)*Math.pow(1-t,2.6);
+    }
+    return ir;
+  },
+  /* 子弹时间闷化：k=0 全开(18kHz)，k=1 闷(700Hz)。setTargetAtTime 平滑，避免 zipper noise */
+  setMuffle(k){
+    if(!this.ctx||!this.lp)return;
+    k=clamp(k,0,1);
+    if(k===this.muffle)return;
+    this.muffle=k;
+    const f=18000+(700-18000)*Math.pow(k,0.6);
+    try{this.lp.frequency.setTargetAtTime(f,this.ctx.currentTime,0.05);}
+    catch(e){this.lp.frequency.value=f;}
   },
   ready(){if(this.muted)return false;this.ensure();return !!this.ctx;},
   setBgm(v){
@@ -1446,7 +1556,9 @@ const AU={ctx:null,master:null,bgm:null,nbuf:null,muted:false,lastShot:0,
     if(o.f1)os.frequency.exponentialRampToValueAtTime(Math.max(o.f1,1),t+o.t);
     g.gain.setValueAtTime(o.g||0.1,t);
     g.gain.exponentialRampToValueAtTime(0.0001,t+o.t);
-    os.connect(g);g.connect(this.master);os.start(t);os.stop(t+o.t+0.03);
+    os.connect(g);g.connect(this.master);
+    if(o.rv&&this.rvOk){const s=c.createGain();s.gain.value=o.rv;g.connect(s);s.connect(this.wetIn);}
+    os.start(t);os.stop(t+o.t+0.03);
   },
   noise(o){
     if(!this.ready())return;
@@ -1458,7 +1570,9 @@ const AU={ctx:null,master:null,bgm:null,nbuf:null,muted:false,lastShot:0,
     const g=c.createGain();
     g.gain.setValueAtTime(o.g||0.2,t);
     g.gain.exponentialRampToValueAtTime(0.0001,t+o.t);
-    s.connect(f);f.connect(g);g.connect(this.master);s.start(t);s.stop(t+o.t+0.03);
+    s.connect(f);f.connect(g);g.connect(this.master);
+    if(o.rv&&this.rvOk){const sg=c.createGain();sg.gain.value=o.rv;g.connect(sg);sg.connect(this.wetIn);}
+    s.start(t);s.stop(t+o.t+0.03);
   },
 };
 AU.loadVol();
@@ -1467,9 +1581,9 @@ const sfx={
   shoot(){const n=performance.now();if(n-AU.lastShot<45)return;AU.lastShot=n;
     AU.tone({w:'square',f0:rand(760,880),f1:180,t:0.07,g:0.05});},
   droneShot(){AU.tone({w:'square',f0:520,f1:160,t:0.06,g:0.028});},
-  boom(sz){AU.noise({t:0.3+0.1*sz,g:0.2,fc:1100,fc1:120});AU.tone({w:'sine',f0:130,f1:38,t:0.3,g:0.16});},
+  boom(sz){AU.noise({t:0.3+0.1*sz,g:0.2,fc:1100,fc1:120,rv:0.45});AU.tone({w:'sine',f0:130,f1:38,t:0.3,g:0.16,rv:0.5});},
   hit(){AU.tone({w:'square',f0:230,f1:120,t:0.05,g:0.04});},
-  hurt(){AU.noise({t:0.22,g:0.28,fc:600,fc1:150});AU.tone({w:'sawtooth',f0:150,f1:55,t:0.24,g:0.18});},
+  hurt(){AU.noise({t:0.22,g:0.28,fc:600,fc1:150,rv:0.22});AU.tone({w:'sawtooth',f0:150,f1:55,t:0.24,g:0.18,rv:0.25});},
   pickup(){const n=performance.now();if(n-AU.lastShot<60)return;AU.tone({w:'sine',f0:640,f1:1080,t:0.08,g:0.045});},
   level(){AU.tone({w:'sine',f0:523,t:0.14,g:0.09});AU.tone({w:'sine',f0:659,t:0.14,g:0.09,at:0.1});
     AU.tone({w:'sine',f0:784,t:0.22,g:0.1,at:0.2});},
@@ -1480,8 +1594,8 @@ const sfx={
   eshoot(){AU.tone({w:'triangle',f0:320,f1:150,t:0.12,g:0.05});},
   zap(){AU.tone({w:'sawtooth',f0:980,f1:140,t:0.14,g:0.05});},
   lance(){AU.noise({t:0.2,g:0.16,fc:2400,fc1:200});AU.tone({w:'square',f0:180,f1:720,t:0.22,g:0.08});},
-  victory(){[523,659,784,1046].forEach((f,i)=>AU.tone({w:'sine',f0:f,t:0.24,g:0.09,at:i*0.12}));},
-  wave(){AU.tone({w:'sine',f0:330,f1:495,t:0.26,g:0.07});},
+  victory(){[523,659,784,1046].forEach((f,i)=>AU.tone({w:'sine',f0:f,t:0.24,g:0.09,at:i*0.12,rv:0.4}));},
+  wave(){AU.tone({w:'sine',f0:330,f1:495,t:0.26,g:0.07,rv:0.4});},
   ui(){AU.tone({w:'sine',f0:440,f1:560,t:0.07,g:0.06});},
 };
 
@@ -1657,9 +1771,9 @@ const G={
   prevMode:'play',
   t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
   runId:0,runStart:0, // 当前漂移的唯一 id / 开始时刻（时间戳），多存档管理用
-  shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,
+  shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,hitstop:0,
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
-  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],
+  asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
 };
 try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
 
@@ -1708,10 +1822,10 @@ function resumeRun(){
   if(!s)return openHulls();
   AU.ensure();
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
-  G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
+  G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;G.debris.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.lances.length=0;G.ghosts.length=0;
-  G.pending=0;G.shake=0;G.slowT=0;
+  G.pending=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
   G.build=Object.assign({},s.b||{});
   P=newPlayer();G.player=P;
   G.lastHull=HULLS[s.h]||HULLS[0];G.lastHull.apply();
@@ -2356,7 +2470,71 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
 
-window.addEventListener('mousemove',e=>{ if(isTouch)return; mouse.sx=e.clientX;mouse.sy=e.clientY;mouse.lastMove=G.t; if(G.mode==='play')aimMode='mouse';});
+/* ---------- 指针质感 ----------
+   准星跟随 + 按钮磁吸微倾斜 + 卡片聚光。四条原则：
+   ① 只写 transform / CSS 变量（合成器属性），绝不读布局属性，避免高频 mousemove 触发重排；
+   ② 进目标时才缓存一次 rect，之后复用（这些元素都在 fixed 浮层内，不会滚动偏移）；
+   ③ 尊重 REDUCED，且触屏设备整个体系不启用。
+   ④ **卡牌只给聚光，绝不碰 transform** —— 手机端手牌布局（deckify）把扇形摆位写在
+      行内 transform 上，这里覆盖或清空都会让手牌塌回原点。倾斜是按钮专属。 */
+const PT={x:0,y:0,t:null,r:null,isBtn:false};
+function pointerPolish(e){
+  PT.x=e.clientX;PT.y=e.clientY;
+  if(el.aim)el.aim.style.transform='translate3d('+PT.x+'px,'+PT.y+'px,0)';
+  if(REDUCED)return;
+  const t=e.target&&e.target.closest?e.target.closest('.btn,.card'):null;
+  if(t!==PT.t){
+    // 只复位"被我们倾斜过的按钮"；卡牌的 transform 属于布局，一律不碰
+    if(PT.t&&PT.isBtn)PT.t.style.transform='';
+    PT.t=t;PT.isBtn=!!t&&t.classList.contains('btn');
+    PT.r=t?t.getBoundingClientRect():null;
+  }
+  if(!t||!PT.r)return;
+  const rx=PT.r;
+  // 隐藏元素 rect 为 0，直接除会得到 Infinity —— 写进 transform 会被浏览器整条丢弃，
+  // 连带把上一次的有效倾斜也弄丢。这里先挡掉零尺寸与非有限值。
+  if(!(rx.width>0)||!(rx.height>0))return;
+  const px=clamp((PT.x-rx.left)/rx.width,0,1),py=clamp((PT.y-rx.top)/rx.height,0,1);
+  if(!isFinite(px)||!isFinite(py))return;
+  t.style.setProperty('--mx',(px*100).toFixed(1)+'%');
+  t.style.setProperty('--my',(py*100).toFixed(1)+'%');
+  if(!PT.isBtn)return;   // 卡牌到此为止：聚光已给，transform 留给布局
+  // 磁吸：向光标方向轻倾 + 微位移，幅度克制（≤5°/2px），只在"有意为之"时察觉
+  const ry=(px-0.5)*5,rx2=-(py-0.5)*5;
+  t.style.transform='perspective(560px) rotateY('+ry.toFixed(2)+'deg) rotateX('+rx2.toFixed(2)+'deg) translateZ(2px)';
+}
+/* 准星状态：开火收缩 / 濒死或贴脸威胁转红。只在状态翻转时改 class，避免每帧写 DOM。 */
+const AIMC={on:false,fire:false,danger:false,play:false};
+function updateAim(){
+  // 系统光标隐藏：G.mode 有十多处写入点，逐处补 class 易漏，改由每帧统一驱动
+  const play=inRun()&&G.mode!=='pause'&&!isTouch;
+  if(AIMC.play!==play){AIMC.play=play;document.body.classList.toggle('playing',play);}
+  if(!el.aim||isTouch)return;
+  const on=play&&aimMode==='mouse';
+  if(AIMC.on!==on){AIMC.on=on;el.aim.classList.toggle('on',on);}
+  if(!on)return;
+  // 开火：由射击冷却反推 —— 冷却期内保持收缩，手感上"枪还没回正"
+  const firing=!!(P&&P.fireCd>0);
+  if(AIMC.fire!==firing){AIMC.fire=firing;el.aim.classList.toggle('fire',firing);}
+  const low=P?P.hp/P.maxHp<0.3:false;
+  const near=low||underThreat();
+  if(AIMC.danger!==near){AIMC.danger=near;el.aim.classList.toggle('danger',near);}
+}
+/* 贴脸威胁：任一敌人进入 150px 内即视为危险，让准星先于血条给出反馈 */
+function underThreat(){
+  if(!P||!G.enemies.length)return false;
+  for(let i=0;i<G.enemies.length;i++){
+    const e=G.enemies[i];
+    if(d2(e.x,e.y,P.x,P.y)<150*150)return true;
+  }
+  return false;
+}
+window.addEventListener('mousemove',e=>{ if(isTouch)return; mouse.sx=e.clientX;mouse.sy=e.clientY;mouse.lastMove=G.t; if(G.mode==='play')aimMode='mouse'; pointerPolish(e);});
+/* 离开按钮时收掉倾斜，否则最后一次的翻转会一直挂着 */
+document.addEventListener('pointerout',e=>{
+  const t=e.target&&e.target.closest?e.target.closest('.btn'):null;
+  if(t)t.style.transform='';
+});
 window.addEventListener('mousedown',e=>{ if(isTouch)return; AU.ensure(); if(e.button===0)mouse.down=true;});
 window.addEventListener('mouseup',e=>{ if(isTouch)return; if(e.button===0)mouse.down=false;});
 window.addEventListener('blur',()=>{mouse.down=false;for(const k in keys)keys[k]=false;});
@@ -2396,20 +2574,138 @@ window.addEventListener('touchcancel',endTouch);
 window.addEventListener('pointerdown',()=>AU.ensure(),{once:false});
 
 /* ============================== fx helpers ============================== */
+/* swap-remove：O(1) 删除，不保序。用末位元素覆盖待删位再 pop，避免 splice 的 O(n) 元素搬移。
+   约束：只能在「倒序遍历」中使用（正序会把未处理元素搬到 i 位从而被跳过），
+   或用于元素顺序无关的场景。本项目所有实体数组均为倒序遍历回收，故全部适用。 */
+function swapDel(a,i){a[i]=a[a.length-1];a.pop();}
+
+/* 尊重系统「减弱动态效果」设置：关闭顿帧这类强反馈 */
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* 顿帧 hitstop：冻结世界更新但继续渲染，制造打击顿挫感。
+   分级触发 —— 单杀小怪不打断手感，只给精英 / 重型 / 范围爆炸。
+   取最大值而非累加，防止连锁爆炸（新星链、爆裂词缀）把画面冻死。 */
+const HS_HEAVY={nova:0.055,bulwark:0.055,bastion:0.05,shepherd:0.05,
+  splitter:0.04,mine:0.04,wraith:0.04,lancer:0.035};
+function hitstop(t){
+  if(REDUCED)return;
+  if(t>G.hitstop)G.hitstop=t;
+}
+
 function shake(n){G.shake=Math.min(G.shake+n,26);}
+
+/* ---- 碎片/残骸：死亡时飞散的旋转多边形（纯视觉，不改伤害与平衡） ----
+   顶点半径在生成时预计算存进 d.pts，绘制期只做三角函数，不再逐帧随机。 */
+const DEBRIS_MAX=120;
+function shatter(x,y,n,spd,c,size){
+  if(REDUCED)return;
+  if(G.debris.length+n>DEBRIS_MAX)n=DEBRIS_MAX-G.debris.length;
+  for(let i=0;i<n;i++){
+    const a=rand(TAU),s=rand(spd*0.3,spd),nv=3+((Math.random()*3)|0);
+    const pts=[];
+    for(let k=0;k<nv;k++)pts.push(0.55+Math.random()*0.45);
+    G.debris.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,rot:rand(TAU),vr:rand(-7,7),
+      sz:size*rand(0.5,1.1),pts,c,t:0,max:rand(0.7,1.5)});
+  }
+}
+function updateDebris(dt){
+  const a=G.debris;
+  for(let i=a.length-1;i>=0;i--){
+    const d=a[i];d.t+=dt;
+    if(d.t>=d.max){swapDel(a,i);continue;}
+    d.x+=d.vx*dt;d.y+=d.vy*dt;
+    const k=Math.exp(-1.6*dt);d.vx*=k;d.vy*=k;
+    d.rot+=d.vr*dt;
+  }
+}
+function drawDebris(){
+  for(let i=0;i<G.debris.length;i++){
+    const d=G.debris[i],f=1-d.t/d.max,nv=d.pts.length;
+    ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
+    ctx.beginPath();
+    for(let k=0;k<nv;k++){
+      const t=k/nv*TAU,r=d.sz*d.pts[k];
+      const px=Math.cos(t)*r,py=Math.sin(t)*r;
+      if(k===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba('+d.c+','+(f*0.22)+')';ctx.fill();
+    ctx.strokeStyle='rgba('+d.c+','+(f*0.85)+')';ctx.lineWidth=1.2;ctx.stroke();
+    ctx.restore();
+  }
+}
 function flashRed(){el.flash.style.opacity=1;setTimeout(()=>el.flash.style.opacity=0,60);}
-function banner(main,sub){
+/* heavy: 1 = 巨像登场（强色差 + 泛光 + 推镜），0.5 = 星区/精英（轻推），省略 = 普通波次（仅轻微泛光） */
+function banner(main,sub,heavy){
   el.bMain.textContent=main;el.bSub.textContent=sub||'';
   G.bannerT=2.3;
+  if(heavy){camKick(0.03*heavy);ppBloom(heavy>=1?1:0.6);if(heavy>=1)ppGlitch(1);}
+  else ppBloom(0.35);
+}
+/* ---- 预烘焙 glow 贴图：按 rgb 字符串 lazy 生成 + Map 缓存 ----
+   目的：彻底避开每帧 createRadialGradient / shadowBlur（Canvas2D 最贵的两类操作），
+   绘制退化为一次 drawImage。借鉴 gravity-echo 的 GLOW 字典，但改为按颜色 lazy 生成，
+   以适配本项目每个敌型/拾取各自独立配色的情况。 */
+const GLOW_TEX=new Map(),GLOW_PX=64,GLOW_MAX=48;
+function glowTex(rgb){
+  let cv=GLOW_TEX.get(rgb);
+  if(cv)return cv;
+  cv=document.createElement('canvas');cv.width=cv.height=GLOW_PX;
+  const g=cv.getContext('2d'),h=GLOW_PX/2;
+  const grd=g.createRadialGradient(h,h,0,h,h,h);
+  grd.addColorStop(0,   'rgba('+rgb+',1)');
+  grd.addColorStop(0.18,'rgba('+rgb+',0.80)');
+  grd.addColorStop(0.42,'rgba('+rgb+',0.28)');
+  grd.addColorStop(0.72,'rgba('+rgb+',0.06)');
+  grd.addColorStop(1,   'rgba('+rgb+',0)');
+  g.fillStyle=grd;g.fillRect(0,0,GLOW_PX,GLOW_PX);
+  if(GLOW_TEX.size>=GLOW_MAX){ // Map 保序：淘汰最早生成的一半，防无限增长
+    let n=0;for(const k of GLOW_TEX.keys()){if(n++>=GLOW_MAX>>1)break;GLOW_TEX.delete(k);}
+  }
+  GLOW_TEX.set(rgb,cv);
+  return cv;
+}
+/* 画一个发光点：size=半径(px)，alpha=不透明度 */
+function glow(rgb,x,y,size,alpha){
+  if(alpha<=0.006||size<=0.2)return;
+  ctx.globalAlpha=alpha<1?alpha:1;
+  ctx.drawImage(glowTex(rgb),x-size,y-size,size+size,size+size);
+  ctx.globalAlpha=1;
+}
+
+/* ---- 粒子池 ----
+   单数组 + 类型标记 k（0 拖尾 / 1 光环 / 2 发光点）。
+   绘制时按类型分三遍批处理，效果等同"分池"，但重置点只有一处 G.parts，改动面最小。
+   回收统一 swap-remove（O(1)，不保序），因为发光/拖尾粒子不依赖绘制顺序。
+   入口数量钳制替代原 O(n) 的 splice(0,len-420) 头部截断。 */
+const PART_MAX=560;
+const PK_STREAK=0,PK_RING=1,PK_GLOW=2;
+function pushStreak(x,y,vx,vy,life,c,w){
+  if(G.parts.length>=PART_MAX)return;
+  G.parts.push({k:PK_STREAK,x,y,vx,vy,t:0,max:life,c,w:w||2});
+}
+function pushGlow(x,y,vx,vy,life,c,size,g){
+  if(G.parts.length>=PART_MAX)return;
+  G.parts.push({k:PK_GLOW,x,y,vx,vy,t:0,max:life,c,gs:size,g:g===undefined?0.85:g});
 }
 function burst(x,y,n,spd,life,c,w){
+  if(G.parts.length+n>PART_MAX)n=PART_MAX-G.parts.length;
   for(let i=0;i<n;i++){
     const a=rand(TAU),s=rand(spd*0.25,spd);
-    G.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,max:rand(life*0.5,life),c,w:w||2});
+    G.parts.push({k:PK_STREAK,x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,max:rand(life*0.5,life),c,w:w||2});
   }
-  if(G.parts.length>420)G.parts.splice(0,G.parts.length-420);
 }
-function ring(x,y,r,c){G.parts.push({x,y,vx:0,vy:0,t:0,max:0.35,c,ring:r});}
+function glowBurst(x,y,n,spd,life,c,size,g){
+  if(G.parts.length+n>PART_MAX)n=PART_MAX-G.parts.length;
+  for(let i=0;i<n;i++){
+    const a=rand(TAU),s=rand(spd*0.15,spd);
+    G.parts.push({k:PK_GLOW,x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,
+      t:0,max:rand(life*0.5,life),c,gs:size*rand(0.7,1.3),g:g===undefined?0.8:g});
+  }
+}
+function ring(x,y,r,c){
+  if(G.parts.length>=PART_MAX)return;
+  G.parts.push({k:PK_RING,x,y,vx:0,vy:0,t:0,max:0.35,c,rr:r});
+}
 function ftext(x,y,txt,c){G.texts.push({x,y,txt,c,t:0.9});}
 
 /* ============================== spawning ============================== */
@@ -2502,82 +2798,103 @@ function bossStage(a,stage,txt,sub){
   if(txt)banner(txt,sub||'');
 }
 
+/* ---- 精英词缀正交层 ----
+   思路来自 gravity-echo：词缀与敌型正交，3 词缀 × 18 敌型 = 54 种组合，
+   内容多样性几乎零成本放大，而行为代码仍是每敌型一份。
+   注意：本项目敌型的 e.spd 并非都有（mine/shifter 为 0），故 apply 内部做存在性判断；
+   且本层只作用于敌人，与小行星的 a.elite（掉修复包）是两套独立系统，互不干扰。 */
+const AFFIX={
+  swift:  {c:'110,255,180', name:'疾', apply(e){if(e.spd)e.spd*=1.38;e.hp*=1.15;}},
+  tank:   {c:'255,140,110', name:'坚', apply(e){e.hp*=2.1;e.r*=1.18;if(e.spd)e.spd*=0.86;}},
+  volatile:{c:'196,148,255',name:'爆', apply(e){e.hp*=1.3;e.volatile=true;}},
+};
+function applyAffix(e){
+  if(e.boss||e.affix)return;
+  const chance=Math.min(0.05+0.011*Wv.n,0.20); // 随波次缓升，封顶 20%
+  if(Math.random()>chance)return;
+  const ks=Object.keys(AFFIX);
+  const k=ks[(Math.random()*ks.length)|0];
+  e.affix=k;e.affixC=AFFIX[k].c;
+  AFFIX[k].apply(e);
+}
+/* 词缀光环：旋转虚线圈 + 单字标记，颜色即词缀语义 */
+function drawAffixRing(e){
+  const A=AFFIX[e.affix];if(!A)return;
+  const r=e.r+7+Math.sin(G.t*3+e.age*2)*1.2;
+  ctx.save();ctx.translate(e.x,e.y);
+  ctx.rotate(G.t*(e.affix==='swift'?1.6:0.7)*(e.sd||1));
+  ctx.strokeStyle='rgba('+A.c+',0.8)';ctx.lineWidth=1.6;
+  ctx.setLineDash([5,6]);ctx.lineDashOffset=-G.t*22;
+  ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba('+A.c+',0.92)';
+  ctx.font='9px ui-monospace,Consolas,monospace';ctx.textAlign='center';
+  ctx.fillText(A.name,0,-r-4);
+  ctx.restore();
+}
+
+/* ============================== 敌型数据表 ==============================
+   原实现把 19 个敌型的 r/hp/spd/dmg 写在 spawnEnemy 的 if/else 链里，
+   又把 sc(分数) / xp(掉落) 另写两张字面量表在 killEn 里、把配色写在 drawEnemy 里
+   —— 同一敌型的属性分散三处，加一个敌型要改三个地方，已到维护临界点。
+   改为单表驱动：hp/dmg/spd 可填常量或 (wave)=>值 的函数；init(e,wave,mul) 负责特有字段。
+   hp 统一乘波次系数 m；spd 未定义则保持 undefined（与原行为一致，部分敌型不用 spd）。 */
+const ENEMY_DEFS={
+  seeker:{r:12,hp:3,spd:n=>Math.min(240+9*n,360),dmg:16,sc:40,xp:4},
+  dart:{r:11,hp:2.5,dmg:22,sc:60,xp:5,init:e=>{e.state='aim';e.st=0.9;}},
+  gunner:{r:16,hp:6,dmg:18,sc:80,xp:7,init:e=>{e.fireT=rand(1.2,2.2);}},
+  splitter:{r:24,hp:10,spd:115,dmg:24,sc:100,xp:9},
+  weaver:{r:17,hp:8,dmg:14,sc:90,xp:8,init:e=>{e.fireT=rand(1.4,2.4);}},
+  reaver:{r:10,hp:2,spd:n=>Math.min(300+10*n,430),dmg:12,sc:30,xp:3},
+  tadpole:{r:9,hp:3,spd:n=>Math.min(150+8*n,330),dmg:n=>Math.min(6+0.4*n,14),sc:20,xp:2,
+    c:'150,255,170',
+    init:(e,n)=>{e.base=e.spd;e.spdG=7+0.8*n;e.turn=2.4+0.08*n;e.wob=rand(TAU);}},
+  bastion:{r:22,hp:14,spd:60,dmg:30,sc:150,xp:12,c:'255,180,80', // 重甲炮台：慢、厚血、扇形弹幕
+    init:e=>{e.fireT=rand(1.8,2.8);const da=rand(TAU);e.vx=Math.cos(da)*30;e.vy=Math.sin(da)*30;}},
+  shifter:{r:13,hp:5,spd:0,dmg:20,sc:120,xp:10,c:'180,140,255', // 相位闪现者
+    init:e=>{e.state='phase';e.st=rand(0.6,1.2);e.teleT=rand(2.2,3.2);e.flashCd=0;}},
+  wraith:{r:12,hp:6,spd:150,dmg:26,sc:110,xp:9,c:'150,220,255', // 幽灵：半透明飘忽，碰撞自爆
+    init:e=>{e.wob=rand(TAU);e.pulse=rand(TAU);}},
+  stalker:{r:12,hp:5,spd:210,dmg:26,sc:110,xp:9,c:'255,90,220', // 潜行者：光学迷彩潜近后突刺
+    init:e=>{e.state='cloak';e.st=rand(1.2,2.0);}},
+  lancer:{r:14,hp:7,spd:110,dmg:30,sc:120,xp:10,c:'255,170,60', // 长枪手：蓄力发射高速长矛弹
+    init:e=>{e.state='aim';e.st=rand(0.8,1.4);e.fireT=rand(1.6,2.4);}},
+  mine:{r:13,hp:4,spd:0,dmg:34,sc:60,xp:5,c:'255,220,80', // 浮游雷：静止待机，靠近触发引信
+    init:e=>{e.state='idle';e.st=0;e.wob=rand(TAU);
+      const da=rand(TAU);e.vx=Math.cos(da)*18;e.vy=Math.sin(da)*18;}},
+  orbiter:{r:13,hp:6,spd:210,dmg:15,sc:100,xp:8,c:'150,205,255', // 环轨炮：绕玩家圆周机动点射
+    init:e=>{e.orbit=rand(240,300);e.oa=angTo(P.x,P.y,e.x,e.y);e.osd=Math.random()<0.5?1:-1;
+      e.fireT=rand(1.2,2.0);}},
+  leech:{r:9,hp:4,spd:250,dmg:0,sc:90,xp:7,c:'200,255,140', // 吸附虫：贴上持续吸血，高速可甩脱
+    init:e=>{e.state='hunt';e.stick=0;e.life=9;e.wob=rand(TAU);}},
+  mimic:{r:11,hp:5,spd:90,dmg:30,sc:130,xp:11,c:'255,215,94', // 拟态体：伪装碎片，靠近显形突袭
+    init:e=>{e.state='disguise';e.st=0;e.wob=rand(TAU);}},
+  prism:{r:15,hp:9,spd:95,dmg:16,sc:120,xp:10,c:'175,255,255', // 棱镜：受击向三向折射光束
+    init:e=>{e.refrT=0;e.wob=rand(TAU);}},
+  bulwark:{r:20,hp:16,spd:78,dmg:28,sc:180,xp:14,c:'205,170,255', // 铁壁：正面偏导护盾，需绕后
+    init:e=>{e.turn=1.1;}},
+  shepherd:{r:18,hp:11,spd:105,dmg:14,sc:200,xp:16,c:'150,255,190', // 牧者：减伤光环 + 缓慢修复
+    init:e=>{e.auraR=330;e.healT=1.5;e.wob=rand(TAU);}},
+  nova:{r:16,hp:8,spd:125,dmg:20,sc:150,xp:12,c:'255,120,40', // 新星：缓慢逼近，死亡剧烈爆炸
+    init:e=>{e.pulse=rand(TAU);}},
+};
+const EN_FALLBACK={r:12,hp:3,spd:200,dmg:15,sc:40,xp:4};
 function spawnEnemy(type,x,y){
-  const m=1+0.09*(Wv.n-1);
+  const m=1+0.09*(Wv.n-1),n=Wv.n;
+  const d=ENEMY_DEFS[type]||EN_FALLBACK;
   const e={type,x,y,vx:0,vy:0,flash:0,age:0,st:0,state:'',ang:angTo(x,y,P.x,P.y),sd:Math.random()<0.5?1:-1,trailTick:0};
-  if(type==='seeker'){e.r=12;e.hp=3*m;e.spd=Math.min(240+9*Wv.n,360);e.dmg=16;}
-  else if(type==='dart'){e.r=11;e.hp=2.5*m;e.state='aim';e.st=0.9;e.dmg=22;}
-  else if(type==='gunner'){e.r=16;e.hp=6*m;e.fireT=rand(1.2,2.2);e.dmg=18;}
-  else if(type==='splitter'){e.r=24;e.hp=10*m;e.spd=115;e.dmg=24;}
-  else if(type==='weaver'){e.r=17;e.hp=8*m;e.fireT=rand(1.4,2.4);e.dmg=14;}
-  else if(type==='reaver'){e.r=10;e.hp=2*m;e.spd=Math.min(300+10*Wv.n,430);e.dmg=12;}
-  else if(type==='tadpole'){
-    e.r=9;e.hp=3*m;
-    e.spd=Math.min(150+8*Wv.n,330);e.base=e.spd;
-    e.spdG=7+0.8*Wv.n;e.turn=2.4+0.08*Wv.n;
-    e.wob=rand(TAU);e.dmg=Math.min(6+0.4*Wv.n,14);
-  }
-  else if(type==='bastion'){ // 重甲炮台：慢、厚血、扇形弹幕
-    e.r=22;e.hp=14*m;e.spd=60;e.dmg=30;
-    e.fireT=rand(1.8,2.8);e.ang=angTo(x,y,P.x,P.y);
-    const da=rand(TAU);e.vx=Math.cos(da)*30;e.vy=Math.sin(da)*30;
-  }
-  else if(type==='shifter'){ // 相位闪现者：间歇瞬移近身偷袭
-    e.r=13;e.hp=5*m;e.spd=0;e.dmg=20;
-    e.state='phase';e.st=rand(0.6,1.2);e.teleT=rand(2.2,3.2);e.flashCd=0;
-  }
-  else if(type==='wraith'){ // 幽灵：半透明、飘忽、碰撞后自爆
-    e.r=12;e.hp=6*m;e.spd=150;e.dmg=26;
-    e.wob=rand(TAU);e.pulse=rand(TAU);
-  }
-  /* ---------- 深空星区新增敌型 ---------- */
-  else if(type==='stalker'){ // 潜行者：光学迷彩潜近，显形后突刺
-    e.r=12;e.hp=5*m;e.spd=210;e.dmg=26;
-    e.state='cloak';e.st=rand(1.2,2.0);e.ang=angTo(x,y,P.x,P.y);
-  }
-  else if(type==='lancer'){ // 长枪手：远距离蓄力，发射高速长矛弹
-    e.r=14;e.hp=7*m;e.spd=110;e.dmg=30;
-    e.state='aim';e.st=rand(0.8,1.4);e.fireT=rand(1.6,2.4);
-    e.ang=angTo(x,y,P.x,P.y);
-  }
-  else if(type==='mine'){ // 浮游雷：静止待机，玩家靠近触发引信引爆
-    e.r=13;e.hp=4*m;e.spd=0;e.dmg=34;
-    e.state='idle';e.st=0;e.wob=rand(TAU);
-    const da=rand(TAU);e.vx=Math.cos(da)*18;e.vy=Math.sin(da)*18;
-  }
-  else if(type==='orbiter'){ // 环轨炮：绕玩家做圆周机动并点射
-    e.r=13;e.hp=6*m;e.spd=210;e.dmg=15;
-    e.orbit=rand(240,300);e.oa=angTo(P.x,P.y,x,y);e.osd=Math.random()<0.5?1:-1;
-    e.fireT=rand(1.2,2.0);
-  }
-  else if(type==='leech'){ // 吸附虫：贴上玩家持续吸血，高速机动可甩脱
-    e.r=9;e.hp=4*m;e.spd=250;e.dmg=0;
-    e.state='hunt';e.stick=0;e.life=9;e.wob=rand(TAU);
-  }
-  else if(type==='mimic'){ // 拟态体：伪装成经验碎片，靠近后显形突袭
-    e.r=11;e.hp=5*m;e.spd=90;e.dmg=30;
-    e.state='disguise';e.st=0;e.wob=rand(TAU);
-  }
-  else if(type==='prism'){ // 棱镜：受击时向三向折射光束
-    e.r=15;e.hp=9*m;e.spd=95;e.dmg=16;
-    e.refrT=0;e.wob=rand(TAU);
-  }
-  else if(type==='bulwark'){ // 铁壁：正面偏导护盾，需绕后输出
-    e.r=20;e.hp=16*m;e.spd=78;e.dmg=28;
-    e.ang=angTo(x,y,P.x,P.y);e.turn=1.1;
-  }
-  else if(type==='shepherd'){ // 牧者：为周围敌人套减伤光环并缓慢修复
-    e.r=18;e.hp=11*m;e.spd=105;e.dmg=14;
-    e.auraR=330;e.healT=1.5;e.wob=rand(TAU);
-  }
-  else if(type==='nova'){ // 新星：缓慢逼近，死亡时剧烈爆炸
-    e.r=16;e.hp=8*m;e.spd=125;e.dmg=20;
-    e.pulse=rand(TAU);
-  }
+  e.r=d.r;
+  e.hp=(typeof d.hp==='function'?d.hp(n):d.hp)*m;
+  e.dmg=(typeof d.dmg==='function'?d.dmg(n):d.dmg);
+  if(d.spd!==undefined)e.spd=(typeof d.spd==='function'?d.spd(n):d.spd);
+  if(d.init)d.init(e,n,m);
+  applyAffix(e);
   e.maxHp=e.hp;
   G.enemies.push(e);
   burst(x,y,8,160,0.4,'255,120,80',2);
+  glowBurst(x,y,5,140,0.5,e.affixC||'255,140,90',9,0.9);
 }
+
 
 /* 按单碎片价值分档配色：杂鱼蓝 / 中量绿 / 丰厚金 / 巨量紫 */
 function shardColor(v){
@@ -2621,6 +2938,8 @@ function buildWave(n){
     for(let i=0;i<1+(n/8|0);i++)Wv.qE.push('seeker');
     for(let i=0;i<Math.min(1+(n/10|0),4);i++)Wv.qE.push(pick(enUnlocked(n).slice(-4)));
     const bz=BOSS_ZH[bossKind]||'母岩';
+    /* 巨像登场：色差撕裂 + 满泛光 + 推镜，让 boss 波"落地"有重量 */
+    camKick(0.042);ppBloom(1);ppGlitch(1);
     if(bossKind==='twin')banner('TWIN ROCKS',T('双子母岩接近 —— 两只都要击碎，碎其一则另一狂暴','Twin Rocks approach — shatter both; breaking one enrages the other'));
     else if(bossKind==='eye')banner('VOID EYE',T('虚空之眼已睁开 —— 提防它的凝视与螺旋弹幕','The Void Eye is open — beware its gaze and spiral barrage'));
     else if(bossKind==='hydra')banner('HYDRA PRIME',T('九首巨兽苏醒 —— 三颗核心共享生命网络','Hydra Prime awakens — three cores share one life-web'));
@@ -2646,7 +2965,7 @@ function buildWave(n){
     const szen=SQUADS_EN[sq.id]||[];
     const sub=(Wv.champ?T('精英巨像压阵 · ','Champion colossus leads · '):'')+
       T(sq.zh,szen[0]||sq.zh)+T('编队',' formation')+' — '+T(sq.desc,szen[1]||sq.desc);
-    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,T('进入'+sec.zh+' —— 敌型谱系扩充','Entering the '+sec.en+' — new enemy types join the pool'));
+    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,T('进入'+sec.zh+' —— 敌型谱系扩充','Entering the '+sec.en+' — new enemy types join the pool'),0.5);
     else if(Wv.early)banner('WAVE '+n,T('肃清区域内全部目标后推进 — ','Clear all hostiles to advance — ')+sub);
     else banner('WAVE '+n,sub);
   }
@@ -2678,7 +2997,7 @@ function director(dt){
     else if(s==='champ'){ // 精英巨像：弱一档的巨像，压阵但不锁进度
       const p=edgePoint();
       const c=spawnAst(4,p.x,p.y,Wv.champ,true);
-      banner('COLOSSUS',T('精英巨像压阵 —— 击碎它有厚赏','A champion colossus leads the wave — rich salvage for breaking it'));
+      banner('COLOSSUS',T('精英巨像压阵 —— 击碎它有厚赏','A champion colossus leads the wave — rich salvage for breaking it'),0.5);
       shake(6);
     }
     else{const p=viewPoint();spawnAst(s,p.x,p.y);}
@@ -2735,7 +3054,7 @@ function updatePickups(dt){
   for(let i=G.pickups.length-1;i>=0;i--){
     const u=G.pickups[i];
     u.t+=dt;
-    if(u.t>u.life){G.pickups.splice(i,1);continue;}
+    if(u.t>u.life){swapDel(G.pickups,i);continue;}
     const q=d2(u.x,u.y,P.x,P.y);
     if(q<P.magnet*P.magnet*0.64){
       const a=angTo(u.x,u.y,P.x,P.y),sp=320;
@@ -2752,8 +3071,9 @@ function updatePickups(dt){
       ftext(P.x,P.y-30,T(def.zh,PU_EN[u.type]||def.zh)+(def.suf||''),def.c);
       burst(u.x,u.y,12,200,0.5,def.c,2);
       ring(u.x,u.y,10,def.c);
+      glowBurst(u.x,u.y,4,130,0.45,def.c,8,0.9);
       shake(3);sfx.pickup();
-      G.pickups.splice(i,1);
+      swapDel(G.pickups,i);
     }
   }
 }
@@ -2812,10 +3132,11 @@ function bossStageCheck(a){
   }
 }
 function killAst(a){
-  const i=G.asteroids.indexOf(a);if(i>=0)G.asteroids.splice(i,1);
+  const i=G.asteroids.indexOf(a);if(i>=0)swapDel(G.asteroids,i);
   G.kills++;G.score+=a.score;
   ftext(a.x,a.y,'+'+a.score,a.elite?'255,215,94':'170,200,230');
   burst(a.x,a.y,8+a.size*7,120+a.size*60,0.6,a.elite?'255,215,94':'150,175,205',2.4);
+  shatter(a.x,a.y,3+a.size*2,160,a.elite?'255,215,94':'150,175,205',a.r*0.38);
   ring(a.x,a.y,a.r,'150,200,255');
   shake(2+a.size*2+(a.boss?14:0));
   sfx.boom(a.size);
@@ -2843,7 +3164,7 @@ function killAst(a){
     for(let k=0;k<2;k++)G.pickups.push({type:'level',x:a.x+rand(-34,34),y:a.y+rand(-34,34),t:0,life:20});
     for(let k=0;k<3;k++)spawnAst(2,a.x+rand(-40,40),a.y+rand(-40,40));
     for(let k=0;k<5;k++)spawnAst(1,a.x+rand(-50,50),a.y+rand(-50,50));
-    G.slowT=0.55;
+    G.slowT=0.55;AU.setMuffle(1); // 子弹时间：同步闷化 sfx（低通截止滑向 700Hz）
     const k=a.bossKind;
     if(k==='twin'){
       // 同胞狂暴：击碎其一，另一只攻速与移速暴涨
@@ -2894,21 +3215,17 @@ function hurtEn(e,dmg,hx,hy,crit){
   if(e.hp<=0)killEn(e);
 }
 function killEn(e){
-  const i=G.enemies.indexOf(e);if(i>=0)G.enemies.splice(i,1);
+  const i=G.enemies.indexOf(e);if(i>=0)swapDel(G.enemies,i);
   G.kills++;
-  const sc={seeker:40,dart:60,gunner:80,splitter:100,weaver:90,reaver:30,tadpole:20,
-    bastion:150,shifter:120,wraith:110,
-    stalker:110,lancer:120,mine:60,orbiter:100,leech:90,mimic:130,prism:120,
-    bulwark:180,shepherd:200,nova:150}[e.type]||40;
-  G.score+=sc;ftext(e.x,e.y,'+'+sc,'255,170,120');
-  const xp={seeker:4,dart:5,gunner:7,splitter:9,weaver:8,reaver:3,tadpole:2,
-    bastion:12,shifter:10,wraith:9,
-    stalker:9,lancer:10,mine:5,orbiter:8,leech:7,mimic:11,prism:10,
-    bulwark:14,shepherd:16,nova:12}[e.type]||4;
-  dropXp(e.x,e.y,xp);
+  const def=ENEMY_DEFS[e.type]||EN_FALLBACK; // 分数与掉落同样查表，不再另存两份字面量
+  const gain=e.affix?Math.round(def.sc*1.6):def.sc; // 精英词缀：1.6 倍分
+  G.score+=gain;ftext(e.x,e.y,'+'+gain,e.affixC||'255,170,120');
+  dropXp(e.x,e.y,def.xp);
   if(P.leech>0)P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.012*P.leech);
   burst(e.x,e.y,14,240,0.55,'255,120,70',2.4);
   ring(e.x,e.y,e.r+6,'255,140,90');
+  glowBurst(e.x,e.y,7,200,0.6,'255,170,80',11,0.95);
+  shatter(e.x,e.y,4,180,'255,150,100',e.r*0.45);
   shake(4);sfx.boom(1.4);
   FX.boom(e.x,e.y,1.2,'orange',false);
   if(e.type==='splitter')
@@ -2934,11 +3251,32 @@ function killEn(e){
     burst(e.x,e.y,20,280,0.5,'150,220,255',2.4);
     if(d2(e.x,e.y,P.x,P.y)<(90+P.r)*(90+P.r))hurtPlayer(18,e.x,e.y);
   }
+  if(e.volatile&&blastDepth<3){ // 爆裂词缀：死亡时范围溅射（带连锁深度保护）
+    blastDepth++;
+    const R=88;
+    ring(e.x,e.y,R,'196,148,255');
+    glowBurst(e.x,e.y,9,250,0.6,'196,148,255',11,0.9);
+    shake(6);sfx.boom(2);
+    if(d2(e.x,e.y,P.x,P.y)<(R+P.r)*(R+P.r))hurtPlayer(16,e.x,e.y);
+    for(const o of G.enemies.slice())
+      if(o!==e&&d2(o.x,o.y,e.x,e.y)<R*R)hurtEn(o,14,o.x,o.y,false);
+    blastDepth--;
+  }
+  hitstop(e.affix?0.05:(HS_HEAVY[e.type]||0)); // 精英/重型才顿帧，单杀小怪不打断手感
+  /* 镜头与泛光跟顿帧同分级：小怪只留粒子，重型/精英才推镜头，
+     新星与自爆类再叠一层色差，把"这一下很重"从听觉推到整个画面。 */
+  const hs=e.affix?0.05:(HS_HEAVY[e.type]||0);
+  if(hs>0){camKick(0.012);ppBloom(0.55);}
+  if(e.type==='nova'){camKick(0.032);ppBloom(1);ppGlitch(0.85);}
+  else if(e.type==='wraith'||e.volatile){camKick(0.02);ppBloom(0.85);ppGlitch(0.5);}
 }
 
 function hurtPlayer(dmg,sx,sy){
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
   if(tryBlink(dmg,sx,sy))return; // 相位折跃：重击袭来时折跃脱险，该次伤害作废
+  /* 受击：负向 kick = 镜头轻微后拉（读作被击退），叠一道色差撕裂。
+     放在折跃判定之后，折跃成功脱险时不该有受击反馈。 */
+  camKick(-0.018);ppGlitch(0.9);
   if(P.ram>0)dmg*=P.ram>=4?0.25:(P.ram>=2?0.35:0.6);
   let vented=false;
   if(P.shieldTmp>0){ // 临时屏障先扛：外层的蓝色护罩
@@ -2990,6 +3328,8 @@ function drainPlayer(dmg){
 
 function die(){
   G.mode='dying';G.deathT=1.5;
+  /* 坠毁：强色差 + 镜头后拉，配合 updateGrade 的去饱和，把"结束"这件事压到整个画面上 */
+  ppGlitch(1);ppBloom(1);camKick(-0.03);
   flushStats(); // 坠毁瞬间即提交统计：dying 阶段关页/刷新也不会丢掉最后一波数据
   el.cards.hidden=true;
   burst(P.x,P.y,46,420,1.1,'120,225,255',3);
@@ -3202,7 +3542,7 @@ function novaFire(){
       const eb=G.ebullets[i];
       if(d2(eb.x,eb.y,P.x,P.y)<r*r){
         burst(eb.x,eb.y,3,110,0.3,'255,215,94',1.6);
-        G.ebullets.splice(i,1);
+        swapDel(G.ebullets,i);
       }
     }
   }
@@ -3278,7 +3618,7 @@ function updateMines(dt){
   for(let i=arr.length-1;i>=0;i--){
     const m=arr[i];
     m.life-=dt;m.arm-=dt;
-    if(m.life<=0){burst(m.x,m.y,4,90,0.3,hullGlow(),1.6);arr.splice(i,1);continue;}
+    if(m.life<=0){burst(m.x,m.y,4,90,0.3,hullGlow(),1.6);swapDel(arr,i);continue;}
     if(m.arm>0)continue;
     const pr2=m.pull*m.pull;
     for(const e of G.enemies){ // 磁引：把敌人往雷上拽
@@ -3300,7 +3640,7 @@ function detonateMine(m,k){
   const gold=P.mineMax;
   const r=m.r*k,dmg=m.dmg*k;
   const c=m.hullC||hullGlow(); // 未 MAX 时取布雷当时的船体发光色，MAX 恒为金色
-  const i=G.mines.indexOf(m);if(i>=0)G.mines.splice(i,1);
+  const i=G.mines.indexOf(m);if(i>=0)swapDel(G.mines,i);
   ring(m.x,m.y,r,c);burst(m.x,m.y,12,240,0.45,c,2.4);
   shake(4);sfx.boom(2);
   for(const e of G.enemies.slice()){
@@ -3316,7 +3656,7 @@ function detonateMine(m,k){
   if(gold){ // 金色磁暴：湮灭波及的敌方子弹
     for(let i2=G.ebullets.length-1;i2>=0;i2--){
       const eb=G.ebullets[i2];
-      if(d2(eb.x,eb.y,m.x,m.y)<r*r){burst(eb.x,eb.y,3,100,0.3,'255,215,94',1.5);G.ebullets.splice(i2,1);}
+      if(d2(eb.x,eb.y,m.x,m.y)<r*r){burst(eb.x,eb.y,3,100,0.3,'255,215,94',1.5);swapDel(G.ebullets,i2);}
     }
   }
 }
@@ -3347,10 +3687,13 @@ function updatePlayer(dt){
     const hot=P.thrMax||P.boostT>0;
     const tx=P.x-Math.cos(P.angle)*tl, ty=P.y-Math.sin(P.angle)*tl; // 船尾喷射点
     FX.thrust(thrust>0,tx,ty,P.angle,hot?'255,205,110':tint.glow);
-    if(thrust&&Math.random()<(P.boostT>0?0.9:0.6))
-      G.parts.push({x:tx,y:ty,
+    if(thrust&&Math.random()<(P.boostT>0?0.9:0.6)){
+      G.parts.push({k:PK_STREAK,x:tx,y:ty,
         vx:-Math.cos(P.angle)*rand(60,140)+rand(-30,30),vy:-Math.sin(P.angle)*rand(60,140)+rand(-30,30),
         t:0,max:rand(0.18,0.32),c:hot?'255,215,120':tint.glow,w:2});
+      pushGlow(tx,ty,-Math.cos(P.angle)*rand(40,90)+rand(-20,20),-Math.sin(P.angle)*rand(40,90)+rand(-20,20),
+        rand(0.2,0.34),hot?'255,215,120':tint.glow,rand(5,9),0.5);
+    }
   }
   if(thrust){
     const acc=P.accel*(P.boostT>0?1.5:1);
@@ -3836,7 +4179,7 @@ function updateEnemies(dt){
           shake(9);sfx.boom(2);FX.boom(e.x,e.y,1.6,'orange',false);
           if(dp<120+P.r)hurtPlayer(34,e.x,e.y);
           for(const o of G.enemies.slice())if(o!==e&&d2(o.x,o.y,e.x,e.y)<14400)hurtEn(o,18,o.x,o.y,false);
-          G.enemies.splice(i,1);continue;
+          swapDel(G.enemies,i);continue;
         }
       }
     }else if(e.type==='orbiter'){
@@ -3876,7 +4219,7 @@ function updateEnemies(dt){
         const sp=Math.hypot(e.vx,e.vy);if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
         if(dp<e.r+P.r+6){e.stick=4.5;e.stickA=rand(TAU);e.drain=0;sfx.hurt();}
         e.life-=dt;
-        if(e.life<=0){G.enemies.splice(i,1);continue;}
+        if(e.life<=0){swapDel(G.enemies,i);continue;}
       }
     }else if(e.type==='mimic'){
       // 拟态体：伪装成经验碎片漂近，靠身后显形突袭
@@ -3989,11 +4332,11 @@ function updateDeathTrail(dt){
     if(b.gold&&!b.exploded&&b.life/b.maxLife<0.16){ // MAX 级：消失前横向炸裂
       b.exploded=true;deathBurst(b);
     }
-    if(b.life<=0)arr.splice(i,1);
+    if(b.life<=0)swapDel(arr,i);
   }
   for(let i=G.dtFx.length-1;i>=0;i--){
     G.dtFx[i].t+=dt;
-    if(G.dtFx[i].t>=G.dtFx[i].max)G.dtFx.splice(i,1);
+    if(G.dtFx[i].t>=G.dtFx[i].max)swapDel(G.dtFx,i);
   }
   if(!arr.length)return;
   // 消解触到尾流的敌方子弹 —— 灼热航迹同时也是移动的防线
@@ -4002,7 +4345,7 @@ function updateDeathTrail(dt){
     for(const b of arr){
       const rr=b.r+eb.r;
       if(d2(b.x,b.y,eb.x,eb.y)<rr*rr){
-        G.ebullets.splice(i,1);
+        swapDel(G.ebullets,i);
         burst(eb.x,eb.y,3,110,0.3,b.gold?'255,215,94':'96,231,255',1.8);
         break;
       }
@@ -4097,7 +4440,7 @@ function updateBullets(dt){
         else dead=true;
       }
     }
-    if(dead)G.bullets.splice(i,1);
+    if(dead)swapDel(G.bullets,i);
   }
   for(let i=G.ebullets.length-1;i>=0;i--){
     const b=G.ebullets[i];
@@ -4107,14 +4450,14 @@ function updateBullets(dt){
       hurtPlayer(b.dmg,b.x,b.y);dead=true;
       burst(b.x,b.y,6,150,0.3,'255,120,70',2);
     }
-    if(dead)G.ebullets.splice(i,1);
+    if(dead)swapDel(G.ebullets,i);
   }
 }
 
 function updateLances(dt){
   for(let i=G.lances.length-1;i>=0;i--){
     const L=G.lances[i];L.t+=dt;
-    if(L.t>=L.max)G.lances.splice(i,1);
+    if(L.t>=L.max)swapDel(G.lances,i);
   }
 }
 function updateShards(dt){
@@ -4142,8 +4485,8 @@ function updateShards(dt){
       ftext(s.x,s.y-6,'+'+(xv%1?xv.toFixed(1):xv),s.c);
       burst(s.x,s.y,2,80,0.25,s.c,1.4);
       sfx.pickup();
-      G.shards.splice(i,1);
-    }else if(!s.mag&&s.t>18)G.shards.splice(i,1); // 已锁定的碎片永不超时，直到追上玩家
+      swapDel(G.shards,i);
+    }else if(!s.mag&&s.t>18)swapDel(G.shards,i); // 已锁定的碎片永不超时，直到追上玩家
   }
 }
 
@@ -4165,7 +4508,7 @@ function updateWarns(dt){
   for(let i=G.warns.length-1;i>=0;i--){
     const w=G.warns[i];
     w.t-=dt;
-    if(w.t<=0){spawnEnemy(w.type,w.x,w.y);G.warns.splice(i,1);}
+    if(w.t<=0){spawnEnemy(w.type,w.x,w.y);swapDel(G.warns,i);}
   }
 }
 
@@ -4210,28 +4553,30 @@ function moltenSplash(){
 }
 
 function updateParts(dt){
-  for(let i=G.parts.length-1;i>=0;i--){
-    const p=G.parts[i];
+  const a=G.parts;
+  for(let i=a.length-1;i>=0;i--){
+    const p=a[i];
     p.t+=dt;
-    if(p.t>=p.max){G.parts.splice(i,1);continue;}
-    if(p.ring===undefined){
+    if(p.t>=p.max){a[i]=a[a.length-1];a.pop();continue;} // swap-remove：O(1)，粒子不依赖绘制顺序
+    if(p.k!==PK_RING){
       p.x+=p.vx*dt;p.y+=p.vy*dt;
       const k=Math.exp(-2.2*dt);p.vx*=k;p.vy*=k;
     }
   }
   for(let i=G.bolts.length-1;i>=0;i--){
     G.bolts[i].t-=dt;
-    if(G.bolts[i].t<=0)G.bolts.splice(i,1);
+    if(G.bolts[i].t<=0)swapDel(G.bolts,i);
   }
   for(let i=G.ghosts.length-1;i>=0;i--){
     G.ghosts[i].t+=dt;
-    if(G.ghosts[i].t>=G.ghosts[i].max)G.ghosts.splice(i,1);
+    if(G.ghosts[i].t>=G.ghosts[i].max)swapDel(G.ghosts,i);
   }
   for(let i=G.texts.length-1;i>=0;i--){
     const t=G.texts[i];
     t.t-=dt;t.y-=28*dt;
-    if(t.t<=0)G.texts.splice(i,1);
+    if(t.t<=0)swapDel(G.texts,i);
   }
+  updateDebris(dt); // 碎片生命周期与粒子一致，挂在 updateParts 内随所有模式推进
 }
 
 /* ============================== level up UI ============================== */
@@ -4356,10 +4701,10 @@ function startGame(hull){
   G.runId=Date.now();G.runStart=G.runId; // 新漂移的唯一 id / 开始时刻
   hull=hull||G.lastHull||HULLS[0];G.lastHull=hull;
   G.asteroids.length=0;G.enemies.length=0;G.bullets.length=0;G.ebullets.length=0;
-  G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;
+  G.shards.length=0;G.drones.length=0;G.parts.length=0;G.texts.length=0;G.warns.length=0;G.debris.length=0;
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.lances.length=0;G.ghosts.length=0;
-  G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;
+  G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
@@ -4557,12 +4902,8 @@ function toMenu(){
   refreshContinue();
   menuScene();
 }
-/* 菜单数据 chips：随内容扩充自动更新 */
-function refreshMenuMeta(){
-  el.dataChips.innerHTML=`<span>${T('模块','MODULES')} ${MODULES.length}</span>`+
-    `<span>${T('敌型','FOES')} ${EN_LIST.length}</span><span>${T('巨像','COLOSSI')} ${Object.keys(BOSS_AT).length}</span>`+
-    `<span>${T('星区','SECTORS')} ${SECTORS.length}</span><span>${T('波次','WAVES')} ${WIN_WAVE} + ∞</span>`;
-}
+/* 菜单数据 chips 已移除（首页精简），保留空函数以维持调用点兼容 */
+function refreshMenuMeta(){}
 function toggleMute(){
   AU.muted=!AU.muted;
   AU.applyMute();
@@ -4839,11 +5180,7 @@ function drawAst(a){
 function drawEnemy(e){
   const grow=Math.min(1,e.age/0.4);
   ctx.save();ctx.translate(e.x,e.y);ctx.scale(grow,grow);
-  const EC={tadpole:'150,255,170',bastion:'255,180,80',shifter:'180,140,255',wraith:'150,220,255',
-    stalker:'255,90,220',lancer:'255,170,60',mine:'255,220,80',orbiter:'150,205,255',
-    leech:'200,255,140',mimic:'255,215,94',prism:'175,255,255',bulwark:'205,170,255',
-    shepherd:'150,255,190',nova:'255,120,40'};
-  const baseC=EC[e.type]||'255,110,70';
+  const baseC=(ENEMY_DEFS[e.type]&&ENEMY_DEFS[e.type].c)||'255,110,70'; // 配色查同一张敌型表
   const c=e.flash>0?'255,255,255':baseC;
   ctx.strokeStyle=`rgba(${c},0.25)`;ctx.lineWidth=5;
   const stroke=()=>{ctx.strokeStyle=`rgba(${c},0.25)`;ctx.lineWidth=5;ctx.stroke();
@@ -5452,7 +5789,11 @@ function draw(){
   drawStars();
   const shx=(Math.random()*2-1)*G.shake,shy=(Math.random()*2-1)*G.shake;
   ctx.save();
-  ctx.translate(VW/2-cam.x+shx,VH/2-cam.y+shy);
+  /* 相机：以屏幕中心为锚点做冲击变焦，再叠加速度视差偏移与受击抖动。
+     顺序必须是 中心 → scale → 负相机坐标，否则缩放会把相机位移一起放大。 */
+  ctx.translate(VW/2+shx,VH/2+shy);
+  if(cam.zoom!==1)ctx.scale(cam.zoom,cam.zoom);
+  ctx.translate(-cam.x+cam.ox,-cam.y+cam.oy);
   for(let i=0;i<NEBULAE.length;i++){
     const n=NEBULAE[i];
     ctx.drawImage(NEB_SPR[i],n.x-n.r,n.y-n.r);
@@ -5526,7 +5867,8 @@ function draw(){
     ctx.strokeRect(-r,-r,r*2,r*2);ctx.restore();
   }
   for(const a of G.asteroids)drawAst(a);
-  for(const e of G.enemies)drawEnemy(e);
+  for(const e of G.enemies){drawEnemy(e);if(e.affix)drawAffixRing(e);}
+  drawDebris();
   drawDeathTrail();
   for(const d of G.drones){
     if(d.x===undefined)continue;
@@ -5641,15 +5983,26 @@ function draw(){
     drawLances(); // 轨道长枪光束画在船体之下，使激光从船首"射出"而非盖住船身
     drawShip();
   }
-  for(const p of G.parts){
+  /* 粒子：按类型分三遍批处理（发光点 → 拖尾 → 光环），减少状态切换 */
+  const PA=G.parts;
+  ctx.globalCompositeOperation='lighter'; // ① 发光点：贴图加法混合，出辉光
+  for(let i=0;i<PA.length;i++){
+    const p=PA[i];if(p.k!==PK_GLOW)continue;
     const k=1-p.t/p.max;
-    if(p.ring!==undefined){
-      ctx.strokeStyle=`rgba(${p.c},${k*0.7})`;ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.ring*(1.6-k*0.6)+8,0,TAU);ctx.stroke();
-    }else{
-      ctx.strokeStyle=`rgba(${p.c},${k})`;ctx.lineWidth=p.w;
-      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*0.03,p.y-p.vy*0.03);ctx.stroke();
-    }
+    glow(p.c,p.x,p.y,p.gs*(0.4+0.6*k),k*k*p.g);
+  }
+  ctx.globalCompositeOperation='source-over';
+  for(let i=0;i<PA.length;i++){ // ② 拖尾线段
+    const p=PA[i];if(p.k!==PK_STREAK)continue;
+    const k=1-p.t/p.max;
+    ctx.strokeStyle=`rgba(${p.c},${k})`;ctx.lineWidth=p.w;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*0.03,p.y-p.vy*0.03);ctx.stroke();
+  }
+  for(let i=0;i<PA.length;i++){ // ③ 扩散光环
+    const p=PA[i];if(p.k!==PK_RING)continue;
+    const k=1-p.t/p.max;
+    ctx.strokeStyle=`rgba(${p.c},${k*0.7})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.rr*(1.6-k*0.6)+8,0,TAU);ctx.stroke();
   }
   ctx.font='12px ui-monospace,Consolas,monospace';ctx.textAlign='center';
   for(const t of G.texts){
@@ -5673,6 +6026,35 @@ function draw(){
     }
   }
   ctx.fillStyle=VIGN;ctx.fillRect(0,0,VW,VH);
+  /* ---- 全屏后处理 ----
+     glitch：把画面自身错位两次叠加（红蓝分离式色差），用于受击与巨像登场。
+     慢动作：恒定微色差，读作"时间被拉扯"。
+     bloom：中心放大自叠，制造高光溢出的泛光脉冲。
+     三者都走 drawImage 自叠 + lighter；全为 0 时整段跳过，静止时零开销。
+     注意必须切回 identity 变换：drawImage(cv,dx,dy) 用的是 canvas 设备像素尺寸。 */
+  const slowGhost=(G.slowT>0&&!REDUCED)?0.9:0;
+  if(qTier<2&&(PP.glitch>0.02||slowGhost>0||PP.bloom>0.01)){
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation='lighter';
+    if(PP.glitch>0.02){
+      const o=14*PP.glitch*DPR;
+      ctx.globalAlpha=0.15*PP.glitch;
+      ctx.drawImage(cv,o,-o*0.3);
+      ctx.drawImage(cv,-o,o*0.3);
+    }else if(slowGhost>0){
+      const o=3.5*slowGhost*DPR;
+      ctx.globalAlpha=0.06*slowGhost;
+      ctx.drawImage(cv,o,0);
+      ctx.drawImage(cv,-o,0);
+    }
+    if(PP.bloom>0.01){
+      const sc=1+0.022*PP.bloom;
+      ctx.globalAlpha=0.2*PP.bloom;
+      ctx.drawImage(cv,(1-sc)*cv.width/2,(1-sc)*cv.height/2,cv.width*sc,cv.height*sc);
+    }
+    ctx.globalAlpha=1;
+    ctx.globalCompositeOperation='source-over';
+  }
 }
 
 /* ============================== hud ============================== */
@@ -5744,8 +6126,19 @@ function updateHUD(){
     if(HUDC.bn!==bName){HUDC.bn=bName;el.bossName.textContent=bName;}
     if(el.bossName.hidden)el.bossName.hidden=false;
   }else if(HUDC.bb!==false){HUDC.bb=false;el.bossbar.hidden=true;el.bossName.hidden=true;}
-  s=fmt(G.score);
+  /* 得分：显示值追赶真实值做出滚动感，真实值跳增时补一次过冲回弹。
+     差值过大（重开局清零）直接吸附，避免看到分数从上一局倒着滚回 0。 */
+  if(HUDC.ds===undefined||HUDC.ds>G.score+2000)HUDC.ds=G.score;
+  HUDC.ds+=(G.score-HUDC.ds)*0.22;
+  if(Math.abs(G.score-HUDC.ds)<0.7)HUDC.ds=G.score;
+  s=fmt(Math.round(HUDC.ds));
   if(HUDC.sc!==s){HUDC.sc=s;el.score.textContent=s;}
+  if(HUDC.raw!==G.score){
+    if(G.score>HUDC.raw&&!REDUCED){
+      el.score.classList.remove('pop');void el.score.offsetWidth;el.score.classList.add('pop');
+    }
+    HUDC.raw=G.score;
+  }
   s='BEST '+fmt(Math.max(G.best,G.score));
   if(HUDC.bs!==s){HUDC.bs=s;el.best.textContent=s;}
   s=fmtT(G.runT);
@@ -5799,6 +6192,53 @@ function tickCdIcons(){
   }
 }
 
+/* ============================== camera / grade ============================== */
+/* 相机：冲击变焦 + 速度视差。
+   视差方向取自玩家速度而非鼠标——鼠标在这个游戏里要用来瞄准，
+   再让它驱动镜头会导致准星与画面双重漂移，瞄准手感会散。 */
+function updateCam(dt){
+  cam.kick*=Math.exp(-7*dt);
+  if(Math.abs(cam.kick)<0.0004)cam.kick=0;
+  const tz=1+cam.kick;
+  cam.zoom+=(tz-cam.zoom)*Math.min(1,13*dt);
+  if(Math.abs(cam.zoom-1)<0.0005)cam.zoom=1;
+  let tx=0,ty=0;
+  if(P&&G.mode==='play'&&!REDUCED){
+    tx=clamp(-P.vx*0.045,-34,34);
+    ty=clamp(-P.vy*0.045,-34,34);
+  }
+  cam.ox+=(tx-cam.ox)*Math.min(1,3.2*dt);
+  cam.oy+=(ty-cam.oy)*Math.min(1,3.2*dt);
+}
+function updatePost(dt){
+  PP.bloom=Math.max(0,PP.bloom-dt*2.2);
+  PP.glitch=Math.max(0,PP.glitch-dt*2.6);
+}
+/* 色彩分级：canvas CSS filter 随状态切换。
+   缓存上一帧的字符串，只在变化时写 DOM——每帧无条件赋值会触发样式重算。 */
+let lastGrade='__';
+function updateGrade(){
+  let f='';
+  if(G.mode==='dying')f='saturate(.55) brightness(.9)';
+  else if(G.mode==='play'||G.mode==='inter'){
+    if(G.slowT>0)f='saturate(.78) hue-rotate(-16deg) brightness(1.06)';
+    else if(P&&P.maxHp>0&&P.hp/P.maxHp<=0.25)f='saturate(.72) contrast(1.05)';
+  }
+  if(f!==lastGrade){lastGrade=f;cv.style.filter=f;}
+}
+/* 屏幕情绪层：低血量红晕（越快见底脉冲越急）+ 慢动作紫晕 */
+const MOOD={d:'',s:'',g:''};
+function updateMood(){
+  let da='0';
+  if((G.mode==='play'||G.mode==='inter')&&P&&P.maxHp>0){
+    const k=clamp(1-(P.hp/P.maxHp)/0.35,0,1);
+    if(k>0)da=(k*(REDUCED?0.62:0.5+0.5*Math.sin(G.t*4.6))).toFixed(3);
+  }
+  if(MOOD.d!==da){MOOD.d=da;el.danger.style.opacity=da;}
+  const sa=G.slowT>0?'1':'0';
+  if(MOOD.s!==sa){MOOD.s=sa;el.slowfx.style.opacity=sa;}
+}
+
 /* ============================== main loop ============================== */
 let last=performance.now();
 /* adaptive quality: sustained <~45fps sheds the nebula layer, then the extra canvas resolution */
@@ -5822,7 +6262,8 @@ function frame(now){
   const realDt=raw;
   G.t+=raw;
   G.shake*=Math.exp(-6*raw);
-  if(G.slowT>0){G.slowT-=raw;raw*=0.35;}
+  updateCam(realDt);updatePost(realDt);updateGrade();updateMood();updateAim();
+  if(G.slowT>0){G.slowT-=raw;if(G.slowT<=0)AU.setMuffle(0);raw*=0.35;}
   if(G.bannerT>0){
     G.bannerT=Math.max(0,G.bannerT-raw);
     const e2=2.3-G.bannerT;
@@ -5838,7 +6279,11 @@ function frame(now){
     if(G.winT<=0){G.winT=0;showVictory();}
   }
 
-  if(G.mode==='play'||G.mode==='inter')updateWorld(raw);
+  if(G.hitstop>0){ // 顿帧：冻结世界更新但继续渲染，制造打击顿挫感
+    G.hitstop-=realDt;
+    if(G.hitstop<0)G.hitstop=0;
+  }
+  else if(G.mode==='play'||G.mode==='inter')updateWorld(raw);
   else if(G.mode==='menu'){
     updateAsts(raw);updateParts(raw);
     cam.x=WORLD.w/2;cam.y=WORLD.h/2;

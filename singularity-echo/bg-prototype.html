@@ -3,15 +3,15 @@
 <head data-page-node-id="RZWD4cKfvMp4tL3tNnvo8t">
 <meta charset="utf-8" data-page-node-id="GEUExHLENNKbmsCUXkz41Z">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" data-page-node-id="DickAeHgPUkeahlgQ2Nzfo">
-<title>singularity-echo · 背景原型 (原生 Canvas 2D · 零依赖)</title>
+<title>singularity-echo · 背景原型 v2 (原生 Canvas 2D · 零依赖)</title>
 <style>
-  :root{ --bg0:#04060f; --bg1:#0a1024; }
+  :root{ --bg0:#03050d; --bg1:#090f22; }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{
     background:
-      radial-gradient(120% 90% at 70% 15%, #16204a 0%, transparent 55%),
-      radial-gradient(100% 80% at 20% 90%, #1a0f2e 0%, transparent 60%),
+      radial-gradient(130% 90% at 78% 8%, #101a3e 0%, transparent 52%),
+      radial-gradient(110% 80% at 12% 96%, #140d26 0%, transparent 58%),
       linear-gradient(180deg, var(--bg1), var(--bg0));
     overflow:hidden; color:#cfe9ff;
     font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
@@ -25,7 +25,7 @@
   }
   /* 轻微暗角，强化纵深 */
   #vignette{ position:fixed; inset:0; z-index:1; pointer-events:none;
-    box-shadow: inset 0 0 220px 40px rgba(0,0,0,.65); }
+    box-shadow: inset 0 0 220px 40px rgba(0,0,0,.6); }
   #hud{ position:fixed; left:14px; bottom:12px; z-index:2; font:12px/1.6 ui-monospace,monospace; color:#7fa6c4; }
   #hud b{color:#6fe7ff}
   #hud .warn{color:#ffd75e}
@@ -35,80 +35,350 @@
 <canvas id="bg" data-page-node-id="4JgmWSvVsUBajMRBmPAdRM"></canvas>
 <div id="vignette" data-page-node-id="KtVME3jDAztYDJC3wdVXkC"></div>
 <div id="game-layer" data-page-node-id="XbpCKc2QMaK3Nh9YFlvOf4"><div class="hint" data-page-node-id="0ClfkPTYJA3B2RmQN9iMOw">此处叠放 2D 游戏 canvas（singularity-echo 主画面）</div></div>
-<div id="hud" data-page-node-id="iciHzHKrUx4qWJ2MfUWVGJ">原生 Canvas 2D · 零依赖背景原型 — 移动鼠标 / 触摸查看视差纵深<br data-page-node-id="dsy7dje0rc7C32K1SwcPkf">
-层级：远景星点 → 星云(流动) → <b data-page-node-id="h2TSbQinA6tT04gTWg1KFN">巨行星</b> → 中层星尘 → 近景碎片<br data-page-node-id="qaxkwk7NTBISwXLI4z82Bo">
-<span class="warn" data-page-node-id="rbcxLRu3thTF86oPhOnJnP">已去除外部 CDN 依赖，双击本文件即可运行，无加载失败风险。</span></div>
+<div id="hud" data-page-node-id="iciHzHKrUx4qWJ2MfUWVGJ">
+  背景原型 v6 —— 移动鼠标 / 触摸查看视差纵深 · URL 加 <code>?warp=60</code> 加速预览公转<br>
+  层级：远景星点 → 十字亮星 → <b>恒星辉光（右上·光之来处）</b> → 星云 → 四色迷雾 → 中层星尘 · 流星 → <b>卫星（62s 公转，近大远小 / 沉入行星背后）</b> → <b>巨行星（最后绘制·地平线弧）</b><br>
+  质感：<span class="warn">逐像素球面着色（法线漫反射 + 掠射大气 + 晨昏暖散射 + 昼夜反差）</span>，右上逆光 → 晨昏线横切弧面，向阳侧弧缘双高光
+</div>
 
 <script>
 (function(){
   "use strict";
+  const TAU = Math.PI*2;
   const cv = document.getElementById('bg');
   const ctx = cv.getContext('2d');
   let W = 0, H = 0, DPR = 1;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rnd = (a, b) => a + Math.random()*(b - a);
+  function makeCanvas(w, h){ const c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w)); c.height = Math.max(2, Math.ceil(h)); return c; }
+  // canvas 2D 的 filter 在老浏览器上不存在 → 检测后优雅降级为不模糊
+  const FILTER_OK = (function(){ const g = makeCanvas(2,2).getContext('2d'); g.filter = 'blur(1px)'; return g.filter && g.filter !== 'none'; })();
+  function blurTex(src, px){
+    if(!FILTER_OK || px <= 0) return src;
+    const c = makeCanvas(src.width, src.height), g = c.getContext('2d');
+    g.filter = `blur(${px}px)`; g.drawImage(src, 0, 0); g.filter = 'none';
+    return c;
+  }
 
-  // ---------- 离屏纹理生成 ----------
-  function makeCanvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-  // 软边圆点（星点 / 辉光）
+  /* ================= 光照模型（一次性逐像素烘焙，非每帧） =================
+     太阳在右侧略偏上、且接近掠射（z 分量小）→ 晨昏线横切过露出的弧面，
+     曲面才有真正的明暗过渡；正面打光只会得到一个"塑料球"。 */
+  const LIGHT = (function(){ const v=[0.86,-0.32,0.38], m=Math.hypot(v[0],v[1],v[2]); return {x:v[0]/m, y:v[1]/m, z:v[2]/m}; })();
+  const SUN  = { r:1.00, g:0.97, b:0.92 };   // 恒星色（微暖）
+  const AMB  = { r:0.07, g:0.10, b:0.19 };   // 环境光：星光 + 星云反光（冷）
+  const HAZE = { r:0.52, g:0.72, b:1.00 };   // 大气散射色（青蓝）
+
+  // 球面着色：法线 Lambert 漫反射 + 掠射角大气路径 + 晨昏暖散射 + 颗粒
+  function shadeSphere(c, cx, cy, R, opt){
+    const g = c.getContext('2d');
+    const w = c.width, h = c.height;
+    const img = g.getImageData(0, 0, w, h), d = img.data;
+    const hzK = opt.haze || 0, grain = opt.grain || 0, inten = opt.intensity || 1;
+    const night = opt.night || 0;                // 昼夜对比：夜侧相对压暗多少（0=关）
+    const iR = 1 / R;
+    for(let y = 0; y < h; y++){
+      const dy = (y - cy) * iR, dy2 = dy*dy;
+      if(dy2 >= 1) continue;
+      for(let x = 0; x < w; x++){
+        const i = (y*w + x)*4;
+        if(d[i+3] === 0) continue;
+        const dx = (x - cx) * iR;
+        const r2 = dx*dx + dy2;
+        if(r2 >= 1){ d[i+3] = 0; continue; }
+        const nz = Math.sqrt(1 - r2);              // 法线朝向观察者的分量
+        const diff = dx*LIGHT.x + dy*LIGHT.y + nz*LIGHT.z;
+        let lit = diff + 0.06;                     // 轻微 wrap：夜侧不死黑
+        if(lit < 0) lit = 0;
+        // 夜侧压暗：按真实日照量（diff）衰减 lit，让晨昏两侧拉开电影式反差；
+        // 完全受光侧（diff≥0.625）不受影响，过渡集中在晨昏带附近
+        if(night){
+          const sun = Math.max(0, Math.min(1, diff));
+          lit *= 1 - night * (1 - Math.min(1, sun * 1.6));
+        }
+        lit = Math.pow(lit, 0.82) * inten;         // gamma → 晨昏过渡更柔
+        // 视线越掠射（nz→0），大气光学路径越长 → 边缘去饱和泛青、反照率被"洗掉"
+        const path = Math.pow(1 - nz, 3.0);
+        const hw = Math.min(.8, hzK * path * (0.1 + 0.95*Math.min(1, lit)));
+        // 晨昏线暖散射（落日带）
+        const dt = (diff - 0.05) / 0.075;
+        const warm = Math.exp(-dt*dt) * 0.22 * Math.max(0, Math.min(1, diff*3));
+        let n = 0;
+        if(grain) n = ((((x*1103515245 + y*12345) >>> 8) & 255) / 255 - 0.5) * grain;
+        const kk = 1 + n;
+        let r = d[i]   * (AMB.r + SUN.r*lit) * kk;
+        let gg= d[i+1] * (AMB.g + SUN.g*lit) * kk;
+        let b = d[i+2] * (AMB.b + SUN.b*lit) * kk;
+        const hl = 0.18 + 0.95*Math.min(1, lit);   // 散射只在受光侧亮
+        r  = r *(1-hw) + HAZE.r*255*hw*hl;
+        gg = gg*(1-hw) + HAZE.g*255*hw*hl;
+        b  = b *(1-hw) + HAZE.b*255*hw*hl;
+        r += 255*warm; gg += 255*warm*0.55; b += 255*warm*0.28;
+        d[i]   = r  < 0 ? 0 : r  > 255 ? 255 : r;
+        d[i+1] = gg < 0 ? 0 : gg > 255 ? 255 : gg;
+        d[i+2] = b  < 0 ? 0 : b  > 255 ? 255 : b;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
+  /* ================= 离屏素材 ================= */
+  const T = {};
   function softDot(size, rgb){
     const c = makeCanvas(size, size), g = c.getContext('2d');
     const r = size/2;
     const grd = g.createRadialGradient(r, r, 0, r, r, r);
     grd.addColorStop(0, `rgba(${rgb},1)`);
-    grd.addColorStop(.4, `rgba(${rgb},.6)`);
+    grd.addColorStop(.35, `rgba(${rgb},.55)`);
     grd.addColorStop(1, `rgba(${rgb},0)`);
     g.fillStyle = grd; g.fillRect(0, 0, size, size);
     return c;
   }
-  // 巨行星：径向光照 + 大气带（球体体积感）
-  function planetTex(d){
-    const c = makeCanvas(d, d), g = c.getContext('2d');
-    const r = d/2;
-    const grd = g.createRadialGradient(d*0.38, d*0.34, r*0.1, r, r, r);
-    grd.addColorStop(0, '#8fc1ff');
-    grd.addColorStop(.45, '#3f6fd6');
-    grd.addColorStop(.8, '#22306e');
-    grd.addColorStop(1, '#0c1230');
-    g.fillStyle = grd; g.beginPath(); g.arc(r, r, r, 0, Math.PI*2); g.fill();
-    g.save();
-    g.beginPath(); g.arc(r, r, r, 0, Math.PI*2); g.clip();
-    g.globalAlpha = .12; g.strokeStyle = '#bcd8ff'; g.lineWidth = 2;
-    for(let k=0;k<5;k++){ g.beginPath(); g.ellipse(r, r, r*0.96, r*(0.2+k*0.16), 0, 0, Math.PI*2); g.stroke(); }
-    g.restore();
-    return c;
-  }
-  // 星云：多团径向渐变 blob
+  // 星云：多团径向渐变 blob（叠加后偏蓝紫，压低不抢戏）
   function nebulaTex(size){
     const c = makeCanvas(size, size), g = c.getContext('2d');
-    const blobs = [['90,140,255',.5], ['180,90,220',.4], ['60,200,200',.35]];
+    const blobs = [['70,120,235',.42], ['120,80,200',.30], ['50,170,190',.24]];
     for(const [col, a] of blobs){
-      for(let b=0;b<7;b++){
-        const x = Math.random()*size, y = Math.random()*size, r = 60 + Math.random()*170;
+      for(let b=0;b<8;b++){
+        const x = Math.random()*size, y = Math.random()*size, r = 50 + Math.random()*180;
         const grd = g.createRadialGradient(x, y, 0, x, y, r);
         grd.addColorStop(0, `rgba(${col},${a})`);
         grd.addColorStop(1, `rgba(${col},0)`);
-        g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+        g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
       }
     }
+    // 边缘径向淡出：否则旋转平铺时正方形边界会以斜缝形式露出来
+    g.globalCompositeOperation = 'destination-in';
+    const mask = g.createRadialGradient(size/2, size/2, size*0.12, size/2, size/2, size*0.5);
+    mask.addColorStop(0, 'rgba(0,0,0,1)');
+    mask.addColorStop(.65, 'rgba(0,0,0,.75)');
+    mask.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = mask; g.fillRect(0, 0, size, size);
+    return c;
+  }
+  // 宇宙迷雾：多团低饱和 blob + 边缘淡出（比星云更淡更柔，只做空气感）
+  function fogTex(size, rgb){
+    const c = makeCanvas(size, size), g = c.getContext('2d');
+    for(let i=0;i<10;i++){
+      const x = rnd(size*.12, size*.88), y = rnd(size*.12, size*.88), r = rnd(size*.14, size*.44);
+      const grd = g.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, `rgba(${rgb},${rnd(.10,.22)})`);
+      grd.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = grd; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    }
+    g.globalCompositeOperation = 'destination-in';
+    const mask = g.createRadialGradient(size/2, size/2, size*.1, size/2, size/2, size*.5);
+    mask.addColorStop(0, 'rgba(0,0,0,1)');
+    mask.addColorStop(.7, 'rgba(0,0,0,.7)');
+    mask.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = mask; g.fillRect(0, 0, size, size);
     return c;
   }
 
-  const T = {};
-  function buildTextures(){
-    T.starFar = softDot(64, '200,225,255');
-    T.starMid = softDot(64, '255,240,210');
-    T.debris  = softDot(64, '180,200,230');
-    T.planet  = planetTex(512);
-    T.glow    = softDot(256, '120,170,255');
-    T.neb     = nebulaTex(512);
+  // 远处小卫星：先烤「反照率」，再交给 shadeSphere 上光（与主星同一光源方向）
+  function moonTex(d){
+    const c = makeCanvas(d, d), g = c.getContext('2d');
+    const r = d/2;
+    g.save();
+    g.beginPath(); g.arc(r, r, r, 0, TAU); g.clip();
+    g.fillStyle = '#aab5c7'; g.fillRect(0, 0, d, d);       // 岩质反照率
+    for(let i=0;i<6;i++){                                   // 月海：大块暗区
+      const x = rnd(d*0.2, d*0.8), y = rnd(d*0.2, d*0.8), rr = rnd(d*0.12, d*0.3);
+      const grd = g.createRadialGradient(x, y, rr*0.1, x, y, rr);
+      grd.addColorStop(0, 'rgba(72,84,110,.55)'); grd.addColorStop(1, 'rgba(72,84,110,0)');
+      g.fillStyle = grd; g.beginPath(); g.arc(x, y, rr, 0, TAU); g.fill();
+    }
+    for(let i=0;i<11;i++){                                  // 环形山：暗底 + 迎光亮边
+      const a = Math.random()*TAU, rr = rnd(r*0.1, r*0.66);
+      const x = r + Math.cos(a)*rr, y = r + Math.sin(a)*rr*0.85, cr = rnd(d*0.018, d*0.055);
+      g.globalAlpha = rnd(.16,.34); g.fillStyle = '#4d5a78';
+      g.beginPath(); g.arc(x, y, cr, 0, TAU); g.fill();
+      g.globalAlpha = rnd(.12,.26); g.strokeStyle = '#e2ecff'; g.lineWidth = 1;
+      g.beginPath(); g.arc(x - cr*0.12, y - cr*0.12, cr, Math.PI*0.75, Math.PI*1.55); g.stroke();
+    }
+    for(let i=0;i<700;i++){                                 // 细颗粒，破掉"塑料感"
+      g.globalAlpha = rnd(.03,.1);
+      g.fillStyle = Math.random()<.5 ? '#ffffff' : '#2b3550';
+      g.fillRect(Math.random()*d, Math.random()*d, 1.2, 1.2);
+    }
+    g.restore();
+    shadeSphere(c, r, r, r, { haze:.05, grain:.06 });
+    return c;
   }
 
-  // ---------- 图层数据 ----------
-  let farStars = [], midStars = [], debris = [];
-  const rnd = (a, b) => a + Math.random()*(b - a);
+  /* ================= 巨行星（只露一角的地平线弧） ================= */
+  const PM = 48;                       // 烘焙左右余量，留给视差位移
+  const planet = { cx:0, cy:0, R:0, top:0, surf:null, clouds:null, cw:0 };
+  function layoutPlanet(){
+    // 半径远大于屏幕（≈1.2 倍长边）→ 露出的弧曲率非常平缓，一眼「巨大」
+    planet.R  = Math.max(W, H) * 1.2;
+    planet.cx = W * 0.14;
+    planet.top = H * (W < H ? 0.74 : 0.78);   // 竖屏露得更少
+    planet.cy = planet.top + planet.R;
+  }
+  // 风暴卵：按该点的掠射程度做横向压缩（越靠地平线越扁），并带涡旋纹
+  function stormAt(g, x, y, r, col, cx, cy, R){
+    const nx = (x - cx)/R, ny = (y - cy)/R, r2 = nx*nx + ny*ny;
+    if(r2 >= 0.999) return;
+    const nz = Math.sqrt(1 - r2);
+    const sx = Math.max(0.14, Math.min(1, nz*2.6));
+    g.save();
+    g.translate(x, y); g.scale(sx, 0.40);
+    const grd = g.createRadialGradient(0, 0, r*0.08, 0, 0, r);
+    grd.addColorStop(0, col); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.globalAlpha *= .45; g.strokeStyle = col; g.lineWidth = 1.2;
+    g.beginPath();
+    for(let t = 0; t < TAU*2; t += 0.18){
+      const rr = r*0.16 + t*r*0.10;
+      const px = Math.cos(t)*rr, py = Math.sin(t)*rr;
+      t === 0 ? g.moveTo(px, py) : g.lineTo(px, py);
+    }
+    g.stroke();
+    g.restore();
+  }
+  function bakePlanet(){
+    const capH = Math.ceil(H - planet.top) + 4;
+    if(capH <= 8){ planet.surf = null; return; }
+    const BW = W + PM*2;
+    const c = makeCanvas(BW, capH), g = c.getContext('2d');
+    const cx = planet.cx + PM, cy = planet.cy - planet.top, R = planet.R;
+    g.save();
+    g.beginPath(); g.arc(cx, cy, R-1, 0, TAU); g.clip();
+    // 1 反照率底色（未上光：明暗全交给 shadeSphere）
+    let grd = g.createLinearGradient(0, 0, 0, capH);
+    grd.addColorStop(0, '#9aaded'); grd.addColorStop(1, '#8a9cd8');
+    g.fillStyle = grd; g.fillRect(0, 0, BW, capH);
+    // 1b 大尺度纬向斑驳：破掉条带间的均匀感（远看是"气象"，不是"壁纸"）
+    for(let i=0;i<6;i++){
+      const mx = Math.random()*BW, my = Math.random()*capH, mr = capH*(0.5+Math.random());
+      const light = Math.random() < .5;
+      const mg = g.createRadialGradient(mx, my, 0, mx, my, mr);
+      mg.addColorStop(0, light ? 'rgba(235,242,255,.10)' : 'rgba(38,52,100,.13)');
+      mg.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = mg; g.fillRect(mx-mr, my-mr, mr*2, mr*2);
+    }
+    // 2 纬向风带：厚薄交替 + 波浪边界
+    const pal = ['#b3cdff','#8299e4','#5c74bd','#3a518f','#cddcff','#2c3b78','#dcbb8c','#8fa6dd','#4a61a8'];
+    let y = -14, bi = 0;
+    while(y < capH + 14){
+      const th = 7 + Math.random()*20;
+      const amp = 2 + Math.random()*6;
+      const k = (1 + Math.floor(Math.random()*3)) * TAU / BW;
+      const ph = Math.random()*TAU;
+      g.globalAlpha = .14 + Math.random()*.24;
+      g.fillStyle = pal[bi++ % pal.length];
+      g.beginPath();
+      g.moveTo(0, y + Math.sin(ph)*amp);
+      for(let x=0; x<=BW; x+=20) g.lineTo(x, y + Math.sin(ph + x*k)*amp);
+      for(let x=BW; x>=0; x-=20) g.lineTo(x, y + th + Math.sin(ph + x*k + .9)*amp);
+      g.closePath(); g.fill();
+      y += th*(0.55 + Math.random()*0.45) + 3;
+    }
+    g.globalAlpha = 1;
+    // 3 湍流细丝：沿风向的短曲纹，制造尺度细节（远处看仍是可信的"云"）
+    for(let i=0;i<150;i++){
+      const yy = Math.random()*capH, xx = Math.random()*BW, len = 18 + Math.random()*95;
+      g.globalAlpha = .05 + Math.random()*.13;
+      g.strokeStyle = Math.random()<.72 ? '#e2ecff' : '#87a0d8';
+      g.lineWidth = .8 + Math.random()*1.8;
+      g.beginPath(); g.moveTo(xx, yy);
+      g.quadraticCurveTo(xx + len*.5, yy + (Math.random()-.5)*7, xx + len, yy + (Math.random()-.5)*5);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    // 4 风暴卵
+    stormAt(g, BW*0.52, capH*0.44, Math.max(34, W*0.036), 'rgba(226,236,255,.55)', cx, cy, R);
+    stormAt(g, BW*0.74, capH*0.74, Math.max(22, W*0.022), 'rgba(232,176,112,.45)', cx, cy, R);
+    stormAt(g, BW*0.28, capH*0.60, Math.max(16, W*0.015), 'rgba(168,206,255,.38)', cx, cy, R);
+    stormAt(g, BW*0.88, capH*0.52, Math.max(12, W*0.011), 'rgba(206,224,255,.32)', cx, cy, R);
+    // 5 颗粒
+    for(let i=0;i<2200;i++){
+      g.globalAlpha = rnd(.02,.07);
+      g.fillStyle = Math.random()<.5 ? '#eaf1ff' : '#0a1230';
+      g.fillRect(Math.random()*BW, Math.random()*capH, 1.3, 1.3);
+    }
+    g.globalAlpha = 1;
+    g.restore();
+    // 6 上光：法线漫反射 + 掠射大气 + 晨昏暖边；night 拉开昼夜反差
+    shadeSphere(c, cx, cy, R, { haze:.34, grain:.05, intensity:1.62, night:.52 });
+    // 7 大气透视：巨行星在极远处 → 轻微柔焦（同时把地平线边缘柔化进太空）
+    planet.surf = blurTex(c, Math.max(1, Math.min(W, H)*0.0016));
+  }
+  // 半透明云流层：整周期正弦 → 水平可平铺，缓慢滚动让地表「活着」
+  function bakeClouds(){
+    const cw = Math.max(1024, Math.ceil(W*1.25));
+    const capH = Math.ceil(H - planet.top) + 4;
+    const c = makeCanvas(cw, capH), g = c.getContext('2d');
+    for(let i=0;i<30;i++){
+      const y = Math.random()*capH;
+      const amp = 2 + Math.random()*6;
+      const k = (1 + Math.floor(Math.random()*4)) * TAU / cw;
+      const ph = Math.random()*TAU;
+      g.globalAlpha = .04 + Math.random()*.08;
+      g.strokeStyle = Math.random()<.78 ? 'rgb(206,228,255)' : 'rgb(255,224,178)';
+      g.lineWidth = 1 + Math.random()*3.5;
+      g.beginPath();
+      for(let x=0; x<=cw; x+=16){
+        const yy = y + Math.sin(ph + x*k)*amp;
+        x===0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
+      }
+      g.stroke();
+    }
+    planet.clouds = c; planet.cw = cw;
+  }
+
+  /* ================= 卫星轨道 =================
+     卫星绕【巨行星本体】公转：轨道面倾斜，投影成一条偏心椭圆，
+     椭圆下半段整段埋在巨行星的可见盘面之下 —— 所以卫星会从右下方巨行星的边缘"转出来"，
+     划过天空，最后在左下角沉进巨行星背后消失（几何遮挡，不是透明度开关）。
+     参数按屏幕比例给，横竖屏都成立。 */
+  const ORB = { ox:.40, oy:.565, rx:.364, ry:.40, tilt:.25, em:Math.PI*0.25 };
+  const orbit = { a: Math.PI*1.50 };   // a 递减 = 顺行；开场停在轨道顶点 = 最亮最大的英雄时刻
+  const moon = { x:0, y:0, r:0, near:0, alpha:1, blur:0, hidden:false };
+  const PVIS = TAU - Math.PI*0.46;     // 可见弧（其余为转到巨行星背面）
+  function behindPlanet(x, y){
+    const dx = x - planet.cx, dy = y - planet.cy;
+    return dx*dx + dy*dy < planet.R*planet.R;
+  }
+  function moonState(dt){
+    let p = (ORB.em - orbit.a) % TAU; if(p < 0) p += TAU;          // 沿运动方向的相位
+    const near = p < PVIS ? Math.sin(Math.PI * p / PVIS) : 0;      // 两端远、中途近
+    if(!reduced){
+      orbit.a -= dt * (TAU/62000) * (0.62 + 0.95*near);            // 近端角速度更快（公转约 62s）
+      if(orbit.a < 0) orbit.a += TAU;
+    }
+    const rx = W*ORB.rx, ry = H*ORB.ry;
+    const ct = Math.cos(ORB.tilt), st = Math.sin(ORB.tilt);
+    const X = rx*Math.cos(orbit.a), Y = ry*Math.sin(orbit.a);
+    const par = 0.22 + 0.5*near;                                   // 越近视差越强
+    moon.near = near;
+    moon.x = W*ORB.ox + X*ct - Y*st + off.moon*par;
+    moon.y = H*ORB.oy + X*st + Y*ct - py*DEPTH.moon*30*par;
+    moon.r = Math.min(W,H)*0.05 * (0.46 + 0.9*near);               // 近大远小
+    moon.alpha = 0.58 + 0.42*near;                                 // 远了更淡
+    moon.blur = (1 - near) * 1.7;                                  // 远了略虚
+    moon.hidden = behindPlanet(moon.x, moon.y);                    // 沉入巨行星背后
+    return moon;
+  }
+  function drawMoon(m){
+    if(m.x < -m.r*3 || m.x > W + m.r*3 || m.y < -m.r*3 || m.y > H + m.r*3) return;
+    ctx.save();
+    if(FILTER_OK && m.blur > 0.05) ctx.filter = `blur(${m.blur.toFixed(2)}px)`;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = .42*m.alpha;
+    ctx.drawImage(T.glow, m.x - m.r*2.6, m.y - m.r*2.6, m.r*5.2, m.r*5.2);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = m.alpha;
+    ctx.drawImage(T.moon, m.x - m.r, m.y - m.r, m.r*2, m.r*2);
+    ctx.restore();
+  }
+
+  /* ================= 图层初始化 ================= */
+  let farStars = [], brightStars = [], midStars = [];
   function initLayers(){
-    farStars = []; for(let i=0;i<220;i++) farStars.push({ x:rnd(-W*0.25, W*1.5), y:rnd(0, H), s:rnd(6,18)/64, a:rnd(0.5,1) });
-    midStars = []; for(let i=0;i<120;i++) midStars.push({ x:rnd(0, W), y:rnd(0, H), s:rnd(3,10)/64, a:rnd(0.4,0.9) });
-    debris   = []; for(let i=0;i<14;i++)  debris.push({ x:rnd(0, W), y:rnd(0, H), s:rnd(8,30)/64, vx:rnd(0.2,0.8)*(Math.random()<.5?-1:1), a:rnd(0.5,1) });
+    farStars = []; for(let i=0;i<240;i++) farStars.push({ x:rnd(0,W), y:rnd(0,H), s:rnd(.9,2.4), a:rnd(.35,.95), tw:rnd(0,TAU), ts:rnd(.4,1.4) });
+    brightStars = []; for(let i=0;i<9;i++) brightStars.push({ x:rnd(0,W), y:rnd(0,H*0.9), s:rnd(5,11), a:rnd(.5,.9), tw:rnd(0,TAU), ts:rnd(.3,.8) });
+    midStars = []; for(let i=0;i<90;i++) midStars.push({ x:rnd(0,W), y:rnd(0,H), s:rnd(1.2,3), a:rnd(.3,.8) });
   }
 
   function resize(){
@@ -117,93 +387,235 @@
     cv.width = W*DPR; cv.height = H*DPR;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    initLayers();
+    layoutPlanet(); bakePlanet(); bakeClouds(); initLayers();
   }
 
-  // ---------- 视差 ----------
-  let px = 0, py = 0; // 指针归一化 -1..1
-  const DEPTH = { far:0.18, neb:0.4, pl:0.55, mid:0.9, near:1.8 };
-  const off = { far:0, neb:0, pl:0, mid:0, near:0 };
-  function setPointer(cx, cy){ px = (cx/W - 0.5)*2; py = (cy/H - 0.5)*2; }
+  /* ================= 宇宙迷雾布点 ================= */
+  const MIST = [
+    { tex:0, x:.20, y:.28, s:1.05, a:.24, rot:.40, ph:0.0, dr:.000021, am:26 },
+    { tex:1, x:.80, y:.46, s:.90,  a:.20, rot:-.70, ph:1.7, dr:.000017, am:22 },
+    { tex:2, x:.52, y:.80, s:1.20, a:.19, rot:.20, ph:3.1, dr:.000013, am:18 },
+    { tex:3, x:.12, y:.72, s:.62,  a:.11, rot:1.10, ph:4.4, dr:.000025, am:14 },
+  ];
+
+  /* ================= 视差 ================= */
+  let px = 0, py = 0;
+  const DEPTH = { far:.10, neb:.2, moon:.32, pl:.4, mid:.7 };
+  const off = { far:0, neb:0, moon:0, pl:0, mid:0 };
+  function setPointer(cx, cy){ px = (cx/W - .5)*2; py = (cy/H - .5)*2; }
   addEventListener('pointermove', e => setPointer(e.clientX, e.clientY));
   addEventListener('touchmove', e => { if(e.touches[0]) setPointer(e.touches[0].clientX, e.touches[0].clientY); }, { passive:true });
 
-  // ---------- 绘制 ----------
-  function lerp(k, target){ off[k] += (target - off[k]) * 0.05; }
+  /* ================= 绘制 ================= */
+  function lerp(k, target){ off[k] += (target - off[k]) * .045; }
 
-  function drawStars(arr, tex, ox, oy, drift){
+  function drawStars(arr, ox, oy, t, drift){
     ctx.globalCompositeOperation = 'lighter';
     for(const s of arr){
       drift(s);
       const x = s.x + ox, y = s.y + oy;
-      if(x < -30 || x > W + 30 || y < -30 || y > H + 30) continue;
-      ctx.globalAlpha = s.a;
-      const sz = 64 * s.s;
-      ctx.drawImage(tex, x - sz/2, y - sz/2, sz, sz);
+      if(x < -8 || x > W+8 || y < -8 || y > H+8) continue;
+      const tw = reduced ? 1 : (.72 + .28*Math.sin(t*.001*s.ts + s.tw));
+      ctx.globalAlpha = s.a * tw;
+      const sz = s.s * 4;                       // 16px 软点缩到 4-10px：小而锐
+      ctx.drawImage(T.dot, x - sz/2, y - sz/2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  function drawBright(t){
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = 1;
+    for(const s of brightStars){
+      const tw = reduced ? 1 : (.6 + .4*Math.sin(t*.001*s.ts + s.tw));
+      ctx.globalAlpha = s.a * tw;
+      ctx.strokeStyle = 'rgba(210,230,255,.9)';
+      ctx.beginPath();
+      ctx.moveTo(s.x - s.s, s.y); ctx.lineTo(s.x + s.s, s.y);
+      ctx.moveTo(s.x, s.y - s.s); ctx.lineTo(s.x, s.y + s.s);
+      ctx.stroke();
+      ctx.drawImage(T.dot, s.x - 6, s.y - 6, 12, 12);
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  function draw(){
+  /* 恒星光源：放在 LIGHT 光照方向的来路上（右上），让"光从哪来"有叙事。
+     远星 → 只有辉光没有圆面；三层：宽暖晕 / 亮核 / 细芒。整体加法混合。 */
+  const SUNP = { x:.815, y:.155 };
+  function drawSun(t, oyFar){
+    const x = W*SUNP.x + off.far*.4, y = H*SUNP.y + oyFar*.55;
+    const b = reduced ? 1 : (1 + .05*Math.sin(t*.0009));
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    let s = Math.max(W,H)*.9;                                   // 宽暖晕
+    let g = ctx.createRadialGradient(x, y, 0, x, y, s/2);
+    g.addColorStop(0, `rgba(255,244,224,${.20*b})`);
+    g.addColorStop(.25, `rgba(255,224,180,${.07*b})`);
+    g.addColorStop(1, 'rgba(255,210,160,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s/2, 0, TAU); ctx.fill();
+    s = Math.max(W,H)*.055;                                     // 亮核
+    g = ctx.createRadialGradient(x, y, 0, x, y, s/2);
+    g.addColorStop(0, `rgba(255,252,246,${.95*b})`);
+    g.addColorStop(.32, `rgba(255,238,206,${.5*b})`);
+    g.addColorStop(1, 'rgba(255,225,175,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s/2, 0, TAU); ctx.fill();
+    ctx.strokeStyle = `rgba(255,246,228,${.3*b})`;              // 细芒
+    ctx.lineWidth = 1.1;
+    const L = Math.max(W,H)*.05;
+    ctx.beginPath();
+    ctx.moveTo(x - L, y); ctx.lineTo(x + L, y);
+    ctx.moveTo(x, y - L); ctx.lineTo(x, y + L);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 流星：低频随机划过上半屏
+  let ss = null, ssNext = 3500;
+  function drawMeteor(t, dt){
+    if(reduced) return;
+    if(!ss && t > ssNext){
+      const fromLeft = Math.random() < .5;
+      ss = { x: fromLeft ? -40 : W*rnd(.4,1), y: rnd(0, H*.3),
+             vx: (fromLeft?1:-1)*rnd(.5,.9), vy: rnd(.18,.4), life: 0, max: rnd(500,800) };
+    }
+    if(!ss) return;
+    ss.life += dt;
+    ss.x += ss.vx*dt*.9; ss.y += ss.vy*dt*.9;
+    const k = 1 - ss.life/ss.max;
+    if(k <= 0){ ss = null; ssNext = t + rnd(6000, 15000); return; }
+    const len = 90*k, dx = ss.vx, dy = ss.vy, m = Math.hypot(dx, dy);
+    const grd = ctx.createLinearGradient(ss.x, ss.y, ss.x - dx/m*len, ss.y - dy/m*len);
+    grd.addColorStop(0, `rgba(220,240,255,${.85*k})`);
+    grd.addColorStop(1, 'rgba(220,240,255,0)');
+    ctx.strokeStyle = grd; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(ss.x, ss.y); ctx.lineTo(ss.x - dx/m*len, ss.y - dy/m*len); ctx.stroke();
+  }
+
+  function drawPlanet(t){
+    const p = planet; if(!p.surf) return;
+    const ox = off.pl, oy = -py*DEPTH.pl*46 + off.pl*0; // 纵向视差小一点
+    // 大气辉光：只在弧缘外圈叠加（内圈透明，不洗白地表）
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const breathe = reduced ? 1 : (.85 + .15*Math.sin(t*.0006));
+    // 外层：宽而淡的大气散射晕
+    let grd = ctx.createRadialGradient(p.cx+ox, p.cy+oy, p.R*.99, p.cx+ox, p.cy+oy, p.R*1.22);
+    grd.addColorStop(0, 'rgba(120,190,255,0)');
+    grd.addColorStop(.18, `rgba(96,160,235,${.19*breathe})`);
+    grd.addColorStop(1, 'rgba(80,140,220,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(p.cx+ox, p.cy+oy, p.R*1.22, 0, TAU); ctx.fill();
+    // 内层：紧贴地平线的亮弧（瑞利散射，越掠射越亮）
+    grd = ctx.createRadialGradient(p.cx+ox, p.cy+oy, p.R*.988, p.cx+ox, p.cy+oy, p.R*1.055);
+    grd.addColorStop(0, 'rgba(120,190,255,0)');
+    grd.addColorStop(.12, `rgba(150,205,255,${.56*breathe})`);
+    grd.addColorStop(.5, `rgba(100,165,245,${.16*breathe})`);
+    grd.addColorStop(1, 'rgba(90,150,240,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(p.cx+ox, p.cy+oy, p.R*1.06, 0, TAU); ctx.fill();
+    ctx.restore();
+    // 本体（烘焙好的静态地表 + 视差）
+    ctx.drawImage(p.surf, -PM + ox, p.top + oy);
+    // 云流缓慢滚动：soft-light 混合，暗部不会被"刷亮"（避免夜侧出现发光云带）
+    if(!reduced){
+      ctx.save();
+      ctx.beginPath(); ctx.arc(p.cx+ox, p.cy+oy, p.R-1, 0, TAU); ctx.clip();
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.globalAlpha = .9;
+      const sc = (t * .007) % p.cw;
+      ctx.drawImage(p.clouds, -PM + ox - sc, p.top + oy);
+      ctx.drawImage(p.clouds, -PM + ox - sc + p.cw, p.top + oy);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+    // 向阳侧弧缘高光（细亮线 + 柔光各一道）
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = 'rgba(175,215,255,.38)';
+    ctx.lineWidth = Math.max(3, p.R*.004);
+    ctx.beginPath(); ctx.arc(p.cx+ox, p.cy+oy, p.R*1.002, -1.05, .25); ctx.stroke();
+    ctx.strokeStyle = 'rgba(214,236,255,.7)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(p.cx+ox, p.cy+oy, p.R*1.001, -1.0, .2); ctx.stroke();
+    ctx.restore();
+  }
+
+  let last = 0;
+  // 调试：?warp=N 把整条时间线加速 N 倍（默认 1），方便快速预览卫星公转/云层滚动
+  const WARP = Math.max(1, Math.min(400, parseFloat(new URLSearchParams(location.search).get('warp')) || 1));
+  function draw(t){
+    const dt = Math.min(48, t - last) * WARP; last = t;
+
     ctx.clearRect(0, 0, W, H);
+    lerp('far',  -px*DEPTH.far*60);   lerp('neb',  -px*DEPTH.neb*60);
+    lerp('moon', -px*DEPTH.moon*60);  lerp('pl',   -px*DEPTH.pl*46);
+    lerp('mid',  -px*DEPTH.mid*70);
+    const oyFar = -py*DEPTH.far*28;
 
-    lerp('far',  -px*DEPTH.far*60);  lerp('neb',  -px*DEPTH.neb*60);
-    lerp('pl',   -px*DEPTH.pl*80);   lerp('mid', -px*DEPTH.mid*70);
-    lerp('near', -px*DEPTH.near*120);
-    const oyFar = -py*DEPTH.far*30, oyPl = -py*DEPTH.pl*40;
-
-    // 1. 远景星点
-    drawStars(farStars, T.starFar, off.far, oyFar, s => { s.x -= 0.05; if(s.x < -W*0.25) s.x = W*1.5; });
-    // 2. 星云（缓慢旋转 + 漂移，lighter 叠加成流动感）
+    // 1 远景星点（小而锐 + 闪烁）+ 十字亮星
+    drawStars(farStars, off.far, oyFar, t, s => { if(!reduced){ s.x -= .03; if(s.x < -4) s.x = W+4; } });
+    drawBright(t);
+    drawSun(t, oyFar);                       // 1.5 恒星辉光：光的源头入画
+    // 2 星云：两团错位低透明，缓慢呼吸
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.5;
-    const nsc = Math.max(W, H) / 512 * 1.4;
-    const nw = 512 * nsc, nh = 512 * nsc;
-    const nt = performance.now();
-    ctx.translate(W/2 + off.neb, H*0.42 + oyFar*0.6);
-    ctx.rotate(Math.sin(nt * 0.00004) * 0.05 + nt * 0.000008);
-    ctx.drawImage(T.neb, -nw/2, -nh/2, nw, nh);
+    const nb = reduced ? 1 : (1 + .06*Math.sin(t*.0002));
+    ctx.globalAlpha = .32*nb;
+    let nsz = Math.max(W,H)*1.15;
+    ctx.translate(W*.68 + off.neb, H*.24 + oyFar*.7); ctx.rotate(.5);
+    ctx.drawImage(T.neb, -nsz/2, -nsz/2, nsz, nsz);
+    ctx.globalAlpha = .24*nb;
+    ctx.translate(W*.68 - W*.5, H*.24 + H*.42); ctx.rotate(-.9);
+    nsz = Math.max(W,H)*.9;
+    ctx.drawImage(T.neb, -nsz/2, -nsz/2, nsz, nsz);
     ctx.restore();
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-
-    // 3. 巨行星（辉光呼吸 + 本体 + 行星环）
-    const cx = W*0.72 + off.pl, cy = H*0.30 + oyPl;
-    const pr = Math.min(W, H) * 0.42;
+    ctx.globalCompositeOperation = 'source-over';
+    // 3 宇宙迷雾：四团不同色相的极淡气体，各自缓慢游移
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    const ga = 0.45 + Math.sin(nt * 0.001) * 0.06;
-    ctx.globalAlpha = ga;
-    const gsz = pr * 2.6;
-    ctx.drawImage(T.glow, cx - gsz/2, cy - gsz/2, gsz, gsz);
+    for(const m of MIST){
+      const s = Math.max(W, H) * m.s;
+      const dx = reduced ? 0 : Math.sin(t*m.dr + m.ph) * m.am;
+      const dy = reduced ? 0 : Math.cos(t*m.dr*0.8 + m.ph) * m.am*0.7;
+      ctx.save();
+      ctx.globalAlpha = m.a * (reduced ? 1 : (1 + .14*Math.sin(t*m.dr*1.3 + m.ph)));
+      ctx.translate(W*m.x + off.neb*.6 + dx, H*m.y + oyFar*.5 + dy);
+      ctx.rotate(m.rot + (reduced ? 0 : Math.sin(t*m.dr*.5)*.05));
+      ctx.drawImage(T.mist[m.tex], -s/2, -s/2, s, s);
+      ctx.restore();
+    }
     ctx.restore();
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(T.planet, cx - pr, cy - pr, pr*2, pr*2);
-    // 行星环
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(-0.35);
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = 'rgba(159,199,255,0.7)';
-    ctx.lineWidth = Math.max(3, pr*0.03);
-    ctx.beginPath(); ctx.ellipse(0, 0, pr*1.5, pr*0.42, 0, 0, Math.PI*2); ctx.stroke();
-    ctx.restore();
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-
-    // 4. 中层星尘
-    drawStars(midStars, T.starMid, off.mid, 0, s => { s.x -= 0.18; if(s.x < 0) s.x = W; });
-    // 5. 近景碎片
-    drawStars(debris, T.debris, off.near, 0, s => { s.x += s.vx; if(s.x < -40) s.x = W+40; if(s.x > W+40) s.x = -40; });
+    // 4 中层星尘（同样是极远恒星 → 必须在巨行星之后）
+    drawStars(midStars, off.mid, 0, t, s => { if(!reduced){ s.x -= .12; if(s.x < -4) s.x = W+4; } });
+    // 5 流星
+    drawMeteor(t, dt);
+    // 6 卫星：绕巨行星公转，画在巨行星之前 → 沉到盘面下就被本体挡住 = 转到背面
+    const ms = moonState(dt);
+    if(!ms.hidden) drawMoon(ms);
+    // 7 巨行星本体（最后画：星点 / 迷雾 / 流星 / 卫星都是比它更远的东西）
+    drawPlanet(t);
 
     requestAnimationFrame(draw);
   }
 
+  /* ================= 启动 ================= */
+  function buildTextures(){
+    T.dot  = softDot(16, '215,232,255');
+    T.glow = softDot(256, '110,165,245');
+    T.neb  = nebulaTex(512);
+    T.moon = moonTex(128);
+    T.mist = [fogTex(384, '70,225,215'),     // 青绿
+              fogTex(384, '150,95,235'),     // 紫
+              fogTex(384, '70,120,255'),     // 深蓝
+              fogTex(384, '235,165,120')];   // 琥珀（只在低空压一点暖色）
+  }
   buildTextures();
   resize();
   addEventListener('resize', resize);
   requestAnimationFrame(draw);
+  // 调试出口：自动化测试/截图脚本用来核对场景状态（不参与渲染）
+  window.__BG = { moon, planet, orbit, ORB, MIST, sun: SUNP };
 })();
 </script>
 </body>
