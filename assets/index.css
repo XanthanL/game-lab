@@ -10,6 +10,28 @@
    两套配色（暗/亮）通过 data-theme 切换，未设置时跟随系统 prefers-color-scheme。
    主题切换是一枚灯泡开关，造型取自 CodePen "Pure CSS Bulb Switch"（Wujek_Greg）。 */
 
+/* ===== 自托管字体（仅 gtasa 皮肤用）=====
+   GTA 标志字是 Pricedown（Ray Larabie，商用需授权），开源替身 Anton；
+   SA 菜单的 Bank Gothic / HUD 的 Aharoni Bold，替身 Oswald。
+   两个都只取 latin 子集（各 12~19KB），中文字形自动回退到系统字体。
+   自托管而非 Google Fonts：国内访问不通，且字体只在 gtasa 生效时才下载。 */
+@font-face {
+  font-family: "Anton"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/anton-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/oswald-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("fonts/oswald-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("fonts/oswald-latin-600-normal.woff2") format("woff2");
+}
+
 :root {
   /* ========== 暗色 D ========== */
   --d-bg: #0c0c0e;
@@ -700,10 +722,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .row:hover .row-go { color: var(--ink); transform: translateX(5px); }
 
 /* ============ Footer ============ */
-footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line); padding: 46px 0 60px; }
-.foot-in { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
-.foot-word { font-family: var(--serif); font-size: clamp(40px, 9vw, 92px); line-height: 0.9; letter-spacing: -0.02em; color: var(--ink-2); }
-.foot-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); line-height: 2.2; text-align: right; }
+footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); padding: 34px 0 48px; }
+.foot-in { display: flex; justify-content: center; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
+.foot-word { font-family: var(--serif); font-size: clamp(40px, 9vw, 92px); line-height: 0.9; letter-spacing: -0.02em; color: var(--ink-2); display: none; }
+.foot-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); line-height: 2.2; text-align: center; }
 .foot-meta a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line); transition: color .4s var(--ease), border-color .4s var(--ease); }
 .foot-meta a:hover { color: var(--ink); border-color: var(--line-2); }
 
@@ -733,7 +755,7 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   .row:hover { padding-left: 8px; }
   .sec-head { flex-direction: column; align-items: flex-start; gap: 10px; }
   .sec-count { margin-left: 0; }
-  .foot-meta { text-align: left; }
+  .foot-meta { text-align: center; }
   .toc { gap: 10px; }
   .toc a { padding: 10px 16px; }
 }
@@ -917,14 +939,24 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
 :root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
         [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .sec::before { display: none; }
 /* 三套「核」系（梦核 / 池核 / 怪核）+ 方块像素（MC）同样不需要玻璃装饰层 */
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .glass::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .card::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .row::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .card::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .toc a::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .hero::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .hero::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .sec::before { display: none; }
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
+        [data-style="pipboy"]) .glass::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
+        [data-style="pipboy"]) .card::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .row::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .card::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .toc a::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .hero::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .hero::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"]) .sec::before { display: none; }
 
 /* 卡片：悬停 = 抬起（投影放大），按下 = 压进表面（转内凹） */
 :root[data-style="soft"] .card:hover,
@@ -2325,4 +2357,698 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35), inset -2px -2px 0 rgba(0, 0, 0, 0.35);
 }
 :root[data-style="mc"] .sm-item[aria-selected="true"] { background: var(--accent); color: #ffffff; }
+
+/* ==================================================================
+   风格 N：GTA 罪恶都市 · Vice City（<html data-style="gtavc">）
+   1986 迈阿密：洋红 #ff2d95 + 青 #00e5ff 双色霓虹、落日渐变天幕、
+   底部透视网格。标题用 Impact 系窄体大写 + 霓虹外发光。
+   亮色 = 白天的迈阿密：粉紫天空 + 青色网格，霓虹换成实色。
+================================================================== */
+:root[data-style="gtavc"],
+:root[data-style="gtavc"] * { color-scheme: dark; }
+:root[data-style="gtavc"] {
+  --sans: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Impact", "Haettenschweiler", "Arial Black", "PingFang SC", sans-serif;
+  --mono: "Courier New", ui-monospace, monospace;
+  --bg: #14082b; --ink: #fff0fb; --ink-2: #e3bcff; --ink-3: #a385d8;
+  --line: rgba(255, 45, 149, 0.26); --line-2: rgba(0, 229, 255, 0.5);
+  --accent: #00e5ff; --vc-pink: #ff2d95; --vc-cyan: #00e5ff;
+  --vc-bg: linear-gradient(180deg, #1b0736 0%, #45106b 32%, #8c1f6e 52%, #ff5f9e 66%, #ff9a5c 72%, #170a2e 76%, #0b0418 100%);
+  --vc-bg-o: 0.5;
+  --vc-g1: rgba(0, 229, 255, 0.34); --vc-g2: rgba(255, 45, 149, 0.26);
+  --vc-glow: 0 0 6px rgba(255, 45, 149, 0.85), 0 0 22px rgba(255, 45, 149, 0.5), 0 0 52px rgba(0, 229, 255, 0.3);
+  --card-bg: rgba(35, 12, 66, 0.66); --glass-bg: rgba(46, 16, 84, 0.55);
+  --glass-border: rgba(255, 45, 149, 0.4); --glass-blur: blur(8px);
+  --sec-img-o: 0; --spot-c: rgba(255, 45, 149, 0.2); --ripple-c: rgba(0, 229, 255, 0.4);
+}
+:root[data-style="gtavc"][data-theme="light"] { color-scheme: light;
+  --bg: #fdf1f8; --ink: #2a0f3d; --ink-2: #6b3d86; --ink-3: #9c79ae;
+  --line: rgba(224, 0, 122, 0.2); --line-2: rgba(224, 0, 122, 0.45);
+  --accent: #e0007a; --vc-pink: #e0007a; --vc-cyan: #0aa6b8;
+  --vc-bg: linear-gradient(180deg, #c6ecf6 0%, #ffd8ea 46%, #fff7fb 100%); --vc-bg-o: 0.9;
+  --vc-g1: rgba(10, 166, 184, 0.16); --vc-g2: rgba(224, 0, 122, 0.12);
+  --vc-glow: 0 2px 0 rgba(224, 0, 122, 0.22);
+  --card-bg: rgba(255, 255, 255, 0.78); --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(224, 0, 122, 0.3); --glass-blur: blur(6px);
+  --sec-img-o: 0; --spot-c: rgba(224, 0, 122, 0.1); --ripple-c: rgba(224, 0, 122, 0.2);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="gtavc"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #fdf1f8; --ink: #2a0f3d; --ink-2: #6b3d86; --ink-3: #9c79ae;
+    --line: rgba(224, 0, 122, 0.2); --line-2: rgba(224, 0, 122, 0.45);
+    --accent: #e0007a; --vc-pink: #e0007a; --vc-cyan: #0aa6b8;
+    --vc-bg: linear-gradient(180deg, #c6ecf6 0%, #ffd8ea 46%, #fff7fb 100%); --vc-bg-o: 0.9;
+    --vc-g1: rgba(10, 166, 184, 0.16); --vc-g2: rgba(224, 0, 122, 0.12);
+    --vc-glow: 0 2px 0 rgba(224, 0, 122, 0.22);
+    --card-bg: rgba(255, 255, 255, 0.78); --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(224, 0, 122, 0.3); --glass-blur: blur(6px);
+    --sec-img-o: 0; --spot-c: rgba(224, 0, 122, 0.1); --ripple-c: rgba(224, 0, 122, 0.2);
+  }
+}
+/* 落日天幕 + 透视网格地面 */
+:root[data-style="gtavc"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: var(--vc-bg); opacity: var(--vc-bg-o);
+}
+:root[data-style="gtavc"] body::after {
+  content: ""; position: fixed; left: -12%; right: -12%; bottom: 0; height: 40vh;
+  z-index: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, var(--vc-g1) 0 1px, transparent 1px 62px),
+    repeating-linear-gradient(0deg, var(--vc-g2) 0 1px, transparent 1px 30px);
+  transform: perspective(320px) rotateX(60deg); transform-origin: bottom center;
+  -webkit-mask-image: linear-gradient(to top, #000 8%, transparent 82%);
+  mask-image: linear-gradient(to top, #000 8%, transparent 82%);
+}
+:root[data-style="gtavc"] .glass,
+:root[data-style="gtavc"] .card,
+:root[data-style="gtavc"] .row,
+:root[data-style="gtavc"] .skin-chip,
+:root[data-style="gtavc"] .toc a,
+:root[data-style="gtavc"] .btn,
+:root[data-style="gtavc"] .sm-btn {
+  border-radius: 4px; border: 1px solid var(--vc-cyan);
+  background: var(--card-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 12px 30px -18px rgba(255, 45, 149, 0.9);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-style="gtavc"] .card:hover,
+:root[data-style="gtavc"] .card:focus-visible {
+  transform: translateY(-2px); border-color: var(--vc-pink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px var(--vc-cyan),
+              0 16px 34px -16px rgba(255, 45, 149, 0.85);
+}
+:root[data-style="gtavc"] .card:active { transform: translateY(0); }
+/* 洋红药丸标签 = 最有 VC 味的一笔 */
+:root[data-style="gtavc"] .card-tag {
+  border-radius: 2px; border: 0; padding: 4px 9px;
+  background: var(--vc-pink); color: #17082e;
+  font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="gtavc"] .card-title { font-family: var(--sans); font-weight: 700; letter-spacing: 0.01em; }
+:root[data-style="gtavc"] .card-num { color: var(--vc-cyan); }
+:root[data-style="gtavc"] .card-go { color: var(--vc-pink); }
+:root[data-style="gtavc"] .btn:hover,
+:root[data-style="gtavc"] .btn:focus-visible,
+:root[data-style="gtavc"] .toc a:hover,
+:root[data-style="gtavc"] .toc a:focus-visible { background: var(--vc-pink); color: #17082e; border-color: var(--vc-pink); }
+/* 标题：霓虹外发光 */
+:root[data-style="gtavc"] .hero-title,
+:root[data-style="gtavc"] .sec-head h2,
+:root[data-style="gtavc"] .foot-word {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase; letter-spacing: 0.05em;
+  text-shadow: var(--vc-glow);
+}
+:root[data-style="gtavc"] .sec-head h2 .en { color: var(--vc-cyan); }
+:root[data-style="gtavc"] .sec-idx,
+:root[data-style="gtavc"] .sec-count { color: var(--vc-pink); }
+:root[data-style="gtavc"] .brand-dot {
+  border-radius: 1px; width: 10px; height: 10px; background: var(--vc-pink);
+  box-shadow: 0 0 0 3px rgba(255, 45, 149, 0.25);
+}
+:root[data-style="gtavc"] .ls-track,
+:root[data-style="gtavc"] .bs-track {
+  border-radius: 999px; border: 1px solid var(--vc-cyan); background: var(--glass-bg);
+  box-shadow: none;
+}
+:root[data-style="gtavc"] .ls-knob,
+:root[data-style="gtavc"] .bs-bulb { border-radius: 999px; background: var(--vc-pink); box-shadow: 0 0 8px var(--vc-pink); }
+:root[data-style="gtavc"] .skin-chip[aria-pressed="true"] {
+  background: var(--vc-pink); color: #17082e; border-color: var(--vc-pink);
+  box-shadow: 0 0 12px rgba(255, 45, 149, 0.55);
+}
+:root[data-style="gtavc"] .sm-panel { background-color: rgba(20, 8, 43, 0.96); border: 1px solid var(--vc-cyan); border-radius: 6px; }
+:root[data-style="gtavc"] .sm-item[aria-selected="true"] { background: var(--vc-pink); color: #17082e; }
+
+/* ==================================================================
+   风格 O：GTA 圣安地列斯 · San Andreas（<html data-style="gtasa">）
+   照着 SA 真实的字体表还原（GTA Wiki「Fonts」词条）：
+     · Pricedown —— GTA 标志字（III/VC/SA 通用），本站用 Anton 顶上
+     · Bank Gothic —— 暂停菜单的菜单项，窄而方、全大写、字距拉开
+     · Aharoni Bold —— HUD：金钱 / 电台 / 字幕
+   所以：大标题 = Pricedown 系 + 绿渐变填充 + 粗黑描边 + 立体落影；
+        界面文字 = Bank Gothic 系（Oswald）窄体大写；数字 = HUD 绿。
+   其它：卡片是军绿磨砂面板，悬停 = 菜单选中那样的左侧绿条；
+        分区背景图走 SA 载入画面那种棕调老照片（sepia）。
+   亮色 = 洛圣都白天：沙色底 + 深橄榄字，绿降到 6b8f23。
+================================================================== */
+:root[data-style="gtasa"],
+:root[data-style="gtasa"] * { color-scheme: dark; }
+:root[data-style="gtasa"] {
+  /* Pricedown → Anton（Google Fonts，SA 标志字的开源替身） */
+  --serif: "Pricedown", "Anton", "Impact", "Arial Black", "PingFang SC", sans-serif;
+  /* Bank Gothic / Aharoni → Oswald（窄体大写，SA 菜单与 HUD 的味道） */
+  --sans: "Oswald", "Bank Gothic", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "Oswald", "Bank Gothic", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --bg: #171a12; --ink: #ece7d2; --ink-2: #b7bd93; --ink-3: #7e8960;
+  --line: rgba(184, 217, 74, 0.2); --line-2: rgba(184, 217, 74, 0.42);
+  --accent: #b8d94a; --sa-hud: #7bd62d; --sa-wood: #8d6e4a; --sa-sand: #d9c9a3;
+  --sa-logo: linear-gradient(180deg, #f4ffbb 0%, #d2ec55 30%, #9dc922 62%, #5f8c12 100%);
+  --sa-bg: linear-gradient(180deg, #1e2314 0%, #101308 100%);
+  --sa-tex: rgba(255, 255, 255, 0.022);
+  --sa-outline: 2px 2px 0 #0b0d08, -1px -1px 0 #0b0d08, 4px 4px 8px rgba(0, 0, 0, 0.6);
+  --sa-outline-s: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  --card-bg: rgba(34, 38, 25, 0.8); --glass-bg: rgba(34, 38, 25, 0.7);
+  --glass-border: rgba(184, 217, 74, 0.32); --glass-blur: blur(4px);
+  --sec-img-o: 0.34; --spot-c: rgba(184, 217, 74, 0.14); --ripple-c: rgba(184, 217, 74, 0.3);
+}
+:root[data-style="gtasa"][data-theme="light"] { color-scheme: light;
+  --bg: #e8e2c8; --ink: #262b18; --ink-2: #4d5533; --ink-3: #7b8258;
+  --line: rgba(60, 70, 25, 0.2); --line-2: rgba(107, 143, 35, 0.5);
+  --accent: #6b8f23; --sa-hud: #4f7d1c; --sa-wood: #a8814f; --sa-sand: #f2ecd6;
+  --sa-bg: linear-gradient(180deg, #f4efd9 0%, #dfd7b8 100%);
+  --sa-tex: rgba(0, 0, 0, 0.03);
+  --sa-outline: 1px 1px 0 rgba(0, 0, 0, 0.22); --sa-outline-s: none;
+  --card-bg: rgba(252, 249, 235, 0.9); --glass-bg: rgba(252, 249, 235, 0.8);
+  --glass-border: rgba(107, 143, 35, 0.4); --glass-blur: blur(3px);
+  --sec-img-o: 0.24; --spot-c: rgba(107, 143, 35, 0.12); --ripple-c: rgba(107, 143, 35, 0.24);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="gtasa"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #e8e2c8; --ink: #262b18; --ink-2: #4d5533; --ink-3: #7b8258;
+    --line: rgba(60, 70, 25, 0.2); --line-2: rgba(107, 143, 35, 0.5);
+    --accent: #6b8f23; --sa-hud: #4f7d1c; --sa-wood: #a8814f; --sa-sand: #f2ecd6;
+    --sa-bg: linear-gradient(180deg, #f4efd9 0%, #dfd7b8 100%);
+    --sa-tex: rgba(0, 0, 0, 0.03);
+    --sa-outline: 1px 1px 0 rgba(0, 0, 0, 0.22); --sa-outline-s: none;
+    --card-bg: rgba(252, 249, 235, 0.9); --glass-bg: rgba(252, 249, 235, 0.8);
+    --glass-border: rgba(107, 143, 35, 0.4); --glass-blur: blur(3px);
+    --sec-img-o: 0.24; --spot-c: rgba(107, 143, 35, 0.12); --ripple-c: rgba(107, 143, 35, 0.24);
+  }
+}
+:root[data-style="gtasa"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(110% 80% at 50% 0%, rgba(150, 175, 85, 0.18), transparent 62%),
+    var(--sa-bg);
+}
+/* 斜向细纹理：模拟 SA 菜单面板的磨砂感 */
+:root[data-style="gtasa"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(45deg, var(--sa-tex) 0 6px, transparent 6px 12px);
+}
+:root[data-style="gtasa"] .glass,
+:root[data-style="gtasa"] .card,
+:root[data-style="gtasa"] .row,
+:root[data-style="gtasa"] .skin-chip,
+:root[data-style="gtasa"] .toc a,
+:root[data-style="gtasa"] .btn,
+:root[data-style="gtasa"] .sm-btn {
+  border-radius: 10px; border: 1px solid var(--glass-border);
+  background: var(--card-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 26px -18px rgba(0, 0, 0, 0.95);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-style="gtasa"] .card:hover,
+:root[data-style="gtasa"] .card:focus-visible {
+  transform: translateY(-2px); border-color: var(--sa-hud);
+  /* 左侧绿条 = SA 暂停菜单里「当前选中项」的那一条 */
+  box-shadow: inset 6px 0 0 var(--sa-hud), 0 14px 30px -18px rgba(0, 0, 0, 0.9);
+}
+:root[data-style="gtasa"] .card:active { transform: translateY(0); }
+:root[data-style="gtasa"] .card-tag {
+  border-radius: 2px; border: 0; padding: 4px 9px;
+  background: var(--accent); color: #171a12;
+  font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="gtasa"] .card-title { font-family: var(--sans); font-weight: 700; }
+:root[data-style="gtasa"] .card-num { color: var(--ink-3); }
+:root[data-style="gtasa"] .card-go { color: var(--accent); }
+:root[data-style="gtasa"] .btn:hover,
+:root[data-style="gtasa"] .btn:focus-visible,
+:root[data-style="gtasa"] .toc a:hover,
+:root[data-style="gtasa"] .toc a:focus-visible { background: var(--accent); color: #171a12; border-color: var(--accent); }
+/* 标题 = GTA 标志字（Pricedown）：绿渐变填充 + 粗黑描边 + 立体落影 */
+:root[data-style="gtasa"] .hero-title,
+:root[data-style="gtasa"] .sec-head h2,
+:root[data-style="gtasa"] .foot-word {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--accent); text-shadow: var(--sa-outline);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  :root[data-style="gtasa"] .hero-title,
+  :root[data-style="gtasa"] .sec-head h2 {
+    background-image: var(--sa-logo);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 2px #0b0d08;
+    text-shadow: none;
+    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.7));
+  }
+  /* 分区标题字号小一圈，描边按比例收细，否则笔画会被吃掉了 */
+  :root[data-style="gtasa"] .sec-head h2 { -webkit-text-stroke-width: 1.4px; }
+}
+/* 小字的英文字号标签要还原实色，否则会被上面的透明填充吃掉 */
+:root[data-style="gtasa"] .sec-head h2 .en { color: var(--sa-hud); -webkit-text-fill-color: var(--sa-hud); }
+:root[data-style="gtasa"] .sec-idx,
+:root[data-style="gtasa"] .sec-count { color: var(--sa-hud); }
+:root[data-style="gtasa"] .brand-dot {
+  border-radius: 2px; width: 10px; height: 10px; background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(184, 217, 74, 0.2);
+}
+:root[data-style="gtasa"] .ls-track,
+:root[data-style="gtasa"] .bs-track {
+  border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass-bg); box-shadow: none;
+}
+:root[data-style="gtasa"] .ls-knob,
+:root[data-style="gtasa"] .bs-bulb { border-radius: 999px; background: var(--accent); box-shadow: none; }
+:root[data-style="gtasa"] .skin-chip[aria-pressed="true"] {
+  background: var(--accent); color: #171a12; border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(184, 217, 74, 0.4);
+}
+:root[data-style="gtasa"] .sm-panel { background-color: rgba(23, 26, 18, 0.97); border: 1px solid var(--glass-border); border-radius: 8px; }
+:root[data-style="gtasa"] .sm-item[aria-selected="true"] { background: var(--accent); color: #171a12; }
+/* —— 菜单语言补完：Bank Gothic 的窄体大写 + HUD 绿 —— */
+:root[data-style="gtasa"] .card-title,
+:root[data-style="gtasa"] .row-title {
+  font-family: var(--sans); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+:root[data-style="gtasa"] .card-num,
+:root[data-style="gtasa"] .card-go { color: var(--sa-hud); }
+:root[data-style="gtasa"] .btn,
+:root[data-style="gtasa"] .toc a { font-family: var(--sans); font-weight: 600; letter-spacing: 0.14em; }
+:root[data-style="gtasa"] .skin-chip[aria-pressed="true"],
+:root[data-style="gtasa"] .sm-item[aria-selected="true"] {
+  background: var(--sa-hud); color: #10130a; border: 1px solid #0b0d08;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+:root[data-style="gtasa"] .brand-dot {
+  border-radius: 2px; width: 10px; height: 10px;
+  background: var(--sa-logo); border: 1px solid #0b0d08;
+  box-shadow: none;
+}
+/* 载入画面：SA 的过场图是棕调老照片，分区背景图按这个调子处理 */
+:root[data-style="gtasa"] .sec::before {
+  display: block;
+  -webkit-filter: sepia(0.9) saturate(0.85) contrast(1.06);
+  filter: sepia(0.9) saturate(0.85) contrast(1.06);
+}
+:root[data-style="gtasa"] .sec.sec-portals::before { display: none; }
+
+/* ==================================================================
+   风格 P：GTA IV（<html data-style="gta4">）
+   自由城的冷：去饱和的钢灰蓝 + 唯一的一点 HUD 橙 #ff7a18。
+   整套极简——1px 细边、几乎无圆角、无发光，字距拉开的大写无衬线。
+   亮色 = 阴天的自由城：水泥灰白底 + 更深的橙。
+================================================================== */
+:root[data-style="gta4"],
+:root[data-style="gta4"] * { color-scheme: dark; }
+:root[data-style="gta4"] {
+  --sans: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+  --mono: "Courier New", ui-monospace, monospace;
+  --bg: #0e1116; --ink: #e6eaee; --ink-2: #9aa5ae; --ink-3: #626d76;
+  --line: rgba(230, 234, 238, 0.12); --line-2: rgba(230, 234, 238, 0.24);
+  --accent: #ff7a18;
+  --g4-bg: radial-gradient(120% 90% at 50% 0%, #1b2229 0%, #0b0e12 70%);
+  --g4-vig: radial-gradient(100% 80% at 50% 45%, transparent 42%, rgba(0, 0, 0, 0.6) 100%);
+  --card-bg: rgba(22, 26, 32, 0.72); --glass-bg: rgba(22, 26, 32, 0.66);
+  --glass-border: rgba(230, 234, 238, 0.16); --glass-blur: blur(10px);
+  --sec-img-o: 0; --spot-c: rgba(255, 122, 24, 0.12); --ripple-c: rgba(255, 122, 24, 0.28);
+}
+:root[data-style="gta4"][data-theme="light"] { color-scheme: light;
+  --bg: #dfe3e7; --ink: #151a1f; --ink-2: #4b545c; --ink-3: #7c868f;
+  --line: rgba(21, 26, 31, 0.12); --line-2: rgba(21, 26, 31, 0.24);
+  --accent: #e06300;
+  --g4-bg: radial-gradient(120% 90% at 50% 0%, #eef1f4 0%, #cfd5db 70%);
+  --g4-vig: radial-gradient(100% 80% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.14) 100%);
+  --card-bg: rgba(255, 255, 255, 0.85); --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(21, 26, 31, 0.12); --glass-blur: blur(8px);
+  --sec-img-o: 0; --spot-c: rgba(224, 99, 0, 0.1); --ripple-c: rgba(224, 99, 0, 0.22);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="gta4"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #dfe3e7; --ink: #151a1f; --ink-2: #4b545c; --ink-3: #7c868f;
+    --line: rgba(21, 26, 31, 0.12); --line-2: rgba(21, 26, 31, 0.24);
+    --accent: #e06300;
+    --g4-bg: radial-gradient(120% 90% at 50% 0%, #eef1f4 0%, #cfd5db 70%);
+    --g4-vig: radial-gradient(100% 80% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.14) 100%);
+    --card-bg: rgba(255, 255, 255, 0.85); --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(21, 26, 31, 0.12); --glass-blur: blur(8px);
+    --sec-img-o: 0; --spot-c: rgba(224, 99, 0, 0.1); --ripple-c: rgba(224, 99, 0, 0.22);
+  }
+}
+:root[data-style="gta4"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--g4-bg);
+}
+:root[data-style="gta4"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--g4-vig);
+}
+:root[data-style="gta4"] .glass,
+:root[data-style="gta4"] .card,
+:root[data-style="gta4"] .row,
+:root[data-style="gta4"] .skin-chip,
+:root[data-style="gta4"] .toc a,
+:root[data-style="gta4"] .btn,
+:root[data-style="gta4"] .sm-btn {
+  border-radius: 2px; border: 1px solid var(--glass-border);
+  background: var(--card-bg); box-shadow: 0 12px 26px -20px rgba(0, 0, 0, 0.9);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-style="gta4"] .card:hover,
+:root[data-style="gta4"] .card:focus-visible {
+  transform: translateY(-2px); border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 122, 24, 0.35), 0 14px 28px -20px rgba(0, 0, 0, 0.9);
+}
+:root[data-style="gta4"] .card:active { transform: translateY(0); }
+/* 标签：只用橙色描边，不填充——IV 的克制 */
+:root[data-style="gta4"] .card-tag {
+  border-radius: 2px; border: 1px solid var(--accent); padding: 3px 8px;
+  background: transparent; color: var(--accent);
+  font-family: var(--mono); font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="gta4"] .card-title { font-family: var(--sans); font-weight: 500; }
+:root[data-style="gta4"] .card-num { color: var(--ink-3); }
+:root[data-style="gta4"] .card-go { color: var(--accent); }
+:root[data-style="gta4"] .btn:hover,
+:root[data-style="gta4"] .btn:focus-visible,
+:root[data-style="gta4"] .toc a:hover,
+:root[data-style="gta4"] .toc a:focus-visible { background: var(--accent); color: #0b0e12; border-color: var(--accent); }
+:root[data-style="gta4"] .hero-title,
+:root[data-style="gta4"] .sec-head h2,
+:root[data-style="gta4"] .foot-word {
+  font-family: var(--serif); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+:root[data-style="gta4"] .hero-title { letter-spacing: 0.06em; }
+:root[data-style="gta4"] .sec-head h2 .en { color: var(--accent); }
+:root[data-style="gta4"] .sec-idx,
+:root[data-style="gta4"] .sec-count { color: var(--accent); }
+:root[data-style="gta4"] .brand-dot { border-radius: 1px; width: 8px; height: 8px; background: var(--accent); box-shadow: none; }
+:root[data-style="gta4"] .ls-track,
+:root[data-style="gta4"] .bs-track {
+  border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass-bg); box-shadow: none;
+}
+:root[data-style="gta4"] .ls-knob,
+:root[data-style="gta4"] .bs-bulb { border-radius: 999px; background: var(--accent); box-shadow: none; }
+:root[data-style="gta4"] .skin-chip[aria-pressed="true"] {
+  background: var(--accent); color: #0b0e12; border-color: var(--accent); box-shadow: none;
+}
+:root[data-style="gta4"] .sm-panel { background-color: rgba(14, 17, 22, 0.97); border: 1px solid var(--glass-border); border-radius: 3px; }
+:root[data-style="gta4"] .sm-item[aria-selected="true"] { background: var(--accent); color: #0b0e12; }
+
+/* ==================================================================
+   风格 Q：GTA V（<html data-style="gta5">）
+   洛圣都的现代感：深海军蓝底 + 亮蓝 #4fc3f7 + 一点 V 字黄 #ffd400。
+   干净、扁平、薄边，标题是紧字距的粗无衬线大写。
+   亮色 = GTA V 官网那种白底大留白 + 蓝强调 + 黄标签。
+================================================================== */
+:root[data-style="gta5"],
+:root[data-style="gta5"] * { color-scheme: dark; }
+:root[data-style="gta5"] {
+  --sans: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+  --mono: "Courier New", ui-monospace, monospace;
+  --bg: #0d1117; --ink: #f5f7fa; --ink-2: #adb8c5; --ink-3: #6f7a86;
+  --line: rgba(245, 247, 250, 0.12); --line-2: rgba(79, 195, 247, 0.45);
+  --accent: #4fc3f7; --g5-y: #ffd400;
+  --g5-bg:
+    radial-gradient(78% 58% at 12% 0%, rgba(79, 195, 247, 0.18), transparent 70%),
+    radial-gradient(60% 50% at 92% 100%, rgba(255, 212, 0, 0.1), transparent 72%);
+  --card-bg: rgba(19, 25, 33, 0.72); --glass-bg: rgba(19, 25, 33, 0.66);
+  --glass-border: rgba(245, 247, 250, 0.14); --glass-blur: blur(8px);
+  --sec-img-o: 0; --spot-c: rgba(79, 195, 247, 0.14); --ripple-c: rgba(79, 195, 247, 0.3);
+}
+:root[data-style="gta5"][data-theme="light"] { color-scheme: light;
+  --bg: #f5f7fa; --ink: #10161c; --ink-2: #4a5560; --ink-3: #7b8794;
+  --line: rgba(16, 22, 28, 0.1); --line-2: rgba(10, 132, 255, 0.45);
+  --accent: #0a84ff; --g5-y: #f5c400;
+  --g5-bg:
+    radial-gradient(78% 58% at 12% 0%, rgba(10, 132, 255, 0.1), transparent 70%),
+    radial-gradient(60% 50% at 92% 100%, rgba(245, 196, 0, 0.12), transparent 72%);
+  --card-bg: rgba(255, 255, 255, 0.92); --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(16, 22, 28, 0.09); --glass-blur: blur(6px);
+  --sec-img-o: 0; --spot-c: rgba(10, 132, 255, 0.08); --ripple-c: rgba(10, 132, 255, 0.18);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="gta5"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #f5f7fa; --ink: #10161c; --ink-2: #4a5560; --ink-3: #7b8794;
+    --line: rgba(16, 22, 28, 0.1); --line-2: rgba(10, 132, 255, 0.45);
+    --accent: #0a84ff; --g5-y: #f5c400;
+    --g5-bg:
+      radial-gradient(78% 58% at 12% 0%, rgba(10, 132, 255, 0.1), transparent 70%),
+      radial-gradient(60% 50% at 92% 100%, rgba(245, 196, 0, 0.12), transparent 72%);
+    --card-bg: rgba(255, 255, 255, 0.92); --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(16, 22, 28, 0.09); --glass-blur: blur(6px);
+    --sec-img-o: 0; --spot-c: rgba(10, 132, 255, 0.08); --ripple-c: rgba(10, 132, 255, 0.18);
+  }
+}
+:root[data-style="gta5"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: var(--g5-bg);
+}
+:root[data-style="gta5"] .glass,
+:root[data-style="gta5"] .card,
+:root[data-style="gta5"] .row,
+:root[data-style="gta5"] .skin-chip,
+:root[data-style="gta5"] .toc a,
+:root[data-style="gta5"] .btn,
+:root[data-style="gta5"] .sm-btn {
+  border-radius: 4px; border: 1px solid var(--glass-border);
+  background: var(--card-bg); box-shadow: 0 12px 30px -22px rgba(0, 0, 0, 0.95);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+:root[data-style="gta5"] .card:hover,
+:root[data-style="gta5"] .card:focus-visible {
+  transform: translateY(-2px); border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(79, 195, 247, 0.4), 0 16px 32px -22px rgba(0, 0, 0, 0.95);
+}
+:root[data-style="gta5"] .card:active { transform: translateY(0); }
+:root[data-style="gta5"] .card-tag {
+  border-radius: 2px; border: 0; padding: 4px 9px;
+  background: var(--g5-y); color: #10161c;
+  font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="gta5"] .card-title { font-family: var(--sans); font-weight: 700; letter-spacing: -0.01em; }
+:root[data-style="gta5"] .card-num { color: var(--ink-3); }
+:root[data-style="gta5"] .card-go { color: var(--accent); }
+:root[data-style="gta5"] .btn:hover,
+:root[data-style="gta5"] .btn:focus-visible,
+:root[data-style="gta5"] .toc a:hover,
+:root[data-style="gta5"] .toc a:focus-visible { background: var(--accent); color: #06121b; border-color: var(--accent); }
+:root[data-style="gta5"] .hero-title,
+:root[data-style="gta5"] .sec-head h2,
+:root[data-style="gta5"] .foot-word {
+  font-family: var(--serif); font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em;
+}
+:root[data-style="gta5"] .sec-head h2 .en { color: var(--g5-y); }
+:root[data-style="gta5"] .sec-idx,
+:root[data-style="gta5"] .sec-count { color: var(--accent); }
+:root[data-style="gta5"] .brand-dot { border-radius: 1px; width: 10px; height: 10px; background: var(--g5-y); box-shadow: none; }
+:root[data-style="gta5"] .ls-track,
+:root[data-style="gta5"] .bs-track {
+  border-radius: 999px; border: 1px solid var(--glass-border); background: var(--glass-bg); box-shadow: none;
+}
+:root[data-style="gta5"] .ls-knob,
+:root[data-style="gta5"] .bs-bulb { border-radius: 999px; background: var(--accent); box-shadow: none; }
+:root[data-style="gta5"] .skin-chip[aria-pressed="true"] {
+  background: var(--accent); color: #06121b; border-color: var(--accent);
+  box-shadow: 0 6px 18px -10px rgba(79, 195, 247, 0.8);
+}
+:root[data-style="gta5"] .sm-panel { background-color: rgba(13, 17, 23, 0.97); border: 1px solid var(--glass-border); border-radius: 5px; }
+:root[data-style="gta5"] .sm-item[aria-selected="true"] { background: var(--accent); color: #06121b; }
 :root[data-style="mc"] ::selection { background: var(--accent); color: #ffffff; }
+
+/* ==================================================================
+   风格 R：辐射 Pip-Boy 3000（<html data-style="pipboy">）
+   单色荧光绿 CRT，六件事一起做才像：
+     1. 全站等宽字 + 大写 + 拉开字距（Pip-Boy 没有比例字体）
+     2. 方括号标签 [ 标签 ] —— 菜单项的语言
+     3. 四角定位括号 —— 取景框/HUD 的语言（用 8 段 1px 渐变拼）
+     4. 2px 一组的扫描线 + 每 9 秒下扫一次的光带 + 四角暗角（CRT 曲面）
+     5. 标题荧光外发光；选中 / 悬停 = 反色填充（绿底深字）
+     6. 零圆角：Pip-Boy 上没有一个圆角
+   亮色 = 强光可读模式：淡绿底 + 深绿字，扫描线与发光都减淡。
+================================================================== */
+:root[data-style="pipboy"],
+:root[data-style="pipboy"] * { color-scheme: dark; }
+:root[data-style="pipboy"] {
+  --sans: "Consolas", "Monaco", "Courier New", ui-monospace, monospace;
+  --serif: "Consolas", "Monaco", "Courier New", ui-monospace, monospace;
+  --mono: "Consolas", "Monaco", "Courier New", ui-monospace, monospace;
+  --bg: #070b08;
+  --ink: #d8ffe9; --ink-2: #6fe6a6; --ink-3: #3f9e6b;
+  --line: rgba(26, 255, 128, 0.18); --line-2: rgba(26, 255, 128, 0.4);
+  --accent: #1aff80;
+  --pb-c: #1aff80; --pb-br: #1aff80;
+  --pb-dim: rgba(26, 255, 128, 0.34); --pb-dim2: rgba(26, 255, 128, 0.13);
+  --pb-in: rgba(26, 255, 128, 0.06); --pb-hi: rgba(26, 255, 128, 0.09);
+  --pb-on: #04120a;
+  --pb-glow: 0 0 2px rgba(26, 255, 128, 0.85), 0 0 10px rgba(26, 255, 128, 0.32);
+  --pb-glow-s: 0 0 1px rgba(26, 255, 128, 0.7);
+  --pb-knob: 0 0 8px rgba(26, 255, 128, 0.55);
+  --pb-scan: rgba(0, 0, 0, 0.4);
+  --pb-sweep: rgba(26, 255, 128, 0.07);
+  --pb-vig: radial-gradient(120% 100% at 50% 50%, transparent 34%, rgba(0, 0, 0, 0.75) 100%);
+  --pb-amb: radial-gradient(78% 58% at 50% 40%, rgba(26, 255, 128, 0.1), transparent 72%);
+  --card-bg: rgba(9, 24, 16, 0.55); --glass-bg: rgba(9, 24, 16, 0.6);
+  --glass-border: var(--pb-dim); --glass-blur: blur(2px);
+  --sec-img-o: 0; --spot-c: rgba(26, 255, 128, 0.1); --ripple-c: rgba(26, 255, 128, 0.3);
+}
+:root[data-style="pipboy"][data-theme="light"] { color-scheme: light;
+  --bg: #e7efe4; --ink: #12351f; --ink-2: #2c6a44; --ink-3: #5b8f70;
+  --line: rgba(20, 90, 52, 0.2); --line-2: rgba(20, 90, 52, 0.42);
+  --accent: #14864a; --pb-c: #1a8f52; --pb-br: #1a8f52;
+  --pb-dim: rgba(20, 100, 58, 0.42); --pb-dim2: rgba(20, 100, 58, 0.18);
+  --pb-in: rgba(20, 100, 58, 0.04); --pb-hi: rgba(20, 100, 58, 0.06);
+  --pb-on: #f2fbf4;
+  --pb-glow: none; --pb-glow-s: none; --pb-knob: 0 0 0 rgba(0, 0, 0, 0);
+  --pb-scan: rgba(20, 80, 45, 0.07);
+  --pb-sweep: rgba(20, 110, 62, 0.05);
+  --pb-vig: radial-gradient(120% 100% at 50% 50%, transparent 52%, rgba(20, 80, 45, 0.14) 100%);
+  --pb-amb: radial-gradient(78% 58% at 50% 40%, rgba(255, 255, 255, 0.65), transparent 72%);
+  --card-bg: rgba(255, 255, 255, 0.6); --glass-bg: rgba(255, 255, 255, 0.68);
+  --glass-border: rgba(20, 90, 52, 0.3); --glass-blur: blur(2px);
+  --sec-img-o: 0; --spot-c: rgba(20, 110, 62, 0.08); --ripple-c: rgba(20, 110, 62, 0.18);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="pipboy"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #e7efe4; --ink: #12351f; --ink-2: #2c6a44; --ink-3: #5b8f70;
+    --line: rgba(20, 90, 52, 0.2); --line-2: rgba(20, 90, 52, 0.42);
+    --accent: #14864a; --pb-c: #1a8f52; --pb-br: #1a8f52;
+    --pb-dim: rgba(20, 100, 58, 0.42); --pb-dim2: rgba(20, 100, 58, 0.18);
+    --pb-in: rgba(20, 100, 58, 0.04); --pb-hi: rgba(20, 100, 58, 0.06);
+    --pb-on: #f2fbf4;
+    --pb-glow: none; --pb-glow-s: none; --pb-knob: 0 0 0 rgba(0, 0, 0, 0);
+    --pb-scan: rgba(20, 80, 45, 0.07);
+    --pb-sweep: rgba(20, 110, 62, 0.05);
+    --pb-vig: radial-gradient(120% 100% at 50% 50%, transparent 52%, rgba(20, 80, 45, 0.14) 100%);
+    --pb-amb: radial-gradient(78% 58% at 50% 40%, rgba(255, 255, 255, 0.65), transparent 72%);
+    --card-bg: rgba(255, 255, 255, 0.6); --glass-bg: rgba(255, 255, 255, 0.68);
+    --glass-border: rgba(20, 90, 52, 0.3); --glass-blur: blur(2px);
+    --sec-img-o: 0; --spot-c: rgba(20, 110, 62, 0.08); --ripple-c: rgba(20, 110, 62, 0.18);
+  }
+}
+/* CRT 三层：扫描线 → 暗角 → 屏幕自发光；外加一条 9 秒下扫的光带 */
+:root[data-style="pipboy"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(180deg, var(--pb-scan) 0 1px, transparent 1px 3px),
+    var(--pb-vig), var(--pb-amb);
+}
+:root[data-style="pipboy"] body::after {
+  content: ""; position: fixed; left: 0; right: 0; top: 0; height: 44vh;
+  z-index: 0; pointer-events: none;
+  background-image: linear-gradient(180deg, transparent, var(--pb-sweep) 46%, var(--pb-sweep) 54%, transparent);
+  animation: pbSweep 9s linear infinite;
+}
+@keyframes pbSweep {
+  from { transform: translateY(-46vh); }
+  to   { transform: translateY(118vh); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style="pipboy"] body::after { display: none; }
+}
+:root[data-style="pipboy"] ::selection { background: var(--pb-c); color: var(--pb-on); }
+/* 全站面板：1px 荧光细边 + 零圆角 + 极淡内发光 */
+:root[data-style="pipboy"] .glass,
+:root[data-style="pipboy"] .card,
+:root[data-style="pipboy"] .row,
+:root[data-style="pipboy"] .skin-chip,
+:root[data-style="pipboy"] .toc a,
+:root[data-style="pipboy"] .btn,
+:root[data-style="pipboy"] .sm-btn {
+  border-radius: 0; border: 1px solid var(--pb-dim);
+  background-color: var(--card-bg);
+  box-shadow: inset 0 0 24px var(--pb-in);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+/* 卡片内屏：也铺一层极淡扫描线 */
+:root[data-style="pipboy"] .card {
+  background-image: repeating-linear-gradient(180deg, rgba(26, 255, 128, 0.045) 0 1px, transparent 1px 3px);
+}
+/* 四角定位括号：8 段 1px 渐变，拼出取景框的四个 L */
+:root[data-style="pipboy"] .card::after {
+  content: ""; display: block; position: absolute; inset: 5px; z-index: 3;
+  pointer-events: none; filter: none; border-radius: 0; background: none;
+  background-image:
+    linear-gradient(var(--pb-br), var(--pb-br)), linear-gradient(var(--pb-br), var(--pb-br)),
+    linear-gradient(var(--pb-br), var(--pb-br)), linear-gradient(var(--pb-br), var(--pb-br)),
+    linear-gradient(var(--pb-br), var(--pb-br)), linear-gradient(var(--pb-br), var(--pb-br)),
+    linear-gradient(var(--pb-br), var(--pb-br)), linear-gradient(var(--pb-br), var(--pb-br));
+  background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+  background-position: left top, left top, right top, right top, left bottom, left bottom, right bottom, right bottom;
+  background-repeat: no-repeat;
+  opacity: 0.7;
+  transition: opacity .4s var(--ease);
+}
+:root[data-style="pipboy"] .card:hover,
+:root[data-style="pipboy"] .card:focus-visible {
+  transform: translateY(-2px); border-color: var(--pb-c); background-color: var(--pb-hi);
+  box-shadow: inset 0 0 30px var(--pb-in), var(--pb-knob);
+}
+:root[data-style="pipboy"] .card:hover::after,
+:root[data-style="pipboy"] .card:focus-visible::after { opacity: 1; }
+:root[data-style="pipboy"] .card:active { transform: translateY(0); }
+/* 方括号标签：Pip-Boy 菜单项的语言 */
+:root[data-style="pipboy"] .card-tag {
+  border-radius: 0; border: 1px solid var(--pb-dim); padding: 3px 5px;
+  background: var(--glass-bg); color: var(--pb-c); text-shadow: var(--pb-glow-s);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="pipboy"] .card-tag::before { content: "["; opacity: 0.55; margin-right: 4px; }
+:root[data-style="pipboy"] .card-tag::after { content: "]"; opacity: 0.55; margin-left: 4px; }
+:root[data-style="pipboy"] .card-title { font-family: var(--mono); font-weight: 700; letter-spacing: 0.04em; }
+:root[data-style="pipboy"] .card-num { color: var(--ink-3); letter-spacing: 0.14em; }
+:root[data-style="pipboy"] .card-go { color: var(--pb-c); text-shadow: var(--pb-glow-s); }
+/* 条目信息行：虚线分隔（Pip-Boy 的列表底边） */
+:root[data-style="pipboy"] .card-meta { border-top: 1px dashed var(--pb-dim2); padding-top: 9px; }
+/* 按钮也带方括号，悬停反色填充 */
+:root[data-style="pipboy"] .btn { gap: 8px; letter-spacing: 0.18em; }
+:root[data-style="pipboy"] .btn::before { content: "["; opacity: 0.5; }
+:root[data-style="pipboy"] .btn::after { content: "]"; opacity: 0.5; }
+:root[data-style="pipboy"] .btn:hover,
+:root[data-style="pipboy"] .btn:focus-visible,
+:root[data-style="pipboy"] .toc a:hover,
+:root[data-style="pipboy"] .toc a:focus-visible {
+  background: var(--pb-c); color: var(--pb-on); border-color: var(--pb-c);
+  text-shadow: none; box-shadow: var(--pb-knob);
+}
+:root[data-style="pipboy"] .row:hover,
+:root[data-style="pipboy"] .row:focus-visible { border-bottom-color: var(--pb-c); }
+/* 标题：荧光外发光 + 双道细下划线 */
+:root[data-style="pipboy"] .hero-title,
+:root[data-style="pipboy"] .sec-head h2,
+:root[data-style="pipboy"] .foot-word {
+  font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--pb-c); text-shadow: var(--pb-glow);
+}
+:root[data-style="pipboy"] .hero-title {
+  display: inline-block; padding-bottom: 12px;
+  border-bottom: 1px solid var(--pb-dim); box-shadow: 0 4px 0 -3px var(--pb-dim2);
+}
+:root[data-style="pipboy"] .sec-head { border-bottom-color: var(--pb-dim); box-shadow: 0 4px 0 -3px var(--pb-dim2); }
+:root[data-style="pipboy"] .sec-head h2 .en { color: var(--ink-3); }
+:root[data-style="pipboy"] .sec-idx,
+:root[data-style="pipboy"] .sec-count { color: var(--pb-c); text-shadow: var(--pb-glow-s); }
+:root[data-style="pipboy"] .lede,
+:root[data-style="pipboy"] .eyebrow { letter-spacing: 0.06em; }
+:root[data-style="pipboy"] .brand-dot {
+  border-radius: 0; width: 9px; height: 9px; background: var(--pb-c); box-shadow: var(--pb-knob);
+}
+/* 开关：Pip-Boy 上没有圆角，滑块是实心荧光块 */
+:root[data-style="pipboy"] .ls-track,
+:root[data-style="pipboy"] .bs-track {
+  border-radius: 0; border: 1px solid var(--pb-dim); background: var(--glass-bg);
+  box-shadow: inset 0 0 12px var(--pb-in);
+}
+:root[data-style="pipboy"] .ls-knob {
+  border-radius: 0; background: var(--pb-c); box-shadow: var(--pb-knob);
+}
+:root[data-style="pipboy"] .bs-bulb {
+  background: var(--pb-c); box-shadow: 0 0 10px 2px var(--pb-in), var(--pb-knob);
+}
+:root[data-style="pipboy"] .skin-chip[aria-pressed="true"] {
+  background: var(--pb-c); color: var(--pb-on); border-color: var(--pb-c);
+  text-shadow: none; box-shadow: var(--pb-knob);
+}
+:root[data-style="pipboy"] .skin-chip[aria-pressed="true"]::before { background: var(--pb-on); opacity: 1; box-shadow: none; }
+:root[data-style="pipboy"] .sm-panel {
+  border-radius: 0; background-color: rgba(7, 11, 8, 0.97);
+  border: 1px solid var(--pb-c); box-shadow: var(--pb-knob);
+}
+:root[data-style="pipboy"] .sm-item[aria-selected="true"] { background: var(--pb-c); color: var(--pb-on); text-shadow: none; }
