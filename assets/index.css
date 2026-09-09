@@ -514,7 +514,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   min-height: clamp(120px, 18vh, 200px);
   display: flex; flex-direction: column; justify-content: center;
   position: relative; isolation: isolate;
-  padding: clamp(20px, 4vh, 44px) 0;
+  padding: clamp(20px, 4vh, 44px) 0 clamp(12px, 2vh, 24px);
 }
 /* 首屏背景图：给玻璃提供可折射的明暗层次 */
 .hero::before {
@@ -738,6 +738,44 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
   .toc a { padding: 10px 16px; }
 }
 
+/* ============ 首页三门户：三个大方框，作品列表进子页 ============
+   首页只留下「游戏 / 实验 / 站点」三张入口卡，点进去才是各自的清单，
+   不必再一路往下翻。卡片直接复用 .card，所有皮肤自动换装。 */
+.portal-grid { grid-template-columns: repeat(3, 1fr); }
+.portal-grid .card { grid-column: auto; min-height: 268px; padding: 26px 26px 20px; }
+.portal .card-title { font-size: clamp(24px, 2.6vw, 31px); }
+.portal .card-what { -webkit-line-clamp: 4; }
+.portal .card-meta { align-items: baseline; }
+.portal .card-meta em { font-style: normal; color: var(--ink); }
+.portal-items {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-transform: none; letter-spacing: 0.02em; font-size: 11px; color: var(--ink-3);
+}
+/* 首页三门户：贴着 hero 排，不留大段空白（要顶过 .sec:first-of-type 的同优先级规则）*/
+.sec.sec-portals { margin-top: clamp(8px, 2vh, 24px); padding-top: 0; padding-bottom: clamp(12px, 2vh, 24px); }
+.portal-grid { margin-top: 0; }
+/* 门户区不要分区背景图——那是为长清单准备的，三张大方框用纯背景更清爽 */
+.sec.sec-portals::before { display: none; }
+/* 子页：子页 hero 紧跟着 .sec 清单，收掉原 80-140px 的巨大段距 */
+.sub-hero + .sec { margin-top: clamp(20px, 3vh, 36px); }
+@media (max-width: 900px) { .portal-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) {
+  .portal-grid { grid-template-columns: 1fr; }
+  .portal-grid .card { min-height: 0; }
+}
+
+/* ============ 子页头部：面包屑 + 更小的标题 ============ */
+.sub-hero { min-height: 0; padding: clamp(14px, 3vh, 30px) 0 clamp(6px, 1.5vh, 14px); }
+.sub-kicker {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sub-kicker a { color: var(--ink-3); text-decoration: none; transition: color .4s var(--ease); }
+.sub-kicker a:hover, .sub-kicker a:focus-visible { color: var(--ink); }
+.sub-sep { opacity: 0.55; }
+.sub-hero .hero-title { font-size: clamp(32px, 6vw, 60px); margin-bottom: 10px; }
+
 /* ============ 交互增强：指针光斑 + 点击涟漪 ============
    玻璃表面的液态高光跟随指针（liquid-glass 质感），按下处扩散墨色涟漪。
    全部尊重 prefers-reduced-motion：JS 不绑定监听、CSS 过渡已全局降级。 */
@@ -878,15 +916,15 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
         [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .hero::after,
 :root:is([data-style="soft"], [data-style="raw"], [data-style="crete"],
         [data-style="xp"], [data-style="w7"], [data-style="w10"], [data-style="classic"]) .sec::before { display: none; }
-/* 三套「核」系（梦核 / 池核 / 怪核）同样不需要玻璃装饰层 */
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .glass::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .card::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .row::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .card::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .toc a::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .hero::before,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .hero::after,
-:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"]) .sec::before { display: none; }
+/* 三套「核」系（梦核 / 池核 / 怪核）+ 方块像素（MC）同样不需要玻璃装饰层 */
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .glass::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .card::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .row::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .card::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .toc a::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .hero::before,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .hero::after,
+:root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"]) .sec::before { display: none; }
 
 /* 卡片：悬停 = 抬起（投影放大），按下 = 压进表面（转内凹） */
 :root[data-style="soft"] .card:hover,
@@ -2140,3 +2178,151 @@ footer { margin-top: clamp(80px, 14vh, 150px); border-top: 1px solid var(--line)
 :root[data-style="classic"] .sec-head h2 .en { color: var(--ink-3); }
 :root[data-style="classic"] .brand-dot { border-radius: 0; background: var(--ink); box-shadow: none; }
 :root[data-style="classic"] .foot-word { color: var(--ink-2); }
+
+/* ==================================================================
+   风格 M：Minecraft · 方块像素（<html data-style="mc">）
+   整套语言来自 MC 的 GUI：
+   · 「面板灰」#c6c6c6 —— MC 箱子/工作台/设置的底色，最有辨识度的那块灰
+   · 3px 深灰外框 + 内描边「左上白、右下深灰」——方块凸起的假立体
+   · 零圆角、等宽字、2px 硬落影（MC 字体自带落影）
+   · 草方块绿做唯一强调色；全屏 4px 棋盘 = 像素颗粒
+================================================================== */
+:root[data-style="mc"],
+:root[data-style="mc"] * { color-scheme: dark; }
+:root[data-style="mc"] {
+  --ui: "Courier New", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --sans: "Courier New", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --serif: "Courier New", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --mono: "Courier New", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* —— 暗色：MC 深夜洞穴 —— */
+  --bg: #1b1b1b;
+  --ink: #e8e8e8; --ink-2: #b0b0b0; --ink-3: #7d7d7d;
+  --line: #3a3a3a; --line-2: #5a5a5a;
+  --accent: #7fb238;                 /* 草方块绿 */
+  --card-bg: #2f2f2f;
+  --glass-border: #0d0d0d;
+  --glass-bg: #2f2f2f;
+  --glass-blur: none;
+  --sec-img-o: 0; --spot-c: rgba(127, 178, 56, 0.16); --ripple-c: rgba(127, 178, 56, 0.35);
+  /* MC 三件套：外框 / 亮边 / 暗边 */
+  --mc-edge: #0d0d0d;
+  --mc-hi: #5a5a5a;
+  --mc-lo: #141414;
+  --mc-face: #2f2f2f;
+  --mc-face-hi: #3d3d3d;
+  --mc-slot: #1a1a1a;
+  --mc-tx-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+}
+:root[data-style="mc"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #6f6f6f;
+  --ink: #1f1f1f; --ink-2: #3a3a3a; --ink-3: #5c5c5c;
+  --line: #373737; --line-2: #5a5a5a;
+  --accent: #4f8c2f;
+  --card-bg: #c6c6c6;
+  --glass-border: #373737;
+  --glass-bg: #c6c6c6;
+  --glass-blur: none;
+  --sec-img-o: 0; --spot-c: rgba(79, 140, 47, 0.18); --ripple-c: rgba(79, 140, 47, 0.35);
+  --mc-edge: #373737;
+  --mc-hi: #ffffff;
+  --mc-lo: #555555;
+  --mc-face: #c6c6c6;
+  --mc-face-hi: #d8d8d8;
+  --mc-slot: #8b8b8b;
+  --mc-tx-shadow: 2px 2px 0 rgba(0, 0, 0, 0.28);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="mc"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #6f6f6f; --ink: #1f1f1f; --ink-2: #3a3a3a; --ink-3: #5c5c5c;
+    --line: #373737; --line-2: #5a5a5a; --accent: #4f8c2f;
+    --card-bg: #c6c6c6; --glass-border: #373737; --glass-bg: #c6c6c6; --glass-blur: none;
+    --sec-img-o: 0; --spot-c: rgba(79, 140, 47, 0.18); --ripple-c: rgba(79, 140, 47, 0.35);
+    --mc-edge: #373737; --mc-hi: #ffffff; --mc-lo: #555555;
+    --mc-face: #c6c6c6; --mc-face-hi: #d8d8d8; --mc-slot: #8b8b8b;
+    --mc-tx-shadow: 2px 2px 0 rgba(0, 0, 0, 0.28);
+  }
+}
+/* 全屏 4px 棋盘：像素颗粒（比噪点更像「格子」） */
+:root[data-style="mc"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 4px, transparent 4px 8px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 4px, transparent 4px 8px);
+}
+:root[data-style="mc"] body { font-family: var(--ui); letter-spacing: 0.02em; }
+/* 方块凸起：外框 + 左上亮、右下暗的双内描边（MC 按钮的经典做法） */
+:root[data-style="mc"] .glass,
+:root[data-style="mc"] .card,
+:root[data-style="mc"] .row,
+:root[data-style="mc"] .skin-chip,
+:root[data-style="mc"] .toc a,
+:root[data-style="mc"] .btn,
+:root[data-style="mc"] .sm-btn,
+:root[data-style="mc"] .sm-panel {
+  border-radius: 0;
+  border: 3px solid var(--mc-edge);
+  background: var(--mc-face);
+  box-shadow: inset 2px 2px 0 var(--mc-hi), inset -2px -2px 0 var(--mc-lo);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="mc"] .card:hover,
+:root[data-style="mc"] .card:focus-visible {
+  transform: none;
+  background: var(--mc-face-hi);
+  border-color: var(--accent);
+  box-shadow: inset 2px 2px 0 var(--mc-hi), inset -2px -2px 0 var(--mc-lo), 0 0 0 2px var(--mc-edge);
+}
+:root[data-style="mc"] .card:active { box-shadow: inset -2px -2px 0 var(--mc-hi), inset 2px 2px 0 var(--mc-lo); }
+/* 物品槽：内凹的深灰格子 */
+:root[data-style="mc"] .card-tag {
+  border-radius: 0; border: 0; padding: 4px 8px;
+  background: var(--mc-slot); color: #ffffff;
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: var(--mc-tx-shadow);
+  box-shadow: inset 2px 2px 0 var(--mc-lo), inset -2px -2px 0 var(--mc-hi);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="mc"] .card-num { color: var(--ink-3); font-weight: 700; }
+:root[data-style="mc"] .card-go { color: var(--accent); font-weight: 700; }
+:root[data-style="mc"] .btn:hover,
+:root[data-style="mc"] .btn:focus-visible {
+  background: var(--accent); color: #ffffff; border-color: var(--mc-edge);
+  text-shadow: var(--mc-tx-shadow);
+}
+:root[data-style="mc"] .toc a:hover,
+:root[data-style="mc"] .toc a:focus-visible { background: var(--mc-face-hi); transform: none; }
+/* 开关：MC 的轨道是内凹的槽 */
+:root[data-style="mc"] .ls-track,
+:root[data-style="mc"] .bs-track {
+  border-radius: 0; border: 2px solid var(--mc-edge);
+  background: var(--mc-slot); box-shadow: inset 2px 2px 0 var(--mc-lo), inset -2px -2px 0 var(--mc-hi);
+}
+:root[data-style="mc"] .ls-knob,
+:root[data-style="mc"] .bs-bulb {
+  border-radius: 0; border: 2px solid var(--mc-edge);
+  background: var(--accent); box-shadow: inset 1px 1px 0 var(--mc-hi), inset -1px -1px 0 var(--mc-lo);
+}
+/* 标题：等宽 + 硬落影，像 MC 界面上的字 */
+:root[data-style="mc"] .hero-title,
+:root[data-style="mc"] .sec-head h2,
+:root[data-style="mc"] .foot-word {
+  font-family: var(--ui); font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; text-shadow: var(--mc-tx-shadow);
+}
+:root[data-style="mc"] .card-title { font-family: var(--ui); font-weight: 700; }
+:root[data-style="mc"] .sec-head h2 .en { color: var(--accent); }
+:root[data-style="mc"] .sec-head { border-color: var(--mc-edge); border-bottom-width: 3px; }
+:root[data-style="mc"] .sec-idx,
+:root[data-style="mc"] .sec-count { font-family: var(--ui); color: var(--ink-3); }
+/* 品牌点 = 一块草方块 */
+:root[data-style="mc"] .brand-dot {
+  border-radius: 0; width: 12px; height: 12px;
+  background: var(--accent); border: 2px solid var(--mc-edge);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(0, 0, 0, 0.35);
+}
+:root[data-style="mc"] .skin-chip[aria-pressed="true"] {
+  background: var(--accent); color: #ffffff; text-shadow: var(--mc-tx-shadow);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35), inset -2px -2px 0 rgba(0, 0, 0, 0.35);
+}
+:root[data-style="mc"] .sm-item[aria-selected="true"] { background: var(--accent); color: #ffffff; }
+:root[data-style="mc"] ::selection { background: var(--accent); color: #ffffff; }

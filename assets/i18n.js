@@ -80,7 +80,7 @@
   var SKEY = "gl-style";
   /* 顺序 = 显示顺序。
      chip  平铺按钮上的名字（写全）  short 顶栏下拉里的简称  full 无障碍标签用的全名 */
-  var STYLES = ["glass", "soft", "raw", "crete", "xp", "w7", "w10", "classic", "dream", "pool", "weird"];
+  var STYLES = ["glass", "soft", "raw", "crete", "xp", "w7", "w10", "classic", "dream", "pool", "weird", "mc"];
   var SMETA = {
     glass: { short: { zh: "玻璃",  en: "GLAS"  }, chip: { zh: "液态玻璃",    en: "Liquid Glass" }, full: { zh: "液态玻璃 · Liquid Glass", en: "Liquid Glass" } },
     soft:  { short: { zh: "拟物",  en: "SOFT"  }, chip: { zh: "新拟物",      en: "Neumorphism" },   full: { zh: "新拟物 · Neumorphism",    en: "Neumorphism" } },
@@ -92,7 +92,8 @@
     classic: { short: { zh: "Classic", en: "CLASSIC" }, chip: { zh: "Windows 经典",  en: "Windows Classic" }, full: { zh: "Windows 经典 · Classic",     en: "Windows Classic" } },
     dream:   { short: { zh: "梦核",    en: "DREAM"   }, chip: { zh: "梦核",          en: "Dreamcore" },       full: { zh: "梦核 · Dreamcore",           en: "Dreamcore" } },
     pool:  { short: { zh: "池核",  en: "POOL"  }, chip: { zh: "池核",        en: "Poolcore" },      full: { zh: "池核 · Poolcore",         en: "Poolcore" } },
-    weird: { short: { zh: "怪核",  en: "WEIRD" }, chip: { zh: "怪核",        en: "Weirdcore" },     full: { zh: "怪核 · Weirdcore",        en: "Weirdcore" } }
+    weird: { short: { zh: "怪核",  en: "WEIRD" }, chip: { zh: "怪核",        en: "Weirdcore" },     full: { zh: "怪核 · Weirdcore",        en: "Weirdcore" } },
+    mc:    { short: { zh: "MC",    en: "MC"    }, chip: { zh: "我的世界",   en: "Minecraft" },     full: { zh: "我的世界 · Minecraft",    en: "Minecraft" } }
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
   var skinBar = document.getElementById("skinBar");

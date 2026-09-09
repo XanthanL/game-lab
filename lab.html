@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN"
+      data-title-zh="实验 — GAME LAB"
+      data-title-en="Experiments — GAME LAB"
+      data-desc-zh="像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。"
+      data-desc-en="Pixel stage plays and text generators — one brief handed to different agents, each directing it their own way.">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="180x180" href="./assets/favicon-180.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon-180.png" />
+<meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<title>实验 — GAME LAB</title>
+<meta name="description" content="像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="GAME LAB" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:title" content="实验 — GAME LAB" />
+<meta property="og:description" content="像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/lab.html" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="实验 — GAME LAB" />
+<meta name="twitter:description" content="像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。" />
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<!-- 主题 / 风格 / 语言在样式生效前定好，避免刷新时闪一下 -->
+<script>
+(function () {
+  var d = document.documentElement;
+  d.classList.add("js");
+  try {
+    var t = localStorage.getItem("gl-theme");
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    d.setAttribute("data-theme", t);
+    /* 风格：glass 液态玻璃（默认）、soft 新拟物、raw 新粗野、crete 砼核、
+       xp Windows XP Luna、w7 Windows 7 Aero、w10 Windows 10 Metro、
+       classic Windows 经典、dream 梦核、pool 池核、weird 怪核、mc 我的世界 */
+    var st = localStorage.getItem("gl-style");
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc"];
+    d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "glass");
+    var lg = localStorage.getItem("gl-lang");
+    if (lg === "en") d.setAttribute("data-lang", "en");
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="./assets/index.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="./"><span class="brand-dot"></span>GAME LAB</a>
+    <div class="topbar-right">
+      <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a>
+      <button id="langToggle" class="lang-switch" type="button">中</button>
+    </div>
+  </div>
+
+  <header class="hero sub-hero">
+    <p class="sub-kicker"><a href="./">GAME LAB</a><span class="sub-sep">/</span><span data-zh="实验" data-en="Experiments">实验</span></p>
+    <h1 class="hero-title" data-zh="实验" data-en="Experiments">实验</h1>
+    <p class="lede" data-zh="像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。" data-en="Pixel stage plays and text generators — one brief handed to different agents, each directing it their own way.">像素舞台剧与文字生成实验：同一句话交给不同 agent，看它们各自导成什么样。</p>
+    <nav class="toc" aria-label="目录">
+      <a class="glass" href="./"><span data-zh="首页" data-en="Home">首页</span></a>
+      <a class="glass" href="games.html"><span data-zh="游戏" data-en="Games">游戏</span> <em>07</em></a>
+      <a class="glass" href="sites.html"><span data-zh="站点" data-en="Sites">站点</span> <em>04</em></a>
+    </nav>
+  </header>
+
+<section class="sec" id="plays" data-page-node-id="LB4vrwVaghwIVDBXamivhp">
+    <div class="sec-head reveal" data-page-node-id="Dr8VTHyuFsFKqPbkHqtyE6">
+      <span class="sec-idx" data-page-node-id="Oq6DXNnPda6GEWeSCYcyfm">02</span>
+      <h2 data-page-node-id="gtv7vzBkug3X4cmu5t80yR"><span data-zh="实验" data-en="Experiments" data-page-node-id="5WBs89HY0QJG7bCprHtrv7">实验</span><span class="en" data-page-node-id="Y4q7wtk4bj2ERSz6uMrkX9">EXPERIMENTS</span></h2>
+      <span class="sec-count" data-page-node-id="CwOFvLFMh1eZMy8CgTuD3E"><em data-page-node-id="TCTLAuBfUFSm35lrBdKBNm">02</em> <span data-zh="项" data-en="projects" data-page-node-id="u1eaDgQv5SoLsxEuFxdwE6">projects</span></span>
+    </div>
+
+    <div class="grid" data-page-node-id="3budDNI4MH2JvnE2plVHwa">
+
+      <a class="card card-s3 reveal" href="./persona/" data-page-node-id="QCdoFJSLvRa7RbO9Z8DjFC">
+        <span class="card-top" data-page-node-id="GoEitFqW1IWClqiwanKrGC"><span class="card-tag" data-zh="实验" data-en="LAB" data-page-node-id="bkz2DGQVHktHeZkOgyzksb">实验</span><span class="card-num" data-page-node-id="RCxlALRKZBqFcpb3qI45Rv">08</span><span class="card-go" data-page-node-id="I3cD0gPS8tzcs4ZQPFsdYe">→</span></span>
+        <span class="card-main" data-page-node-id="2bXgmNxblwNSFHj6Rg6fO2">
+          <span class="card-title" data-zh="像素舞台剧 · 十一部" data-en="Eleven Pixel Stage Plays" data-page-node-id="JJDEKDvmwXYYMpDRFhMVCX">像素舞台剧 · 十一部</span>
+          <span class="card-what" data-zh="同一句话发给 11 个 coding agent，让它们各自从剧本导到演出。"
+                data-en="The same one-line brief handed to 11 coding agents, script to performance." data-page-node-id="s8bIQlgQkbWVEMf5x2kKxG">同一句话发给 11 个 coding agent，让它们各自从剧本导到演出。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="SC7tl4K3LdAHwZsLKNMJhE"><span data-zh="Canvas · 像素 · 多 Agent" data-en="Canvas · Pixel · Multi-agent" data-page-node-id="3yMEwVhepIJxjXLxju7DbD">Canvas · 像素 · 多 Agent</span><span data-page-node-id="3gtGA150dNWmcbDERemoJT">11 <span data-zh="部" data-en="plays" data-page-node-id="AVb4MXNBgzm3a0iVcYB9vU">部</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./ascii-art/" data-page-node-id="WT1TS45OsR9rDdvDc1xvuA">
+        <span class="card-top" data-page-node-id="kkSc2XBM3RZhR5EJYUQgvq"><span class="card-tag" data-zh="实验" data-en="LAB" data-page-node-id="YquqhXf5zTpJ7dANqbKsHo">实验</span><span class="card-num" data-page-node-id="Uyr8EkvBZcwPsrAZSvR3LY">09</span><span class="card-go" data-page-node-id="T7yEEPVhGd4G6smgua95oH">→</span></span>
+        <span class="card-main" data-page-node-id="okNOOuEGUSioG6fYSR0ZHM">
+          <span class="card-title" data-page-node-id="UuxwiAFDDwfqBdMk7RxGHc">ASCII ∴ LAB</span>
+          <span class="card-what" data-zh="把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG。"
+                data-en="Turn Chinese or Latin text into ASCII art: 6 fonts, 4 glyph styles, 6 strokes, adjustable width and contrast, copy or export PNG." data-page-node-id="xsUESrAHGlXC4Dj6yhhn2v">把汉字或英文写成 ASCII 图：6 种字体、4 种字形、6 套笔触，宽度和对比可调，一键复制或导出 PNG。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="x5eWOlPci1lAvBAw5JgpKh"><span data-zh="Canvas · 零构建" data-en="Canvas · No build" data-page-node-id="kQadfGFU8FeCItAWHmqWc6">Canvas · 零构建</span><span data-page-node-id="JygHCUCjicJ4fLqwBxTsmQ">6 <span data-zh="笔触" data-en="strokes" data-page-node-id="f4GNzzF7HFu84iq1YQBarz">笔触</span></span></span>
+      </a>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-in">
+      <div class="foot-word">GAME<br />LAB</div>
+      <div class="foot-meta">
+        <div data-zh="© 2026 XanthanL" data-en="© 2026 XanthanL">© 2026 XanthanL</div>
+        <div><span data-zh="托管于" data-en="Hosted on">托管于</span> <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
+        <div><span data-zh="源码在" data-en="Source on">源码在</span> <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">XanthanL/game-lab</a></div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script src="./assets/i18n.js"></script>
+<script src="./assets/interactions.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN"
+      data-title-zh="游戏 — GAME LAB"
+      data-title-en="Games — GAME LAB"
+      data-desc-zh="7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。"
+      data-desc-en="Seven browser games — space bullet-hell, parody tower defense, a full PVZ recreation and a Mars deckbuilder. No install, just play.">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="180x180" href="./assets/favicon-180.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon-180.png" />
+<meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<title>游戏 — GAME LAB</title>
+<meta name="description" content="7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="GAME LAB" />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:title" content="游戏 — GAME LAB" />
+<meta property="og:description" content="7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。" />
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/games.html" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="游戏 — GAME LAB" />
+<meta name="twitter:description" content="7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。" />
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+<!-- 主题 / 风格 / 语言在样式生效前定好，避免刷新时闪一下 -->
+<script>
+(function () {
+  var d = document.documentElement;
+  d.classList.add("js");
+  try {
+    var t = localStorage.getItem("gl-theme");
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    d.setAttribute("data-theme", t);
+    /* 风格：glass 液态玻璃（默认）、soft 新拟物、raw 新粗野、crete 砼核、
+       xp Windows XP Luna、w7 Windows 7 Aero、w10 Windows 10 Metro、
+       classic Windows 经典、dream 梦核、pool 池核、weird 怪核、mc 我的世界 */
+    var st = localStorage.getItem("gl-style");
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc"];
+    d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "glass");
+    var lg = localStorage.getItem("gl-lang");
+    if (lg === "en") d.setAttribute("data-lang", "en");
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="./assets/index.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="./"><span class="brand-dot"></span>GAME LAB</a>
+    <div class="topbar-right">
+      <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">GitHub</a>
+      <button id="langToggle" class="lang-switch" type="button">中</button>
+    </div>
+  </div>
+
+  <header class="hero sub-hero">
+    <p class="sub-kicker"><a href="./">GAME LAB</a><span class="sub-sep">/</span><span data-zh="游戏" data-en="Games">游戏</span></p>
+    <h1 class="hero-title" data-zh="游戏" data-en="Games">游戏</h1>
+    <p class="lede" data-zh="7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。" data-en="Seven browser games — space bullet-hell, parody tower defense, a full PVZ recreation and a Mars deckbuilder. No install, just play.">7 款网页游戏：星域弹幕、恶搞塔防、完整复刻的 PVZ 与火星卡牌，全部开箱即玩、无需安装。</p>
+    <nav class="toc" aria-label="目录">
+      <a class="glass" href="./"><span data-zh="首页" data-en="Home">首页</span></a>
+      <a class="glass" href="lab.html"><span data-zh="实验" data-en="Experiments">实验</span> <em>02</em></a>
+      <a class="glass" href="sites.html"><span data-zh="站点" data-en="Sites">站点</span> <em>04</em></a>
+    </nav>
+  </header>
+
+<section class="sec" id="games" data-page-node-id="Y9BzXdC1hKDb5O3GHPRfDK">
+    <div class="sec-head reveal" data-page-node-id="1JuERytBEW4KULQD6p0s9V">
+      <span class="sec-idx" data-page-node-id="3Gt6pDdjOf9S3Geb4kmj2D">01</span>
+      <h2 data-page-node-id="r8JE5d8Dle1XDc8LDgEkwK"><span data-zh="游戏" data-en="Games" data-page-node-id="AG8HZe3Zmj9fZXvnGARfUV">游戏</span><span class="en" data-page-node-id="b3msf5qjsDAVeW5M9HlkPV">GAMES</span></h2>
+      <span class="sec-count" data-page-node-id="GAP6oPtFWJqJkjTO7Pf9u0"><em data-page-node-id="j3VrzdPDFRdxxp7cANpbnD">07</em> <span data-zh="件作品" data-en="works" data-page-node-id="r2GmrGjlbdwICkXWAJdfQJ">件作品</span></span>
+    </div>
+
+    <div class="grid" data-page-node-id="JS9wbiUh5GAm7An5s8jNAB">
+
+      <a class="card card-s3 reveal" href="./singularity-echo/" data-page-node-id="Cbi8BMWzwjdhgm9uvGPYGS">
+        <span class="card-top" data-page-node-id="qcbUcVHFdfXRSTXfCzyfPp"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="hSOv23twLnLF2MQCQ8RtDO">游戏</span><span class="card-num" data-page-node-id="S37pKIG3fQYXNhAepOcchD">01</span><span class="card-go" data-page-node-id="4cCXGTkLFIUuqp8rD7uq4T">→</span></span>
+        <span class="card-main" data-page-node-id="RCPdXzN3F6apEmAKlEgOIx">
+          <span class="card-title" data-zh="奇点回响" data-en="Singularity Echo" data-page-node-id="xszDaJPxCqNtBHKtNSC18W">奇点回响</span>
+          <span class="card-what" data-zh="惯性漂移的星域 roguelike 弹幕射击：三艘船体拖着彗尾出击，27 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 30 波肃清星域通关后可无尽漂移；进度自动缓存，关页可续，手机可玩。"
+                data-en="Inertia-drift space roguelike — three comet-tailed hulls, 27 modules pushed to LV6 for gold-breakthrough upgrades, a colossus every 5th wave, endless drift after clearing wave 30; auto-save, resume, touch-ready." data-page-node-id="3FiULSq4W95RlcsK3ttJFf">惯性漂移的星域 roguelike 弹幕射击：三艘船体拖着彗尾出击，27 种模块升到 LV6 触发镀金质变，每 5 波巨像降临，第 30 波肃清星域通关后可无尽漂移；进度自动缓存，关页可续，手机可玩。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="gAo4jtGZ59kSE8WlPSPb87"><span data-page-node-id="Xw6zg8hg4bFokhOZ9U2Y4k">Canvas · WebGL</span><span data-page-node-id="isGlONKMFoYNqARCSxw1Qr">27 <span data-zh="模块" data-en="modules" data-page-node-id="WzN53J8zmotttcNZaW5cm4">模块</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./microsoft-vs-code/" data-page-node-id="iZUV3qGfwBo74OOjciaJsL">
+        <span class="card-top" data-page-node-id="zvDuQO94P40FdfAGOryvax"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="1CvXRShpu6np5FdUixeHTy">游戏</span><span class="card-num" data-page-node-id="Qg2JhlBuRcyAEFVcEc0tFV">02</span><span class="card-go" data-page-node-id="zqVJWQd8gu72Qdubyxbkj2">→</span></span>
+        <span class="card-main" data-page-node-id="NyLAYAHmKvFkdtBYwNkdlj">
+          <span class="card-title" data-zh="微软大战代码" data-en="Microsoft vs. Code" data-page-node-id="o7mymOCTFBI52zwx6KCnXn">微软大战代码</span>
+          <span class="card-what" data-zh="梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。"
+                data-en="A meme-born parody tower defense — 10 levels in programmer lore, star economy, npm shop, mobile-friendly." data-page-node-id="sjFGqLCz1JW2cjhtABDoNV">梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="4KkWU2v9bC0CsAHObtPD63"><span data-zh="Canvas · 原生 JS" data-en="Canvas · Vanilla JS" data-page-node-id="Exz75KDr7eMkjwxzlXZibX">Canvas · 原生 JS</span><span data-page-node-id="Z10VnGxS9smbLPYKbR3aiz">10 <span data-zh="关" data-en="levels" data-page-node-id="tykwdirWTYApLx5FnSG7Uc">关</span></span></span>
+      </a>
+
+      <a class="card reveal" href="./PVZ/" data-page-node-id="Mtm2dPFsBLbFhzx4pOzkvz">
+        <span class="card-top" data-page-node-id="RiYmlDhhHaMKDRdiJzNcxO"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="YCf7SQVbjYoniFsNfVnDuG">游戏</span><span class="card-num" data-page-node-id="rdAtrwAgtrDKzItZwOzxAT">03</span><span class="card-go" data-page-node-id="TldSBiRiEBs3mZ3O5ylcWx">→</span></span>
+        <span class="card-main" data-page-node-id="tw2oYkTERhUliGEQuAHo3b">
+          <span class="card-title" data-zh="植物大战僵尸" data-en="Plants vs Zombies" data-page-node-id="YwjFIIAea1bQ8Fi0UvwUIc">植物大战僵尸</span>
+          <span class="card-what" data-zh="完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。"
+                data-en="Full recreation — 23 levels, every sprite drawn in vector code, zero images." data-page-node-id="BKaiBnLxbkjeC952ckGcxh">完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="hQFz8wYGVvsXli3E1upGnD"><span data-zh="Canvas · 原生 JS" data-en="Canvas · Vanilla JS" data-page-node-id="JeSZf4FXPdGIRm4UWc0X3H">Canvas · 原生 JS</span><span data-page-node-id="4X4neNyC9GWXI9zHkdjulH">23 <span data-zh="关" data-en="levels" data-page-node-id="OdaIe1PAXmdqZ2cvzjXQOa">关</span></span></span>
+      </a>
+
+      <a class="card reveal" href="./forcing-mars/" data-page-node-id="T7HeNFWxV89uoh3T29H1ZX">
+        <span class="card-top" data-page-node-id="lKzX22BcXwLeCwJHOtxMCE"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="M5qrdYRjD8TqvFbbBTeEM7">游戏</span><span class="card-num" data-page-node-id="srYnDiXndKTzai8FchBdEa">04</span><span class="card-go" data-page-node-id="TOcWywG9ukCURFaEYE5ATM">→</span></span>
+        <span class="card-main" data-page-node-id="yA9mPiiHQjmH1nyEBDNUQ3">
+          <span class="card-title" data-zh="强渡火星" data-en="Forcing Mars" data-page-node-id="2BEwSTPWiLiBAblXLOlgkd">强渡火星</span>
+          <span class="card-what" data-zh="卡牌构筑：从火星地表下潜到 2000 米地核，有结局。"
+                data-en="Deckbuilder — descend from the surface to a 2,000 m core, with a real ending." data-page-node-id="CQSX3fjX3REB26xZUyVUjw">卡牌构筑：从火星地表下潜到 2000 米地核，有结局。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="A28QNjoBdcDXUGjkh2wClM"><span data-page-node-id="b1af5jQULh91AwiLbBotZ1">Phaser 3</span><span data-page-node-id="d1HYxa9PPqTNP7w1gbZC6L">30 <span data-zh="卡" data-en="cards" data-page-node-id="CnLGCcmj4rhlTmaikgzhL5">卡</span></span></span>
+      </a>
+
+      <a class="card card-feat reveal" href="./cursed-house/" data-page-node-id="5VDYb1HtzKu1fnGesL9JjS">
+        <span class="card-top" data-page-node-id="yNBB8WIjSYV0sJAFzBxYZJ"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="o077DMRkSdk9FExopuWUm9">游戏</span><span class="card-num" data-page-node-id="rnsnPzR6GwyZM0UUzGADvn">05</span><span class="card-go" data-page-node-id="Zi87zqnQOJA8Yn4u6XIQAC">→</span></span>
+        <span class="card-main" data-page-node-id="JrENLXHeIWkrd2DkSa76NP">
+          <span class="card-title" data-zh="咒 · 怨宅" data-en="JYU / Cursed House" data-page-node-id="shYOK9BgNcH6Zz8CtsHlRI">咒 · 怨宅</span>
+          <span class="card-what" data-zh="第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。"
+                data-en="First-person Chinese horror — 5 chapters, 6 maps, a whole raycasting engine in a single file." data-page-node-id="nqTbRWXc8wukOCuAHdcNAJ">第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="tHTMXTkIY0tnRkVUsCgO4E"><span data-page-node-id="UgIESQDOEWDEhOpI2PTOe6">Canvas · Raycast · WebAudio</span><span data-page-node-id="l8MOUhGoKR6RGYxKMBpEDU">05 <span data-zh="章" data-en="ch." data-page-node-id="WJT24vc9mwCk9kreydfXGD">章</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./europa/" data-page-node-id="mOQRGm5XmiCaKlwqyV1ZPy">
+        <span class="card-top" data-page-node-id="DTjD1bKOaNuJzsO9nyZj4H"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="eEg3ZuJJyCyGuAGHwElkxB">游戏</span><span class="card-num" data-page-node-id="vGXuOegIxVFtj6jnKLNP3I">06</span><span class="card-go" data-page-node-id="6YUAqlanivAiNuWxeA9u55">→</span></span>
+        <span class="card-main" data-page-node-id="rCo0m7MbMNMoBqFE5zMwMg">
+          <span class="card-title" data-zh="欧陆风云 · 1444" data-en="Europa 1444" data-page-node-id="UvnblINTDLiGsVxEBhjM3H">欧陆风云 · 1444</span>
+          <span class="card-what" data-zh="浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建。"
+                data-en="Browser grand strategy — hand-drawn map, 60+ countries in 1444, economy/diplomacy/war/sieges/events, static, no build." data-page-node-id="Vof6aHMVZn9g4b3l6RAVlL">浏览器大战略：手绘欧洲/北非/安纳托利亚地图，60+ 国家 1444 开局，经济/外交/战争/围城/事件，纯静态无构建。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="mB41j5JaQ2p2cSeynL4hmK"><span data-zh="Canvas · 大战略" data-en="Canvas · Grand strategy" data-page-node-id="OOUAhWfJFCEwTR4pRF5FjN">Canvas · 大战略</span><span data-page-node-id="9q7DVbZaWE7IKJoKDgLe83">400+ <span data-zh="省" data-en="provs" data-page-node-id="BcAfVLNw71HP1F94DFHBau">省</span></span></span>
+      </a>
+
+      <a class="card card-s3 reveal" href="./Vampire-2D/" data-page-node-id="SqiHOrfBIhNNQnYFnztJb0">
+        <span class="card-top" data-page-node-id="ZurjUvFjb0mbisnH1LDlUc"><span class="card-tag" data-zh="游戏" data-en="GAME" data-page-node-id="FGopHFESIO2iGjaDAz0Ojn">游戏</span><span class="card-num" data-page-node-id="MgbkNZFLMNcfu1WEPOTRrU">07</span><span class="card-go" data-page-node-id="n4QazliudK2ESZIcg6ZN7M">→</span></span>
+        <span class="card-main" data-page-node-id="cBszP7ZqS7fc4HprNvfPGR">
+          <span class="card-title" data-page-node-id="2JgAKdqFN07WEY5Ogesgj6">Vampire 2D</span>
+          <span class="card-what" data-zh="顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。"
+                data-en="Top-down survivor — 5 weapons, 6 passives, bosses from 180 s." data-page-node-id="2s8GOvPEZmBMiDgLdnseHW">顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。</span>
+        </span>
+        <span class="card-meta" data-page-node-id="J2N775Gk3cmQcKcCIi0Wf6"><span data-zh="Canvas · 单文件" data-en="Canvas · Single file" data-page-node-id="i7vJQoH1QA15aNIYYT2OZL">Canvas · 单文件</span><span data-zh="无尽" data-en="Endless" data-page-node-id="5arVqdsYmIwWhp5VxWx9G8">无尽</span></span>
+      </a>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-in">
+      <div class="foot-word">GAME<br />LAB</div>
+      <div class="foot-meta">
+        <div data-zh="© 2026 XanthanL" data-en="© 2026 XanthanL">© 2026 XanthanL</div>
+        <div><span data-zh="托管于" data-en="Hosted on">托管于</span> <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></div>
+        <div><span data-zh="源码在" data-en="Source on">源码在</span> <a href="https://github.com/XanthanL/game-lab" target="_blank" rel="noopener">XanthanL/game-lab</a></div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script src="./assets/i18n.js"></script>
+<script src="./assets/interactions.js"></script>
+</body>
+</html>
