@@ -94,6 +94,26 @@
   font-family: "Silkscreen"; font-style: normal; font-weight: 700; font-display: swap;
   src: url("fonts/silkscreen-latin-700-normal.woff2") format("woff2");
 }
+/* Diploma Regular（GTA SA「San Andreas」标题字，1993 Altsys，黑体哥特）的开源替身。
+   注意：Diploma 是 Blackletter/哥特，**不是**无衬线粗体——早期误用 Anton，方向就错了。 */
+@font-face {
+  font-family: "Pirata One"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/pirata-one-latin-400-normal.woff2") format("woff2");
+}
+/* Beckett Regular（SA 地名 / 官方站点）替身：碑铭体 Cinzel */
+@font-face {
+  font-family: "Cinzel"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/cinzel-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cinzel"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("fonts/cinzel-latin-700-normal.woff2") format("woff2");
+}
+/* Pricedown 的备选替身：比 Anton 更方更重，用于需要「实心块」的地方 */
+@font-face {
+  font-family: "Archivo Black"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/archivo-black-latin-400-normal.woff2") format("woff2");
+}
 
 :root {
   /* ========== 暗色 D ========== */
@@ -2546,21 +2566,32 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 
 /* ==================================================================
    风格 O：GTA 圣安地列斯 · San Andreas（<html data-style="gtasa">）
-   照着 SA 真实的字体表还原（GTA Wiki「Fonts」词条）：
-     · Pricedown —— GTA 标志字（III/VC/SA 通用），本站用 Anton 顶上
-     · Bank Gothic —— 暂停菜单的菜单项，窄而方、全大写、字距拉开
-     · Aharoni Bold —— HUD：金钱 / 电台 / 字幕
-   所以：大标题 = Pricedown 系 + 绿渐变填充 + 粗黑描边 + 立体落影；
-        界面文字 = Bank Gothic 系（Oswald）窄体大写；数字 = HUD 绿。
-   其它：卡片是军绿磨砂面板，悬停 = 菜单选中那样的左侧绿条；
+   照 SA 真实字体表还原（GTA Wiki「Fonts」词条 + gta-sanandreas.com）：
+     · Diploma Regular —— **「San Andreas」标题字，黑体哥特/Blackletter/Fraktur**
+                          → 开源替身 UnifrakturMaguntia（OFL，19世纪正字法 Fraktur）
+                          → 第二选 Pirata One（海盗华丽风，装饰略繁）
+                          → 早期误用 Anton，方向错
+     · Pricedown       —— GTA 标志 + 任务名 + Mission Passed → Anton
+     · Beckett Regular —— 地名 / 官方站点 → Cinzel（碑铭体）
+     · Bank Gothic     —— 暂停菜单项 → Oswald
+     · Aharoni Bold / Futura LT Bold —— HUD（金钱/电台/字幕）→ Oswald
+   分工：hero 大标题 = Diploma 系哥特 + 绿渐变填充 + 厚白描边 + 黑落影（SA 招牌做法）；
+        分区标题 = Pricedown 系（任务名）；卡片标题 = Bank Gothic 系大写；
+        标签 = Beckett 系（地名）；数字 = HUD 绿。
+   其它：hero 上下黑边 = SA 过场的电影信箱；卡片悬停 = 菜单选中左侧绿条；
         分区背景图走 SA 载入画面那种棕调老照片（sepia）。
    亮色 = 洛圣都白天：沙色底 + 深橄榄字，绿降到 6b8f23。
 ================================================================== */
 :root[data-style="gtasa"],
 :root[data-style="gtasa"] * { color-scheme: dark; }
 :root[data-style="gtasa"] {
-  /* Pricedown → Anton（自托管开源替身，见 assets/fonts/） */
-  --serif: "Pricedown", "Anton", "Impact", "Arial Black", "PingFang SC", sans-serif;
+  /* Diploma → UnifrakturMaguntia（粗壮 Blackletter，SA 标题字真身）。
+     Pirata One 海盗华丽风作次选；原版 Diploma 字体表最后兜底。 */
+  --serif: "UnifrakturMaguntia", "Pirata One", "Diploma", "Old English Text MT", "PingFang SC", serif;
+  /* Pricedown → Anton（任务名 / 标志字） */
+  --sa-mission: "Anton", "Pricedown", "Impact", "Arial Black", "PingFang SC", sans-serif;
+  /* Beckett → Cinzel（地名） */
+  --sa-place: "Cinzel", "Beckett", "PingFang SC", serif;
   /* Bank Gothic / Aharoni → Oswald（窄体大写，SA 菜单与 HUD 的味道） */
   --sans: "Oswald", "Bank Gothic", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: "Oswald", "Bank Gothic", "Arial Narrow", "Helvetica Neue", sans-serif;
@@ -2643,28 +2674,80 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 :root[data-style="gtasa"] .btn:focus-visible,
 :root[data-style="gtasa"] .toc a:hover,
 :root[data-style="gtasa"] .toc a:focus-visible { background: var(--accent); color: #171a12; border-color: var(--accent); }
-/* 标题 = GTA 标志字（Pricedown）：绿渐变填充 + 粗黑描边 + 立体落影 */
-:root[data-style="gtasa"] .hero-title,
-:root[data-style="gtasa"] .sec-head h2,
-:root[data-style="gtasa"] .foot-word {
-  font-family: var(--serif); font-weight: 400; text-transform: uppercase; letter-spacing: 0.03em;
-  color: var(--accent); text-shadow: var(--sa-outline);
+/* —— HERO 大标题 = Diploma 系黑体哥特（UnifrakturMaguntia）：SA 招牌做法 ——
+   绿渐变填充 + 厚白描边（3px，Blackletter 笔画细，需要粗描边）+ 黑落影。
+   注意：之前误用 1.6px 黑描边——对 Blackletter 太细，且方向错（SA 是白描边不是黑描边）。 */
+:root[data-style="gtasa"] .hero-title {
+  font-family: var(--serif); font-weight: 400;
+  text-transform: none; letter-spacing: 0.02em;
+  color: var(--accent);
+  font-size: clamp(52px, 11vw, 132px);
 }
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  :root[data-style="gtasa"] .hero-title,
-  :root[data-style="gtasa"] .sec-head h2 {
+  :root[data-style="gtasa"] .hero-title {
     background-image: var(--sa-logo);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 2px #0b0d08;
-    text-shadow: none;
-    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.7));
+    /* 关键：先画一圈白描边（实际是 paint-order 的 stroke 一致），再叠加落影。
+       用 -webkit-text-stroke 粗 3px 是最接近 SA 真身（4px 白边）的折中。 */
+    -webkit-text-stroke: 3px #ece7d2;
+    text-shadow:
+      3px 3px 0 #0b0d08,
+      6px 6px 0 rgba(0, 0, 0, 0.5);
+    /* 再叠一层 filter drop-shadow 加远景黑落影 */
+    filter: drop-shadow(4px 6px 8px rgba(0, 0, 0, 0.75));
   }
-  /* 分区标题字号小一圈，描边按比例收细，否则笔画会被吃掉了 */
-  :root[data-style="gtasa"] .sec-head h2 { -webkit-text-stroke-width: 1.4px; }
+}
+/* —— 标题背后加暗角衬底：保证 hero 大字在任何屏幕任何主题下都清晰 —— */
+/* 用 ::before 在标题自身后画暗角；hero-title 本身要 relative 才能托住 */
+:root[data-style="gtasa"] .hero-title { position: relative; display: inline-block; }
+:root[data-style="gtasa"] .hero-title::before {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: calc(100% + 64px); height: calc(100% + 40px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center,
+    rgba(11, 13, 8, 0.78) 0%, rgba(11, 13, 8, 0.55) 42%, rgba(11, 13, 8, 0.25) 72%, transparent 92%);
+  z-index: -1; pointer-events: none;
+  border-radius: 4px;
+}
+/* 亮色模式用浅米色暗角，托住绿字同时不抢戏 */
+:root[data-style="gtasa"][data-theme="light"] .hero-title::before,
+:root[data-style="gtasa"]:not([data-theme="dark"]) .hero-title::before {
+  background: radial-gradient(ellipse at center,
+    rgba(232, 226, 200, 0.65) 0%, rgba(232, 226, 200, 0.4) 42%, rgba(232, 226, 200, 0.18) 72%, transparent 92%);
+}
+/* —— 分区标题 = Pricedown 系（任务名 / Mission Passed），实色 + 描边，不做渐变 —— */
+:root[data-style="gtasa"] .sec-head h2,
+:root[data-style="gtasa"] .foot-word {
+  font-family: var(--sa-mission); font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--accent); text-shadow: var(--sa-outline);
 }
 /* 小字的英文字号标签要还原实色，否则会被上面的透明填充吃掉 */
 :root[data-style="gtasa"] .sec-head h2 .en { color: var(--sa-hud); -webkit-text-fill-color: var(--sa-hud); }
+/* —— 地名标签 = Beckett 系碑铭体（SA 里 Location 文字就这一套）—— */
+:root[data-style="gtasa"] .card-tag {
+  font-family: var(--sa-place); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--sa-hud); color: #10130a; border: 1px solid #0b0d08;
+}
+/* —— 通缉星级：SA 六星通缉的星星，挂在 hero 右上角 —— */
+:root[data-style="gtasa"] .hero { position: relative; overflow: hidden; }
+:root[data-style="gtasa"] .hero::before {
+  content: ""; display: block; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(#060803, #060803),
+    linear-gradient(#060803, #060803);
+  background-size: 100% 4.2vh, 100% 4.2vh;
+  background-position: 0 0, 0 100%;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+}
+/* 信箱下沿一条橄榄细线，像 SA 载入画面的分界 */
+:root[data-style="gtasa"] .hero::after {
+  content: ""; display: block; position: absolute; left: 0; right: 0; height: 1px; z-index: 0;
+  pointer-events: none; background: rgba(184, 217, 74, 0.35);
+  top: 4.2vh;
+}
+:root[data-style="gtasa"] .hero > * { position: relative; z-index: 1; }
 :root[data-style="gtasa"] .sec-idx,
 :root[data-style="gtasa"] .sec-count { color: var(--sa-hud); }
 :root[data-style="gtasa"] .brand-dot {
@@ -4732,9 +4815,15 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 }
 :root[data-style="memphis"] .hero-title, :root[data-style="memphis"] .sec-head h2 {
   font-family: var(--serif); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink);
+  /* 点阵全屏铺底会穿过 hero 区；给标题加柔白 halo 保清晰 */
+  text-shadow:
+    0 0 6px var(--bg),
+    0 0 12px var(--bg),
+    1px 1px 0 var(--bg),
+    -1px -1px 0 var(--bg);
 }
 :root[data-style="memphis"] .hero-title { border-bottom: 6px solid var(--mp-cyan); padding-bottom: 0.04em; }
-:root[data-style="memphis"] .sec-head h2 .en { color: var(--accent); }
+:root[data-style="memphis"] .sec-head h2 .en { color: var(--accent); -webkit-text-stroke: 0; text-shadow: 0 0 6px var(--bg); }
 :root[data-style="memphis"] .card, :root[data-style="memphis"] .glass {
   border-radius: 0; border: 3px solid var(--glass-border); background: var(--card-bg);
   -webkit-backdrop-filter: none; backdrop-filter: none; position: relative; overflow: hidden;
@@ -4792,8 +4881,14 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 :root[data-style="pop"] .hero-title, :root[data-style="pop"] .sec-head h2 {
   font-family: var(--serif); font-weight: 400; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink);
   -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill;
+  /* Ben-Day 点网罩住全屏；用柔和黄底 halo 衬出黑字（pop 主色即黄） */
+  text-shadow:
+    0 0 8px var(--pop-yellow),
+    0 0 16px rgba(255, 225, 77, 0.7),
+    2px 2px 0 var(--pop-yellow),
+    -2px -2px 0 var(--pop-yellow);
 }
-:root[data-style="pop"] .sec-head h2 .en { color: var(--accent); -webkit-text-stroke: 0; }
+:root[data-style="pop"] .sec-head h2 .en { color: var(--accent); -webkit-text-stroke: 0; text-shadow: 0 0 6px var(--pop-yellow); }
 :root[data-style="pop"] .card, :root[data-style="pop"] .glass {
   border-radius: 0; border: 4px solid var(--glass-border); background: var(--card-bg);
   -webkit-backdrop-filter: none; backdrop-filter: none;
@@ -4986,3 +5081,371 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 :root[data-style="washi"] .skin-chip[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 :root[data-style="washi"] .sm-panel { background-color: var(--card-bg); border: 1px solid var(--glass-border); }
 :root[data-style="washi"] .sm-item[aria-selected="true"] { background: var(--accent); color: #fff; }
+
+/* ==================================================================
+   去同质化补丁（2026-09-10）：给后 18 套补专属结构。
+   早期皮肤平均 150 行有 hero 母题 / 分区装饰 / 动效；
+   后 18 套平均 55 行只换了变量。本块给每套加 1 个 hero 母题 +
+   1 个卡片签名构件 + 1 处动效或纯静态细节，避免「换色皮」。
+   选择器用 :root[data-style="X"]，靠后规则自然覆盖。
+================================================================== */
+
+/* —— Pokémon Red/Blue：对话框（蓝色双边框）+ ▶ 闪烁箭头 —— */
+:root[data-style="pokemon"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 60% at 50% 38%, rgba(155,188,15,0.12), transparent 72%);
+}
+:root[data-style="pokemon"] .card {
+  position: relative;
+  border-radius: 14px; border: 3px solid #3068c4;
+  outline: 2px solid var(--card-bg); outline-offset: 3px;
+  background: var(--card-bg);
+}
+:root[data-style="pokemon"] .card:hover, :root[data-style="pokemon"] .card:focus-visible {
+  border-color: #ffcb05;
+}
+:root[data-style="pokemon"] .card::after {
+  content: "▶"; position: absolute; right: 16px; bottom: 12px;
+  font-size: 14px; color: #3068c4;
+  animation: pk-blink 0.8s steps(2,end) infinite;
+}
+@keyframes pk-blink { 50% { opacity: 0; } }
+
+/* —— Game Boy DMG：右上角屏幕残影 + 非对称圆角卡（DMG 外壳大右下圆角） —— */
+:root[data-style="gb"] .hero { position: relative; overflow: hidden; }
+:root[data-style="gb"] .hero::before {
+  content: ""; position: absolute; right: 6vw; top: 10vh;
+  width: 120px; height: 84px;
+  background: linear-gradient(180deg, #8bac0f 0%, #9bbc0f 100%);
+  border-radius: 4px 4px 22px 4px;
+  border: 4px solid #c4cfa1;
+  box-shadow: inset 0 2px 8px rgba(15,56,15,0.4), 0 0 0 1px #8b8b8b;
+}
+:root[data-style="gb"] .card {
+  border-radius: 4px 4px 22px 4px;
+  background: linear-gradient(180deg, #8bac0f 0%, #9bbc0f 100%);
+  border: 3px solid #0f380f;
+  box-shadow: inset 0 1px 0 rgba(15,56,15,0.5);
+}
+
+/* —— MS-DOS：C:\> 提示符 + 闪烁方块光标 —— */
+:root[data-style="dos"] .hero-title::before { content: "C:\\> "; color: var(--ink); opacity: 0.85; }
+:root[data-style="dos"] .hero-title::after {
+  content: "█"; margin-left: 6px; color: var(--ink);
+  animation: dos-cursor 1s steps(2,end) infinite;
+}
+@keyframes dos-cursor { 50% { opacity: 0; } }
+:root[data-style="dos"] .card {
+  border-radius: 0; border: 1px solid var(--line-2);
+  outline: 1px solid var(--line); outline-offset: 3px;
+}
+
+/* —— 老 Mac System 7：黑色标题栏 + 细横纹 + 关闭方块 + 硬投影 —— */
+:root[data-style="mac7"] .card {
+  position: relative;
+  border-radius: 0; border: 1px solid #000;
+  box-shadow: 2px 2px 0 #b9b9ad, 4px 4px 0 #000;
+  padding-top: 28px;
+}
+:root[data-style="mac7"] .card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 16px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #404040 0%, #1a1a1a 100%);
+  border-bottom: 1px solid #000;
+}
+:root[data-style="mac7"] .card::after {
+  content: ""; position: absolute; top: 3px; left: 5px; width: 10px; height: 10px;
+  border: 1px solid #fff; box-shadow: 0 0 0 1px #000;
+}
+
+/* —— Winamp Y2K：均衡器跳动条 + 铬金属蓝渐变卡 —— */
+:root[data-style="winamp"] .hero { position: relative; overflow: hidden; }
+:root[data-style="winamp"] .hero::before {
+  content: ""; position: absolute; bottom: 12vh; left: 50%; transform: translateX(-50%);
+  width: 280px; height: 56px;
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 12px, transparent 12px 24px);
+          mask-image: repeating-linear-gradient(90deg, #000 0 12px, transparent 12px 24px);
+  background-color: var(--accent);
+  animation: wa-eq 1.2s steps(8, end) infinite;
+  opacity: 0.85;
+}
+@keyframes wa-eq {
+  0%,100% { transform: translateX(-50%) scaleY(.35); }
+  50%     { transform: translateX(-50%) scaleY(1); }
+}
+:root[data-style="winamp"] .card {
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.14), transparent 36%),
+    linear-gradient(135deg, #4a7eb8 0%, #2c4f7c 100%);
+  border: 1px solid var(--line-2);
+}
+
+/* —— CRT 绿终端：闪烁方块光标 + 屏幕曲率暗角 —— */
+:root[data-style="crt"] .hero-title::after {
+  content: "█"; margin-left: 6px; color: var(--crt-glow, var(--accent));
+  animation: crt-blink 1s steps(2,end) infinite;
+}
+@keyframes crt-blink { 50% { opacity: 0; } }
+:root[data-style="crt"] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 120% 100% at 50% 50%, transparent 60%, rgba(0,0,0,0.6) 100%);
+}
+
+/* —— RDR2：右上三层同心圆核心（生命/体力/死眼） + 卡片金色双线 —— */
+:root[data-style="rdr2"] .hero { position: relative; overflow: hidden; }
+:root[data-style="rdr2"] .hero::before {
+  content: ""; position: absolute; right: 4vw; top: 14vh;
+  width: 140px; height: 140px; border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 38%, var(--accent) 38% 42%, transparent 42% 54%,
+                    var(--accent) 54% 58%, transparent 58% 70%,
+                    var(--accent) 70% 74%, transparent 74% 100%);
+  opacity: 0.85;
+}
+:root[data-style="rdr2"] .card {
+  border-radius: 0; border: 1px solid var(--line);
+  border-top: 1px solid var(--accent); border-bottom: 3px double var(--accent);
+  box-shadow: none;
+}
+:root[data-style="rdr2"] .hero-title { font-style: italic; letter-spacing: 0.02em; }
+
+/* —— Persona 5：红黑锯齿斜条背景 + 卡片正负倾斜 1.5° —— */
+:root[data-style="p5"] .hero { position: relative; overflow: hidden; }
+:root[data-style="p5"] .hero::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(115deg,
+    transparent 0 36%, #000 36% 40%, transparent 40% 52%,
+    #e50914 52% 56%, transparent 56% 68%,
+    #000 68% 72%, transparent 72% 82%,
+    #e50914 82% 86%, transparent 86% 100%);
+  opacity: 0.95;
+}
+:root[data-style="p5"] .hero > * { position: relative; z-index: 1; }
+:root[data-style="p5"] .card { transition: transform 0.18s ease; }
+:root[data-style="p5"] .card:nth-of-type(even):hover { transform: translateY(-2px) rotate(-1.5deg); }
+:root[data-style="p5"] .card:nth-of-type(odd):hover { transform: translateY(-2px) rotate(1.5deg); }
+
+/* —— 传送门 Aperture：旋转光圈 + 测试舱 stencil 编号 —— */
+:root[data-style="aperture"] .hero { position: relative; overflow: hidden; }
+:root[data-style="aperture"] .hero::before {
+  content: ""; position: absolute; right: 4vw; top: 10vh;
+  width: 150px; height: 150px; border-radius: 50%;
+  background:
+    conic-gradient(from 0deg,
+      var(--accent) 0 6%, transparent 6% 18%,
+      var(--accent) 18% 24%, transparent 24% 36%,
+      var(--accent) 36% 42%, transparent 42% 54%,
+      var(--accent) 54% 60%, transparent 60% 72%,
+      var(--accent) 72% 78%, transparent 78% 90%,
+      var(--accent) 90% 96%, transparent 96% 100%);
+  animation: ap-spin 14s linear infinite;
+}
+@keyframes ap-spin { to { transform: rotate(360deg); } }
+:root[data-style="aperture"] .card-tag::before {
+  content: "TEST CHAMBER 0"; display: block;
+  font-size: 9px; opacity: 0.65; letter-spacing: 0.1em;
+}
+
+/* —— Halo HUD：顶部护盾/护甲双色条 + 六角切角卡片 —— */
+:root[data-style="halo"] .hero { position: relative; }
+:root[data-style="halo"] .hero::before {
+  content: ""; position: absolute; top: -8px; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg,
+    var(--accent) 0 45%, transparent 45% 55%,
+    var(--halo-amber, #ffb000) 55% 70%, transparent 70% 100%);
+  z-index: 5; pointer-events: none;
+}
+:root[data-style="halo"] .card {
+  border: 1px solid var(--line-2);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+:root[data-style="halo"] .card-num { font-family: var(--mono); color: var(--accent); letter-spacing: 0.05em; }
+
+/* —— Splatoon：墨滴 blob 母题 + 不对称圆角卡（墨滴形状） —— */
+:root[data-style="splatoon"] .hero { position: relative; overflow: hidden; }
+:root[data-style="splatoon"] .hero::before {
+  content: ""; position: absolute; left: -4vw; top: 6vh;
+  width: 220px; height: 220px;
+  border-radius: 60% 40% 65% 35% / 55% 45% 50% 50%;
+  background: var(--accent); opacity: 0.8;
+}
+:root[data-style="splatoon"] .hero::after {
+  content: ""; position: absolute; right: -2vw; top: 22vh;
+  width: 130px; height: 130px;
+  border-radius: 40% 60% 50% 50% / 60% 40% 55% 45%;
+  background: #00c4a7; opacity: 0.7;
+}
+:root[data-style="splatoon"] .card {
+  border-radius: 30px 30px 30px 50px; border: 4px solid var(--ink);
+}
+
+/* —— 包豪斯：红圆 / 蓝三角 / 黄方三原色几何母题 —— */
+:root[data-style="bauhaus"] .hero { position: relative; }
+:root[data-style="bauhaus"] .hero::before {
+  content: ""; position: absolute; right: 3vw; top: 13vh;
+  width: 130px; height: 130px; border-radius: 50%;
+  background: #e2231a; opacity: 0.92;
+  z-index: 0; pointer-events: none;
+}
+:root[data-style="bauhaus"] .hero::after {
+  content: ""; position: absolute; right: 14vw; top: 19vh;
+  width: 0; height: 0;
+  border-left: 70px solid transparent; border-right: 70px solid transparent;
+  border-bottom: 120px solid #0067a5; opacity: 0.92;
+  z-index: 0; pointer-events: none;
+}
+:root[data-style="bauhaus"] .hero > * { position: relative; z-index: 1; }
+:root[data-style="bauhaus"] .card { position: relative; overflow: hidden; }
+:root[data-style="bauhaus"] .card::after {
+  content: ""; position: absolute; top: 0; left: 0;
+  width: 32px; height: 32px; background: #f6d000;
+}
+
+/* —— 装饰艺术：金色扇形 + 卡片双线分隔 —— */
+:root[data-style="deco"] .hero { position: relative; }
+:root[data-style="deco"] .hero::before {
+  content: ""; position: absolute; right: -4vw; top: 12vh;
+  width: 320px; height: 320px; border-radius: 50%;
+  background: conic-gradient(from 270deg at 0% 50%,
+    transparent 0deg 50deg, var(--accent) 50deg 70deg, transparent 70deg 90deg,
+    var(--accent) 90deg 110deg, transparent 110deg 180deg);
+  opacity: 0.55; z-index: 0; pointer-events: none;
+}
+:root[data-style="deco"] .hero > * { position: relative; z-index: 1; }
+:root[data-style="deco"] .card {
+  border: 1px solid var(--accent);
+  border-bottom: 3px double var(--accent);
+}
+
+/* —— 孟菲斯：锯齿 zigzag + terrazzo 点阵 + 不对称圆角 —— */
+:root[data-style="memphis"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 14% 22%, #ff4d8d 0 7px, transparent 8px),
+    radial-gradient(circle at 80% 18%, #00c2c2 0 6px, transparent 7px),
+    radial-gradient(circle at 22% 78%, #ffd000 0 8px, transparent 9px),
+    radial-gradient(circle at 88% 88%, #ff4d8d 0 5px, transparent 6px);
+  opacity: 0.4;
+}
+:root[data-style="memphis"] .hero { position: relative; overflow: hidden; }
+:root[data-style="memphis"] .hero::before {
+  content: ""; position: absolute; top: 22vh; left: -2vw;
+  width: 260px; height: 22px;
+  background-image: linear-gradient(135deg, #ff4d8d 25%, transparent 25% 50%, #00c2c2 50% 75%, transparent 75%);
+  background-size: 22px 22px;
+  transform: rotate(-6deg);
+}
+:root[data-style="memphis"] .card {
+  border: 3px solid #000; border-radius: 12px 28px 12px 28px;
+}
+
+/* —— 波普艺术：Ben-Day 大点阵 + 漫画对话框 + 厚黑边 + 投影 —— */
+:root[data-style="pop"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, var(--ink, #000) 1.4px, transparent 2.4px);
+  background-size: 14px 14px; opacity: 0.22;
+}
+:root[data-style="pop"] .card {
+  border: 4px solid #000; border-radius: 18px;
+  box-shadow: 6px 6px 0 #000;
+}
+:root[data-style="pop"] .card-tag {
+  background: #fcee0a; color: #000; border: 3px solid #000;
+  border-radius: 999px; padding: 4px 12px; position: relative;
+}
+:root[data-style="pop"] .card-tag::after {
+  content: ""; position: absolute; bottom: -11px; left: 16px;
+  border: 9px solid transparent; border-top-color: #000;
+}
+
+/* —— 瑞士国际主义：12 列网格 + 卡片仅顶红线 —— */
+:root[data-style="swiss"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 calc(8.333% - 1px),
+      rgba(255,0,0,0.06) calc(8.333% - 1px) 8.333%);
+}
+:root[data-style="swiss"] .card {
+  border: 0; border-top: 4px solid var(--accent); border-radius: 0;
+  box-shadow: none; padding-left: 0; padding-right: 0;
+}
+:root[data-style="swiss"] .card:hover { background: var(--accent); color: #fff; }
+:root[data-style="swiss"] .card:hover .card-title,
+:root[data-style="swiss"] .card:hover .card-num,
+:root[data-style="swiss"] .card:hover .card-go,
+:root[data-style="swiss"] .card:hover .card-tag { color: #fff; }
+
+/* —— 蒸汽波：罗马半身像剪影 + 微型透视网格 —— */
+:root[data-style="vaporwave"] .hero { position: relative; }
+:root[data-style="vaporwave"] .hero::before {
+  content: ""; position: absolute; right: 3vw; top: 14vh;
+  width: 130px; height: 170px;
+  border-radius: 50% 50% 4px 4px / 65% 65% 4px 4px;
+  background: radial-gradient(ellipse 45% 18% at 50% 30%,
+    transparent 70%, var(--vw-cyan, #00f0ff) 71% 73%, transparent 74%);
+  border: 2px solid var(--vw-cyan, #00f0ff); opacity: 0.7;
+  z-index: 0; pointer-events: none;
+}
+:root[data-style="vaporwave"] .hero::after {
+  content: ""; position: absolute; right: 5vw; top: 42vh;
+  width: 200px; height: 80px;
+  background-image:
+    linear-gradient(to right, transparent 0, var(--accent) 0 1px, transparent 1px 100%),
+    linear-gradient(to bottom, transparent 0, var(--accent) 0 1px, transparent 1px 100%);
+  background-size: 36px 36px;
+  transform: perspective(220px) rotateX(58deg);
+  transform-origin: bottom center;
+  opacity: 0.55;
+  z-index: 0; pointer-events: none;
+}
+:root[data-style="vaporwave"] .hero > * { position: relative; z-index: 1; }
+
+/* —— 和纸和风：朱印圆章 + 胶带贴纸条 + 纸纤维纹理 —— */
+:root[data-style="washi"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(43,58,85,0.025) 2px 3px),
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(217,74,43,0.015) 2px 3px);
+}
+:root[data-style="washi"] .hero { position: relative; }
+:root[data-style="washi"] .hero::before {
+  content: "印"; display: flex; align-items: center; justify-content: center;
+  position: absolute; right: 6vw; top: 12vh;
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid var(--accent); color: var(--accent);
+  font-family: var(--serif); font-size: 30px; font-weight: 700;
+  transform: rotate(-12deg); opacity: 0.85;
+}
+:root[data-style="washi"] .hero::after {
+  content: ""; position: absolute; left: 4vw; top: 6vh;
+  width: 130px; height: 20px;
+  background: rgba(217,74,43,0.4); transform: rotate(-4deg);
+  box-shadow: 0 4px 0 rgba(43,58,85,0.15);
+}
+:root[data-style="washi"] .card { box-shadow: 2px 3px 0 rgba(43,58,85,0.12); }
+
+/* —— 减少动效（统一出口：尊重 prefers-reduced-motion） —— */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style="aperture"] .hero::before,
+  :root[data-style="winamp"] .hero::before { animation: none; }
+  :root[data-style="pokemon"] .card::after,
+  :root[data-style="dos"] .hero-title::after,
+  :root[data-style="crt"] .hero-title::after { animation: none; }
+}
+
+/* —— 重新启用后 18 套的 hero 装饰 —— 装饰层关闭规则把 .hero::before/::after 全
+   display:none 了，本块针对新增了 hero 母题的皮肤重新 display:block。
+   （靠后规则 + 同特异度赢。） */
+:root[data-style="gb"] .hero::before,
+:root[data-style="bauhaus"] .hero::before,
+:root[data-style="bauhaus"] .hero::after,
+:root[data-style="deco"] .hero::before,
+:root[data-style="splatoon"] .hero::before,
+:root[data-style="splatoon"] .hero::after,
+:root[data-style="vaporwave"] .hero::before,
+:root[data-style="vaporwave"] .hero::after,
+:root[data-style="rdr2"] .hero::before,
+:root[data-style="aperture"] .hero::before,
+:root[data-style="halo"] .hero::before { display: block; }
