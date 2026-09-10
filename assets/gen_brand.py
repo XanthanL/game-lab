@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""GAME LAB 品牌资产生成：favicon（多尺寸 PNG + SVG）与 OG 分享图。
+"""GAME LAB 品牌资产生成：favicon（多尺寸 PNG + SVG）。
 
 设计语言与站点一致——石墨底 + 液态玻璃（45° 双端高光 / 内缩暗环 / 1px 描边）
-+ 小格子。全部 PIL 手绘，无外部依赖，可重复执行。
++ 2×2 小格子。全部 PIL 手绘，无外部依赖，可重复执行。
+
+本文件同时充当绘图原语库（渐变 / 遮罩 / 高光 / 内阴影 / 字距），
+分享缩略图从 assets/share_card.py 复用它。
 
     venv python assets/gen_brand.py
 """
@@ -175,80 +178,6 @@ def tracked(draw, xy, text, fnt, fill, tracking, anchor_x="left"):
     return total
 
 
-def build_og(w=1200, h=630):
-    """微信 / OG 分享图：底纹 + 格子 + 玻璃卡片承载标题。
-
-    微信在聊天里会把 og:image 裁成方形缩略图，所以关键信息全部收在中央安全区。
-    """
-    im = Image.new("RGB", (w, h), (15, 15, 17))
-
-    # 1) 背景图底纹（首屏那张玻璃光柱）
-    hero = os.path.join(BG, "hero.jpg")
-    if os.path.exists(hero):
-        bg = Image.open(hero).convert("RGB")
-        sw, sh = bg.size
-        scale = max(w / sw, h / sh)
-        bg = bg.resize((int(sw * scale), int(sh * scale)), Image.LANCZOS)
-        bg = bg.crop((
-            (bg.width - w) // 2, (bg.height - h) // 2,
-            (bg.width - w) // 2 + w, (bg.height - h) // 2 + h,
-        ))
-        im = Image.blend(im, bg, 0.55)
-
-    d = ImageDraw.Draw(im)
-
-    # 2) 小格子（RGBA 叠加层，直接画线会忽略 alpha 变纯白）
-    grid = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(grid)
-    step = 55
-    for x in range(0, w, step):
-        gd.line([(x, 0), (x, h)], fill=(255, 255, 255, 18), width=1)
-    for y in range(0, h, step):
-        gd.line([(0, y), (w, y)], fill=(255, 255, 255, 18), width=1)
-    im = Image.alpha_composite(im.convert("RGBA"), grid).convert("RGB")
-
-    # 3) 中央玻璃卡片——宽度压进 640px：微信聊天缩略图按方形中心裁切，
-    #    超出部分会被切掉
-    cw, ch = 640, 430
-    cx0, cy0 = (w - cw) // 2, (h - ch) // 2 - 8
-    cbox = [cx0, cy0, cx0 + cw, cy0 + ch]
-    cmask = rounded_mask((w, h), cbox, 34)
-
-    card = Image.new("RGB", (w, h), (0, 0, 0))
-    card.paste(Image.new("RGB", (w, h), (255, 255, 255)), (0, 0), Image.eval(cmask, lambda v: int(v * 0.06)))
-    sheen = diag_sheen((w, h), blur=6)
-    card.paste(Image.new("RGB", (w, h), GLASS_WHITE), (0, 0),
-               Image.eval(Image.composite(sheen, Image.new("L", (w, h), 0), cmask), lambda v: int(v * 0.55)))
-    card.paste(Image.new("RGB", (w, h), (0, 0, 0)), (0, 0),
-               Image.composite(inner_shadow(cmask, 6, 11, 170), Image.new("L", (w, h), 0), cmask))
-    rim = Image.new("L", (w, h), 0)
-    ImageDraw.Draw(rim).rounded_rectangle(cbox, radius=34, outline=58, width=2)
-    card.paste(GLASS_WHITE, (0, 0), rim)
-    im = Image.composite(card, im, cmask)
-
-    d = ImageDraw.Draw(im)
-
-    # 4) 文字
-    f_word = font("C:/Windows/Fonts/georgia.ttf", 92)
-    f_cn = font("C:/Windows/Fonts/msyh.ttc", 34)
-    f_meta = font("C:/Windows/Fonts/msyh.ttc", 20)
-    f_lat = font("C:/Windows/Fonts/arial.ttf", 19)
-
-    cy = cy0 + 74
-    tracked(d, (w // 2, cy), "GAME LAB", f_word, (246, 246, 244), 8, anchor_x="center")
-
-    ly = cy + 108
-    lw = tracked(d, (w // 2, ly), "前 端 实 验 合 集", f_cn, (188, 188, 192), 0, anchor_x="center")
-    d.line([(w // 2 - lw // 2, ly + 54), (w // 2 + lw // 2, ly + 54)], fill=(255, 255, 255, 60), width=1)
-
-    tracked(d, (w // 2, ly + 76), "7 款网页游戏 · 11 部像素舞台剧 · 静态部署",
-            f_meta, (150, 150, 156), 0, anchor_x="center")
-
-    tracked(d, (w // 2, h - 54), "XANTHANL.GITHUB.IO / GAME-LAB", f_lat, (120, 120, 128), 6, anchor_x="center")
-
-    return im
-
-
 def main():
     icon = build_icon(512)
     targets = {"favicon-32.png": 32, "favicon-48.png": 48,
@@ -265,9 +194,7 @@ def main():
         fh.write(ICON_SVG)
     print("favicon.svg")
 
-    og = build_og()
-    og.save(os.path.join(HERE, "og-gamelab.jpg"), "JPEG", quality=82, optimize=True, progressive=True)
-    print("og-gamelab.jpg", og.size)
+    # 分享图已并入 assets/gen_share_cards.py（正方形纯中文设计系统），本文件只画图标。
 
 
 if __name__ == "__main__":

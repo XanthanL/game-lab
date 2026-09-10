@@ -124,8 +124,15 @@ That single fact drives three conventions, and breaking any of them 404s a subpr
 3. **`.nojekyll` must stay.** Pages runs Jekyll over the artifact otherwise, and Jekyll
    silently drops `_next/` — the whole dashboard would deploy looking empty.
 
-Share cards: `python assets/gen_share_cards.py` redraws the 600×800 `og.png` posters
-(needs Pillow + numpy) referenced by the horror / PVZ / Mars pages and the site itself.
+Share thumbnails: `python assets/gen_share_cards.py` redraws all eleven of them at once
+(needs Pillow + numpy). WeChat crops `og:image` down to a tiny square thumbnail in chat,
+so these images **are** 1200×1200 squares and carry **Chinese type only** — but there is
+deliberately **no shared template**: each card is drawn in its own project's idiom
+(a lawn and seed packets for Plants vs Zombies, parchment and a compass rose for Europa
+1444, black plus a blood-red seal for Cursed House, a white panel and green button for
+Microsoft vs. Code…). Colours and type come from each site's own CSS
+(collector: `.workbuddy/shots/probe-style.js`). `assets/share_kit.py` holds the shared
+font/texture toolbox.
 
 ## Not in this repo
 

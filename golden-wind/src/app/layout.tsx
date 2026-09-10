@@ -3,10 +3,16 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://xanthanl.github.io/game-lab/golden-wind/out/'),
-  title: '金价观象台 · Gold Observatory',
+  title: '金价观象台',
   description: '金价观象台 — 实时查看 XAU / AU9999 金价，K 线 + 均线 + 金叉死叉信号。',
   openGraph: {
-    title: '金价观象台 · Gold Observatory',
+    title: '金价观象台',
+    description: '实时查看 XAU / AU9999 金价，K 线 + 均线 + 金叉死叉信号。',
+    images: [{ url: 'thumbnail.jpg', width: 1920, height: 1920 }],
+  },
+  twitter: {
+    card: 'summary',
+    title: '金价观象台',
     description: '实时查看 XAU / AU9999 金价，K 线 + 均线 + 金叉死叉信号。',
     images: ['thumbnail.jpg'],
   },

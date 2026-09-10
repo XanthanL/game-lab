@@ -116,8 +116,12 @@ cd golden-wind    && npm install && npm run build   # → golden-wind/out
 3. **根目录的 `.nojekyll` 不能删。** 否则 Pages 会跑 Jekyll，而 Jekyll 会把 `_next/` 静默丢掉——
    整个看板上线就是空的。
 
-分享卡：`python assets/gen_share_cards.py` 重画 600×800 的 `og.png` 海报
-（需要 Pillow + numpy），供恐怖游戏 / PVZ / 火星页面和站点本身引用。
+分享缩略图：`python assets/gen_share_cards.py` 一次重画全站 11 张（需要 Pillow + numpy）。
+微信在聊天里把 `og:image` 裁成很小的正方形缩略图，所以这些图**本身就是 1200×1200 正方形**、
+**只有纯中文**；但**不做统一模板**——每张都按它自己项目的长相画：
+草坪加种子栏的是植物大战僵尸，羊皮纸加罗盘的是欧陆风云，纯黑加血红咒印的是怨宅，
+白窗加绿按钮的是微软大战代码……底色、主色、字形气质都取自各站点自己的 CSS
+（采集脚本见 `.workbuddy/shots/probe-style.js`）。`assets/share_kit.py` 是共用的字体 / 纹理工具箱。
 
 ## 不在本仓库
 
