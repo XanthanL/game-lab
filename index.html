@@ -41,11 +41,14 @@
       t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }
     d.setAttribute("data-theme", t);
-    /* 风格：glass 液态玻璃（默认）、soft 新拟物、raw 新粗野、crete 砼核、
-       xp Windows XP Luna、w7 Windows 7 Aero、w10 Windows 10 Metro */
-    var st = localStorage.getItem("gl-style");
+    /* 风格：首页每次进入 / 刷新都**随机**换一套展示（49 套等概率，清单与
+       assets/i18n.js 的 GROUPS 同步维护）。随机结果写回 gl-style，
+       从首页点进子页时是同一套、不会跳变；在皮肤条上手动选仍然有效，
+       会一直用到下一次进首页。 */
     var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","diagonal"];
-    d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "glass");
+    var st = OK[Math.floor(Math.random() * OK.length)];
+    try { localStorage.setItem("gl-style", st); } catch (e) {}
+    d.setAttribute("data-style", st);
   } catch (e) {}
 })();
 </script>
