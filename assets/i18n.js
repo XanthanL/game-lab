@@ -76,16 +76,45 @@
     });
   }
 
-  /* ---------- 风格：7 套皮肤 ---------- */
+  /* ---------- 风格：48 套皮肤，按来源分成 8 组 ---------- */
   var SKEY = "gl-style";
-  /* 顺序 = 显示顺序。
-     chip  平铺按钮上的名字（写全）  short 顶栏下拉里的简称  full 无障碍标签用的全名 */
-  var STYLES = ["glass", "soft", "raw", "crete", "xp", "w7", "w10", "classic", "dream", "pool", "weird", "mc",
-                "gtavc", "gtasa", "gta4", "gta5", "pipboy", "construct",
-                "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk",
-                "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon",
-                "crt", "gb", "winamp", "dos", "mac7",
-                "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi"];
+  var GKEY = "gl-style-group";   /* 记住上次翻的是哪一组 */
+
+  /* GROUPS 是唯一事实源。STYLES 由它派生，保证「组里的键」和「总清单」永不脱节。
+     组序 = 页 tab 顺序；组内顺序 = 芯片显示顺序。 */
+  var GROUPS = [
+    { id: "texture", zh: "质感", en: "Texture",
+      styles: ["glass", "soft", "clay", "crete", "raw"] },
+    { id: "os", zh: "系统", en: "OS",
+      styles: ["xp", "w7", "w10", "classic", "mac7", "dos"] },
+    { id: "retro", zh: "复古数字", en: "Retro",
+      styles: ["fc", "gb", "crt", "winamp", "pokemon"] },
+    { id: "net", zh: "网络美学", en: "Net",
+      styles: ["dream", "pool", "weird", "vaporwave", "synthwave", "glitch"] },
+    { id: "art", zh: "艺术运动", en: "Art",
+      styles: ["construct", "bauhaus", "deco", "memphis", "pop", "swiss", "morandi", "washi",
+               "decon", "ink", "futurism", "diagonal"] },
+    { id: "game", zh: "游戏界面", en: "Games",
+      styles: ["mc", "gtavc", "gtasa", "gta4", "gta5", "pipboy", "cyberpunk",
+               "rdr2", "p5", "aperture", "halo", "splatoon", "skate"] },
+    { id: "draft", zh: "图纸", en: "Draft",
+      styles: ["blueprint"] },
+    { id: "tech", zh: "科技品牌", en: "Tech",
+      styles: ["hermes"] }
+  ];
+  var STYLES = GROUPS.reduce(function (acc, g) { return acc.concat(g.styles); }, []);
+  /* 反查：皮肤键 → 组 id（选皮肤时用来自动跳到它所在的组） */
+  var GROUP_OF = {};
+  GROUPS.forEach(function (g) { g.styles.forEach(function (s) { GROUP_OF[s] = g.id; }); });
+  function groupById(id) {
+    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i];
+    return GROUPS[0];
+  }
+  function normGroup(id) {
+    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return id;
+    return GROUPS[0].id;
+  }
+  /* chip  平铺按钮上的名字（写全）  short 顶栏下拉里的简称  full 无障碍标签用的全名 */
   var SMETA = {
     glass: { short: { zh: "玻璃",  en: "GLAS"  }, chip: { zh: "液态玻璃",    en: "Liquid Glass" }, full: { zh: "液态玻璃 · Liquid Glass", en: "Liquid Glass" } },
     soft:  { short: { zh: "拟物",  en: "SOFT"  }, chip: { zh: "新拟物",      en: "Neumorphism" },   full: { zh: "新拟物 · Neumorphism",    en: "Neumorphism" } },
@@ -128,16 +157,25 @@
     pop: { short: { zh: "波普", en: "POP" }, chip: { zh: "波普艺术", en: "Pop Art" }, full: { zh: "波普艺术 · Pop Art", en: "Pop Art" } },
     swiss: { short: { zh: "瑞士", en: "CH" }, chip: { zh: "瑞士国际主义", en: "Swiss" }, full: { zh: "瑞士国际主义 · Swiss", en: "Swiss International" } },
     vaporwave: { short: { zh: "蒸汽", en: "VAPR" }, chip: { zh: "蒸汽波", en: "Vaporwave" }, full: { zh: "蒸汽波 · Vaporwave", en: "Vaporwave" } },
-    washi: { short: { zh: "和纸", en: "WASHI" }, chip: { zh: "和纸和风", en: "Washi" }, full: { zh: "和纸和风 · Washi", en: "Washi" } }
+    morandi: { short: { zh: "莫兰迪", en: "MOR" }, chip: { zh: "莫兰迪灰", en: "Morandi" }, full: { zh: "莫兰迪高级灰 · Morandi", en: "Morandi Muted" } },
+    skate: { short: { zh: "滑板", en: "SK8" }, chip: { zh: "Skate Story", en: "Skate Story" }, full: { zh: "Skate Story · 玻璃恶魔滑板", en: "Skate Story · Glass Demon" } },
+    washi: { short: { zh: "和纸", en: "WASHI" }, chip: { zh: "和纸和风", en: "Washi" }, full: { zh: "和纸和风 · Washi", en: "Washi" } },
+    decon: { short: { zh: "解构", en: "DECON" }, chip: { zh: "解构主义", en: "Deconstructivism" }, full: { zh: "解构主义 · Deconstructivism", en: "Deconstructivism" } },
+    ink: { short: { zh: "水墨", en: "INK" }, chip: { zh: "水墨", en: "Ink Wash" }, full: { zh: "水墨 · Ink Wash", en: "Chinese Ink Wash" } },
+    futurism: { short: { zh: "未来", en: "FUTR" }, chip: { zh: "未来主义", en: "Futurism" }, full: { zh: "未来主义 · Futurism", en: "Italian Futurism" } },
+    hermes: { short: { zh: "Hermes", en: "HERM" }, chip: { zh: "Hermes Agent", en: "Hermes Agent" }, full: { zh: "Hermes Agent · Nous Research", en: "Hermes Agent · Nous Research" } },
+    diagonal: { short: { zh: "对角", en: "DIAG" }, chip: { zh: "对角线计划", en: "Diagonal" }, full: { zh: "对角线计划 · Diagonal", en: "Diagonal Archive" } }
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
   var skinBar = document.getElementById("skinBar");
   function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "glass"; }
   function currentStyle() { return normStyle(root.getAttribute("data-style")); }
-  function setStyle(s, persist) {
+  function applyStyle(s, persist) {
     s = normStyle(s);
     root.setAttribute("data-style", s);
     if (persist) { try { localStorage.setItem(SKEY, s); } catch (e) {} }
+    /* 选到别的组的皮肤时，页码自动跟着跳过去，否则选中态看不见 */
+    if (skinBar && typeof jumpGroup === "function" && GROUP_OF[s] !== curGroup) jumpGroup(GROUP_OF[s], true);
     labelStyle();
   }
   function labelStyle() {
@@ -172,19 +210,62 @@
     if (t) t.setAttribute("aria-expanded", "false");
   }
 
-  /* 平铺版（优先）：把七颗按钮塞进 hero 里的 #skinBar */
+  /* 由 skinBar 分支在运行时填上，供 applyStyle 跨组跳转用（严格模式下块级函数不外泄） */
+  var jumpGroup = null;
+
+  /* 当前翻到哪一组：优先读 localStorage，否则落在当前皮肤所在的组 */
+  var curGroup = (function () {
+    var saved = null;
+    try { saved = localStorage.getItem(GKEY); } catch (e) {}
+    if (saved && groupById(saved).id === saved && groupById(saved).styles.indexOf(root.getAttribute("data-style")) !== -1) return saved;
+    return GROUP_OF[currentStyle()] || GROUPS[0].id;
+  })();
+
+  /* 平铺版（优先）：hero 里的 #skinBar → 组 tab 行 + 当前组芯片区。
+     44 套一次铺开会占掉大半屏，所以按 7 组收纳，一次只摊开 5~13 个。 */
   if (skinBar) {
     skinBar.insertAdjacentHTML("afterbegin",
-      '<span class="skin-label" data-zh="风格" data-en="Skin">风格</span>');
-    skinBar.insertAdjacentHTML("beforeend", STYLES.map(function (s) {
-      return '<button type="button" class="skin-chip" data-style="' + s + '" aria-pressed="false">' +
-               '<span data-zh="' + SMETA[s].chip.zh + '" data-en="' + SMETA[s].chip.en + '">' +
-                 SMETA[s].chip.zh +
-               '</span></button>';
-    }).join(""));
+      '<div class="skin-head">' +
+        '<span class="skin-label" data-zh="风格" data-en="Skin">风格</span>' +
+        '<div class="skin-tabs" role="tablist" aria-label="风格分组">' +
+          GROUPS.map(function (g) {
+            return '<button type="button" class="skin-tab" role="tab" data-group="' + g.id + '"' +
+                   ' aria-selected="false">' +
+                   '<span data-zh="' + g.zh + '" data-en="' + g.en + '">' + g.zh + '</span></button>';
+          }).join("") +
+        '</div>' +
+      '</div>' +
+      '<div class="skin-chips" id="skinChips"></div>');
+
+    var chipHost = skinBar.querySelector("#skinChips");
+    function renderChips() {
+      var g = groupById(curGroup);
+      /* 直接写当前语言，同时挂 data-zh/data-en —— 切换语种时由 apply() 统一改写 */
+      chipHost.innerHTML = g.styles.map(function (s) {
+        var txt = lang === "zh" ? SMETA[s].chip.zh : SMETA[s].chip.en;
+        return '<button type="button" class="skin-chip" data-style="' + s + '" aria-pressed="false">' +
+                 '<span data-zh="' + SMETA[s].chip.zh + '" data-en="' + SMETA[s].chip.en + '">' +
+                   txt +
+                 '</span></button>';
+      }).join("");
+      labelStyle();
+      skinBar.querySelectorAll(".skin-tab").forEach(function (t) {
+        t.setAttribute("aria-selected", t.getAttribute("data-group") === curGroup ? "true" : "false");
+      });
+    }
+    jumpGroup = function (id, persist) {
+      curGroup = normGroup(id);
+      if (persist) { try { localStorage.setItem(GKEY, curGroup); } catch (e) {} }
+      renderChips();
+    };
+    renderChips();
+
     skinBar.addEventListener("click", function (e) {
-      var chip = e.target.closest ? e.target.closest(".skin-chip") : null;
-      if (chip) setStyle(chip.getAttribute("data-style"), true);
+      if (!e.target.closest) return;
+      var tab = e.target.closest(".skin-tab");
+      if (tab) { jumpGroup(tab.getAttribute("data-group"), true); return; }
+      var chip = e.target.closest(".skin-chip");
+      if (chip) applyStyle(chip.getAttribute("data-style"), true);
     });
   }
 
@@ -196,10 +277,19 @@
       styleBtn = document.createElement("div");
       styleBtn.id = "styleToggle";
       styleBtn.className = "style-menu";
-      var items = STYLES.map(function (s) {
-        return '<button type="button" class="sm-item" role="option" aria-selected="false" data-style="' + s + '">' +
-                 '<span data-zh="' + SMETA[s].full.zh + '" data-en="' + SMETA[s].full.en + '">' + SMETA[s].full.zh + '</span>' +
-               '</button>';
+      /* 下拉也按 7 组分段，每组一个小标题，44 项不再糊成一片 */
+      var items = GROUPS.map(function (g) {
+        return '<div class="sm-group" role="presentation">' +
+                 '<span class="sm-group-t" data-zh="' + g.zh + '" data-en="' + g.en + '">' +
+                   (lang === "zh" ? g.zh : g.en) +
+                 '</span>' +
+                 g.styles.map(function (s) {
+                   return '<button type="button" class="sm-item" role="option" aria-selected="false" data-style="' + s + '">' +
+                            '<span data-zh="' + SMETA[s].full.zh + '" data-en="' + SMETA[s].full.en + '">' +
+                              (lang === "zh" ? SMETA[s].full.zh : SMETA[s].full.en) +
+                            '</span></button>';
+                 }).join("") +
+               '</div>';
       }).join("");
       styleBtn.innerHTML =
         '<button type="button" class="sm-btn" aria-haspopup="listbox" aria-expanded="false">' +
@@ -212,7 +302,7 @@
   if (styleBtn) {
     styleBtn.addEventListener("click", function (e) {
       var item = e.target.closest ? e.target.closest(".sm-item") : null;
-      if (item) { setStyle(item.getAttribute("data-style"), true); closeMenu(); return; }
+      if (item) { applyStyle(item.getAttribute("data-style"), true); closeMenu(); return; }
       if (e.target.closest && e.target.closest(".sm-btn")) {
         var open = !styleBtn.classList.contains("is-open");
         styleBtn.classList.toggle("is-open", open);
