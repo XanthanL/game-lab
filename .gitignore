@@ -21,6 +21,7 @@ node_modules/
 
 # ============ Agent / 工具本地状态 ============
 **/.workbuddy/
+**/.workbuddy-ai/
 **/.wb_*
 **/.chrome-headless/
 **/.reasonix/

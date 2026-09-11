@@ -50,6 +50,7 @@
   --c-black-rgb:0 0 0;                                  /* 通用投影 / 暗角 */
   --c-white-rgb:255 255 255;                            /* 通用白色薄层 */
   --c-line:#35597d;                                     /* 分隔线 · 描边（钢蓝结构线） */
+  --c-line-rgb:53 89 125;                               /* 同上分量版 —— 成就树连线要用 alpha 分级 */
 
   /* ── 文字 · 中性铅白（已去黄） ─────────────────────────────────────────────── */
   --c-ink:#e4e9f0;         --c-ink-rgb:228 233 240;
@@ -176,11 +177,11 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 .hud-tl{position:absolute;top:16px;left:18px}
 .bar{width:min(220px,34vw);height:10px;background:rgb(var(--c-white-rgb) / .06);
   border:1px solid rgb(var(--c-cyan-rgb) / .28);transform:skewX(-16deg);overflow:hidden}
-.bar i{display:block;height:100%;transition:width var(--dur-2) linear}
+.bar i{display:block;height:100%;transition:width var(--dur-2) var(--ease-ui)}
 #hpbar{background:linear-gradient(90deg,var(--c-hp-a),var(--c-hp-b))}
 #shieldbar{width:min(220px,34vw);height:5px;margin-top:3px;background:rgb(var(--c-white-rgb) / .06);
   border:1px solid rgb(var(--c-cyan-rgb) / .4);transform:skewX(-16deg);overflow:hidden}
-#shieldbar i{background:linear-gradient(90deg,var(--c-shield-a),var(--c-shield-b));display:block;height:100%;transition:width var(--dur-2) linear}
+#shieldbar i{background:linear-gradient(90deg,var(--c-shield-a),var(--c-shield-b));display:block;height:100%;transition:width var(--dur-2) var(--ease-ui)}
 /* 装配框：能力型一行、数值型一行（共用同一套图标样式，按所在行调色）；CD 由 .cd + --cdp 驱动 */
 #abrow,#strow{display:flex;gap:5px}
 #abrow{margin-top:7px}
@@ -204,7 +205,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #strow .ab.mx i.lv{color:var(--c-violet-hi-2)}
 /* CD 阴影转圈：conic-gradient 暗影扇形按 --cdp 收缩；扇形收缩 = 冷却推进，前缘有一道细亮边作为"刻度"。
    透明度随 .cding 切换，避免就绪态残留阴影。 */
-.ab .cd{position:absolute;inset:-2px;pointer-events:none;opacity:0;transition:opacity var(--dur-3) ease;
+.ab .cd{position:absolute;inset:-2px;pointer-events:none;opacity:0;transition:opacity var(--dur-3) var(--ease-ui);
   background:conic-gradient(from 0deg,rgb(var(--c-shadow-rgb) / .78) 0deg,rgb(var(--c-shadow-rgb) / .78) var(--cdp,0deg),rgb(var(--c-shadow-rgb) / 0) var(--cdp,0deg))}
 .ab .cd::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:conic-gradient(from 0deg,rgb(var(--c-cd-rgb) / 0) 0deg,rgb(var(--c-cd-rgb) / 0) max(0deg,calc(var(--cdp,0deg) - 3deg)),rgb(var(--c-cd-rgb) / .75) var(--cdp,0deg),rgb(var(--c-cd-rgb) / 0) var(--cdp,0deg))}
@@ -261,7 +262,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
   width:min(92vw,520px);box-sizing:border-box;padding:9px 16px 10px;
   background:rgb(var(--c-panel-rgb) / .78);border:1px solid var(--c-line);border-left:2px solid var(--c-cyan);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  opacity:0;transition:opacity var(--dur-3) ease,transform var(--dur-3) var(--ease-out)}
+  opacity:0;transition:opacity var(--dur-3) var(--ease-ui),transform var(--dur-3) var(--ease-out)}
 #guide.on{opacity:1;transform:translate(-50%,0)}
 #guide b{color:var(--c-cyan-hi);font-weight:600;letter-spacing:.04em}
 #guide .gtag{display:block;font-size:var(--fs-1);letter-spacing:.3em;color:var(--c-cyan);opacity:.85}
@@ -273,7 +274,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 
 #flash{position:fixed;inset:0;pointer-events:none;z-index:var(--z-flash);opacity:0;
   background:radial-gradient(ellipse at center,rgb(var(--c-flash-a-rgb) / 0) 40%,rgb(var(--c-flash-b-rgb) / .35));
-  transition:opacity var(--dur-5) ease}
+  transition:opacity var(--dur-5) var(--ease-ui)}
 
 /* ---------- 屏幕质感叠层 ----------
    扫描线/危险脉冲/慢动作晕统一压在 HUD 之下（z-index 4），保证 HUD 文字始终清晰可读。
@@ -283,10 +284,10 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
   mix-blend-mode:overlay}
 #danger{position:fixed;inset:0;pointer-events:none;z-index:var(--z-atmos);opacity:0;
   background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgb(var(--c-danger-glow-rgb) / .45) 100%);
-  transition:opacity var(--dur-5) ease-out}
+  transition:opacity var(--dur-5) var(--ease-out)}
 #slowfx{position:fixed;inset:0;pointer-events:none;z-index:var(--z-atmos);opacity:0;
   background:radial-gradient(ellipse at 50% 50%,transparent 42%,rgb(var(--c-slow-rgb) / .32) 100%);
-  transition:opacity var(--dur-3) ease-out}
+  transition:opacity var(--dur-3) var(--ease-out)}
 @media (prefers-reduced-motion:reduce){
   #scan{opacity:.028}
   #danger,#slowfx{transition:none}
@@ -318,7 +319,7 @@ body.playing{cursor:none}
 /* ---------- boot / loading ---------- */
 #boot{position:fixed;inset:0;z-index:var(--z-boot);display:flex;align-items:center;justify-content:center;
   background:radial-gradient(ellipse at 50% 45%,var(--c-void-2) 0%,var(--c-void) 62%,var(--c-void-deep) 100%);
-  transition:opacity var(--dur-6) ease}
+  transition:opacity var(--dur-6) var(--ease-ui)}
 #boot.out{opacity:0;pointer-events:none}
 .boot-in{text-align:center;width:min(86vw,440px)}
 .boot-mark{font-size:var(--fs-disp);font-weight:500;letter-spacing:.22em;text-indent:.22em;
@@ -330,10 +331,12 @@ body.playing{cursor:none}
 .boot-bar i{display:block;height:100%;width:0;
   background:linear-gradient(90deg,var(--c-boot-a) 0%,var(--c-cyan) 75%,var(--c-boot-c) 100%);
   box-shadow:0 0 12px rgb(var(--c-cyan-rgb) / .7);transition:width var(--dur-5) var(--ease-out)}
+/* 载入进度条：→ 填充用 --ease-out，扫光用 linear（匀速扫过才像"读取中"，
+   用缓动会显得一顿一顿）。这里刻意保留线性 —— 环境类动画不受 UI 缓动约束。 */
 .boot-bar::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(90deg,transparent 0%,rgb(var(--c-cyan-rgb) / .32) 50%,transparent 100%);
   animation:bootSweep var(--ambient-2) linear infinite}
-@keyframesbootSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes bootSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .boot-meta{display:flex;justify-content:space-between;margin-top:12px;font-size:var(--fs-1);
   letter-spacing:.2em;color:var(--c-steel);font-family:ui-monospace,Consolas,monospace}
 .boot-meta .pct{color:var(--c-amber)}
@@ -347,13 +350,15 @@ body.playing{cursor:none}
   background:radial-gradient(ellipse at center,rgb(var(--c-overlay-a-rgb) / .5),rgb(var(--c-overlay-b-rgb) / .86));
   backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
 /* 浮层入场：hidden 属性 = display:none，取消隐藏即重启动画，无需 JS 配合。
-   曲线统一走 --ease-out（快出慢收），让面板"落位"而非线性淡入。 */
-.overlay:not([hidden]){animation:panelIn var(--dur-5) var(--ease-out) both}
-.overlay:not([hidden])>*:not([hidden]){animation:panelIn var(--dur-6) var(--ease-out) both}
+   曲线走 --ease-drawer（面板滑入专用曲线，末尾收得干净）而非通用 --ease-out —— 
+   浮层是"从上落下"的整块面板，不是小元素弹入，用抽屉曲线落位更实。
+   内层子元素再叠一个 --stagger 的交错，让「标题 → 数据 → 按钮」有阅读顺序。 */
+.overlay:not([hidden]){animation:panelIn var(--dur-5) var(--ease-drawer) both}
+.overlay:not([hidden])>*:not([hidden]){animation:panelIn var(--dur-6) var(--ease-drawer) both}
 .overlay:not([hidden])>*:nth-child(2){animation-delay:var(--stagger)}
 .overlay:not([hidden])>*:nth-child(3){animation-delay:calc(var(--stagger)*2)}
 .overlay:not([hidden])>*:nth-child(4){animation-delay:calc(var(--stagger)*3)}
-@keyframes panelIn{from{opacity:0;transform:translateY(12px) scale(.985)}
+@keyframes panelIn{from{opacity:0;transform:translateY(14px) scale(.982)}
   to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){
   .overlay:not([hidden]),.overlay:not([hidden])>*:not([hidden]){animation:none}
@@ -364,14 +369,14 @@ body.playing{cursor:none}
 
 .btn{background:transparent;border:1px solid var(--c-cyan);color:var(--c-btn-ink);padding:13px 44px;
   font-size:var(--fs-4);letter-spacing:.32em;text-indent:.32em;cursor:pointer;border-radius:4px;
-  transition:background var(--dur-3),box-shadow var(--dur-3),transform var(--dur-3) ease-out;font-family:inherit;
+  transition:background var(--dur-3),box-shadow var(--dur-3),transform var(--dur-3) var(--ease-out);font-family:inherit;
   will-change:transform}
 .btn:hover{background:rgb(var(--c-cyan-rgb) / .12);box-shadow:0 0 26px rgb(var(--c-cyan-rgb) / .3)}
 /* 指针聚光：--mx/--my 由 JS 在 pointermove 时写入，形成跟随光标的柔光斑。
    纯伪元素实现，不占布局、不拦事件（pointer-events:none）。 */
 .btn,.card{position:relative}
 .btn::after,.card::after{content:'';position:absolute;inset:0;pointer-events:none;
-  border-radius:inherit;opacity:0;transition:opacity var(--dur-4) ease;
+  border-radius:inherit;opacity:0;transition:opacity var(--dur-4) var(--ease-ui);
   background:radial-gradient(180px circle at var(--mx,50%) var(--my,50%),
     rgb(var(--c-spot-rgb) / .14),rgb(var(--c-spot-rgb) / .05) 45%,transparent 72%)}
 .btn:hover::after,.card:hover::after{opacity:1}
@@ -414,7 +419,7 @@ body.playing{cursor:none}
   background:rgb(var(--c-panel-rgb) / .82);border:1px solid var(--c-line);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-radius:10px;cursor:pointer;text-align:center;
-  transition:transform var(--dur-3) ease,border-color var(--dur-3),box-shadow var(--dur-3)}
+  transition:transform var(--dur-3) var(--ease-ui),border-color var(--dur-3),box-shadow var(--dur-3)}
 /* 顶缘高光：一条 1px 渐变亮边，模拟玻璃上沿受光。::before 不干扰 ::after 的聚光。 */
 .card::before{content:'';position:absolute;left:14px;right:14px;top:0;height:1px;pointer-events:none;
   background:linear-gradient(90deg,transparent,rgb(var(--c-card-edge-rgb) / .55),transparent);opacity:.5;
@@ -468,6 +473,27 @@ body.playing{cursor:none}
 .card.mx .g{color:var(--c-amber);text-shadow:0 0 16px rgb(var(--c-amber-rgb) / .7)}
 .card.mx .en{color:rgb(var(--c-amber-rgb) / .85)}
 .card.mx:hover{border-color:var(--c-amber);box-shadow:0 10px 34px rgb(var(--c-amber-rgb) / .24)}
+/* 稀有度（Phase 3.1）：common 不加类 —— 沿用默认钢蓝边，与"结构"同源；
+   rare 青、epic 黄铜，与成就树三态（钢蓝/青/黄铜）同一套视觉语言。 */
+.card.r-rare{border-color:rgb(var(--c-cyan-rgb) / .55);box-shadow:0 0 24px rgb(var(--c-cyan-rgb) / .12)}
+.card.r-rare::before{background:linear-gradient(90deg,transparent,rgb(var(--c-cyan-rgb) / .5),transparent)}
+.card.r-rare .g{color:var(--c-cyan);text-shadow:0 0 14px rgb(var(--c-cyan-rgb) / .6)}
+.card.r-rare .en{color:rgb(var(--c-cyan-rgb) / .85)}
+.card.r-epic{border-color:rgb(var(--c-amber-rgb) / .6);box-shadow:0 0 30px rgb(var(--c-amber-rgb) / .16)}
+.card.r-epic::before{background:linear-gradient(90deg,transparent,rgb(var(--c-amber-rgb) / .6),transparent)}
+.card.r-epic .g{color:var(--c-amber);text-shadow:0 0 16px rgb(var(--c-amber-rgb) / .7)}
+.card.r-epic .en{color:rgb(var(--c-amber-rgb) / .88)}
+.card.r-epic:hover{border-color:var(--c-amber);box-shadow:0 10px 36px rgb(var(--c-amber-rgb) / .28)}
+/* 稀有度标签：与 type 标签同规格、不同色（同色会糊在一起） */
+.tag.rar{margin-left:6px}
+.tag.rar.common{color:var(--c-ink-3);border-color:rgb(var(--c-line-rgb) / .5);background:rgb(var(--c-panel-rgb) / .4)}
+.tag.rar.rare{color:var(--c-cyan);border-color:rgb(var(--c-cyan-rgb) / .5);background:rgb(var(--c-cyan-rgb) / .08)}
+.tag.rar.epic{color:var(--c-amber);border-color:rgb(var(--c-amber-rgb) / .5);background:rgb(var(--c-amber-rgb) / .08)}
+/* 升阶标记：已持有且未满级 → 这次是 LV 升级，给一个低调的青色左缘 + 角标 */
+.card.up:not(.mx){border-left:2px solid rgb(var(--c-cyan-rgb) / .5)}
+.up-mark{display:inline-block;margin-top:9px;font-size:var(--fs-1);letter-spacing:.16em;
+  color:var(--c-cyan);font-family:ui-monospace,Consolas,monospace}
+
 /* 选牌动效：被抽中的卡"抽取"上浮放大淡出，其余退场 —— 证明点击已生效 */
 .card.drawn{animation:cardDrawn var(--dur-6) var(--ease-out) forwards;z-index:var(--z-local-3)}
 @keyframes cardDrawn{
@@ -481,16 +507,16 @@ body.playing{cursor:none}
   38%{transform:translateY(-12px) scale(1.1);opacity:1;box-shadow:0 0 38px rgb(var(--c-amber-rgb) / .55);filter:brightness(1.4)}
   100%{transform:translateY(-30px) scale(1.18);opacity:0;box-shadow:0 0 48px rgb(var(--c-amber-rgb) / .65);filter:brightness(1.65)}
 }
-.card.fade{opacity:0;transform:scale(.84);transition:opacity var(--dur-5) ease,transform var(--dur-5) ease;pointer-events:none}
+.card.fade{opacity:0;transform:scale(.84);transition:opacity var(--dur-5) var(--ease-ui),transform var(--dur-5) var(--ease-ui);pointer-events:none}
 /* 手机端手牌模式：卡片用绝对定位+内联 transform 跟手，抽取动效只发光淡出不抢 transform */
-#cardrow.deck .card.drawn,#hullrow.deck .card.drawn{animation:cardDrawnTouch var(--dur-6) ease forwards}
+#cardrow.deck .card.drawn,#hullrow.deck .card.drawn{animation:cardDrawnTouch var(--dur-6) var(--ease-out) forwards}
 @keyframes cardDrawnTouch{
   0%{opacity:1}
   38%{opacity:1;filter:brightness(1.4);box-shadow:0 0 34px rgb(var(--c-cyan-rgb) / .5)}
   100%{opacity:0;filter:brightness(1.6)}
 }
 #cardrow.deck .card.fade,#hullrow.deck .card.fade{opacity:0!important; /* 盖掉手牌布局写在行内的 opacity */
-  transition:opacity var(--dur-5) ease,transform var(--dur-5) var(--ease-out);pointer-events:none}
+  transition:opacity var(--dur-5) var(--ease-ui),transform var(--dur-5) var(--ease-out);pointer-events:none}
 .card.mx .pips i.on{background:var(--c-amber);box-shadow:0 0 8px rgb(var(--c-amber-rgb) / .9)}
 .keyhint{margin-top:26px;font-size:var(--fs-2);letter-spacing:.22em;color:var(--c-ink-3)}
 .keyhint .mh{display:none} /* 手机提示默认隐藏，窄屏反转 */
@@ -503,26 +529,54 @@ body.playing{cursor:none}
   text-shadow:0 0 18px rgb(var(--c-cyan-rgb) / .5)}
 #newBest{display:inline-block;margin-top:10px;font-size:var(--fs-2);letter-spacing:.3em;color:var(--c-amber);
   border:1px solid rgb(var(--c-amber-rgb) / .5);padding:4px 12px;border-radius:3px}
+/* ---------- 坠毁结算：死因块 ----------
+   与 logbook 共用「星图测绘」的分节语法（.sec-head + 直角框 + 钢蓝结构线），
+   只有一处破格：左侧 2px 朱砂竖线 —— 这一块讲的是"致命"，用唯一高饱和色点题。
+   刻意与上方 statgrid 拉开层级：死因是"结论"，字更大、有框、有竖线。 */
+#over .cause{margin-top:22px;text-align:left}
+#over .cause .sec-head{margin:0 0 10px}
+#over .cause-body{border:1px solid var(--c-line);border-left:2px solid rgb(var(--c-danger-rgb) / .8);
+  background:rgb(var(--c-cyan-rgb) / .03);padding:13px 15px 14px}
+#over .cause-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px}
+#over .cause-name b{font-size:var(--fs-4);color:var(--c-ink-hi);font-weight:500;letter-spacing:.06em}
+/* 标签沿用卡牌的 .tag 语法（直角小签）；这里再补 affix / dmg 两个语义色。 */
+#over .cause-name .tag{font-style:normal;font-size:var(--fs-1);letter-spacing:.18em;
+  color:var(--c-ink-2);border:1px solid var(--c-line);padding:2px 7px;border-radius:2px}
+#over .cause-name .tag.affix{color:var(--c-violet);border-color:rgb(var(--c-violet-rgb) / .55)}
+#over .cause-name .tag.dmg{color:var(--c-danger);border-color:rgb(var(--c-danger-rgb) / .55);
+  font-family:ui-monospace,Consolas,monospace}
+#over .cause-trait{margin-top:8px;font-size:var(--fs-2);line-height:1.75;color:var(--c-ink-2)}
+/* 关键统计：单行读数条，i 当竖分隔线。每个读数不许在内部换行
+   （英文 "TRADE RATIO" 会被折成两行，读起来像两个统计项）。
+   数值用 mono 并与上方 statgrid 拉开色阶 —— 这里是"过程数据"，不是"结果"。 */
+#over .statline{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;row-gap:4px;
+  margin-top:14px}
+#over .statline span{white-space:nowrap}
+#over .statline b{color:var(--c-stat-hi);font-weight:500}
+#over .statline i{display:inline-block;width:1px;height:9px;margin:0 11px;vertical-align:middle;
+  background:var(--c-line)}
 .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:24px 0 6px}
 .statgrid div{font-size:var(--fs-2);color:var(--c-ink-2);letter-spacing:.08em;line-height:1.7}
 .statgrid b{display:block;font-size:var(--fs-5);color:var(--c-stat-hi);font-weight:500}
 .statline{margin:10px auto 0;font-size:var(--fs-2);letter-spacing:.08em;color:var(--c-steel);line-height:1.9;
   font-family:ui-monospace,Consolas,monospace}
 /* ---------- logbook：四边形 / 直角数据表风格（不用圆角） ---------- */
-#logbook .panel{border-radius:0;padding:34px 30px 26px;max-width:min(94vw,560px);
+#logbook .panel{border-radius:0;padding:34px 30px 26px;max-width:min(94vw,680px);
   border:1px solid rgb(var(--c-cyan-rgb) / .3);position:relative}
 #logbook .panel::before,#logbook .panel::after{ /* 对角 L 形角标，强化方形轮廓 */
   content:'';position:absolute;width:15px;height:15px;border:1px solid rgb(var(--c-cyan-rgb) / .55)}
 #logbook .panel::before{left:-1px;top:-1px;border-right:0;border-bottom:0}
 #logbook .panel::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
-/* 分区标题：■ 标题 ———— 英文小标 */
-.lb-sec{display:flex;align-items:center;gap:9px;margin:26px 0 11px;
+/* 分区标题（跨面板共用组件）：■ 标题 ———— 英文小标
+   日志的六个分区与结算的「终局」都用它 —— 同一套"分节"视觉语言，
+   换面板时不换语法。定义在这里（全局），面板内只调间距。 */
+.sec-head{display:flex;align-items:center;gap:9px;margin:26px 0 11px;
   font-size:var(--fs-1);letter-spacing:.34em;color:var(--c-sec-ink)}
-.lb-sec i{width:9px;height:9px;flex:none;
+.sec-head i{width:9px;height:9px;flex:none;
   border:1px solid rgb(var(--c-cyan-rgb) / .6);background:rgb(var(--c-cyan-rgb) / .16)}
-.lb-sec span{text-indent:.34em}
-.lb-sec::after{content:'';flex:1;height:1px;background:var(--c-line)}
-.lb-sec em{flex:none;order:1;font-style:normal;font-size:var(--fs-1);letter-spacing:.24em;
+.sec-head span{text-indent:.34em}
+.sec-head::after{content:'';flex:1;height:1px;background:var(--c-line)}
+.sec-head em{flex:none;order:1;font-style:normal;font-size:var(--fs-1);letter-spacing:.24em;
   color:var(--c-ink-2);font-family:ui-monospace,Consolas,monospace}
 /* 数据表：网格 + 1px 分隔线拼成整块表格，无圆角 */
 #logbook .statgrid{grid-template-columns:repeat(3,1fr);gap:0;margin:0;
@@ -544,12 +598,86 @@ body.playing{cursor:none}
 #logbook .synlist i{display:block;font-style:normal;font-size:var(--fs-2);letter-spacing:.14em;
   color:var(--c-steel);border:1px solid var(--c-line);border-left:2px solid rgb(var(--c-cyan-rgb) / .5);
   background:rgb(var(--c-cyan-rgb) / .04);padding:10px 13px;text-align:left}
+/* ---------- 图鉴网格：敌型 / 巨像 / 词缀
+   同一套「方形仪表格」语言 —— 直角、1px 钢蓝细线、左侧一条 2px 状态色带。
+   解锁态 = 读数（中性铅白 + 特征短句）；未解锁 = 暗色轮廓（只留轮廓与解锁波次）。
+   状态色带是这套网格唯一的色彩出口：敌方机体色 / Boss 色 / 词缀色，均取自已有的内容色板。 */
+#logbook .lbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px;
+  border:1px solid var(--c-line);background:rgb(var(--c-cyan-rgb) / .025);padding:6px}
+#logbook .lbcell{position:relative;display:flex;align-items:center;gap:9px;
+  border:1px solid rgb(var(--c-line) / .55);border-left-width:2px;
+  padding:8px 9px;text-align:left;line-height:1.35}
+#logbook .lbcell .lbdot{width:22px;height:22px;flex:none;border:1px solid;border-radius:0}
+#logbook .lbcell .lbname{display:block;font-size:var(--fs-2);letter-spacing:.1em;color:var(--c-ink)}
+#logbook .lbcell .lben{display:block;font-size:var(--fs-1);letter-spacing:.06em;color:var(--c-ink-3);
+  font-family:ui-monospace,Consolas,monospace}
+#logbook .lbcell .lbtrait{display:block;font-size:var(--fs-1);letter-spacing:.04em;color:var(--c-ink-2);
+  margin-top:3px;line-height:1.4}
+#logbook .lbcell .lbwave{position:absolute;right:7px;top:7px;font-size:var(--fs-1);
+  letter-spacing:.06em;color:var(--c-ink-3);font-family:ui-monospace,Consolas,monospace}
+/* 未解锁：整体压暗成轮廓，内容换成解锁波次 */
+#logbook .lbcell.locked{background:rgba(var(--c-black-rgb) / .28)}
+#logbook .lbcell.locked .lbdot{border-color:rgb(var(--c-ink-rgb) / .22);background:none !important}
+#logbook .lbcell.locked .lbname{color:var(--c-ink-3)}
+#logbook .lbcell.locked .lben,
+#logbook .lbcell.locked .lbtrait{color:rgb(var(--c-ink-rgb) / .2)}
+#logbook .lbcell .lbwave.lock{color:var(--c-amber)}
+/* 巨像格更宽（名字更长），词缀格一行铺满 */
+#logbook .lbgrid-boss{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+#logbook .lbgrid-affix{grid-template-columns:repeat(auto-fit,minmax(152px,1fr))}
+#logbook .lbgrid-affix .lbcell{cursor:default}
+/* ---------- 成就树容器
+   本版只定版式与交互：视窗 + 平移画布 + SVG 连线层 + 节点层。
+   节点坐标写死在 ACH 数据里（不做自动布局），画布尺寸由数据推算。
+   未解锁 = 暗轮廓，已解锁 = 亮起 + 连线通电。 */
+#logbook .lb-tree{position:relative;border:1px solid var(--c-line);
+  background:rgb(var(--c-cyan-rgb) / .025);overflow:hidden;
+  height:min(46vh,300px);min-height:210px;touch-action:none}
+#logbook .lb-tree-hint{position:absolute;right:8px;bottom:6px;z-index:var(--z-local-3);
+  font-size:var(--fs-1);letter-spacing:.14em;color:var(--c-ink-3);pointer-events:none}
+/* 画布层必须撑满视窗：内部全是绝对定位元素（SVG + 节点层），
+   若不给尺寸会塌成 0 高 —— 表现是"节点看不见、拖不动"。 */
+#logbook .lb-tree-wrap{position:absolute;left:0;top:0;width:100%;height:100%;
+  transform-origin:0 0;cursor:grab;
+  transition:transform var(--dur-2) var(--ease-ui)}
+#logbook .lb-tree-wrap.drag{cursor:grabbing;transition:none}
+/* 画布最小尺寸 = 数据推算的 ACH_W/ACH_H，保证节点不会被视窗裁掉；
+   缩放/平移由 wrap 的 transform 承担，视窗 overflow:hidden 之外不显示。 */
+#logbook .lb-tree-nodes{position:absolute;left:0;top:0;width:1008px;height:688px}
+#logbook .lb-tree-links{position:absolute;left:0;top:0;width:1008px;height:688px;overflow:visible;pointer-events:none}
+#logbook .lb-tree-links line{stroke-width:1}
+#logbook .lbnode{position:absolute;width:150px;border:1px solid var(--c-line);
+  background:var(--c-panel);padding:7px 9px;text-align:left;line-height:1.35}
+#logbook .lbnode b{display:block;font-size:var(--fs-2);letter-spacing:.08em;color:var(--c-ink)}
+#logbook .lbnode span{display:block;font-size:var(--fs-1);letter-spacing:.06em;color:var(--c-ink-2);margin-top:3px}
+#logbook .lbnode i{display:block;font-style:normal;font-size:var(--fs-1);letter-spacing:.08em;
+  color:var(--c-amber);margin-top:4px;font-family:ui-monospace,Consolas,monospace}
+#logbook .lbnode.locked{border-color:rgb(var(--c-line) / .5);background:rgb(var(--c-panel-rgb) / .5)}
+#logbook .lbnode.locked b{color:var(--c-ink-3)}
+#logbook .lbnode.locked span{color:rgb(var(--c-ink-rgb) / .2)}
+#logbook .lbnode.locked i{color:var(--c-ink-3)}
+/* 进行中：钢蓝描边 + 极淡的蓝底 —— 与 locked 的"灰暗轮廓"拉开层次。
+   三态一眼可辨：暗轮廓(未开始) < 蓝边+蓝底(进行中) < 金边+金底(已达成)。 */
+#logbook .lbnode.part{border-color:rgb(var(--c-cyan-rgb) / .45);background:rgb(var(--c-cyan-rgb) / .045)}
+#logbook .lbnode.part b{color:var(--c-ink)}
+#logbook .lbnode.part i{color:var(--c-cyan-hi)}
+#logbook .lbnode.done{border-color:rgb(var(--c-amber-rgb) / .55);background:rgb(var(--c-amber-rgb) / .05)}
+#logbook .lbnode.done b{color:var(--c-amber-hi)}
+/* 进度条：贴节点底部的一条 2px 细线 —— 部分达成时也看得见进展。
+   done 态用满格黄铜；partial 用钢蓝（结构色，与"已通电的线"同语言）。 */
+#logbook .lbnode u{position:absolute;left:0;bottom:0;height:2px;background:var(--c-line);
+  display:block;text-decoration:none}
+#logbook .lbnode.done u{background:var(--c-amber)}
+#logbook .lbnode.part u{background:var(--c-cyan)}
 @media (max-width:640px){ /* 窄屏 2 列时重算分隔线，避免断边 */
   #logbook .statgrid>div:nth-child(3n){border-right:1px solid var(--c-line)}
   #logbook .statgrid>div:nth-child(2n){border-right:0}
   #logbook .statgrid>div:nth-child(n+4){border-bottom:1px solid var(--c-line)}
   #logbook .statgrid>div:nth-child(n+5){border-bottom:0}
   #logbook .statgrid b{font-size:var(--fs-5)}
+  #logbook .lbgrid{grid-template-columns:repeat(2,1fr)}
+  #logbook .lbgrid-boss,#logbook .lbgrid-affix{grid-template-columns:1fr}
+  #logbook .lbnode{width:132px}
 }
 /* 手机端：ESC/结算面板里的能力型·数值型模块条，强制每行两枚，不退化成单列 */
 @media (max-width:640px){
@@ -686,7 +814,7 @@ body.playing{cursor:none}
   #hullrow.deck{height:320px}
   #cardrow.deck .card,#hullrow.deck .card{position:absolute;left:50%;top:0;width:180px;margin:0;
     touch-action:pan-y;will-change:transform;backface-visibility:hidden;
-    transition:transform var(--dur-5) var(--ease-out),opacity var(--dur-5) ease,border-color var(--dur-3),box-shadow var(--dur-3)}
+    transition:transform var(--dur-5) var(--ease-out),opacity var(--dur-5) var(--ease-ui),border-color var(--dur-3),box-shadow var(--dur-3)}
   .deck .card.act{border-color:rgb(var(--c-cyan-rgb) / .55)}
 }
 </style>
@@ -834,6 +962,13 @@ body.playing{cursor:none}
       <div data-page-node-id="clmGKbKEuT9UsotnObUXb3"><b id="stKills" class="mono" data-page-node-id="GvSQwDYBDEZWE0VqnQ5pCA">0</b><span data-i18n="o_kills">击坠</span></div>
       <div data-page-node-id="TTlNj556XjVjBxTlevLa76"><b id="stTime" class="mono" data-page-node-id="GltXqLrxX8FtotqwyAHz88">0:00</b><span data-i18n="o_time">存活</span></div>
     </div>
+    <!-- 死因：谁在什么时刻终结了这次漂移 -->
+    <div class="cause" id="overCause" data-page-node-id="oCauseBlk">
+      <div class="sec-head" data-i18n="o_cause_sec">终局</div>
+      <div class="cause-body" id="overCauseBody" data-page-node-id="oCauseBody"></div>
+    </div>
+    <!-- 本局关键统计：伤害输出与承伤，让"这局打得好不好"有个可比的数 -->
+    <div class="statline" id="overExtra" data-page-node-id="oExtraBlk"></div>
     <div class="chips" id="overChips" data-page-node-id="xFgESe1KjP3AK1NdCfFW1F"></div>
     <div class="row-btns" data-page-node-id="wRCzBhpF708lrY3uZVh9eX">
       <button id="btnRetry" class="btn" data-i18n="o_retry" data-page-node-id="DPdUSs6U83Kq7e4DWaWUa6">再出击 ▸ R</button>
@@ -848,9 +983,10 @@ body.playing{cursor:none}
 
 <!-- logbook / stats -->
 <div id="logbook" class="overlay" hidden data-page-node-id="5MFmfcKXaXDCrZfCXBY0Ly">
-  <div class="panel" data-page-node-id="F68Iifjb1bLzy7pCiSM2sE">
+  <div class="panel lb-panel" data-page-node-id="F68Iifjb1bLzy7pCiSM2sE">
     <h2 data-page-node-id="DdF7PNXZPomsskZc080PxV">LOGBOOK<span data-i18n="lb_sub" data-page-node-id="gKlIjmForZ4K9HpgweL29E">航行日志 —— 跨出击累计数据</span></h2>
-    <div class="lb-sec" data-i18n="lb_sec1" data-page-node-id="lbsec1"><i></i><span>累计记录</span><em>LIFETIME</em></div>
+
+    <div class="sec-head" data-i18n="lb_sec1" data-page-node-id="lbsec1"><i></i><span>累计记录</span><em>LIFETIME</em></div>
     <div class="statgrid" data-page-node-id="rTLu8aYvTX4Vz4YzLkpse8">
       <div data-page-node-id="sXcm18T82kKt5PSboS0yYE"><b id="lbKills" class="mono" data-page-node-id="sQJ3VlmIlt9CSzNZ9KKlBU">0</b><span data-i18n="lb_k">累计击坠</span></div>
       <div data-page-node-id="rxdSqNOHqpGtoLlekM9yDv"><b id="lbGames" class="mono" data-page-node-id="l3lnKUL0IV2dWe9tUx8Rdj">0</b><span data-i18n="lb_g">出击场次</span></div>
@@ -859,9 +995,31 @@ body.playing{cursor:none}
       <div data-page-node-id="Gve8KQ0RS4onIb4RwqzqaH"><b id="lbScoreSum" class="mono" data-page-node-id="VLje0UIlCEjAiDDGSBoq1c">0</b><span data-i18n="lb_s">累计得分</span></div>
       <div data-page-node-id="Wj1B0pu5DZ7BhFMEOILLh1"><b id="lbBest" class="mono" data-page-node-id="zH4l9XXhsuI9cSXX7psYYk">0</b><span data-i18n="lb_b">最高得分</span></div>
     </div>
-    <div class="lb-sec" data-i18n="lb_sec2" data-page-node-id="lbsec2"><i></i><span>船体图鉴</span><em>HULLS</em></div>
+
+    <!-- 图鉴：敌型 / 巨像 / 词缀 / 船体 —— 全部由现有数据表驱动，零新增存储 -->
+    <div class="sec-head" data-i18n="lb_sec2" data-node-id="lbsec2"><i></i><span>敌型图鉴</span><em>BESTIARY</em></div>
+    <div class="lbgrid" id="lbEnemies" data-node-id="lbEnemies"></div>
+
+    <div class="sec-head" data-i18n="lb_sec3" data-node-id="lbsec3"><i></i><span>巨像名录</span><em>COLOSSI</em></div>
+    <div class="lbgrid lbgrid-boss" id="lbBosses" data-node-id="lbBosses"></div>
+
+    <div class="sec-head" data-i18n="lb_sec4" data-node-id="lbsec4"><i></i><span>词缀</span><em>AFFIX</em></div>
+    <div class="lbgrid lbgrid-affix" id="lbAffix" data-node-id="lbAffix"></div>
+
+    <div class="sec-head" data-i18n="lb_sec5" data-page-node-id="lbsec5x"><i></i><span>船体图鉴</span><em>HULLS</em></div>
     <div class="chips" id="lbHulls" data-page-node-id="L9CF8H1c9DSR1DuqkFeom1"></div>
     <div class="synlist" id="lbSwarm" data-page-node-id="MBKWAxldSyCc5kqIwOanrC"></div>
+
+    <!-- 成就树容器（Phase 3.4 填数据；本版先把版式与交互定死） -->
+    <div class="sec-head" data-i18n="lb_sec6" data-node-id="lbsec6"><i></i><span>成就星图</span><em>ACHIEVEMENTS</em></div>
+    <div class="lb-tree" id="lbTree">
+      <div class="lb-tree-hint" id="lbTreeHint" data-i18n="lb_tree_hint">拖拽浏览 · 滚轮缩放区域</div>
+      <div class="lb-tree-wrap" id="lbTreeWrap">
+        <svg class="lb-tree-links" id="lbTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="lb-tree-nodes" id="lbTreeNodes"></div>
+      </div>
+    </div>
+
     <div class="row-btns" data-page-node-id="Y1FUfV8tabhHh347u4aXN6">
       <button id="btnLbBack" class="btn" data-i18n="lb_back" data-page-node-id="dn0FsAkgpBLPRw1lPfBXoc">返回 ▸ ESC</button>
     </div>
@@ -917,7 +1075,7 @@ const irand=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
 const PAL=(()=>{
   const cs=getComputedStyle(document.documentElement),o={};
   const NAMES=['void','panel','white','black','ink','steel','cyan','cyan-hi','cyan-hi-2',
-    'aim','aim-fire','aim-danger','cd','spot','card-edge','syn','syn-2',
+    'aim','aim-fire','aim-danger','cd','spot','card-edge','syn','syn-2','line',
     'danger','amber','amber-hi','violet','shadow','overlay-a','overlay-b'];
   for(const k of NAMES){
     const v=cs.getPropertyValue('--c-'+k+'-rgb').trim().replace(/\s+/g,',');
@@ -966,11 +1124,15 @@ const I18N_EN={
  p_resume:'RESUME',p_restart:'RESTART',p_settings:'SETTINGS ▸',p_quit:'MAIN MENU',
  o_sub:'signal lost',o_best:'NEW BEST',o_wave:'WAVE',o_lvl:'LEVEL',o_kills:'KILLS',o_time:'ALIVE',
  o_retry:'RETRY ▸ R',o_menu:'TITLE',
+ o_cause_sec:'<i></i><span>FINAL MOMENT</span><em>CAUSE</em>',
  v_sub:'sector cleared',v_unlock:'NEW HULL UNLOCKED — NEMESIS joins the hangar',
  v_wave:'WAVE',v_lvl:'LEVEL',v_kills:'KILLS',v_time:'TIME',v_endless:'ENDLESS ▸ E',v_menu:'TITLE',
  lb_sub:'Logbook — lifetime totals across runs',
  lb_k:'TOTAL KILLS',lb_g:'RUNS',lb_w:'FARTHEST WAVE',lb_t:'TOTAL DRIFT',lb_s:'TOTAL SCORE',lb_b:'BEST SCORE',
- lb_sec1:'<i></i><span>LIFETIME</span><em>TOTALS</em>',lb_sec2:'<i></i><span>HULLS</span><em>CODEX</em>',
+ lb_sec1:'<i></i><span>LIFETIME</span><em>TOTALS</em>',lb_sec2:'<i></i><span>BESTIARY</span><em>ENEMIES</em>',
+ lb_sec3:'<i></i><span>COLOSSI</span><em>BOSSES</em>',lb_sec4:'<i></i><span>AFFIXES</span><em>MUTATORS</em>',
+ lb_sec5:'<i></i><span>HULLS</span><em>CODEX</em>',lb_sec6:'<i></i><span>ACHIEVEMENT MAP</span><em>STARMAP</em>',
+ lb_tree_hint:'Drag to pan · scroll to browse',
  v_wave:'WAVE',v_lvl:'LEVEL',v_kills:'KILLS',v_time:'TIME',
  o_wave:'WAVE',o_lvl:'LEVEL',o_kills:'KILLS',o_time:'SURVIVED',
  lb_back:'BACK ▸ ESC',
@@ -1082,13 +1244,18 @@ function setLang(l){
   repaintBuildChips();                     // 暂停/结算面板开着：模块条换语言重绘 + 重新判定堆叠
   sfx.ui();
 }
-/* 已打开的 暂停 / 坠毁 / 通关 面板里重绘模块条（语言切换后调用） */
+/* 已打开的 暂停 / 坠毁 / 通关 面板里重绘模块条 + 结算文案（语言切换后调用） */
 function repaintBuildChips(){
   if(el.pause.hidden&&el.over.hidden&&el.victory.hidden)return;
   if(G.build){
     if(!el.pause.hidden){el.pauseChips.innerHTML=buildChips()||`<span>${T('尚未装配模块','No modules fitted')}</span>`;fitChips(el.pauseChips);}
     if(!el.over.hidden){el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;fitChips(el.overChips);}
     if(!el.victory.hidden){el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;fitChips(el.vicChips);}
+  }
+  // 坠毁面板的死因 / 关键统计是拼串出来的，换语言要跟着重绘（否则中英混排）
+  if(!el.over.hidden){
+    if(el.overCauseBody)el.overCauseBody.innerHTML=buildCause();
+    if(el.overExtra)el.overExtra.innerHTML=buildOverExtra();
   }
 }
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -1114,9 +1281,12 @@ const el={
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
   pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
+  overCauseBody:$('overCauseBody'),overExtra:$('overExtra'),overCause:$('overCause'),
   hulls:$('hulls'),hullrow:$('hullrow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
   lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
+  lbEnemies:$('lbEnemies'),lbBosses:$('lbBosses'),lbAffix:$('lbAffix'),
+  lbTree:$('lbTree'),lbTreeWrap:$('lbTreeWrap'),lbTreeLinks:$('lbTreeLinks'),lbTreeNodes:$('lbTreeNodes'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
   flash:$('flash'),scan:$('scan'),danger:$('danger'),slowfx:$('slowfx'),aim:$('aim'),
   joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
@@ -1988,7 +2158,10 @@ const G={
   t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
   runId:0,runStart:0, // 当前漂移的唯一 id / 开始时刻（时间戳），多存档管理用
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,hitstop:0,
+  achQueue:null,achCool:0,achPrimed:false,noMod:false,flawless:false,
+  rarPity:0, // 连续未出 rare+ 卡的升级次数（伪随机补偿，见 rollChoices）
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
+  lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
 };
 try{G.best=parseInt(localStorage.getItem('nova-best')||'0',10)||0;}catch(e){}
@@ -2103,6 +2276,45 @@ const EN_UNLOCK={seeker:1,tadpole:3,dart:3,gunner:4,splitter:5,weaver:6,reaver:7
   bulwark:21,shepherd:23,nova:26};
 const EN_LIST=Object.keys(EN_UNLOCK);
 function enUnlocked(n){return EN_LIST.filter(t=>n>=EN_UNLOCK[t]);}
+/* 敌型显示名（航行日志图鉴用）：zh 名与 en 名各一张表，形状描述另存 ——
+   造型是「靠形状而非色相区分」的，图鉴里不点出来玩家看不出差别。 */
+const EN_ZH={seeker:'追猎者',tadpole:'蝌蚪',dart:'飞镖',gunner:'炮手',splitter:'分裂体',
+  weaver:'织网者',reaver:'掠夺者',bastion:'重甲炮台',shifter:'相位闪现者',wraith:'幽灵',
+  stalker:'潜行者',lancer:'长枪手',mine:'浮游雷',orbiter:'环轨炮',leech:'吸附虫',
+  mimic:'拟态体',prism:'棱镜',bulwark:'铁壁',shepherd:'牧者',nova:'新星'};
+const EN_EN={seeker:'Seeker',tadpole:'Tadpole',dart:'Dart',gunner:'Gunner',splitter:'Splitter',
+  weaver:'Weaver',reaver:'Reaver',bastion:'Bastion',shifter:'Shifter',wraith:'Wraith',
+  stalker:'Stalker',lancer:'Lancer',mine:'Mine',orbiter:'Orbiter',leech:'Leech',
+  mimic:'Mimic',prism:'Prism',bulwark:'Bulwark',shepherd:'Shepherd',nova:'Nova'};
+/* 敌型特征短语：图鉴里一句话说明"它怎么打你"（与 README 图鉴表述一致，长度受控） */
+const EN_TRAIT={
+  seeker:['直线追击的基础敌','Chases straight at you'],
+  tadpole:['摆尾游动，越游越快','Swims in wobbles, faster over time'],
+  dart:['瞄准后高速冲刺','Aims, then dashes at speed'],
+  gunner:['远程点射压制','Ranged burst suppression'],
+  splitter:['死后分裂成多个碎块','Splits into shards on death'],
+  weaver:['游走中持续开火','Keeps firing while it drifts'],
+  reaver:['高速低血量蜂群','Fast, fragile, comes in packs'],
+  bastion:['慢速厚血，扇形弹幕','Slow, tanky, spreads a fan barrage'],
+  shifter:['间歇瞬移近身偷袭','Blinks in for close ambushes'],
+  wraith:['半透明飘忽，碰撞自爆','Translucent drifter, detonates on contact'],
+  stalker:['光学迷彩潜近，显形后突刺','Cloaks in, lunges when revealed'],
+  lancer:['远距离蓄力发射高速长矛弹','Charges and fires a fast lance'],
+  mine:['静止待机，靠近触发引信','Idles in place, proximity fuse'],
+  orbiter:['绕玩家圆周机动点射','Circles you, picking its shots'],
+  leech:['贴身持续吸血，高速机动可甩脱','Latches and drains — outrun it'],
+  mimic:['伪装成经验碎片，靠近显形突袭','Disguised as debris, ambushes on approach'],
+  prism:['受击时向三向折射光束','Refracts beams in three ways when hit'],
+  bulwark:['正面偏导护盾，需绕后输出','Frontal shield — get behind it'],
+  shepherd:['为周围敌人套减伤光环并修复','Buffs and heals nearby enemies'],
+  nova:['缓慢逼近，死亡时剧烈爆炸','Creeps close, explodes violently on death'],
+};
+/* 词缀：中文单字 + 语义说明（AFFIX 表里只有单字 name，图鉴需要解释） */
+const AFFIX_DESC={
+  swift:['疾','移动更快、血量略增','Faster, slightly tougher'],
+  tank:['坚','血量翻倍、体型变大、略慢','Double HP, bigger, slower'],
+  volatile:['爆','死亡时剧烈爆炸','Explodes violently on death'],
+};
 /* 编队模板：每波抽一个主题，决定敌型配比与 banner 副标题 */
 const SQUADS=[
   {id:'swarm',  zh:'虫潮',   desc:'密集小型单位',      w:['seeker','reaver','tadpole','wraith'],        s:1.35,a:0.7},
@@ -2140,44 +2352,59 @@ const REPAIR={id:'repair',zh:'应急维修',en:'Field Repair',g:'✚',max:Infini
 /* type: 'stat' = 数值型（只改数字），'ability' = 能力型（解锁新机制） */
 /* tr = 环绕残影采样点（扁平 x,y），flash = 开火枪口闪光计时 */
 function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0,fa:0};}
+/* ============================== 卡牌稀有度（Phase 3.1） ==============================
+   分档原则不是"越稀有越强"，而是**越稀有越特化**：
+     common 基础 —— 纯数值成长 / 无依赖的通用能力，几乎每局都会遇到，是构筑的地基；
+     rare   进阶 —— 有明确玩法倾向、需搭配才发挥，或强度明显高于同级；
+     epic   核心 —— 能单独改变玩法形态的"构筑引擎"（多数与 2~3 条协同相连）。
+   权重只影响**出现概率**，不影响强度 —— 稀有卡更容易被跳过，因为玩家看不懂时
+   会选熟悉的 common，这正是"构筑多样性"的来源。
+   ⚠️ 新增模块必须填 rarity，否则会落进 common 兜底（`rarityOf` 的默认值），
+      但那样就失去了设计意图 —— 新卡请显式分档并同步 RARITY_ZH / RARITY_EN。 */
+const RARITY_W={common:1.00,rare:0.45,epic:0.18};
+const RARITY_ZH={common:'基础',rare:'进阶',epic:'核心'};
+const RARITY_EN={common:'COMMON',rare:'RARE',epic:'EPIC'};
+const RARITY_ORDER={common:0,rare:1,epic:2};
+const PITY_HARD=6; // 连续 6 次升级都没出 rare+ → 第 7 次强制塞一张（硬保底）
+function rarityOf(m){return (m&&m.rarity)||'common';}
 const MODULES=[
-  {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',max:6,type:'stat',
+  {id:'hull',zh:'装甲板',en:'Hull Plating',g:'⬢',rarity:'common',max:6,type:'stat',
     lv:['最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20',
         '最大船体 +20，并立即修复 20','最大船体 +20，并立即修复 20','MAX：船体再 +60 并修复 60 —— 船壳镀上金边'],
     apply:n=>{const v=n<6?20:60;P.maxHp+=v;P.hp=Math.min(P.maxHp,P.hp+v);}},
-  {id:'thruster',zh:'推进器',en:'Thrusters',g:'➤',max:6,
+  {id:'thruster',zh:'推进器',en:'Thrusters',g:'➤',rarity:'common',max:6,
     lv:['速度与推进 +7%','速度与推进 +7%','速度与推进 +7%','速度与推进 +7%','速度与推进 +7%',
         'MAX：速度再 +20%、转向 +10% —— 尾焰转为金色'],
     apply:n=>{if(n<6){P.maxSpeed*=1.07;P.accel*=1.07;P.turn*=1.03;}
       else{P.maxSpeed*=1.2;P.accel*=1.2;P.turn*=1.1;P.thrMax=true;}}},
-  {id:'loader',zh:'自动装填',en:'Autoloader',g:'↻',max:6,
+  {id:'loader',zh:'自动装填',en:'Autoloader',g:'↻',rarity:'common',max:6,
     lv:['射速 +9%','射速 +9%','射速 +9%','射速 +9%','射速 +9%','MAX：射速再 +30% —— 枪口喷出金色火光'],
     apply:n=>{if(n<6)P.fireRate*=1.09;else{P.fireRate*=1.3;P.loadMax=true;}}},
-  {id:'warhead',zh:'重型弹头',en:'Heavy Warhead',g:'◆',max:6,
+  {id:'warhead',zh:'重型弹头',en:'Heavy Warhead',g:'◆',rarity:'common',max:6,
     lv:['所有伤害 +11%','所有伤害 +11%','所有伤害 +11%','所有伤害 +11%','所有伤害 +11%',
         'MAX：伤害再 +40% —— 弹头装药到达极限'],
     apply:n=>{P.dmg*=n<6?1.11:1.4;}},
-  {id:'twin',zh:'多联机炮',en:'Multi Cannon',g:'‖',max:6,type:'ability',
+  {id:'twin',zh:'多联机炮',en:'Multi Cannon',g:'‖',rarity:'common',max:6,type:'ability',
     lv:['再加一根枪管','射速 +6%','再加一根枪管','射速 +6%，枪管收束、弹道更准','弹速 +12%',
         'MAX：第四根枪管 + 射速 +12% —— 金色曳光齐射'],
     apply:n=>{if(n===1||n===3)P.barrels++;
       else if(n===2||n===4)P.fireRate*=1.06;
       else if(n===5)P.bspd*=1.12;
       else{P.barrels++;P.fireRate*=1.12;P.tight=true;}}},
-  {id:'pierce',zh:'穿甲弹',en:'Piercing Shot',g:'↬',max:6,type:'ability',
+  {id:'pierce',zh:'穿甲弹',en:'Piercing Shot',g:'↬',rarity:'common',max:6,type:'ability',
     lv:['子弹多穿透 1 个目标','子弹多穿透 1 个目标','子弹多穿透 1 个目标','子弹多穿透 1 个目标',
         '子弹多穿透 1 个目标','MAX：穿透再 +3 —— 弹芯镀金，一往无前'],
     apply:n=>{P.pierce+=n<6?1:3;}},
-  {id:'ricochet',zh:'跳弹',en:'Ricochet',g:'⤳',max:6,type:'ability',
+  {id:'ricochet',zh:'跳弹',en:'Ricochet',g:'⤳',rarity:'common',max:6,type:'ability',
     lv:['子弹撞墙后反弹 +1 次','反弹 +1 次','反弹 +1 次','反弹 +1 次','反弹 +1 次',
         'MAX：反弹再 +3 —— 弹无虚发，墙也是武器'],
     apply:n=>{P.ricochet+=n<6?1:3;}},
-  {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',max:6,type:'ability',
+  {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',rarity:'common',max:6,type:'ability',
     lv:['命中爆炸：范围 52、溅射 55% 伤害','爆炸范围 64、溅射 70%','爆炸范围 78、溅射 85%',
         '爆炸范围 92、溅射 100%','爆炸范围 108、溅射 120%','MAX：范围 150、溅射 180% —— 金色冲击波'],
     apply:n=>{const T=[[52,0.55],[64,0.7],[78,0.85],[92,1.0],[108,1.2],[150,1.8]][n-1];
       P.splashR=T[0];P.splashDmg=T[1]*P.dmg;if(n===6)P.fragMax=true;}},
-  {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',max:6,type:'ability',
+  {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',rarity:'rare',max:6,type:'ability',
     lv:['子弹会转向最近的敌人','制导搜索范围 +80','制导转向更急','制导搜索范围再 +100','制导转向再加强',
         'MAX：搜索范围近乎全屏、转向极限 —— 没有逃得掉的猎物'],
     // 制导弹药：随等级同步提升「制导范围」(homeR) 与「子弹射程」(rangeLife) —— 两者满级均覆盖为全图
@@ -2189,15 +2416,15 @@ const MODULES=[
       else if(n===5){P.homing=3;P.rangeLife=1.15*2.0;}
       else{P.homing=4;P.homeR=Math.hypot(WORLD.w,WORLD.h);P.rangeLife=Math.hypot(WORLD.w,WORLD.h)/P.bspd;}
     }},
-  {id:'crit',zh:'暴击电容',en:'Crit Capacitor',g:'✦',max:6,
+  {id:'crit',zh:'暴击电容',en:'Crit Capacitor',g:'✦',rarity:'common',max:6,
     lv:['暴击率 +8%','暴击率 +8%','暴击率 +8%','暴击率 +8%','暴击率 +8%',
         'MAX：暴击率再 +15%，暴击伤害 3 倍 → 4.5 倍'],
     apply:n=>{if(n<6)P.crit+=0.08;else{P.crit+=0.15;P.critMul=4.5;}}},
-  {id:'magnet',zh:'回收磁铁',en:'Salvage Magnet',g:'⊚',max:6,
+  {id:'magnet',zh:'回收磁铁',en:'Salvage Magnet',g:'⊚',rarity:'common',max:6,
     lv:['经验与道具拾取范围 +22%','拾取范围 +22%','拾取范围 +22%','拾取范围 +22%','拾取范围 +22%',
         'MAX：拾取范围再 +55% —— 星域里没有你够不到的东西'],
     apply:n=>{P.magnet*=n<6?1.22:1.55;}},
-  {id:'drone',zh:'战斗无人机',en:'Combat Drone',g:'△',max:6,type:'ability',
+  {id:'drone',zh:'战斗无人机',en:'Combat Drone',g:'△',rarity:'rare',max:6,type:'ability',
     lv:['新增 1 架环绕你自动开火的无人机','无人机射速与火力提升','再新增 1 架无人机',
         '无人机射速与火力再提升','再新增 1 架无人机（共 3 架）',
         'MAX：一次列装 2 架（共 5 架）+ 金色穿甲弹'],
@@ -2206,11 +2433,11 @@ const MODULES=[
       else if(n===4){P.dronePow=0.9;P.droneCd=0.44;}
       else{G.drones.push(mkDrone());G.drones.push(mkDrone());
         P.dronePow=1.2;P.droneCd=0.36;P.droneMax=true;}}},
-  {id:'aegis',zh:'能量护盾',en:'Aegis Shield',g:'◇',max:6,type:'ability',
+  {id:'aegis',zh:'能量护盾',en:'Aegis Shield',g:'◇',rarity:'rare',max:6,type:'ability',
     lv:['护盾 +25，脱战 4 秒后自动回复','护盾 +25','护盾 +25','护盾 +25','护盾 +25',
         'MAX：护盾再 +75，回复速度翻倍 —— 金光护体'],
     apply:n=>{const v=n<6?25:75;P.shieldMax+=v;P.shield+=v;if(n===6)P.shieldRegen=26;}},
-  {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',max:6,type:'ability',
+  {id:'ram',zh:'冲角装甲',en:'Ram Plating',g:'»',rarity:'rare',max:6,type:'ability',
     lv:['撞击即可杀伤敌人，碰撞自伤 -40%；射速减半（仅此一次）','冲角杀伤提升；碰撞自伤 -65%',
         '冲角杀伤提升','冲角杀伤提升；碰撞自伤 -75%','冲角杀伤提升',
         'MAX：冲角贯通 —— 撞击伤害暴增，船首亮出金色的破风尖锥'],
@@ -2218,50 +2445,50 @@ const MODULES=[
       // 冲角流派以射速换撞击威力：仅在装配首级时一次性减半，后续升级不再减速
       // （续档按 k=1..n 逐级重放，因此减半只会发生一次）
       if(n===1)P.fireRate*=0.5;}},
-  {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',max:6,type:'stat',
+  {id:'regen',zh:'纳米修复',en:'Nano Repair',g:'❋',rarity:'common',max:6,type:'stat',
     lv:['每秒回复 0.9 点船体','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9','每秒回复 +0.9',
         'MAX：每秒再 +4 —— 纳米虫群铺满船壳'],
     apply:n=>{P.regen+=n<6?0.9:4;}},
-  {id:'leech',zh:'噬能回收',en:'Scavenger Core',g:'☍',max:6,
+  {id:'leech',zh:'噬能回收',en:'Scavenger Core',g:'☍',rarity:'rare',max:6,
     lv:['每次击坠回复 1.2% 最大船体','击坠回复 +1.2%','击坠回复 +1.2%','击坠回复 +1.2%','击坠回复 +1.2%',
         'MAX：击坠回复再 +4.8% —— 以战养战'],
     apply:n=>{P.leech+=n<6?1:4;}},
-  {id:'tesla',zh:'电弧线圈',en:'Arc Coil',g:'ϟ',max:6,type:'ability',
+  {id:'tesla',zh:'电弧线圈',en:'Arc Coil',g:'ϟ',rarity:'epic',max:6,type:'ability',
     lv:['每 2.2 秒释放电弧，链击 2 个目标','电弧冷却 -0.3 秒','链击 +1 个目标','电弧冷却再 -0.3 秒',
         '链击 +1 个目标（共 4 个）','MAX：链击 6 个目标 + 冷却骤减 —— 金色雷暴'],
     apply:n=>{if(n===1)P.tesla=1;else if(n===2)P.teslaCd=1.9;else if(n===3)P.tesla=2;
       else if(n===4)P.teslaCd=1.6;else if(n===5)P.tesla=3;
       else{P.tesla=5;P.teslaCd=1.25;P.teslaMax=true;}}},
-  {id:'stasis',zh:'静止场',en:'Stasis Field',g:'◍',max:6,type:'ability',
+  {id:'stasis',zh:'静止场',en:'Stasis Field',g:'◍',rarity:'epic',max:6,type:'ability',
     lv:['260 范围内的敌人被减速','力场范围扩大到 300','减速效果增强','力场范围扩大到 350','减速效果再增强',
         'MAX：范围 440、近乎冻结 —— 金色力场'],
     apply:n=>{P.stasis=1;
       if(n===2)P.stasisR=300;else if(n===3)P.stasisPow=1.0;else if(n===4)P.stasisR=350;
       else if(n===5)P.stasisPow=1.5;else if(n===6){P.stasisR=440;P.stasisPow=2.6;P.stasisMax=true;}}},
-  {id:'backshot',zh:'尾炮',en:'Stern Gun',g:'∥',max:6,type:'ability',
+  {id:'backshot',zh:'尾炮',en:'Stern Gun',g:'∥',rarity:'rare',max:6,type:'ability',
     lv:['每次齐射向船尾追加一发炮弹','尾炮火力提升','再追加一门尾炮','尾炮火力再提升','第三门尾炮',
         'MAX：五门尾炮全开 + 火力拉满 —— 没有死角'],
     apply:n=>{if(n===1)P.backshot=1;else if(n===2)P.backPow=0.8;else if(n===3)P.backshot=2;
       else if(n===4)P.backPow=0.9;else if(n===5)P.backshot=3;
       else{P.backshot=5;P.backPow=1.1;P.backMax=true;}}},
-  {id:'lance',zh:'轨道长枪',en:'Orbital Lance',g:'†',max:6,type:'ability',
+  {id:'lance',zh:'轨道长枪',en:'Orbital Lance',g:'†',rarity:'epic',max:6,type:'ability',
     lv:['CD 就绪后，你的下一发主动射击被附魔为贯穿激光轨道炮','长枪冷却 -0.6 秒','长枪伤害提升','长枪冷却再 -0.6 秒',
         '长枪伤害再提升','MAX：轨道炮贯通全场 + 冷却骤减 —— 审判之枪'],
     apply:n=>{if(n===1)P.lance=1;else if(n===2)P.lanceCd=4.4;else if(n===3)P.lance=2;
       else if(n===4)P.lanceCd=3.8;else if(n===5)P.lance=3;
       else{P.lance=5;P.lanceCd=2.4;P.lanceMax=true;}}},
-  {id:'overdrive',zh:'过载超频',en:'Overdrive',g:'♨',max:6,
+  {id:'overdrive',zh:'过载超频',en:'Overdrive',g:'♨',rarity:'rare',max:6,
     lv:['射速 +7%、伤害 +6%，但最大船体 -8','射速 +7%、伤害 +6%、船体 -8','射速 +7%、伤害 +6%、船体 -8',
         '射速 +7%、伤害 +6%、船体 -8','射速 +7%、伤害 +6%、船体 -8',
         'MAX：射速 +20%、伤害 +15%、船体 -18 —— 反应堆烧成金色'],
     apply:n=>{if(n<6){P.fireRate*=1.07;P.dmg*=1.06;P.maxHp=Math.max(30,P.maxHp-8);}
       else{P.fireRate*=1.2;P.dmg*=1.15;P.maxHp=Math.max(30,P.maxHp-18);}
       P.hp=Math.min(P.hp,P.maxHp);}},
-  {id:'phase',zh:'相位外壳',en:'Phase Plating',g:'◌',max:6,type:'stat',
+  {id:'phase',zh:'相位外壳',en:'Phase Plating',g:'◌',rarity:'rare',max:6,type:'stat',
     lv:['受击后的无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒','无敌时间 +0.2 秒',
         'MAX：无敌时间再 +0.8 秒 —— 受击瞬间身形化作金色残影'],
     apply:n=>{P.phase+=n<6?0.2:0.8;}},
-  {id:'deathtrail',zh:'死亡尾流',en:'Death Wake',g:'☄',max:6,type:'ability',
+  {id:'deathtrail',zh:'死亡尾流',en:'Death Wake',g:'☄',rarity:'epic',max:6,type:'ability',
     lv:['极速 +8%、射速 -10% —— 尾流灼伤触敌，并消解触及的敌方子弹；飞得越快尾流越长',
         '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
         '极速 +8%、射速 -10% —— 尾流更长、灼烧伤害提升',
@@ -2272,16 +2499,16 @@ const MODULES=[
       // 每级提速但降低射速：速度换火力的交易（续档重放时按级重放，乘法叠加保持一致）
       const k=n<6?1.08:1.2;
       P.maxSpeed*=k;P.accel*=k;P.fireRate*=0.9;}},
-  {id:'nova',zh:'脉冲核心',en:'Nova Core',g:'✸',max:6,type:'ability',
+  {id:'nova',zh:'脉冲核心',en:'Nova Core',g:'✸',rarity:'epic',max:6,type:'ability',
     lv:['每 7 秒释放冲击波：击伤并震退周身敌人','冲击波冷却 -1 秒','冲击波范围与伤害提升',
         '冷却再 -1 秒','范围与伤害再提升','MAX：金色振荡 —— 范围与伤害大增，并湮灭波及的敌方子弹'],
     apply:n=>{P.nova=n;if(n===6)P.novaMax=true;}},
-  {id:'blink',zh:'相位折跃',en:'Phase Blink',g:'↯',max:6,type:'ability',
+  {id:'blink',zh:'相位折跃',en:'Phase Blink',g:'↯',rarity:'epic',max:6,type:'ability',
     lv:['每 14 秒就绪：足以破盾的重击袭来时自动折跃脱险，该次伤害作废，并获得 0.8 秒无敌','折跃冷却 -2 秒',
         '折跃更远，无敌 +0.2 秒','冷却再 -2 秒','折跃后引擎超频 2 秒',
         'MAX：金色湮灭 —— 折跃起点炸开湮灭风暴，冷却骤减'],
     apply:n=>{P.blink=n;if(n===6)P.blinkMax=true;}},
-  {id:'mine',zh:'磁暴雷',en:'Mag Mine',g:'⊙',max:6,type:'ability',
+  {id:'mine',zh:'磁暴雷',en:'Mag Mine',g:'⊙',rarity:'epic',max:6,type:'ability',
     lv:['每 6 秒在船尾布设磁雷：磁引靠近的敌人，触爆后炸伤一片（场上至多 2 枚）','爆炸伤害与范围提升',
         '布设更频繁','伤害再提升，场上至多 3 枚','磁引范围扩大',
         'MAX：金色磁暴 —— 爆炸范围大增并湮灭波及的敌方子弹（至多 4 枚）'],
@@ -2386,10 +2613,18 @@ function rollChoices(){
     if(m.type==='ability'&&n>0)abilityCount+=n;
   }
   const abilityBoost=1+abilityCount*0.22;   // 每选一个能力型，能力型权重 +22%
-  // 加权取样（不放回，避免重复）
+  // 稀有度保底（伪随机补偿）：连续 dry 次升级都没出 rare+ → 提升 rare+ 权重；
+  // 达到硬上限（PITY_HARD）则强制塞一张。避免一局全白卡、也避免"堆 common 最稳"的刷乐。
+  const dry=G.rarPity|0;
+  const pityMult=dry>=3?(dry>=5?4.0:2.2):1;
+  // 加权取样（不放回，避免重复）：权重 = 稀有度权重 × 能力型加权（rare+ 再乘保底倍率）
   const wsample=plist=>{
     if(!plist.length)return null;
-    const weights=plist.map(m=>m.type==='ability'?abilityBoost:1);
+    const weights=plist.map(m=>{
+      const r=rarityOf(m);
+      const rw=RARITY_W[r]*(r!=='common'?pityMult:1);
+      return m.type==='ability'?rw*abilityBoost:rw;
+    });
     let sum=0;for(const w of weights)sum+=w;
     let r=Math.random()*sum,idx=0;
     for(let i=0;i<plist.length;i++){r-=weights[i];if(r<=0){idx=i;break;}}
@@ -2398,12 +2633,28 @@ function rollChoices(){
   const chosen=[];
   const abPool=pool.filter(m=>m.type==='ability');
   const stPool=pool.filter(m=>m.type!=='ability');
+  const candRare=pool.filter(m=>rarityOf(m)!=='common'); // 硬保底候选（取样前全量快照）
   // 保底：先从能力池取 min(2, 可用能力数) 张
   while(chosen.length<Math.min(2,abPool.length))chosen.push(wsample(abPool));
   // 其余从数值池补；数值池不够再用剩余能力型补
   while(chosen.length<3&&stPool.length)chosen.push(wsample(stPool));
   while(chosen.length<3&&abPool.length)chosen.push(wsample(abPool));
   while(chosen.length<3)chosen.push(REPAIR);
+  /* 稀有度保底结算：本次 offer 含 rare+ → 清零 dry；否则 dry+1。
+     dry 触及硬上限且仍有 rare+ 可选，则把一张 common 换成 rare+（优先换可升级的）。
+     ⚠️ 强制替换前必须先判断 offer 里是否"真有" rare+ —— 若 rare+ 全已 max/被 cap 剔除，
+     则 candRare 为空，silently 跳过（这是合法的后期局，不是 bug）。 */
+  const hasRare=chosen.some(c=>c.id!=='repair'&&rarityOf(c)!=='common');
+  if(!hasRare){
+    G.rarPity=dry+1;
+    if(G.rarPity>=PITY_HARD&&candRare.length){
+      const rep=wsample(candRare.slice());
+      let idx=chosen.findIndex(c=>c.id!=='repair'&&rarityOf(c)==='common');
+      if(idx<0)idx=chosen.length-1;
+      chosen[idx]=rep;
+      G.rarPity=0; // 强制保底后归零
+    }
+  }else G.rarPity=0;
   return chosen;
 }
 
@@ -2455,10 +2706,20 @@ function unlockHull(id){
    累计击坠 / 出击场次 / 累计漂移时长 / 最远波次 / 累计得分。挂在 2s 存档 tick 上增量结算，
    用 G.statK / G.statRT / G.statSc 记录「已计入统计」的水位，避免续档重复计数。 */
 const STAT_KEY='nova-stats';
+/* 统计 schema（v2 起 8 字段）：
+     k/g/t/w/sc   —— 累计击坠 / 出击场次 / 累计时长 / 最远波次 / 累计得分（v1 原有）
+     hulls        —— 已完成过出击的船体 id 数组（技巧支「三舰齐发 / 全舰制霸」）
+     nomod        —— 「零模块」状态下到达过的最远波次（技巧支「裸装穿越」）
+     flaw         —— 「未受伤」状态下到达过的最远波次（技巧支「毫发无伤」）
+   ⚠️ 旧档缺字段一律走默认值 —— 绝不因字段缺失抛错（会被 asActivity 的 catch 吞掉、
+   表现为统计永远停在 0）。 */
 function loadStats(){
   try{const s=JSON.parse(localStorage.getItem(STAT_KEY)||'null');
-    if(s&&typeof s==='object')return{k:s.k|0,g:s.g|0,t:s.t||0,w:s.w||0,sc:s.sc|0};}catch(e){}
-  return{k:0,g:0,t:0,w:0,sc:0};
+    if(s&&typeof s==='object')return{
+      k:s.k|0,g:s.g|0,t:s.t||0,w:s.w||0,sc:s.sc|0,
+      hulls:Array.isArray(s.hulls)?s.hulls.filter(x=>typeof x==='string'):[],
+      nomod:s.nomod||0,flaw:s.flaw||0};}catch(e){}
+  return{k:0,g:0,t:0,w:0,sc:0,hulls:[],nomod:0,flaw:0};
 }
 function saveStats(s){try{localStorage.setItem(STAT_KEY,JSON.stringify(s));}catch(e){}}
 function flushStats(){
@@ -2468,14 +2729,24 @@ function flushStats(){
   const dsc=Math.max(0,G.score-(G.statSc||0));
   const s=loadStats();
   const newW=Wv.n>(s.w||0);
+  // 技巧支的两个「最远波次」水位：由本局标记决定是否计入
+  const newNo=(G.noMod&&Wv.n>(s.nomod||0));
+  const newFl=(G.flawless&&Wv.n>(s.flaw||0));
+  // 船体达成记录：结算时（本局走过至少一波）把本局船体并入 hulls
+  const hullId=(G.lastHull&&G.lastHull.id)||'peregrine';
+  const newHull=(Wv.n>=1)&&!s.hulls.includes(hullId);
   // 原「dt<1 就不写入」会把每次结算不足 1 秒的漂移时长整段吞掉，改为各维度独立、有增量就记
-  if(dk<=0&&dt<=0&&dsc<=0&&!newW)return;
+  if(dk<=0&&dt<=0&&dsc<=0&&!newW&&!newNo&&!newFl&&!newHull)return;
   const before=s.k;
   G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;
   s.k+=dk;s.t+=dt;s.sc+=dsc;if(newW)s.w=Wv.n;
+  if(newNo)s.nomod=Wv.n;
+  if(newFl)s.flaw=Wv.n;
+  if(newHull)s.hulls.push(hullId);
   // 最高分随进度实时刷新：即使中途关页/未走到结算界面也不会丢
   if(G.score>G.best){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   saveStats(s);
+  achCheck(s, before); // 达成提示放在写入之后：此时 loadStats() 已是最新
   if(before<SWARM_KILLS&&s.k>=SWARM_KILLS){ // 蜂群解锁时刻
     banner('NEW HULL · '+T('蜂群','Swarm'),T('累计击坠 '+SWARM_KILLS+' 达成 —— 无人机母舰已解锁','Lifetime kills reached '+SWARM_KILLS+' — the drone carrier is unlocked'));
     sfx.victory();
@@ -3472,6 +3743,7 @@ function updatePickups(dt){
 /* ============================== combat ============================== */
 function hurtAst(a,dmg,hx,hy,crit){
   const mx=hx||a.x,my=hy||a.y; // 长枪等武器不传命中点时用本体位置兜底
+  G.dmgOut=(G.dmgOut||0)+dmg;  // 本局累计输出：四个伤害分支（环 / 本体 / 普通）都从这里出账
   if(a.invT>0){ // Boss 换阶段时的短暂无敌窗口
     burst(mx,my,4,150,0.3,'236,208,138',2);
     dmgText(mx,my,dmg,'absorb',a);sfx.hit('block');
@@ -3611,6 +3883,7 @@ function hurtEn(e,dmg,hx,hy,crit){
   }
   if(e.aura>0)dmg*=0.6; // 牧者光环：减伤 40%
   e.hp-=dmg;e.flash=0.09;
+  G.dmgOut=(G.dmgOut||0)+dmg; // 本局累计输出（结算面板）
   burst(mx,my,crit?9:4,crit?260:170,0.35,crit?'236,208,138':'255,150,100',2);
   dmgText(mx,my,dmg,crit?'crit':'hit',e);sfx.hit(crit?'crit':'');
   if(e.hp<=0)killEn(e);
@@ -3637,7 +3910,7 @@ function killEn(e){
   if(e.type==='mine'){ // 浮游雷：击杀同样引爆
     ring(e.x,e.y,120,'255,200,90');burst(e.x,e.y,18,260,0.5,'255,200,90',2.6);
     shake(7);
-    if(d2(e.x,e.y,P.x,P.y)<(120+P.r)*(120+P.r))hurtPlayer(20,e.x,e.y);
+    if(d2(e.x,e.y,P.x,P.y)<(120+P.r)*(120+P.r))hurtPlayer(20,e.x,e.y,e);
   }
   if(e.type==='nova'&&blastDepth<3){ // 新星：死亡时剧烈爆炸，可连锁
     blastDepth++;
@@ -3645,7 +3918,7 @@ function killEn(e){
     ring(e.x,e.y,R,'255,180,90');ring(e.x,e.y,R*0.6,'236,208,138');
     burst(e.x,e.y,30,340,0.7,'255,160,70',3);
     shake(12);sfx.boom(3);FX.boom(e.x,e.y,2,'orange',false);
-    if(d2(e.x,e.y,P.x,P.y)<(R+P.r)*(R+P.r))hurtPlayer(40,e.x,e.y);
+    if(d2(e.x,e.y,P.x,P.y)<(R+P.r)*(R+P.r))hurtPlayer(40,e.x,e.y,e);
     for(const o of G.enemies.slice())if(o!==e&&d2(o.x,o.y,e.x,e.y)<R*R)hurtEn(o,20,o.x,o.y,false);
     blastDepth--;
   }
@@ -3653,7 +3926,7 @@ function killEn(e){
     // 幽灵自爆：对周围敌人与玩家造成溅射伤害
     ring(e.x,e.y,90,'150,185,215');
     burst(e.x,e.y,20,280,0.5,'150,185,215',2.4);
-    if(d2(e.x,e.y,P.x,P.y)<(90+P.r)*(90+P.r))hurtPlayer(18,e.x,e.y);
+    if(d2(e.x,e.y,P.x,P.y)<(90+P.r)*(90+P.r))hurtPlayer(18,e.x,e.y,e);
   }
   if(e.volatile&&blastDepth<3){ // 爆裂词缀：死亡时范围溅射（带连锁深度保护）
     blastDepth++;
@@ -3661,7 +3934,7 @@ function killEn(e){
     ring(e.x,e.y,R,'196,148,255');
     glowBurst(e.x,e.y,9,250,0.6,'196,148,255',11,0.9);
     shake(6);sfx.boom(2);
-    if(d2(e.x,e.y,P.x,P.y)<(R+P.r)*(R+P.r))hurtPlayer(16,e.x,e.y);
+    if(d2(e.x,e.y,P.x,P.y)<(R+P.r)*(R+P.r))hurtPlayer(16,e.x,e.y,e);
     for(const o of G.enemies.slice())
       if(o!==e&&d2(o.x,o.y,e.x,e.y)<R*R)hurtEn(o,14,o.x,o.y,false);
     blastDepth--;
@@ -3682,7 +3955,40 @@ function killImpact(e){
   else if(e.type==='wraith'||e.volatile){camKick(0.02);ppBloom(0.85);ppGlitch(0.5);}
 }
 
-function hurtPlayer(dmg,sx,sy){
+/* 死因记录（结算面板用）：每次受击更新「最近一次来源」，坠毁瞬间固化成 G.cause。
+   src 是可选参数 —— 传敌人/巨像实体即可读出它是谁，不传则归为「环境」。
+   留意：护盾吸收与低压泄压都发生在这里，只有真正扣到血的伤害才该改写死因。
+   cum 累计「当前这个来源」造成的总伤害：吸附虫这类小额持续伤害靠它才有分量。 */
+function noteHit(src,dmg){
+  const isBoss=!!(src&&src.bossKind);
+  const type=src?(src.type||src.bossKind||''):'';
+  const prev=G.lastHit;
+  const same=prev&&prev.type===type&&prev.kind===(src?(isBoss?'boss':'enemy'):'env');
+  G.lastHit={kind:src?(isBoss?'boss':'enemy'):'env',type,
+    champ:!!(src&&src.champ),elite:!!(src&&src.elite),affix:(src&&src.affix)||'',
+    dmg:Math.round(dmg||0),cum:(same?prev.cum:0)+Math.round(dmg||0),t:G.runT};
+}
+/* 就近归因：给一条弹体找最可能的持有者（最近的非巨像敌人优先，其次巨像）。
+   巨像体型大、常在屏幕边缘开火，所以「最近的敌人」比「最近的实体」更贴近真相；
+   但敌人全灭时只剩巨像，仍要能归到它头上。 */
+function nearestFoe(x,y){
+  let best=null,bd=Infinity;
+  for(const e of G.enemies){
+    if(e.stick>0)continue;                 // 吸附虫用 drainPlayer 单独归因
+    const d=d2(e.x,e.y,x,y);
+    if(d<bd){bd=d;best=e;}
+  }
+  // 弹体离任何敌人都很远（漂了很久）→ 归给最近的巨像，仍没有就交给环境
+  if(!best||bd>(420*420)){
+    for(const a of G.asteroids){
+      if(!a.boss&&!a.champ)continue;
+      const d=d2(a.x,a.y,x,y);
+      if(d<bd){bd=d;best=a;}
+    }
+  }
+  return best;
+}
+function hurtPlayer(dmg,sx,sy,src){
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
   if(tryBlink(dmg,sx,sy))return; // 相位折跃：重击袭来时折跃脱险，该次伤害作废
   /* 受击：负向 kick = 镜头轻微后拉（读作被击退），叠一道色差撕裂。
@@ -3714,7 +4020,7 @@ function hurtPlayer(dmg,sx,sy){
     }
   }
   P.shieldT=4;
-  if(dmg>0){P.hp-=dmg;flashRed();}
+  if(dmg>0){P.hp-=dmg;G.dmgIn=(G.dmgIn||0)+dmg;G.flawless=false;flashRed();noteHit(src,dmg);}
   P.invuln=0.9+P.phase;
   const a=angTo(sx,sy,P.x,P.y);
   P.vx+=Math.cos(a)*190;P.vy+=Math.sin(a)*190;
@@ -3723,7 +4029,7 @@ function hurtPlayer(dmg,sx,sy){
 }
 /* 吸附虫的持续吸血：绕过受击无敌（否则永远打不疼），但被「无敌力场」完整免疫。
    不给击退、不震屏 —— 威胁感来自「必须甩掉它」而不是「被打飞」。 */
-function drainPlayer(dmg){
+function drainPlayer(dmg,src){
   if(G.mode!=='play'&&G.mode!=='inter')return;
   if(P.invPick>0)return;
   let d=dmg;
@@ -3736,12 +4042,18 @@ function drainPlayer(dmg){
     const s=Math.min(P.shield,d);P.shield-=s;d-=s;P.shieldT=4;
     ring(P.x,P.y,20,hullGlow());
   }
-  if(d>0){P.hp-=d;flashRed();}
+  if(d>0){P.hp-=d;G.dmgIn=(G.dmgIn||0)+d;G.flawless=false;flashRed();noteHit(src,d);}
   if(P.hp<=0){P.hp=0;die();}
+}
+
+/* 死因固化：G.cause 是坠毁瞬间对 lastHit 的快照（含累计伤害，便于结算文案）。 */
+function snapshotCause(){
+  G.cause=G.lastHit?{...G.lastHit,cum:Math.round(G.lastHit.cum||G.lastHit.dmg)}:null;
 }
 
 function die(){
   G.mode='dying';G.deathT=1.5;
+  snapshotCause(); // 死因在坠毁瞬间固化，之后 hurtPlayer 不再可能改写
   /* 坠毁：强色差 + 镜头后拉，配合 updateGrade 的去饱和，把"结束"这件事压到整个画面上 */
   ppGlitch(1);ppBloom(1);camKick(-0.03);
   flushStats(); // 坠毁瞬间即提交统计：dying 阶段关页/刷新也不会丢掉最后一波数据
@@ -4592,7 +4904,7 @@ function updateEnemies(dt){
           ring(e.x,e.y,120,'255,200,90');
           burst(e.x,e.y,20,300,0.55,'255,200,90',2.8);
           shake(9);sfx.boom(2);FX.boom(e.x,e.y,1.6,'orange',false);
-          if(dp<120+P.r)hurtPlayer(34,e.x,e.y);
+          if(dp<120+P.r)hurtPlayer(34,e.x,e.y,e);
           for(const o of G.enemies.slice())if(o!==e&&d2(o.x,o.y,e.x,e.y)<14400)hurtEn(o,18,o.x,o.y,false);
           swapDel(G.enemies,i);continue;
         }
@@ -4621,7 +4933,7 @@ function updateEnemies(dt){
       if(e.stick>0){
         e.x=P.x+Math.cos(e.stickA)*16;e.y=P.y+Math.sin(e.stickA)*16;
         e.stick-=dt;e.drain=(e.drain||0)+dt;
-        if(e.drain>=0.45){e.drain=0;drainPlayer(6);}
+        if(e.drain>=0.45){e.drain=0;drainPlayer(6,e);}
         if(Math.hypot(P.vx,P.vy)>400||e.stick<=0||P.invPick>0){
           e.stick=0;e.state='hunt';burst(e.x,e.y,8,180,0.35,'165,190,120',2);
         }
@@ -4862,7 +5174,10 @@ function updateBullets(dt){
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
     let dead=b.life<=0||b.x<-20||b.x>WORLD.w+20||b.y<-20||b.y>WORLD.h+20;
     if(!dead&&d2(b.x,b.y,P.x,P.y)<(b.r+P.r)*(b.r+P.r)){
-      hurtPlayer(b.dmg,b.x,b.y);dead=true;
+      /* 敌方子弹不记持有者（18 个生成点，逐个打标太重）。
+         改在命中瞬间找「离弹体最近的敌人/巨像」当来源 —— 弹幕从谁身上射出，
+         谁就是最近的那个。找不到（弹体已飘远）就归为环境伤害。 */
+      hurtPlayer(b.dmg,b.x,b.y,nearestFoe(b.x,b.y));dead=true;
       burst(b.x,b.y,6,150,0.3,'255,120,70',2);
     }
     if(dead)swapDel(G.ebullets,i);
@@ -4943,7 +5258,7 @@ function collidePlayer(){
         hurtAst(a,ramDmg(),P.x,P.y,false);ramFx();
         if(G.syn.molten_ram&&P.death>0)moltenSplash(); // 熔火撞角
       }
-      if(!inv)hurtPlayer(a.contact,a.x,a.y);
+      if(!inv)hurtPlayer(a.contact,a.x,a.y,a);
       return;
     }
   }
@@ -4955,7 +5270,7 @@ function collidePlayer(){
         hurtEn(e,ramDmg(),P.x,P.y,false);ramFx();
         if(G.syn.molten_ram&&P.death>0)moltenSplash(); // 熔火撞角
       }
-      if(!inv)hurtPlayer(e.dmg,e.x,e.y);
+      if(!inv)hurtPlayer(e.dmg,e.x,e.y,e);
       return;
     }
   }
@@ -5019,11 +5334,16 @@ function renderCards(){
   G.choices.forEach((c,i)=>{
     const div=document.createElement('div');
     div.className='card';
+    const cur=(G.build[c.id]||0),isOwned=cur>0;
+    const rar=c.id!=='repair'?rarityOf(c):'common';
+    if(c.id!=='repair'&&rar!=='common')div.classList.add('r-'+rar);
+    if(isOwned)div.classList.add('up'); // 已持有且未满级 → 本次是"升阶"
     const tag=c.type==='ability'
       ?`<span class="tag ability">${T('能力','ABILITY')}</span>`
       :`<span class="tag stat">${T('数值','STAT')}</span>`;
+    const rtag=c.id!=='repair'?`<span class="tag rar ${rar}">${T(RARITY_ZH[rar],RARITY_EN[rar])}</span>`:'';
     if(c.id!=='repair'){
-      const cur=G.build[c.id]||0,next=cur+1,isMax=next>=c.max;
+      const next=cur+1,isMax=next>=c.max;
       if(isMax)div.classList.add('mx');
       let pips='';
       for(let k=1;k<=c.max;k++)pips+=`<i class="${k<=cur?'on':''}${k===c.max?' cap':''}"></i>`;
@@ -5044,9 +5364,11 @@ function renderCards(){
             return `<div class="synrow${p.ready?' on':''}">⚡ ${T(p.s.zh,sen[0]||p.s.zh)} <em>·</em> `+
               `<b>${o.g} ${T(o.zh,o.en)}${p.ready?' ✓':''}</b></div>`;
           }).join('')+(more?`<div class="synmore">${T('还有 '+more+' 条协同','+' + more + ' more')}</div>`:'')+`</div>`:'';
+      /* 升阶标记：已持有且未满级 → 明确"这次是 LV 升级"，让重复获得有可见反馈。 */
+      const upMark=isOwned&&!isMax?`<span class="up-mark">${T('↑ 升阶 LV'+next,'UPGRADE → LV'+next)}</span>`:'';
       div.innerHTML=`<div class="g">${isMax?'✦':c.g}</div><h3>${T(c.zh,c.en)}</h3>
-        <div class="en">${isMax?'MAX · LV'+next:c.en+' · LV'+next}${tag}</div>
-        <p>${lvTxt}</p>${rdHtml}${synHtml}<div class="pips">${pips}</div>`;
+        <div class="en">${isMax?'MAX · LV'+next:c.en+' · LV'+next}${tag}${rtag}</div>
+        <p>${lvTxt}</p>${rdHtml}${synHtml}${upMark}<div class="pips">${pips}</div>`;
     }else{
       div.innerHTML=`<div class="g">${c.g}</div><h3>${T(c.zh,c.en)}</h3><div class="en">${c.en}${tag}</div>
         <p>${c.desc}</p><div class="pips"></div>`;
@@ -5086,6 +5408,7 @@ function resolveCard(i){
   else{
     const n=(G.build[c.id]||0)+1;
     G.build[c.id]=n;c.apply(n);
+    if(G.noMod)G.noMod=false; // 装过任何模块，「裸装穿越」本局作废
     maxed=n>=c.max;
   }
   const got=checkSynergies();
@@ -5134,6 +5457,10 @@ function startGame(hull){
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.lances.length=0;G.ghosts.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
+  G.lastHit=null;G.cause=null; // 新一局：清空上一局的死因
+  G.dmgOut=0;G.dmgIn=0;G.peakThreat=0; // 本局关键统计归零
+  G.noMod=true;G.flawless=true; // 技巧支水位：装配模块 / 受任何伤害即作废
+  G.rarPity=0; // 稀有度保底计数：新一局清零
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
@@ -5285,6 +5612,55 @@ function fitOpenChips(){                          // 只看当前可见面板，
 }
 window.addEventListener('resize',fitOpenChips);
 window.addEventListener('orientationchange',fitOpenChips);
+
+/* 死因文案：把 G.cause 翻译成「谁 · 怎么打死你的」。
+   三种粒度 —— 巨像（BOSS_NAME/BOSS_ZH）/ 精英巨像 / 普通敌型（EN_ZH/EN_EN）；
+   全都没有（撞小行星、环境伤害）时给一句「环境」兜底。
+   词缀是叠加态，单独挂一个 tag，不加进名字里（否则名字会很长、且翻译要拼串）。 */
+function causeLine(c){
+  if(!c)return{name:T('未知信号','UNKNOWN SIGNAL'),trait:T('没有记录到致命来源','No fatal source recorded'),
+    sub:'',affix:'',dmg:0};
+  let name='',trait='',sub='';
+  if(c.kind==='env'){
+    name=T('星尘与残骸','Debris field');
+    trait=T('撞击累积 —— 没有哪个敌人补上最后一刀','Cumulative impacts — no single enemy landed the last blow');
+  }else if(c.kind==='boss'){
+    const key=c.type||'rock';
+    name=T(BOSS_ZH[key]||'巨像',BOSS_NAME[key]||'COLOSSUS');
+    trait=c.champ?T('精英巨像 —— 两场巨像之间的强化体','Elite colossus — the hardened body between two colossi')
+                  :T('星区巨像 —— 波次首领','Sector colossus — wave overlord');
+    sub=BOSS_NAME[key]||'';
+  }else{
+    const key=c.type;
+    name=T(EN_ZH[key]||'敌机',EN_EN[key]||'Hostile');
+    const tr=EN_TRAIT[key];
+    trait=tr?T(tr[0],tr[1]):'';
+    sub=c.champ?T('精英','ELITE'):(c.elite?T('强化','ELITE'):'');
+  }
+  // 词缀标签：AFFIX 表里有单字名（疾 / 坚 / 爆），中英共用
+  const affix=c.affix&&AFFIX[c.affix]?AFFIX[c.affix].name+T(' 词缀',' AFFIX'):'';
+  return{name,trait,sub,affix,dmg:c.cum||c.dmg||0,at:c.t};
+}
+/* 关键统计行：输出 / 承伤 / 峰值威胁 / 伤害效率 —— 都是本局可比的硬数 */
+function buildOverExtra(){
+  const out=Math.round(G.dmgOut||0),inn=Math.round(G.dmgIn||0);
+  const eff=inn>0?Math.round(out/inn):out;
+  const rows=[
+    [T('总输出','DMG OUT'),fmt(out)],
+    [T('承伤','DMG IN'),fmt(inn)],
+    [T('峰値威胁','PEAK HOSTILES'),String(G.peakThreat||0)],
+    [T('换伤比','TRADE RATIO'),eff+'×'],
+  ];
+  return rows.map(([k,v])=>`<span>${k} <b class="mono">${v}</b></span>`).join('<i></i>');
+}
+function buildCause(){
+  const c=causeLine(G.cause);
+  const affixTag=c.affix?`<em class="tag affix">${c.affix}</em>`:'';
+  const subTag=c.sub?`<em class="tag">${c.sub}</em>`:'';
+  const dmgTag=c.dmg?`<em class="tag dmg">${T('致命累积','FATAL')} ${fmt(Math.round(c.dmg))}</em>`:'';
+  return `<div class="cause-name"><b>${c.name}</b>${subTag}${affixTag}${dmgTag}</div>`+
+    `<div class="cause-trait">${c.trait}</div>`;
+}
 function showOver(){
   G.mode='over';
   flushStats(); // 坠毁结算前提交末段统计，否则最后一波击坠/得分/时长会丢失
@@ -5299,6 +5675,10 @@ function showOver(){
   setStat('stKills',G.kills);
   const m=Math.floor(G.runT/60),s=Math.floor(G.runT%60);
   setStat('stTime',m+':'+String(s).padStart(2,'0'));
+  /* 三块新内容：死因（谁打死你的）/ 关键统计（打得怎么样）/ 构筑回顾（buildChips 原有）。
+     顺序按「先知道怎么死的 → 再知道打得如何 → 最后回看拿了什么」排。 */
+  el.overCauseBody.innerHTML=buildCause();
+  el.overExtra.innerHTML=buildOverExtra();
   el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   fitChips(el.overChips);
   el.over.hidden=false;
@@ -5361,8 +5741,12 @@ function toggleMute(){
 function openLogbook(){
   G.mode='logbook';
   el.menu.hidden=true;
-  drawLogbook();
+  // 必须先取消隐藏再绘制：fitAch 依赖 clientWidth/clientHeight，
+  // 面板还 hidden 时量到 0，星图缩放会退化成 1（最右一列被裁在框外）。
   el.logbook.hidden=false;
+  drawLogbook();
+  // 入场动画会让面板先 translateY+scale，等一帧再量尺寸才准
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(G.mode==='logbook')fitAch();}));
 }
 /* 存档管理：中途退出的漂移记录，可加载 / 删除 */
 function fmtWhen(ts){
@@ -5417,6 +5801,226 @@ function delSlot(id){
 // 直接按 id 写入「实时 DOM 节点」，不依赖缓存的 el.* 引用 ——
 // 即使未来某处重建了面板 HTML 导致旧引用脱离 DOM，这里也永远写到可见节点，杜绝“数值永远停在 0”。
 function setStat(id,v){const e=$(id);if(e)e.textContent=v;}
+
+/* ============================== 成就星图（Phase 3.4 容器） ==============================
+   本版先把**版式与交互**定死，节点数据用占位成就跑通渲染 —— Phase 3.4 只需往 ACH 里填
+   真实成就与坐标，不再动版式。
+   设计约束（来自 ROADMAP 3.4）：
+   ① 节点坐标**写死在数据里**，不做自动布局 —— 树的形状是设计出来的，不是算出来的；
+   ② 连线 = 前置依赖（`req` 指向父节点 id）；
+   ③ 数据源复用 `STAT_KEY` 累计统计，**不需要新的存储键**；
+   ④ 视觉只吃 Phase 0 的 token（钢蓝=结构 · 铅白=读数 · 黄铜=已达成）。
+   坐标单位是画布像素（与 CSS 无关），平移/缩放在整层上做 transform。 */
+/* 节点坐标写死在数据里 —— 版式是设计出来的，不是算出来的。
+   布局：左起「初次漂移」为总根，向右分三支（击坠 / 波次 / 时长），
+   汇总节点在最右上，用 dependsOn 聚合而不是直接拉线（避免交叉线糊成一团）。
+   画布 560×340，节点 150×52；列间距 170（150 节点 + 20 空隙），行间距 88。 */
+const ACH_W=1008,ACH_H=688,ACH_NODE_W=150,ACH_NODE_H=52;
+/* 四条支线 + 一个汇总节点，坐标全部手写（版式是设计出来的，不是算出来的）：
+     列间距 168（节点 150 + 18 空隙）· 行间距 74（节点 52 + 22 空隙）
+     支线自上而下：击坠（y=12）· 波次（y=160）· 时长（y=456）· 技巧（y=604）
+     根节点 `seed` 居中（y=308），汇总节点 `all` 在最右（x=848）用 dependsOn 聚合。
+   目标值刻意拉开数量级：击坠 100 → 4000，波次 5 → 无尽第 35 波，
+   时长 10 分 → 5 小时，技巧支跨"船体 / 无模块 / 无伤"三种玩法，避免全挤在一条数值轴上。 */
+const ACH=[
+  /* ---------- 根 ---------- */
+  {id:'seed',  x:8,   y:308, zh:'初次漂移', en:'First Drift',
+   d:'完成一场出击', de:'Finish a run', goal:()=>1, get:s=>s.g||0},
+
+  /* ---------- 击坠支 ---------- */
+  {id:'k100',  x:176, y:12,  zh:'破百', en:'Century',
+   d:'累计击坠 100', de:'100 lifetime kills', goal:()=>100, get:s=>s.k||0, req:'seed'},
+  {id:'k500',  x:344, y:12,  zh:'猎手', en:'Hunter',
+   d:'累计击坠 500', de:'500 lifetime kills', goal:()=>500, get:s=>s.k||0, req:'k100'},
+  {id:'k1500', x:512, y:12,  zh:'蜂群之主', en:'Swarm Lord',
+   d:'累计击坠 1500', de:'1500 lifetime kills', goal:()=>SWARM_KILLS, get:s=>s.k||0, req:'k500'},
+  {id:'k4000', x:680, y:12,  zh:'星域清道夫', en:'Sector Sweeper',
+   d:'累计击坠 4000', de:'4000 lifetime kills', goal:()=>4000, get:s=>s.k||0, req:'k1500'},
+
+  /* ---------- 波次支 ---------- */
+  {id:'w5',    x:176, y:160, zh:'离开港湾', en:'Beyond the Dock',
+   d:'挺进第 5 波', de:'Reach wave 5', goal:()=>5, get:s=>s.w||0, req:'seed'},
+  {id:'w15',   x:344, y:160, zh:'穿越中子星云', en:'Into the Nebula',
+   d:'挺进第 15 波', de:'Reach wave 15', goal:()=>15, get:s=>s.w||0, req:'w5'},
+  {id:'w30',   x:512, y:160, zh:'肃清星域', en:'Sector Cleared',
+   d:'通关第 30 波', de:'Clear wave 30', goal:()=>WIN_WAVE, get:s=>s.w||0, req:'w15'},
+  {id:'wend',  x:680, y:160, zh:'星域之外', en:'Past the Sector',
+   d:'无尽漂移挺进第 35 波', de:'Reach wave 35 in endless', goal:()=>WIN_WAVE+5,
+   get:s=>s.w||0, req:'w30'},
+
+  /* ---------- 时长支 ---------- */
+  {id:'t600',  x:176, y:456, zh:'十分钟', en:'Ten Minutes',
+   d:'累计漂移 10 分钟', de:'10 minutes of lifetime drift', goal:()=>600, get:s=>s.t||0, req:'seed'},
+  {id:'t3600', x:344, y:456, zh:'万秒漂移', en:'Long Drift',
+   d:'累计漂移 1 小时', de:'1 hour of lifetime drift', goal:()=>3600, get:s=>s.t||0, req:'t600'},
+  {id:'t7200', x:512, y:456, zh:'双时之航', en:'Two Hour Voyage',
+   d:'累计漂移 2 小时', de:'2 hours of lifetime drift', goal:()=>7200, get:s=>s.t||0, req:'t3600'},
+  {id:'t5h',   x:680, y:456, zh:'恒星长眠', en:'Stellar Slumber',
+   d:'累计漂移 5 小时', de:'5 hours of lifetime drift', goal:()=>18000, get:s=>s.t||0, req:'t7200'},
+
+  /* ---------- 技巧支（跨玩法，不靠堆数值） ---------- */
+  {id:'hull3', x:176, y:604, zh:'三舰齐发', en:'Three Hulls',
+   d:'用 3 种不同船体各完成一次出击', de:'Fly 3 different hulls', goal:()=>3,
+   get:s=>s.hulls?s.hulls.length:0, req:'seed'},
+  {id:'hull6', x:344, y:604, zh:'全舰制霸', en:'Full Roster',
+   d:'用全部 6 种船体各完成一次出击', de:'Fly all 6 hulls', goal:()=>6,
+   get:s=>s.hulls?s.hulls.length:0, req:'hull3'},
+  {id:'nomod', x:512, y:604, zh:'裸装穿越', en:'Bare Hull',
+   d:'不装配任何模块挺进第 3 波', de:'Reach wave 3 with no modules',
+   goal:()=>3, get:s=>s.nomod||0, req:'seed'},
+  {id:'flaw',  x:680, y:604, zh:'毫发无伤', en:'Untouched',
+   d:'全程未受伤害挺进第 10 波', de:'Reach wave 10 without taking damage',
+   goal:()=>10, get:s=>s.flaw||0, req:'w5'},
+
+  /* ---------- 汇总 ---------- */
+  {id:'all',   x:848, y:308, zh:'奇点观测者', en:'Singularity Watcher',
+   d:'集齐其余全部成就', de:'All other achievements',
+   dependsOn:['k4000','wend','t5h','hull6','nomod','flaw'], goal:()=>0, get:()=>0},
+];
+const ACH_KEY='nova-ach';
+function achSeen(){try{return new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]'));}catch(e){return new Set();}}
+function achMark(id){try{const s=achSeen();s.add(id);localStorage.setItem(ACH_KEY,JSON.stringify([...s]));}catch(e){}}
+/* 达成瞬间提示。
+   去重与「不刷屏」两条规则：
+     ① 已记录在 nova-ach 的 id 不再提示（同一成就只弹一次）；
+     ② 旧档首开时若一次性满足多条 → 只写盘不弹（G.achPrimed 置位后恢复正常提示）。
+   队列化：一帧内可能连达成 2~3 条，banner 只有一行 —— 串行播报，每条 2.2s。 */
+function achCheck(s, prevK){
+  const fresh=[];
+  for(const a of ACH){
+    if(achSeen().has(a.id))continue;
+    const p=achProgress(a,s);
+    if(!p.done)continue;
+    achMark(a.id);
+    fresh.push(a);
+  }
+  if(!fresh.length)return;
+  if(!G.achPrimed){G.achPrimed=true;return;} // 旧档首开：静默补记
+  G.achQueue=(G.achQueue||[]).concat(fresh);
+}
+/* 每帧从队列取一条播报（在 loop 里调用）。用户偏好"果断、有分量" →
+   成就提示走 banner + 音效 + 船体金环，与 MAX 模块同一套语言。 */
+function achTick(){
+  if(!G.achQueue||!G.achQueue.length)return;
+  if(G.achCool>0)return;
+  const a=G.achQueue.shift();
+  const seen=ACH.filter(x=>achSeen().has(x.id)).length;
+  banner('ACHIEVEMENT · '+T(a.zh,a.en),
+    T(`达成 ${seen}/${ACH.length} —— ${a.d}`, `${seen}/${ACH.length} unlocked — ${a.de}`));
+  sfx.max();
+  if(P){ring(P.x,P.y,26,'236,208,138');ring(P.x,P.y,50,'236,208,138');
+    burst(P.x,P.y,22,300,0.8,'236,208,138',2.4);}
+  G.achCool=2.2;
+}
+/* 达成 = 累计统计到达目标。本轮新达成写入 nova-ach（用于将来"达成瞬间弹窗"去重）。 */
+function achProgress(a,s){
+  const g=a.goal(s)|0;
+  if(g<=0){ // 汇总条目：由 dependsOn 列出的条目的达成状态决定
+    const deps=(a.dependsOn||[]).map(id=>{
+      const k=ACH.find(x=>x.id===id);
+      return k?achProgress(k,s).done:false;
+    });
+    const done=deps.length>0&&deps.every(Boolean);
+    return {g:0,v:0,done,pct:done?1:0};
+  }
+  const v=Math.max(0,a.get(s)|0);
+  return {g,v,done:v>=g,pct:Math.min(1,v/g)};
+}
+/* 一次性算出全树状态表 —— drawAch 与测试钩子共用（避免两处逻辑漂移） */
+function achProgressAll(s){const st={};for(const a of ACH)st[a.id]=achProgress(a,s);return st;}
+function drawAch(s){
+  const nodes=el.lbTreeNodes,links=el.lbTreeLinks;
+  if(!nodes||!links)return null;
+  const st=achProgressAll(s);
+  for(const a of ACH)if(st[a.id].done)achMark(a.id);
+  const doneN=ACH.filter(a=>st[a.id].done).length;
+  // 连线层：SVG 用画布坐标系（ACH_W × ACH_H），与节点层的像素坐标 1:1 ——
+  // 不要用视窗尺寸，否则节点与连线会错位（视窗只是画布的一个可平移窗口）。
+  links.setAttribute('viewBox','0 0 '+ACH_W+' '+ACH_H);
+  links.setAttribute('width',ACH_W);links.setAttribute('height',ACH_H);
+  // 两种边：req = 前置依赖（实线语义）；dependsOn = 汇总聚合（点线，表示"集齐"而非"解锁"）。
+  const edges=[];
+  for(const a of ACH){
+    if(a.req)edges.push({from:a.req,to:a.id,agg:false});
+    for(const r of (a.dependsOn||[]))edges.push({from:r,to:a.id,agg:true});
+  }
+  links.innerHTML=edges.map(e=>{
+    const p=ACH.find(k=>k.id===e.from),a=ACH.find(k=>k.id===e.to);
+    if(!p||!a)return '';
+    const x1=p.x+ACH_NODE_W,y1=p.y+ACH_NODE_H/2,x2=a.x,y2=a.y+ACH_NODE_H/2;
+    const on=st[e.from].done&&st[e.to].done;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+      stroke="${on?RGBA('amber',.5):RGBA('line',st[e.from].done?.38:.2)}"
+      stroke-dasharray="${on&&!e.agg?'':'3 5'}"/>`;
+  }).join('');
+  nodes.innerHTML=ACH.map(a=>{
+    const p=st[a.id];
+    // 三态：done（满格黄铜）/ part（有进度，钢蓝）/ locked（暗轮廓）
+    const cls=p.done?'done':(p.pct>0?'part':'locked');
+    const read=p.g>0
+      ? `${fmt(Math.min(p.v,p.g))} / ${fmt(p.g)} · ${Math.round(p.pct*100)}%`
+      : (p.done?T('已达成','Complete'):T('待完成','Pending'));
+    // 进度条宽度：goal<=0 的汇总节点不显示（它的"进度"由聚合态表达）
+    const bar=p.g>0?`<u style="width:${(p.pct*100).toFixed(1)}%"></u>`:'';
+    // ⚠️ 汇总节点在未达成时也显示依赖进度（X/6）——否则看起来像没有目标的空节点
+    const agg=(p.g<=0&&!p.done&&a.dependsOn)
+      ? T(`前置 ${a.dependsOn.filter(id=>{const k=ACH.find(x=>x.id===id);return k&&achProgress(k,s).done;}).length}/${a.dependsOn.length}`,
+          `${a.dependsOn.filter(id=>{const k=ACH.find(x=>x.id===id);return k&&achProgress(k,s).done;}).length}/${a.dependsOn.length} prerequisites`)
+      : null;
+    return `<div class="lbnode ${cls}" style="left:${a.x}px;top:${a.y}px" data-ach="${a.id}">
+      <b>${T(a.zh,a.en)}</b><span>${T(a.d,a.de)}</span><i>${agg||read}</i>${bar}</div>`;
+  }).join('');
+  return {total:ACH.length,done:doneN};
+}
+/* 首次打开时把整张星图缩放进视窗 —— 视窗（桌面约 425px）小于画布（560px），
+   不缩放的话最右一列必然在框外，玩家看到的是"被裁掉一半的树"。
+   缩放只在进入时算一次（依视窗尺寸），之后由玩家拖拽/平移自由浏览。 */
+function fitAch(){
+  const tree=el.lbTree,wrap=el.lbTreeWrap;
+  if(!tree||!wrap)return null;
+  const bw=tree.clientWidth,bh=tree.clientHeight;
+  if(!bw||!bh)return null;
+  // 内容包围盒：节点右下缘的最大值，留 10px 余量
+  let maxX=0,maxY=0;
+  for(const a of ACH){maxX=Math.max(maxX,a.x+ACH_NODE_W);maxY=Math.max(maxY,a.y+ACH_NODE_H);}
+  maxX+=10;maxY+=10;
+  // 视窗比画布小得多（桌面约 425×300 vs 画布 1008×688），必须缩放到能看全整棵树。
+  // 但缩得太小节点文字就不可读了 —— 下限 0.34 保证 b/i 两行小字仍能辨认，
+  // 超出的部分交给拖拽浏览。
+  const s=Math.max(0.34,Math.min(1,bw/maxX,bh/maxY));
+  wrap.dataset.sc=s;
+  applyAchTf();
+  return {scale:+s.toFixed(4),content:maxX+'x'+maxY,view:bw+'x'+bh};
+}
+/* 平移与缩放是两个独立的 transform 分量，不能互相覆盖：
+   fitAch 写 scale、拖拽写 translate，各自只改自己那一段。
+   状态存在 wrap 的 dataset 上（避免反复解析 transform 字符串）。 */
+function achTf(){const w=el.lbTreeWrap;return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
+function applyAchTf(){const w=el.lbTreeWrap;if(!w)return;const t=achTf();
+  w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+/* 拖拽平移：只在 logbook 打开时激活，指针移动直接写 transform（合成器属性，不读布局） */
+(function(){
+  let sx=0,sy=0,ox=0,oy=0,dragging=false;
+  document.addEventListener('pointerdown',e=>{
+    if(G.mode!=='logbook'||!e.target.closest('#lbTreeWrap'))return;
+    if(e.target.closest('.lbnode'))return;
+    const w=el.lbTreeWrap;if(!w)return;
+    dragging=true;sx=e.clientX;sy=e.clientY;
+    const t=achTf();ox=t.x;oy=t.y;
+    w.classList.add('drag');
+  });
+  document.addEventListener('pointermove',e=>{
+    if(!dragging||G.mode!=='logbook')return;
+    const w=el.lbTreeWrap;if(!w)return;
+    w.dataset.tx=ox+e.clientX-sx;w.dataset.ty=oy+e.clientY-sy;
+    applyAchTf();
+  });
+  const stop=()=>{if(!dragging)return;dragging=false;const w=el.lbTreeWrap;if(w)w.classList.remove('drag');};
+  document.addEventListener('pointerup',stop);
+  document.addEventListener('pointercancel',stop);
+})();
+/* 回到初始视点：平移清零、缩放回到自动适配值（重新量一次视窗） */
+function resetAchPan(){const w=el.lbTreeWrap;if(!w)return;w.dataset.tx=0;w.dataset.ty=0;fitAch();}
 function drawLogbook(){
   const s=loadStats();
   setStat('lbKills',fmt(s.k));
@@ -5425,6 +6029,46 @@ function drawLogbook(){
   setStat('lbTime',fmtT(s.t));
   setStat('lbScoreSum',fmt(s.sc));
   setStat('lbBest',fmt(G.best));
+  // ---- 敌型图鉴：解锁判定用「最远波次」（s.w），未解锁显示解锁波次 ----
+  const reached=s.w||0;
+  if(el.lbEnemies)el.lbEnemies.innerHTML=EN_LIST.map(t=>{
+    const need=EN_UNLOCK[t],ok=reached>=need,d=ENEMY_DEFS[t]||{};
+    const c=d.c||'192,64,43';
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})">
+      <span class="lbdot" style="border-color:rgba(${c},${ok?.85:.3});background:rgba(${c},${ok?.14:0})"></span>
+      <span style="min-width:0;flex:1">
+        <span class="lbname">${T(EN_ZH[t]||t,EN_EN[t]||t)}</span>
+        <span class="lben">${(EN_EN[t]||t).toUpperCase()}</span>
+        <span class="lbtrait">${ok?T(...(EN_TRAIT[t]||['',''])):T('第 '+need+' 波解锁','Unlocks at W'+need)}</span>
+      </span>
+      <span class="lbwave${ok?'':' lock'}">W${need}</span>
+    </div>`;
+  }).join('');
+  // ---- 巨像名录：按 BOSS_AT 的波次升序排列，解锁判定同上；词缀常驻 ----
+  // BOSS_AT 是「波次 → 巨像 kind」的映射，必须迭代它的值而不是键。
+  if(el.lbBosses)el.lbBosses.innerHTML=Object.keys(BOSS_AT).sort((a,b)=>a-b).map(w=>{
+    const k=BOSS_AT[w],need=+w,ok=reached>=need,st=BOSS_STYLE[k]||{c:'192,64,43'};
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})">
+      <span class="lbdot" style="border-color:rgba(${st.c},${ok?.85:.3});background:rgba(${st.c},${ok?.14:0})"></span>
+      <span style="min-width:0;flex:1">
+        <span class="lbname">${T(BOSS_ZH[k]||k,BOSS_NAME[k]||k)}</span>
+        <span class="lben">${(BOSS_NAME[k]||'').toUpperCase()}</span>
+        ${ok?'':'<span class="lbtrait">'+T('第 '+need+' 波解锁','Unlocks at W'+need)+'</span>'}
+      </span>
+      <span class="lbwave${ok?'':' lock'}">W${need}</span>
+    </div>`;
+  }).join('');
+  // ---- 词缀：常驻可用（不随波次解锁，随精英生成概率出现） ----
+  if(el.lbAffix)el.lbAffix.innerHTML=Object.keys(AFFIX).map(k=>{
+    const c=AFFIX[k].c,d=AFFIX_DESC[k]||['','',''];
+    return `<div class="lbcell" style="border-left-color:rgba(${c},.9)">
+      <span class="lbdot" style="border-color:rgba(${c},.85);background:rgba(${c},.14)"></span>
+      <span style="min-width:0;flex:1">
+        <span class="lbname">${T(d[0],k)} · ${AFFIX[k].name}</span>
+        <span class="lbtrait">${T(d[1],d[2])}</span>
+      </span>
+    </div>`;
+  }).join('');
   el.lbHulls.innerHTML=HULLS.map(h=>{
     const ok=hullUnlocked(h.id);
     return `<span class="${ok?'mx':''}">${h.g} ${T(h.zh,h.en)}</span>`;
@@ -5433,6 +6077,8 @@ function drawLogbook(){
   el.lbSwarm.innerHTML=sw<SWARM_KILLS
     ? `<i>${T('蜂群母舰解锁进度','Drone carrier unlock progress')} · ${fmt(sw)} / ${fmt(SWARM_KILLS)}</i>`
     : `<i>${T('蜂群母舰','Drone carrier')} · ${T('已解锁','unlocked')}</i>`;
+  drawAch(s);
+  resetAchPan(); // 重新量视窗并套用自动适配缩放（面板此刻已可见）
 }
 
 $('btnLaunch').addEventListener('click',openHulls);
@@ -5511,6 +6157,11 @@ window.addEventListener('pagehide',()=>{flushStats();});
 /* ============================== update ============================== */
 function updateWorld(dt){
   G.runT+=dt;
+  // 峰值威胁：同屏最多敌人数量（结算面板的「关键统计」用，只在 play 阶段采样）
+  if(G.mode==='play'){
+    const n=G.enemies.length+G.asteroids.length;
+    if(n>(G.peakThreat||0))G.peakThreat=n;
+  }
   G.saveT-=dt;if(G.saveT<=0){G.saveT=2;saveRun();flushStats();}
   if(G.mode==='play')director(dt);
   if(G.mode==='inter'){
@@ -6884,6 +7535,7 @@ function frame(now){
   G.t+=raw;
   G.shake*=Math.exp(-6*raw);
   updateCam(realDt);updatePost(realDt);updateGrade();updateMood();updateAim();
+  if(G.achCool>0)G.achCool=Math.max(0,G.achCool-raw);
   if(G.slowT>0){G.slowT-=raw;if(G.slowT<=0)AU.setMuffle(0);raw*=0.35;}
   if(G.bannerT>0){
     G.bannerT=Math.max(0,G.bannerT-raw);
@@ -6901,6 +7553,7 @@ function frame(now){
   }
 
   guideTick(); // 首局引导：在此统一收放，菜单 / 暂停 / 结算帧也照跑（见 guideTick 注释）
+  achTick();
 
   if(G.hitstop>0){ // 顿帧：冻结世界更新但继续渲染，制造打击顿挫感
     G.hitstop-=realDt;
@@ -7002,6 +7655,131 @@ window.NOVA={
     show:i=>{G.guideOn=true;G.guideIdx=i|0;guideShow(GUIDE_STEPS[i|0],i|0);},
   },
   winWave:()=>WIN_WAVE,
+  /* 航行日志测试钩子：counts 返回图鉴条目数；ach 返回成就树状态；open 打开日志面板 */
+  logbook:{
+    open:()=>{openLogbook();return G.mode;},
+    counts:()=>({enemies:el.lbEnemies?el.lbEnemies.children.length:0,
+      bosses:el.lbBosses?el.lbBosses.children.length:0,
+      affix:el.lbAffix?el.lbAffix.children.length:0,
+      hulls:el.lbHulls?el.lbHulls.children.length:0,
+      nodes:el.lbTreeNodes?el.lbTreeNodes.children.length:0,
+      links:el.lbTreeLinks?el.lbTreeLinks.children.length:0}),
+    ach:()=>ACH.map(a=>({id:a.id,...achProgress(a,loadStats())})),
+    /* 节点完整数据：坐标 / 依赖 / 渲染出的类名与文字 —— 断言树结构用 */
+    achNodes:()=>ACH.map(a=>{
+      const n=el.lbTreeNodes&&el.lbTreeNodes.querySelector('[data-ach="'+a.id+'"]');
+      return {id:a.id,x:a.x,y:a.y,req:a.req||null,dep:a.dependsOn||[],
+        cls:n?n.className.replace('lbnode','').trim():null,
+        read:n?n.querySelector('i').textContent:null,
+        bar:n&&n.querySelector('u')?n.querySelector('u').style.width:null};}),
+    /* 依赖闭包自检：每个 req/dependsOn 指向的 id 必须存在（悬空依赖会让连线静默消失） */
+    achDeps:()=>{
+      const ids=new Set(ACH.map(a=>a.id)),bad=[];
+      for(const a of ACH){
+        if(a.req&&!ids.has(a.req))bad.push(a.id+'→'+a.req);
+        for(const d of (a.dependsOn||[]))if(!ids.has(d))bad.push(a.id+'⇒'+d);
+      }
+      return {bad,dangling:bad.length};
+    },
+    /* 用合成统计渲染（不写盘），验证三态与进度百分比 */
+    achPreview:(o)=>{const st=achProgressAll(o||{k:0,g:0,w:0,t:0,sc:0});
+      return drawAch(o||{k:0,g:0,w:0,t:0,sc:0});},
+    /* 达成提示队列（测试用）：走与真实路径完全相同的序 ——
+       achMark 写盘 → 入队 → achTick 播报。用于断言文案 / 冷却 / 去重。 */
+    achToast:(id)=>{const a=ACH.find(x=>x.id===id);if(!a)return null;
+      G.achPrimed=true;G.achCool=0;
+      achCheck({k:0,g:0,t:0,w:0,sc:0,hulls:[],nomod:0,flaw:0}); // 不达成任何东西（清空队列语义）
+      G.achQueue=[a];achMark(a.id);achTick();
+      return {bMain:el.bMain.textContent,bSub:el.bSub.textContent,
+        cool:+G.achCool.toFixed(2),seen:[...achSeen()]};},
+    /* 真实路径：给一份合成统计喂进 achCheck（写盘 + 入队，但不标记为"已弹"），
+       返回新入队的 id —— 用来验证「同一成就只弹一次」。 */
+    achFeed:(o)=>{G.achPrimed=true;
+      const q0=(G.achQueue||[]).length;
+      achCheck(Object.assign({k:0,g:0,t:0,w:0,sc:0,hulls:[],nomod:0,flaw:0},o||{}));
+      return {queued:(G.achQueue||[]).length-q0,queue:(G.achQueue||[]).map(x=>x.id),seen:[...achSeen()]};},
+    achSeen:()=>[...achSeen()],
+    achReset:()=>{try{localStorage.removeItem(ACH_KEY);}catch(e){}
+      G.achPrimed=false;G.achQueue=null;G.achCool=0;},
+    achQueue:()=>({len:(G.achQueue||[]).length,cool:+G.achCool.toFixed(2)}),
+    locked:()=>({enemies:el.lbEnemies?el.lbEnemies.querySelectorAll('.locked').length:0,
+      bosses:el.lbBosses?el.lbBosses.querySelectorAll('.locked').length:0}),
+    /* 模拟累计统计（只用于验证解锁态渲染，不写盘） */
+    preview:(k,g,w,t)=>drawAch({k:k||0,g:g||0,w:w||0,t:t||0}),
+    fit:()=>fitAch(),
+    tf:()=>achTf(),
+  },
+  /* 卡牌稀有度测试钩子（Phase 3.1）：roll 采样分布 / 保底 / 卡面类目 */
+  cards:{
+    /* 26 项稀有度分档全表 */
+    rarity:()=>MODULES.map(m=>({id:m.id,rarity:rarityOf(m),type:m.type,max:m.max})),
+    /* 跑 n 次 rollChoices（每次重置 build 与 pity，模拟"全新一局首次升级"的纯权重分布） */
+    roll:n=>{
+      const out=[];
+      for(let i=0;i<(n||1000);i++){
+        G.build={};G.rarPity=0;
+        out.push(rollChoices().map(c=>c.id!=='repair'?rarityOf(c):'repair'));
+      }
+      return out;
+    },
+    /* 保底模拟：构造连续 dry 次无 rare+ 的局，看第 dry+1 次是否强制出 rare+ */
+    pity:dry=>{
+      const out=[];
+      G.build={};G.rarPity=0;
+      for(let i=0;i<(dry||6);i++){ // 先把 rarPity 顶到上限
+        // 用纯 common 池逼近 dry：直接递增计数
+        G.rarPity=i;
+        const ch=rollChoices();
+        out.push({pity:G.rarPity,hasRare:ch.some(c=>c.id!=='repair'&&rarityOf(c)!=='common')});
+      }
+      return out;
+    },
+    /* 渲染当前 choices 的卡面类目（类 + 是否含升阶标记 + 稀有度标签） */
+    faces:()=>G.choices.map((c,i)=>{
+      const d=el.cardrow.children[i];
+      if(!d)return null;
+      const rar=c.id!=='repair'?rarityOf(c):'common';
+      return {id:c.id,rarity:rar,cls:d.className,
+        rarTag:(d.querySelector('.tag.rar')||{}).textContent||null,
+        upMark:(d.querySelector('.up-mark')||{}).textContent||null,
+        rClass:d.className.split(' ').filter(x=>x.startsWith('r-')||x==='up'||x==='mx')};
+    }),
+  },
+  /* 死亡结算测试钩子：kill 直接把玩家打死（可指定来源与伤害）；
+     over 读结算面板当前渲染出的文字，用来断言三块内容真的填上了。 */
+  death:{
+    /* src 传敌人 type 字符串（'wraith'）或 'boss:kind'（'boss:hydra'）或 'env' */
+    kill:(src,dmg)=>{
+      if(!P)return false;
+      let who=null;
+      if(src&&src!=='env'){
+        if(src.indexOf('boss:')===0){
+          // 场上正好有这种巨像就借真的，否则用桩件（causeLine 只读 type/bossKind/champ/elite/affix）
+          const k=src.slice(5);
+          who=G.asteroids.find(t=>t.bossKind===k)||{type:k,bossKind:k,boss:true,champ:false};
+        }else{
+          who=G.enemies.find(t=>t.type===src)||{type:src};
+        }
+      }
+      P.invuln=0;hurtPlayer(dmg||1e9,P.x+60,P.y,who);
+      return true;
+    },
+    /* 跳过 dying 动画直接进结算，并等到面板渲染完成 */
+    finish:()=>{G.deathT=0;showOver();return G.mode;},
+    /* 结算面板读出的结构化文本 */
+    over:()=>({hidden:el.over.hidden,mode:G.mode,
+      score:el.overScore.textContent,
+      cause:el.overCauseBody?el.overCauseBody.textContent.replace(/\s+/g,' ').trim():null,
+      extra:el.overExtra?el.overExtra.textContent.replace(/\s+/g,' ').trim():null,
+      chips:el.overChips?el.overChips.querySelectorAll('.mchip').length:0,
+      tags:el.overCauseBody?[...el.overCauseBody.querySelectorAll('.tag')].map(t=>t.textContent):[],
+      secTitle:(()=>{const s=el.overCause&&el.overCause.querySelector('.sec-head');
+        return s?s.textContent.replace(/\s+/g,' ').trim():null;})()}),
+    cause:()=>G.cause?{...G.cause}:null,
+    stats:()=>({dmgOut:Math.round(G.dmgOut||0),dmgIn:Math.round(G.dmgIn||0),peak:G.peakThreat||0}),
+    line:c=>causeLine(c||G.cause),
+    lang:l=>{setLang(l);return LANG;},
+  },
   waveInfo:()=>({n:Wv.n,boss:Wv.boss,kind:Wv.bossKind,champ:Wv.champ,squad:Wv.squad,
     sector:Wv.sector,early:Wv.early,timeT:+Wv.timeT.toFixed(1),timeMax:Wv.timeMax,
     qA:Wv.qA.length,qE:Wv.qE.length}),

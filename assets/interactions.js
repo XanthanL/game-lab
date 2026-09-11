@@ -62,7 +62,7 @@
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var PARALLAX = ['dream', 'clay', 'weird', 'ink', 'morandi', 'futurism',
-    'vaporwave', 'synthwave', 'skate', 'decon', 'hermes', 'pop', 'swiss',
+    'vaporwave', 'synthwave', 'skate', 'decon', 'hermes', 'klein', 'pop', 'swiss',
     'raw', 'mac7', 'glitch', 'diagonal', 'blueprint'];
 
   var hero = document.querySelector('.hero');
@@ -237,14 +237,14 @@
   }, { passive: true });
 })();
 
-/* hermes（Hermes Agent · Nous Research）独有交互（2026-09-10）
+/* hermes（电光蓝 Electric Blue）/ klein（克莱因蓝 Klein Blue）共有交互（复制自 Hermes Agent 设计）
    取材自官网的两处签名，都是「把随机性当署名」的实验标注：
    ① 实验印章：nousresearch.com 每个条目右侧都挂一栏 mono 小字
       「OUTPUT 96 / SEED: 3573860127」。这里给站内每个 .sec 右下角注入同款印章，
       SEED 每次载入随机一次（10 位），页内所有印章共用同一个种子。
    ② 终端状态栏：右下角固定一条 mono 状态条，OUTPUT 三位数随滚动进度跑，
       末尾一枚闪动的方块光标（CSS 动画）。
-   显隐一律交给 CSS（:root[data-style="hermes"] .hm-stamp / .hm-hud），
+   显隐一律交给 CSS（:root[data-style="hermes"] / [data-style="klein"] .hm-stamp / .hm-hud），
    所以运行时换肤也正确 —— 不在这里判皮肤、不写 style.display。 */
 (function () {
   'use strict';
@@ -267,8 +267,15 @@
   var hud = document.createElement('div');
   hud.className = 'hm-hud';
   hud.setAttribute('aria-hidden', 'true');
-  hud.innerHTML = '<span class="hm-hud-t">\u25AE HERMES</span>' +
+  var hudName = (root.getAttribute('data-style') === 'klein') ? '克莱因蓝' : '电光蓝';
+  hud.innerHTML = '<span class="hm-hud-t">\u25AE ' + hudName + '</span>' +
                   '<span class="hm-hud-o">OUTPUT 000</span>';
+  var hudT = hud.querySelector('.hm-hud-t');
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      hudT.textContent = '\u25AE ' + ((root.getAttribute('data-style') === 'klein') ? '克莱因蓝' : '电光蓝');
+    }).observe(root, { attributes: true, attributeFilter: ['data-style'] });
+  }
   document.body.appendChild(hud);
 
   var out = hud.querySelector('.hm-hud-o');

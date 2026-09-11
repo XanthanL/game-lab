@@ -100,7 +100,7 @@
     { id: "draft", zh: "图纸", en: "Draft",
       styles: ["blueprint"] },
     { id: "tech", zh: "科技品牌", en: "Tech",
-      styles: ["hermes"] }
+      styles: ["hermes", "klein"] }
   ];
   var STYLES = GROUPS.reduce(function (acc, g) { return acc.concat(g.styles); }, []);
   /* 反查：皮肤键 → 组 id（选皮肤时用来自动跳到它所在的组） */
@@ -163,7 +163,8 @@
     decon: { short: { zh: "解构", en: "DECON" }, chip: { zh: "解构主义", en: "Deconstructivism" }, full: { zh: "解构主义 · Deconstructivism", en: "Deconstructivism" } },
     ink: { short: { zh: "水墨", en: "INK" }, chip: { zh: "水墨", en: "Ink Wash" }, full: { zh: "水墨 · Ink Wash", en: "Chinese Ink Wash" } },
     futurism: { short: { zh: "未来", en: "FUTR" }, chip: { zh: "未来主义", en: "Futurism" }, full: { zh: "未来主义 · Futurism", en: "Italian Futurism" } },
-    hermes: { short: { zh: "Hermes", en: "HERM" }, chip: { zh: "Hermes Agent", en: "Hermes Agent" }, full: { zh: "Hermes Agent · Nous Research", en: "Hermes Agent · Nous Research" } },
+    hermes: { short: { zh: "电光蓝", en: "ELEC" }, chip: { zh: "电光蓝", en: "Electric Blue" }, full: { zh: "电光蓝", en: "Electric Blue" } },
+    klein: { short: { zh: "克莱因蓝", en: "KLEIN" }, chip: { zh: "克莱因蓝", en: "Klein Blue" }, full: { zh: "克莱因蓝", en: "Klein Blue" } },
     diagonal: { short: { zh: "对角", en: "DIAG" }, chip: { zh: "对角线计划", en: "Diagonal" }, full: { zh: "对角线计划 · Diagonal", en: "Diagonal Archive" } }
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */

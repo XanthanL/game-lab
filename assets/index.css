@@ -6390,7 +6390,9 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 :root[data-style="ink"] .hero::before,
 :root[data-style="futurism"] .hero::before,
 :root[data-style="hermes"] .hero::before,
-:root[data-style="hermes"] .hero::after { display: block; }
+:root[data-style="hermes"] .hero::after,
+:root[data-style="klein"] .hero::before,
+:root[data-style="klein"] .hero::after { display: block; }
 
 /* ============================================================
    风格增强层（追加于全部皮肤之后 · 2026-09-10）
@@ -6577,6 +6579,7 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
   :root[data-style="skate"] .hero::before,
   :root[data-style="decon"] .hero::before,
   :root[data-style="hermes"] .hero::before,
+  :root[data-style="klein"] .hero::before,
   :root[data-style="pop"] .hero::before,
   :root[data-style="swiss"] .hero::before,
   :root[data-style="raw"] .hero::before,
@@ -7015,7 +7018,7 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 }
 
 /* ==================================================================
-   风格 NN 重做：Hermes Agent · Nous Research（<html data-style="hermes">）
+   风格 NN 重做：电光蓝（Electric Blue）· 原名 Hermes Agent（<html data-style="hermes">）
    2026-09-10。用户：「你似乎根本没搞对 Hermes 风格，现在请你调查 hermes
    agent 那种蓝白配色风格和字体风格，然后再修改。」
 
@@ -7119,7 +7122,7 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
    把官网首屏那幅「光轮中的赫尔墨斯」铜版雕刻抽象成三件几何：
    ::before = 120 道细放射线（径向遮罩成盘），::after = 三圈同心环 + 一道酸黄扫掠楔形。
    同心、缓慢反向自转（90s / 18s），像一台正在收发的阵列。 */
-:root[data-style="hermes"] .hero { position: relative; overflow: hidden; }
+:root[data-style="hermes"] .hero { position: relative; overflow: visible; }
 :root[data-style="hermes"] .hero::before {
   content: ""; display: block; position: absolute; z-index: -1;
   inset: auto; top: 50%; left: 78%; right: auto; bottom: auto;
@@ -7355,6 +7358,352 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 .hm-hud .hm-hud-o { color: rgba(0, 0, 200, 0.62); }
 @media (max-width: 900px) {
   :root[data-style="hermes"] .hm-hud { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-hud::after { animation: none; opacity: 1; }
+}
+
+/* ==================================================================
+   风格：克莱因蓝（Klein Blue）· 真·IKB #002FA7 · 复制自 hermes（电光蓝 #002FA7），仅换蓝
+   2026-09-10。用户：「你似乎根本没搞对 Hermes 风格，现在请你调查 hermes
+   agent 那种蓝白配色风格和字体风格，然后再修改。」
+
+   此前那套（近黑底 #08080a + 琥珀 #f5a524 终端字）是自己想象的，方向就错。
+   本轮改成**实测值**——抓官网 CSS 变量 + 真实截图比对，不凭印象：
+
+     · --color-hermes:        #002FA7   电光蓝（body 背景实测 rgb(0,0,242)）
+     · --color-hermes-fg:     #f5f5f5   米白正文
+     · --color-hermes-paper:  #ffffff   白纸面板（安装卡片就是一整块纯白纸）
+     · --color-hermes-accent: #edff45   酸黄，只给极小的标注与高亮
+     · --hermes-grey-100:     #eceaf5 ／面板细线 = border-hermes/15（1px 15% 蓝）
+     · 字体：@font-face monoFont = CourierPrime_Regular（官网等宽就是它）；
+             displayFont = Sigurd（高反差宽衬线）→ 用已自托管的 Playfair Display 顶
+     · nousresearch.com：每条目右侧挂 mono 小字「OUTPUT nnn / SEED: 十位随机」
+     · 官方 dashboard 主题 nous-blue：浅底 #E8F2FD + Nous 蓝 #0053FD + 墨 #170d02
+
+   所以正确的语言是：电光蓝满版 + 米白 + **白纸卡片（蓝字）** + 酸黄标记 +
+   Courier Prime 等宽微标签 + 高反差衬线大写标题 + 1px 细线／虚线分隔。
+   暗色 = 官网本体（蓝底白字）；亮色 = 同一套语言翻到纸面（白底蓝字）。
+   整块追加在文件最尾部：同特异度靠源序赢，压过前面那套琥珀色 hermes。
+================================================================== */
+:root[data-style="klein"], :root[data-style="klein"] * { color-scheme: dark; }
+:root[data-style="klein"][data-theme="light"],
+:root[data-style="klein"][data-theme="light"] * { color-scheme: light; }
+
+:root[data-style="klein"] {
+  --serif: "Playfair Display", "Songti SC", "Noto Serif SC", "STSong", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "Courier Prime", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
+  --pixel: var(--mono);
+
+  --hm-blue: #002FA7;
+  --hm-paper: #ffffff;
+  --hm-acid: #edff45;
+  --hm-hair: rgba(0, 47, 167, 0.18);       /* 白纸上的 1px 蓝细线（官网 border-hermes/15） */
+  --hm-ray: rgba(245, 245, 245, 0.42);    /* 放射线阵 */
+  --hm-ring: rgba(245, 245, 245, 0.55);   /* 同心环 */
+  --hm-sweep-a: rgba(237, 255, 69, 0.07); /* 雷达扫掠（酸黄，极淡） */
+  --hm-sweep-b: rgba(237, 255, 69, 0.20);
+  --hm-shadow: rgba(0, 0, 22, 0.34);      /* 白纸卡片的硬偏移落影 */
+  --hm-dither: rgba(245, 245, 245, 0.13); /* 满版抖色网点 */
+
+  --bg: #002FA7; --ink: #f5f5f5; --ink-2: rgba(245, 245, 245, 0.76); --ink-3: rgba(245, 245, 245, 0.52);
+  --line: rgba(245, 245, 245, 0.22); --line-2: rgba(245, 245, 245, 0.44);
+  --accent: #edff45;
+  --card-bg: #ffffff; --glass-bg: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(245, 245, 245, 0.34); --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(245, 245, 245, 0.10); --ripple-c: rgba(237, 255, 69, 0.28);
+}
+/* 亮色：同一套蓝白翻到纸面 —— 白底蓝字 + Nous 蓝强调 */
+:root[data-style="klein"][data-theme="light"] {
+  --hm-ray: rgba(0, 47, 167, 0.20); --hm-ring: rgba(0, 47, 167, 0.26);
+  --hm-sweep-a: rgba(0, 47, 167, 0.05); --hm-sweep-b: rgba(0, 47, 167, 0.15);
+  --hm-shadow: rgba(0, 39, 167, 0.22); --hm-dither: rgba(0, 47, 167, 0.10);
+  --bg: #e9ecf8; --ink: #00208a; --ink-2: rgba(0, 39, 167, 0.76); --ink-3: rgba(0, 39, 167, 0.50);
+  --line: rgba(0, 47, 167, 0.20); --line-2: rgba(0, 47, 167, 0.42);
+  --accent: #002FA7;
+  --glass-bg: rgba(255, 255, 255, 0.72); --glass-border: rgba(0, 47, 167, 0.26);
+  --spot-c: rgba(0, 47, 167, 0.06); --ripple-c: rgba(0, 47, 167, 0.16);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="klein"]:not([data-theme="dark"]),
+  :root[data-style="klein"]:not([data-theme="dark"]) * { color-scheme: light; }
+  :root[data-style="klein"]:not([data-theme="dark"]) {
+    --hm-ray: rgba(0, 47, 167, 0.20); --hm-ring: rgba(0, 47, 167, 0.26);
+    --hm-sweep-a: rgba(0, 47, 167, 0.05); --hm-sweep-b: rgba(0, 47, 167, 0.15);
+    --hm-shadow: rgba(0, 39, 167, 0.22); --hm-dither: rgba(0, 47, 167, 0.10);
+    --bg: #e9ecf8; --ink: #00208a; --ink-2: rgba(0, 39, 167, 0.76); --ink-3: rgba(0, 39, 167, 0.50);
+    --line: rgba(0, 47, 167, 0.20); --line-2: rgba(0, 47, 167, 0.42);
+    --accent: #002FA7;
+    --glass-bg: rgba(255, 255, 255, 0.72); --glass-border: rgba(0, 47, 167, 0.26);
+    --spot-c: rgba(0, 47, 167, 0.06); --ripple-c: rgba(0, 47, 167, 0.16);
+  }
+}
+
+/* 满版抖色网点：官网那层铜版雕刻底噪（用 body 背景做，避免伪元素层叠问题）。
+   旧的 amber 网格 + CRT 扫描线两条伪元素彻底关掉。 */
+:root[data-style="klein"] body {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--hm-dither) 0.9px, transparent 1.15px);
+  background-size: 5px 5px;
+}
+:root[data-style="klein"] body::before,
+:root[data-style="klein"] body::after { display: none; }
+
+/* 顶栏：一条发丝底线；品牌字 mono 大写宽字距（⚠ 只能用 .topbar，别写 header） */
+:root[data-style="klein"] .topbar { border-bottom: 1px solid var(--line); }
+:root[data-style="klein"] .topbar .brand {
+  font-family: var(--mono); font-weight: 700; letter-spacing: 0.26em; font-size: 12px;
+}
+:root[data-style="klein"] .topbar a,
+:root[data-style="klein"] .topbar button { font-family: var(--mono); letter-spacing: 0.14em; }
+:root[data-style="klein"] .brand-dot {
+  border-radius: 0; background: var(--hm-acid); box-shadow: none; width: 7px; height: 7px;
+}
+:root[data-style="klein"] .ls-knob,
+:root[data-style="klein"] .bs-bulb { background: var(--hm-acid); }
+
+/* —— 首屏母题：光轮放射线阵 + 同心环 + 雷达扫掠 ——
+   把官网首屏那幅「光轮中的赫尔墨斯」铜版雕刻抽象成三件几何：
+   ::before = 120 道细放射线（径向遮罩成盘），::after = 三圈同心环 + 一道酸黄扫掠楔形。
+   同心、缓慢反向自转（90s / 18s），像一台正在收发的阵列。 */
+:root[data-style="klein"] .hero { position: relative; overflow: visible; }
+:root[data-style="klein"] .hero::before {
+  content: ""; display: block; position: absolute; z-index: -1;
+  inset: auto; top: 50%; left: 78%; right: auto; bottom: auto;
+  width: 660px; height: 660px; margin: -330px 0 0 -330px; border-radius: 0;
+  opacity: 0.9; filter: none; will-change: transform;
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 0 58%, transparent 86%);
+  mask-image: radial-gradient(circle closest-side, #000 0 58%, transparent 86%);
+  background: repeating-conic-gradient(from 0deg,
+    var(--hm-ray) 0deg 0.55deg, transparent 0.55deg 3deg);
+}
+:root[data-style="klein"] .hero::after {
+  content: ""; display: block; position: absolute; z-index: -1;
+  inset: auto; top: 50%; left: 78%; right: auto; bottom: auto;
+  width: 660px; height: 660px; margin: -330px 0 0 -330px; border-radius: 50%;
+  opacity: 1; filter: none; will-change: transform;
+  -webkit-mask-image: none; mask-image: none;
+  background:
+    conic-gradient(from 0deg,
+      transparent 0deg 292deg, var(--hm-sweep-a) 322deg, var(--hm-sweep-b) 356deg, transparent 360deg),
+    radial-gradient(circle closest-side, transparent 0 40.3%, var(--hm-ring) 40.3% 41.2%, transparent 41.2%),
+    radial-gradient(circle closest-side, transparent 0 68.3%, var(--hm-ring) 68.3% 69.2%, transparent 69.2%),
+    radial-gradient(circle closest-side, transparent 0 96.2%, var(--hm-ring) 96.2% 97.4%, transparent 97.4%);
+}
+:root[data-style="klein"] .hero > * { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-style="klein"] .hero::before {
+    translate: var(--hx, 0px) var(--hy, 0px);
+    animation: hmRays 96s linear infinite;
+  }
+  :root[data-style="klein"] .hero::after {
+    translate: var(--hx, 0px) var(--hy, 0px);
+    animation: hmSweep 18s linear infinite;
+  }
+  @keyframes hmRays  { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
+  @keyframes hmSweep { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style="klein"] .hero::before,
+  :root[data-style="klein"] .hero::after { animation: none; translate: none; }
+}
+@media (max-width: 900px) {
+  :root[data-style="klein"] .hero::before,
+  :root[data-style="klein"] .hero::after { display: none; }
+}
+
+/* 大标题：高反差衬线大写（对标官网 Sigurd 排的 THE AGENT THAT GROWS WITH YOU） */
+:root[data-style="klein"] .hero-title {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase;
+  letter-spacing: 0.005em; line-height: 0.98; color: var(--ink); text-shadow: none;
+}
+:root[data-style="klein"] .sec-head h2 {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase; letter-spacing: 0.012em;
+}
+:root[data-style="klein"] .sec-head h2 .en {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.3em; color: var(--accent);
+}
+:root[data-style="klein"] .lede { color: var(--ink-2); font-size: 15px; line-height: 1.85; }
+
+/* 分区头：官网用虚线细线切条目 */
+:root[data-style="klein"] .sec-head {
+  border-bottom: 1px dashed var(--line-2); padding-bottom: 16px;
+}
+:root[data-style="klein"] .sec.sec-portals::before { display: none; }
+:root[data-style="klein"] .sec::before { display: none; }
+
+/* mono 微标签：Courier Prime 大写宽字距（对标官网 OPEN SOURCE · MIT LICENSE） */
+:root[data-style="klein"] .eyebrow,
+:root[data-style="klein"] .sec-idx,
+:root[data-style="klein"] .sec-count,
+:root[data-style="klein"] .card-num,
+:root[data-style="klein"] .card-meta,
+:root[data-style="klein"] .card-tag,
+:root[data-style="klein"] .foot-meta,
+:root[data-style="klein"] .row-num,
+:root[data-style="klein"] .row-tags,
+:root[data-style="klein"] .row-stat {
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.16em;
+}
+:root[data-style="klein"] .sec-idx,
+:root[data-style="klein"] .sec-count { color: var(--accent); letter-spacing: 0.2em; }
+
+/* —— 卡片＝白纸 ——
+   官网的安装卡片就是一整块纯白纸（border: 1px 15% 蓝）。这里把「白纸 + 蓝字」
+   就地覆盖变量（--ink/--ink-2/--ink-3/--line），卡内所有文字自动翻成蓝，零重复代码。 */
+:root[data-style="klein"] .card,
+:root[data-style="klein"] .glass {
+  position: relative; overflow: hidden; border-radius: 0;
+  border: 1px solid var(--hm-hair);
+  background: var(--hm-paper);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 5px 5px 0 var(--hm-shadow);
+  --ink: #002FA7; --ink-2: rgba(0, 39, 167, 0.78); --ink-3: rgba(0, 39, 167, 0.54);
+  --line: rgba(0, 47, 167, 0.18); --line-2: rgba(0, 47, 167, 0.42);
+  --accent: #002FA7; --spot-c: rgba(0, 47, 167, 0.06);
+  color: var(--ink);
+  transition: border-color .45s var(--ease), box-shadow .45s var(--ease), transform .45s var(--ease);
+}
+:root[data-style="klein"] .card:hover,
+:root[data-style="klein"] .card:focus-visible {
+  transform: translate(-2px, -2px);
+  border-color: var(--hm-blue);
+  box-shadow: 7px 7px 0 var(--hm-shadow);
+}
+/* 卡片右上角一小片抖色网点＝官网铜版插画的那层半调网 */
+:root[data-style="klein"] .card::before {
+  content: ""; display: block; position: absolute; z-index: 1;
+  inset: auto; top: 0; right: 0; left: auto; bottom: auto;
+  width: 54px; height: 54px; border-radius: 0; opacity: 1; pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle at 100% 0, #000 0 34%, transparent 76%);
+  mask-image: radial-gradient(circle at 100% 0, #000 0 34%, transparent 76%);
+  background-image: radial-gradient(rgba(0, 47, 167, 0.34) 1.1px, transparent 1.3px);
+  background-size: 5px 5px;
+}
+/* 悬停时底部一条 Nous 蓝细线自左铺满（终端里的一行光标） */
+:root[data-style="klein"] .card::after {
+  content: ""; display: block; position: absolute; z-index: 1;
+  inset: auto; left: 0; right: auto; bottom: 0; top: auto;
+  width: 0; height: 3px; border-radius: 0; background: var(--hm-blue);
+  transition: width .45s cubic-bezier(.23, 1, .32, 1);
+}
+:root[data-style="klein"] .card:hover::after,
+:root[data-style="klein"] .card:focus-visible::after { width: 100%; }
+:root[data-style="klein"] .card-title { font-family: var(--serif); font-weight: 500; letter-spacing: 0; }
+:root[data-style="klein"] .card-tag {
+  border: 0; border-radius: 0; background: var(--hm-acid); color: #002FA7;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em; padding: 3px 8px;
+}
+:root[data-style="klein"] .card-go { color: var(--hm-blue); }
+:root[data-style="klein"] .card-meta { border-top: 1px solid var(--line); padding-top: 9px; }
+:root[data-style="klein"] .portal .card-meta > span:last-child { white-space: nowrap; flex: 0 0 auto; }
+:root[data-style="klein"] .portal-items { font-size: 10px; letter-spacing: 0.1em; }
+
+/* 条目行（persona 子页）：不上白纸，只换成发丝虚线 */
+:root[data-style="klein"] .row {
+  border-radius: 0; background: transparent; box-shadow: none;
+  border-bottom: 1px dashed var(--line);
+}
+:root[data-style="klein"] .row:hover,
+:root[data-style="klein"] .row:focus-visible { border-bottom-color: transparent; }
+
+/* 目录药丸 / 按钮 = 官网那种「白纸小方块」按钮：方角 + 1px 细线 + 硬偏移落影 */
+:root[data-style="klein"] .toc a,
+:root[data-style="klein"] .btn {
+  border-radius: 0; padding: 12px 18px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--hm-blue); background: var(--hm-paper);
+  border: 1px solid var(--hm-hair); box-shadow: 3px 3px 0 var(--hm-shadow);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-style="klein"] .toc a:hover,
+:root[data-style="klein"] .toc a:focus-visible,
+:root[data-style="klein"] .btn:hover,
+:root[data-style="klein"] .btn:focus-visible {
+  color: var(--hm-blue); border-color: var(--hm-blue);
+  box-shadow: 5px 5px 0 var(--hm-shadow); transform: translateY(-1px);
+}
+:root[data-style="klein"] .toc em { color: var(--hm-blue); font-weight: 700; }
+
+/* 风格切换器：未选＝描边方角；选中＝酸黄标记（标题里那抹黄） */
+:root[data-style="klein"] .skin-tab { border-radius: 0; }
+:root[data-style="klein"] .skin-tab[aria-selected="true"] {
+  border-radius: 0; background: transparent; border-color: var(--accent); color: var(--accent);
+}
+:root[data-style="klein"] .skin-chip {
+  border-radius: 0; border: 1px solid var(--glass-border); background: transparent; box-shadow: none;
+}
+:root[data-style="klein"] .skin-chip::before { border-radius: 0; background: currentColor; }
+:root[data-style="klein"] .skin-chip:hover,
+:root[data-style="klein"] .skin-chip:focus-visible { border-color: var(--ink); color: var(--ink); }
+:root[data-style="klein"] .skin-chip[aria-pressed="true"] {
+  background: var(--hm-acid); color: #002FA7; border-color: var(--hm-acid); box-shadow: none;
+}
+:root[data-style="klein"] .skin-chip[aria-pressed="true"]::before {
+  background: #002FA7; opacity: 1; box-shadow: none;
+}
+/* 子页下拉：面板也是白纸（旧的写死 #0b0b0d，必须覆盖） */
+:root[data-style="klein"] .sm-btn {
+  border-radius: 0; border: 1px solid var(--glass-border); background: transparent; box-shadow: none;
+}
+:root[data-style="klein"] .sm-panel {
+  border-radius: 0; background-color: var(--hm-paper); border: 1px solid var(--hm-hair);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 5px 5px 0 var(--hm-shadow);
+  --ink: #002FA7; --ink-2: rgba(0, 39, 167, 0.78); --ink-3: rgba(0, 39, 167, 0.54);
+  --line: rgba(0, 47, 167, 0.18); --line-2: rgba(0, 47, 167, 0.42);
+  --spot-c: rgba(0, 47, 167, 0.06);
+  color: var(--ink);
+}
+:root[data-style="klein"] .sm-item { border-radius: 0; }
+:root[data-style="klein"] .sm-item::before { border-radius: 0; }
+:root[data-style="klein"] .sm-item[aria-selected="true"] {
+  background: var(--hm-acid); color: #002FA7;
+}
+:root[data-style="klein"] .sm-item[aria-selected="true"]::before {
+  background: #002FA7; opacity: 1; box-shadow: none;
+}
+:root[data-style="klein"] .sm-group-t { letter-spacing: 0.22em; }
+
+/* 脚注：官网用虚线切条目 */
+:root[data-style="klein"] footer { border-top: 1px dashed var(--line); }
+:root[data-style="klein"] .foot-meta a { border-bottom: 1px solid var(--line); color: var(--ink-2); }
+:root[data-style="klein"] .foot-meta a:hover { color: var(--ink); border-color: var(--line-2); }
+
+:root[data-style="klein"] ::selection { background: var(--hm-acid); color: #002FA7; }
+:root[data-style="klein"] :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* —— 实验印章「OUTPUT nnn / SEED: …」：nousresearch.com 每个条目右侧都挂这个 ——
+   由 interactions.js 注入到每个 .sec 里（右下角），页面不写死结构。 */
+/* 注意：走正常文档流（不要 position:absolute）。曾用 bottom:10px 绝对定位，
+   但 .sec.sec-portals 的 padding-bottom 只有 clamp(12px,2vh,24px)，印章会压到卡片上。 */
+.hm-stamp {
+  display: none; margin: 34px 0 0; pointer-events: none;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  line-height: 1.6; text-align: right; color: var(--ink-3);
+}
+:root[data-style="klein"] .hm-stamp { display: block; }
+.hm-stamp i { display: block; font-style: normal; }
+
+/* —— 终端状态栏：右下角固定，OUTPUT 随滚动跑 —— */
+.hm-hud {
+  position: fixed; right: 18px; bottom: 16px; z-index: 65;
+  display: none; align-items: center; gap: 10px; padding: 6px 11px;
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--hm-paper); color: #002FA7;
+  border: 1px solid var(--hm-hair); box-shadow: 3px 3px 0 var(--hm-shadow);
+  pointer-events: none;
+}
+:root[data-style="klein"] .hm-hud { display: flex; }
+.hm-hud::after { content: "\25AE"; animation: hmCaret 1.05s steps(1) infinite; }
+@keyframes hmCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.hm-hud .hm-hud-t { font-weight: 700; color: #002FA7; }
+.hm-hud .hm-hud-o { color: rgba(0, 39, 167, 0.62); }
+@media (max-width: 900px) {
+  :root[data-style="klein"] .hm-hud { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hm-hud::after { animation: none; opacity: 1; }
