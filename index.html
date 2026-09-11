@@ -45,7 +45,7 @@
        assets/i18n.js 的 GROUPS 同步维护）。随机结果写回 gl-style，
        从首页点进子页时是同一套、不会跳变；在皮肤条上手动选仍然有效，
        会一直用到下一次进首页。 */
-    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal"];
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui"];
     var st = OK[Math.floor(Math.random() * OK.length)];
     try { localStorage.setItem("gl-style", st); } catch (e) {}
     d.setAttribute("data-style", st);

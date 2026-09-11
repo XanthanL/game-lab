@@ -1084,22 +1084,22 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 /* 三套「核」系（梦核 / 池核 / 怪核）+ 方块像素（MC）同样不需要玻璃装饰层 */
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
         [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
-        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .glass::after,
+        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .glass::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
         [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
-        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .card::after,
+        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .card::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .row::after,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .row::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .card::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .card::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .toc a::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .toc a::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .hero::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .hero::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .hero::after,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .hero::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"]) .sec::before { display: none; }
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .sec::before { display: none; }
 
 /* 卡片：悬停 = 抬起（投影放大），按下 = 压进表面（转内凹） */
 :root[data-style="soft"] .card:hover,
@@ -7708,3 +7708,471 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 @media (prefers-reduced-motion: reduce) {
   .hm-hud::after { animation: none; opacity: 1; }
 }
+/* ==================================================================
+   风格精细层 II（追加于全部皮肤之后 · 2026-09-12）
+   打磨 dos / crt / winamp 三套。上一轮「去同质化补丁」的遗留问题：
+   · winamp 均衡器母题写在装饰层关闭名单之后，但漏写 display:block，
+     一直被 display:none 压着从未渲染；本次复活并重做。
+   · crt 卡片的 [ user@galaxy ] 签名同样漏写 display:block 被压死；本次复活。
+   · dos / crt 只有标题光标，没有首屏母题；本次补齐。
+   铁律（沿用「风格增强层」注释）：
+   · 关闭名单把伪元素设了 display:none → 复用时必须显式 display:block；
+   · 全局 .hero::before 有径向 mask → 必须 mask-image:none，否则母题被裁；
+   · 全局 .hero::after 有 blur(22px) + 漂移动画 → 文字类母题必须 filter:none; animation:none；
+   · 自定义定位补 left/top/right/bottom:auto；
+   · 自动播放动效统一收在 prefers-reduced-motion: no-preference 里。
+================================================================== */
+
+/* ————— MS-DOS：Norton Commander 式 TUI 窗口 + 整卡反色 ————— */
+:root[data-style="dos"] .hero { position: relative; }
+:root[data-style="dos"] .hero::before {
+  content: ""; display: block; -webkit-mask-image: none; mask-image: none;
+  inset: auto; left: auto; right: 4vw; top: 13vh; bottom: auto;
+  width: 300px; height: 150px; border-radius: 0;
+  background:
+    linear-gradient(180deg, var(--ink) 0 20px, transparent 20px),
+    repeating-linear-gradient(180deg, transparent 0 30px, var(--line) 30px 31px),
+    var(--card-bg);
+  outline: 1px solid var(--line-2); outline-offset: 4px;
+  border: 1px solid var(--line-2);
+  box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.45);
+  opacity: 0.92;
+}
+:root[data-style="dos"] .hero::after {
+  content: "GAMELAB.EXE"; display: block; -webkit-mask-image: none; mask-image: none;
+  filter: none; animation: none;
+  inset: auto; left: auto; right: calc(4vw + 14px); top: calc(13vh + 4px); bottom: auto;
+  font-family: var(--mono); font-size: 13px; line-height: 1; letter-spacing: 0.18em;
+  color: var(--bg);
+}
+/* 整卡反色：DOS 选中态的灵魂。重定义卡片作用域内的变量，
+   所有引用 var(--ink)/var(--card-bg) 的子元素一次性反转。 */
+:root[data-style="dos"] .card:hover,
+:root[data-style="dos"] .card:focus-visible {
+  --card-bg: #e6e6ff; --ink: #0000aa; --ink-2: #000088; --ink-3: #000066;
+  --line: #0000aa; --line-2: #0000aa; --accent: #55ffff; --glass-border: #0000aa;
+  transform: translateY(-2px);
+}
+:root[data-style="dos"] ::selection { background: var(--accent); color: var(--bg); }
+
+/* ————— CRT 绿终端：磷光辉光 + >_ 水印 + 复活终端签名 ————— */
+:root[data-style="crt"] .hero { position: relative; }
+:root[data-style="crt"] .hero::before {
+  content: ""; display: block; -webkit-mask-image: none; mask-image: none;
+  inset: -40px calc(var(--pad) * -1) -20px; border-radius: 0;
+  background:
+    radial-gradient(46% 42% at 50% 34%, rgba(70, 255, 122, 0.14), transparent 72%),
+    repeating-linear-gradient(90deg, rgba(70, 255, 122, 0.05) 0 1px, transparent 1px 88px);
+  opacity: 1;
+}
+:root[data-style="crt"] .hero::after {
+  content: ">_"; display: block; -webkit-mask-image: none; mask-image: none;
+  filter: none; animation: none;
+  inset: auto; left: auto; right: 5vw; top: auto; bottom: 6vh;
+  font-family: var(--mono); font-size: clamp(64px, 9vw, 120px); line-height: 1;
+  color: var(--ink); opacity: 0.16;
+  text-shadow: 0 0 24px rgba(70, 255, 122, 0.55);
+}
+/* [ user@galaxy ] 卡片签名在 crt 皮肤块里定义过（.card::before），
+   但被装饰层关闭名单 display:none 压死——此处只补 display。 */
+:root[data-style="crt"] .card::before { display: block; }
+:root[data-style="crt"] .card,
+:root[data-style="crt"] .glass {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+:root[data-style="crt"] .card:hover,
+:root[data-style="crt"] .card:focus-visible {
+  border-color: var(--line-2);
+  box-shadow:
+    inset 0 0 24px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(70, 255, 122, 0.22),
+    0 0 2px rgba(70, 255, 122, 0.5);
+  transform: translateY(-2px);
+}
+:root[data-style="crt"] ::selection { background: var(--ink); color: var(--bg); }
+
+/* ————— Winamp：均衡器复活 + LCD 时间屏 + 金线 titlebar ————— */
+:root[data-style="winamp"] .hero { position: relative; overflow: hidden; }
+:root[data-style="winamp"] .hero::before {
+  display: block; -webkit-mask-image: none; mask-image: none;
+  background-image: none;
+  inset: auto; left: auto; right: 4vw; top: calc(11vh + 152px); bottom: auto;
+  width: 320px; height: 64px; border-radius: 0;
+  transform-origin: bottom;
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 26px);
+          mask-image: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 26px);
+  background-color: var(--wa-lcd);
+  opacity: 0.9;
+  animation: none;
+}
+:root[data-style="winamp"] .hero::after {
+  content: "02:47"; display: block; -webkit-mask-image: none; mask-image: none;
+  filter: none; animation: none;
+  inset: auto; left: auto; right: 4vw; top: 11vh; bottom: auto;
+  width: 152px; padding: 10px 14px 12px; border-radius: 6px;
+  background:
+    linear-gradient(180deg, #0d1712, #060b08) padding-box,
+    linear-gradient(135deg, var(--wa-chrome1), var(--wa-chrome2)) border-box;
+  border: 2px solid transparent;
+  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.7);
+  font-family: var(--mono); font-size: 40px; line-height: 1; text-align: center;
+  letter-spacing: 0.06em;
+  color: var(--wa-lcd); text-shadow: 0 0 10px rgba(125, 255, 176, 0.6);
+}
+/* 卡片顶部 Winamp titlebar：3px 金高光线 + 深蓝条，压在蓝渐变卡上 */
+:root[data-style="winamp"] .card {
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #f0d060 0 3px, rgba(16, 28, 48, 0.92) 3px 18px,
+                    rgba(255, 255, 255, 0.12) 18px 46px, transparent 46px),
+    linear-gradient(135deg, #4a7eb8 0%, #2c4f7c 100%);
+  border: 1px solid var(--line-2);
+}
+/* hero 三个分区小按钮是 .glass——titlebar 不该命中，恢复原铬边背景 */
+:root[data-style="winamp"] .glass {
+  border-radius: 6px; border: 2px solid transparent;
+  background:
+    linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+    linear-gradient(135deg, var(--wa-chrome1), var(--wa-chrome2)) border-box;
+}
+:root[data-style="winamp"] .card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -16px rgba(58, 110, 165, 0.7);
+}
+:root[data-style="winamp"] ::selection { background: var(--wa-lcd); color: #10151c; }
+
+/* ————— 动效（仅 prefers-reduced-motion: no-preference） ————— */
+@media (prefers-reduced-motion: no-preference) {
+  /* CRT 磷光呼吸 + 偶发闪烁（8% 概率段） */
+  :root[data-style="crt"] .hero::before { animation: crt-breathe 5.5s ease-in-out infinite alternate; }
+  :root[data-style="crt"] body::before { animation: crt-flicker 7s steps(1) infinite; }
+  @keyframes crt-breathe { from { opacity: 0.72; } to { opacity: 1; } }
+  @keyframes crt-flicker {
+    0%, 91%, 94%, 96%, 100% { opacity: 0.5; }
+    92% { opacity: 0.38; } 95% { opacity: 0.44; }
+  }
+  /* Winamp 均衡器跳动（旧补丁把动画写在了 media 外，此处收编） */
+  :root[data-style="winamp"] .hero::before { animation: wa-eq2 1.2s steps(8, end) infinite; }
+}
+@keyframes wa-eq2 {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1); }
+}
+
+/* ————— 移动端：固定尺寸母题收起（crt 满版光雾保留，无溢出风险） ————— */
+@media (max-width: 900px) {
+  :root[data-style="dos"] .hero::before,
+  :root[data-style="dos"] .hero::after,
+  :root[data-style="crt"] .hero::after,
+  :root[data-style="winamp"] .hero::before,
+  :root[data-style="winamp"] .hero::after { display: none; }
+}
+
+/* ==================================================================
+   移动端装饰恢复层（2026-09-12）
+   桌面端的招牌图案在 max-width:900px 曾被一律 display:none，手机上看不见。
+   本块按小屏把它们**缩放后恢复**，不再靠隐藏解决：
+   · 尺寸改用 min(px, vw)：390px 下图形完整呈现，且不会横向溢出（不必裁切）；
+   · 构图由「桌面偏右」改为「小屏居中偏上」或贴边，避开标题与 tab 行；
+   · 固定定位的 HUD 缩小内边距/字号，并限 max-width 防止挤出屏幕。
+================================================================== */
+@media (max-width: 900px) {
+  /* —— 电光蓝 / 克莱因蓝：放射线阵 + 同心环圆盘（桌面 660px → 小屏居中 300px） —— */
+  :root[data-style="hermes"] .hero::before,
+  :root[data-style="hermes"] .hero::after,
+  :root[data-style="klein"] .hero::before,
+  :root[data-style="klein"] .hero::after {
+    display: block;
+    width: min(300px, 72vw); height: min(300px, 72vw);
+    margin: min(-150px, -36vw) 0 0 min(-150px, -36vw);
+    left: 50%; right: auto; top: 24%; bottom: auto;
+  }
+  :root[data-style="hermes"] .hero::before,
+  :root[data-style="klein"] .hero::before { opacity: 0.5; }
+  :root[data-style="hermes"] .hero::after,
+  :root[data-style="klein"] .hero::after { opacity: 0.8; }
+
+  /* —— 终端状态栏 HUD：桌面右下角，小屏缩小保留 —— */
+  :root[data-style="hermes"] .hm-hud,
+  :root[data-style="klein"] .hm-hud {
+    display: flex;
+    right: 10px; bottom: 10px; gap: 7px; padding: 5px 8px;
+    font-size: 8.5px; letter-spacing: 0.1em;
+    max-width: calc(100vw - 20px);
+  }
+
+  /* —— 工程蓝图：CAD 制图几何（桌面 330px 贴右 → 小屏 200px 仍贴右） —— */
+  :root[data-style="blueprint"] .hero::before {
+    display: block;
+    width: min(200px, 52vw); height: min(200px, 52vw);
+    right: 0; opacity: 0.45;
+  }
+
+  /* —— MS-DOS：TUI 窗口 + 标题文字 —— */
+  :root[data-style="dos"] .hero::before {
+    display: block;
+    width: min(230px, 62vw); height: min(116px, 31vw);
+    right: 4vw; left: auto; top: 8vh; bottom: auto;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+  :root[data-style="dos"] .hero::after {
+    display: block;
+    right: calc(4vw + 10px); left: auto; top: calc(8vh + 3px); bottom: auto;
+    font-size: 10px; letter-spacing: 0.12em;
+  }
+
+  /* —— CRT：>_ 磷光水印 —— */
+  :root[data-style="crt"] .hero::after {
+    display: block;
+    right: 5vw; left: auto; top: auto; bottom: 4vh;
+    font-size: 56px; opacity: 0.13;
+  }
+
+  /* —— Winamp：均衡器 + LCD 时间屏 —— */
+  :root[data-style="winamp"] .hero::before {
+    display: block;
+    width: min(220px, 58vw); height: 46px;
+    right: 5vw; left: auto; top: calc(9vh + 82px); bottom: auto;
+  }
+  :root[data-style="winamp"] .hero::after {
+    display: block;
+    width: 116px; padding: 7px 10px 8px;
+    font-size: 30px;
+    right: 5vw; left: auto; top: 9vh; bottom: auto;
+  }
+}
+
+/* ==================================================================
+   动效与交互层（2026-09-12）
+   一、交互打底（全站受益）
+   · :active 按压回弹 —— 之前点击/触碰没有任何反馈
+   · 卡片 hover 时「前往」箭头微移，给出可点击的暗示
+   · :focus-visible 焦点环带过渡，键盘可达时更明确
+   关键：一律用 scale / translate 这类**独立属性**，
+   不写 transform —— 各皮肤 hover 自己有 transform（抬起/倾斜），
+   用独立属性才能叠加而不互相覆盖。
+   二、待机动效：给原本 animation 为 0 的皮肤补上，按气质分组，
+   时长/幅度各不相同，全部收在 prefers-reduced-motion 内。
+================================================================== */
+
+/* —— 一、按压回弹 —— */
+.card:active, .btn:active, .toc a:active,
+.sm-item:active, .skin-chip:active, .portal .card:active {
+  scale: 0.985;
+  transition: scale 0.15s var(--ease, ease);
+}
+/* 键盘可达：焦点环带过渡 */
+.card:focus-visible, .btn:focus-visible, .toc a:focus-visible {
+  transition: outline-offset 0.18s var(--ease, ease), box-shadow 0.18s var(--ease, ease);
+  outline-offset: 3px;
+}
+/* —— 卡片「前往」箭头微移（hover / focus 都响应） —— */
+.card-go { transition: translate 0.28s var(--ease, ease); }
+.card:hover .card-go, .card:focus-visible .card-go { translate: 4px 0; }
+
+/* —— 二、待机动效 —— */
+@media (prefers-reduced-motion: no-preference) {
+  /* 玩具 / 像素：轻微浮动 */
+  :root[data-style="gb"] .hero::before,
+  :root[data-style="mc"] .hero::before { animation: gl-float 6.5s ease-in-out infinite alternate; }
+  :root[data-style="skate"] .hero::before { animation: gl-float 9s ease-in-out infinite alternate; }
+
+  /* 机械 / 仪表：呼吸 */
+  :root[data-style="rdr2"] .hero::before,
+  :root[data-style="halo"] .hero::before { animation: gl-breathe 7s ease-in-out infinite alternate; }
+
+  /* 几何构成：缓慢漂移 */
+  :root[data-style="construct"] .hero::before,
+  :root[data-style="decon"] .hero::before,
+  :root[data-style="futurism"] .hero::before { animation: gl-drift 14s ease-in-out infinite alternate; }
+
+  /* 电子 / 街机：脉冲闪烁 */
+  :root[data-style="fc"] .hero::before,
+  :root[data-style="cyberpunk"] .hero::before { animation: gl-pulse 3.2s steps(2, end) infinite; }
+
+  /* 氛围：极缓明暗（纸墨 / 蒸汽波 / 莫兰迪） */
+  :root[data-style="vaporwave"] .hero::before,
+  :root[data-style="morandi"] .hero::before,
+  :root[data-style="ink"] .hero::before { animation: gl-breathe 11s ease-in-out infinite alternate; }
+
+  @keyframes gl-float   { from { translate: 0 -7px; } to { translate: 0 7px; } }
+  @keyframes gl-breathe { from { opacity: 0.5; }      to { opacity: 1; } }
+  @keyframes gl-drift   { from { translate: -10px 0; } to { translate: 10px 0; } }
+  @keyframes gl-pulse   { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.4; } }
+}
+
+/* —— 层叠修正（2026-09-12）：winamp/dos/crt 的 hero 母题 z-index:-1 需要
+   hero 子元素有 z-index 才能稳定地待在文字后面（hermes 主块自带此行；
+   这三套缺它，移动端窄屏下母题与文字重叠时会盖住文字）。 —— */
+:root[data-style="winamp"] .hero > *,
+:root[data-style="dos"] .hero > *,
+:root[data-style="crt"] .hero > * { position: relative; z-index: 1; }
+
+/* 移动端窄屏下，winamp 的 LCD 屏底色是实心的，降到半透明作背景装饰，
+   避免深色块压在浅色文字后面影响可读性。 */
+@media (max-width: 900px) {
+  :root[data-style="winamp"] .hero::after { opacity: 0.72; }
+}
+
+/* —— 移动端水印化：390px 下 hero 无净空区，垫在文字后面的装饰
+   降低对比度，保文字可读、装饰仍可辨（层叠已正常，纯对比度问题） —— */
+@media (max-width: 900px) {
+  :root[data-style="dos"] .hero::before,
+  :root[data-style="dos"] .hero::after { opacity: 0.4; }
+  :root[data-style="winamp"] .hero::before { opacity: 0.4; }
+  :root[data-style="winamp"] .hero::after { opacity: 0.45; }
+}
+
+/* ==================================================================
+   换肤过渡（2026-09-12）
+   之前 50 套之间是硬切（直接改 data-style）。现在：
+   · html / body 的 background-color、color 跟着 CSS 变量平滑过渡（320ms）
+   · 用户主动换肤时 JS 给 :root 加 .style-fading，body 内容淡到 0.18，
+     换完再淡入（各 180ms）——底色连续、内容 crossfade，不再硬跳
+   · html 必须补上 var(--bg) 底色，否则 body 淡出时会露出下面的白底
+   · prefers-reduced-motion 下全部关闭
+================================================================== */
+html { background-color: var(--bg, #ffffff); transition: background-color 0.32s ease; }
+body { transition: background-color 0.32s ease, color 0.32s ease, opacity 0.18s ease; }
+:root.style-fading body { opacity: 0.18; }
+@media (prefers-reduced-motion: reduce) {
+  html, body { transition: none; }
+  :root.style-fading body { opacity: 1; }
+}
+
+/* ==================================================================
+   风格 OO：水墨山水 · 黑白（<html data-style="shanshui">）
+   纯黑白，零彩色。宣纸底 + 浓墨字；首屏两层剪影：远山（淡墨 + 山腰留白的雾）、
+   近山（浓墨）。字体走楷体/宋体的书法感，全部系统字体，不新增 woff2 —— 中文
+   楷体在 Win/macOS 都有（KaiTi / Kaiti SC），英文回退 Georgia/serif。
+   亮色 = 宣纸本；暗色 = 墨底白字的夜山。
+================================================================== */
+:root[data-style="shanshui"] { color-scheme: light;
+  --serif: "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", "SimSun", Georgia, serif;
+  --sans: "Songti SC", "STSong", "SimSun", Georgia, serif;
+  --mono: "Songti SC", "SimSun", ui-monospace, serif;
+  --bg: #f4f2ed; --ink: #1a1815; --ink-2: #4a4640; --ink-3: #7d786e;
+  --line: rgba(26, 24, 21, 0.22); --line-2: rgba(26, 24, 21, 0.5);
+  --accent: #000000;
+  --card-bg: #faf8f4; --glass-bg: #faf8f4; --glass-border: rgba(26, 24, 21, 0.3); --glass-blur: none;
+  --sec-img-o: 0; --spot-c: rgba(26, 24, 21, 0.05); --ripple-c: rgba(26, 24, 21, 0.1);
+  --ss-far: rgba(26, 24, 21, 0.14); --ss-near: rgba(26, 24, 21, 0.8); --ss-mist: rgba(250, 248, 244, 0.92);
+}
+:root[data-style="shanshui"][data-theme="dark"] { color-scheme: dark;
+  --bg: #14120f; --ink: #ece7dc; --ink-2: #b5afa2; --ink-3: #857f72;
+  --line: rgba(236, 231, 220, 0.18); --line-2: rgba(236, 231, 220, 0.42);
+  --card-bg: #1c1916; --glass-bg: #1c1916; --glass-border: rgba(236, 231, 220, 0.26);
+  --spot-c: rgba(236, 231, 220, 0.05); --ripple-c: rgba(236, 231, 220, 0.1);
+  --ss-far: rgba(236, 231, 220, 0.13); --ss-near: rgba(236, 231, 220, 0.62); --ss-mist: rgba(20, 18, 15, 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-style="shanshui"]:not([data-theme="light"]) { color-scheme: dark;
+    --bg: #14120f; --ink: #ece7dc; --ink-2: #b5afa2; --ink-3: #857f72;
+    --line: rgba(236, 231, 220, 0.18); --line-2: rgba(236, 231, 220, 0.42);
+    --card-bg: #1c1916; --glass-bg: #1c1916; --glass-border: rgba(236, 231, 220, 0.26);
+    --ss-far: rgba(236, 231, 220, 0.13); --ss-near: rgba(236, 231, 220, 0.62); --ss-mist: rgba(20, 18, 15, 0.92);
+  }
+}
+
+/* —— 墨晕：只用柔和渐变渲染「远山雾气」，不画硬边山形（手画山形很丑）—— */
+:root[data-style="shanshui"] .hero { position: relative; overflow: visible; }
+:root[data-style="shanshui"] .hero::before {
+  content: ""; display: block; -webkit-mask-image: none; mask-image: none;
+  inset: auto; left: -6%; right: -6%; top: auto; bottom: 0;
+  width: auto; height: 60%; border-radius: 0; opacity: 1; filter: none;
+  background:
+    radial-gradient(58% 68% at 28% 100%, var(--ss-far) 0%, rgba(0, 0, 0, 0) 72%),
+    radial-gradient(46% 56% at 74% 100%, var(--ss-far) 0%, rgba(0, 0, 0, 0) 74%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, var(--ss-mist) 58%);
+}
+/* —— 水岸线：一道两端渐隐的淡墨横纹 —— */
+:root[data-style="shanshui"] .hero::after {
+  content: ""; display: block; -webkit-mask-image: none; mask-image: none;
+  inset: auto; left: 0; right: 0; top: auto; bottom: 27%;
+  width: auto; height: 1px; border-radius: 0; opacity: 1; filter: none; animation: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, var(--line-2) 24%,
+                              var(--line-2) 76%, rgba(0, 0, 0, 0) 100%);
+}
+:root[data-style="shanshui"] .hero > * { position: relative; z-index: 1; }
+
+/* —— 字：楷体 + 疏朗字距 —— */
+:root[data-style="shanshui"] .hero-title,
+:root[data-style="shanshui"] .sec-head h2 {
+  font-family: var(--serif); font-weight: 400; letter-spacing: 0.1em; color: var(--ink);
+}
+:root[data-style="shanshui"] .hero-title { letter-spacing: 0.14em; }
+:root[data-style="shanshui"] .sec-head h2 .en { color: var(--ink-3); letter-spacing: 0.2em; }
+:root[data-style="shanshui"] .lede,
+:root[data-style="shanshui"] .card-excerpt { font-family: var(--sans); line-height: 1.95; }
+
+/* —— 卡片：宣纸 + 细墨边，hover 墨色加深 —— */
+:root[data-style="shanshui"] .card,
+:root[data-style="shanshui"] .glass {
+  border-radius: 2px; background: var(--card-bg); border: 1px solid var(--line);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+:root[data-style="shanshui"] .card:hover,
+:root[data-style="shanshui"] .card:focus-visible {
+  border-color: var(--line-2); transform: translateY(-2px);
+  box-shadow: 0 10px 22px -14px rgba(0, 0, 0, 0.45);
+}
+:root[data-style="shanshui"] .card-tag {
+  border-radius: 0; border: 1px solid var(--line-2); background: transparent; color: var(--ink-2);
+  font-family: var(--mono); letter-spacing: 0.1em;
+}
+:root[data-style="shanshui"] .card-num { font-family: var(--serif); color: var(--ink-3); }
+:root[data-style="shanshui"] .card-go { color: var(--ink-2); }
+:root[data-style="shanshui"] .btn,
+:root[data-style="shanshui"] .toc a { border-radius: 2px; border: 1px solid var(--line); font-family: var(--mono); }
+:root[data-style="shanshui"] .btn:hover,
+:root[data-style="shanshui"] .toc a:hover,
+:root[data-style="shanshui"] .btn:focus-visible,
+:root[data-style="shanshui"] .toc a:focus-visible { border-color: var(--line-2); background: var(--card-bg); }
+:root[data-style="shanshui"] .sec-head { border-bottom: 1px solid var(--line); }
+:root[data-style="shanshui"] .brand-dot { background: var(--ink); border-radius: 0; box-shadow: none; }
+:root[data-style="shanshui"] .skin-chip { border-radius: 0; border: 1px solid var(--line); }
+:root[data-style="shanshui"] .skin-chip[aria-pressed="true"] { border-color: var(--ink); }
+:root[data-style="shanshui"] .skin-chip[aria-pressed="true"]::before { background: var(--ink); border-radius: 0; }
+:root[data-style="shanshui"] .sm-panel { background-color: var(--card-bg); border: 1px solid var(--line-2); border-radius: 2px; }
+:root[data-style="shanshui"] .sm-item[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+:root[data-style="shanshui"] ::selection { background: var(--ink); color: var(--bg); }
+:root[data-style="shanshui"] .foot-meta a { border-bottom: 1px solid var(--line); }
+
+/* —— 山岚：雾气浓缓呼吸（不动山形，只变浓淡） —— */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-style="shanshui"] .hero::before { animation: ss-mist 22s ease-in-out infinite alternate; }
+  @keyframes ss-mist { from { opacity: 0.82; } to { opacity: 1; } }
+}
+
+/* —— 移动端：山压低，给标题留空间 —— */
+@media (max-width: 900px) {
+  :root[data-style="shanshui"] .hero::before { height: 44%; }
+  :root[data-style="shanshui"] .hero::after { bottom: 22%; }
+}
+
+/* ==================================================================
+   装饰不再被 hero 矩形框裁掉（2026-09-12）
+   一批皮肤的 .hero 被写成 overflow:hidden，首屏母题一旦超出 hero 就被切平，
+   看着像「硬塞在一个框里」。全站有 overflow-x:hidden（本文件 247 行）兜底，
+   放开 hero 不会产生横向滚动条；内容层有 z-index 保护，也不会被母题压住。
+   hermes / klein 此前已单独改为 visible，这里把其余的补齐。
+================================================================== */
+:root[data-style="gtasa"] .hero,
+:root[data-style="construct"] .hero,
+:root[data-style="fc"] .hero,
+:root[data-style="glitch"] .hero,
+:root[data-style="cyberpunk"] .hero,
+:root[data-style="rdr2"] .hero,
+:root[data-style="aperture"] .hero,
+:root[data-style="splatoon"] .hero,
+:root[data-style="bauhaus"] .hero,
+:root[data-style="gb"] .hero,
+:root[data-style="winamp"] .hero,
+:root[data-style="p5"] .hero,
+:root[data-style="memphis"] .hero,
+:root[data-style="morandi"] .hero,
+:root[data-style="skate"] .hero,
+:root[data-style="decon"] .hero,
+:root[data-style="ink"] .hero,
+:root[data-style="futurism"] .hero { overflow: visible; }

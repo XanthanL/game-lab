@@ -182,6 +182,15 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #shieldbar{width:min(220px,34vw);height:5px;margin-top:3px;background:rgb(var(--c-white-rgb) / .06);
   border:1px solid rgb(var(--c-cyan-rgb) / .4);transform:skewX(-16deg);overflow:hidden}
 #shieldbar i{background:linear-gradient(90deg,var(--c-shield-a),var(--c-shield-b));display:block;height:100%;transition:width var(--dur-2) var(--ease-ui)}
+/* 过热槽（Phase 4.3）：仅「熔炉」船体显示 —— 冷膛黄铜烧到满膛朱砂，锁膛时整行转警示色 */
+#heatrow{width:min(220px,34vw);margin-top:3px;display:flex;align-items:center;gap:6px}
+#heatrow .lab{font-family:'JetBrains Mono',monospace;font-size:var(--fs-1);line-height:1;
+  letter-spacing:.06em;color:rgb(var(--c-steel-rgb) / .62);transform:skewX(-16deg);
+  transition:color var(--dur-2) var(--ease-ui)}
+.bar.heat{flex:1;width:auto;height:5px;margin-top:0;border-color:rgb(var(--c-amber-rgb) / .34)}
+.bar.heat i{background:linear-gradient(90deg,var(--c-amber),var(--c-danger-hi))}
+#heatrow.lock .lab{color:var(--c-danger-hi)}
+#heatrow.lock .bar.heat{border-color:rgb(var(--c-danger-rgb) / .85)}
 /* 装配框：能力型一行、数值型一行（共用同一套图标样式，按所在行调色）；CD 由 .cd + --cdp 驱动 */
 #abrow,#strow{display:flex;gap:5px}
 #abrow{margin-top:7px}
@@ -384,6 +393,14 @@ body.playing{cursor:none}
 .btn.ghost{border-color:var(--c-line);color:var(--c-ink-2)}
 .btn.ghost:hover{border-color:var(--c-ink-2);background:rgb(var(--c-white-rgb) / .04);box-shadow:none}
 .btn:disabled{opacity:.38;cursor:default;pointer-events:none}
+/* 每日挑战：菜单面板（今日规则 + 历史最佳）+ 死因徽章 */
+#menuDaily{margin-top:14px;padding:10px 16px;border:1px solid var(--c-line);font-size:var(--fs-2);letter-spacing:.18em;color:var(--c-ink-2);text-align:left}
+#menuDaily .date{color:var(--c-amber);letter-spacing:.3em}
+#menuDaily .rules{display:block;margin-top:6px;color:var(--c-ink-2);font-size:var(--fs-1)}
+#menuDaily .best{display:block;margin-top:6px;color:var(--c-cyan)}
+.cause .daily-badge{font-size:var(--fs-2);letter-spacing:.22em;color:var(--c-ink-2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--c-line)}
+.cause .daily-badge .label{color:var(--c-amber);letter-spacing:.3em;margin-right:6px}
+.cause .daily-badge .rules{color:var(--c-cyan);font-size:var(--fs-1);letter-spacing:.18em;margin-left:6px}
 
 /* ---------- menu ---------- */
 .menu-in{text-align:center;padding:0;max-width:640px;margin:auto}
@@ -560,6 +577,11 @@ body.playing{cursor:none}
 .statgrid b{display:block;font-size:var(--fs-5);color:var(--c-stat-hi);font-weight:500}
 .statline{margin:10px auto 0;font-size:var(--fs-2);letter-spacing:.08em;color:var(--c-steel);line-height:1.9;
   font-family:ui-monospace,Consolas,monospace}
+/* 星尘结算行（3.5）：结算面板上唯一指向「局外还在长」的信号，用琥珀色区别于灰色读数 */
+.statline.dust{margin-top:8px;color:var(--c-amber);letter-spacing:.16em}
+.statline.dust b,.statline.dust i{color:var(--c-amber)}
+#over .statline.dust b{color:var(--c-amber)}   /* 压过 #over .statline b 的 --c-stat-hi */
+.statline.dust .hint{color:var(--c-ink-2);letter-spacing:.1em}
 /* ---------- logbook：四边形 / 直角数据表风格（不用圆角） ---------- */
 #logbook .panel{border-radius:0;padding:34px 30px 26px;max-width:min(94vw,680px);
   border:1px solid rgb(var(--c-cyan-rgb) / .3);position:relative}
@@ -667,6 +689,19 @@ body.playing{cursor:none}
    done 态用满格黄铜；partial 用钢蓝（结构色，与"已通电的线"同语言）。 */
 #logbook .lbnode u{position:absolute;left:0;bottom:0;height:2px;background:var(--c-line);
   display:block;text-decoration:none}
+/* 局外解锁树（3.5）：与成就树同结构（坐标手写 / req 前置 / SVG 连线 + 绝对定位节点），
+   区别是节点可点击 —— 花星尘解锁永久起始增益。
+   画布尺寸用 .meta 覆写（解锁树 672×642 比成就树 1008×688 小一圈）。 */
+#logbook .lb-tree.meta .lb-tree-nodes{width:672px;height:642px}
+#logbook .lb-tree.meta .lb-tree-links{width:672px;height:642px}
+#logbook .m-dust{font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-2);letter-spacing:.2em;
+  color:var(--c-amber);margin:0 0 10px}
+/* 三态沿用成就树语汇：暗轮廓(locked) < 青边可点(ready) < 金边已解锁(done/unlocked) */
+#logbook .lbnode.ready{border-color:rgb(var(--c-cyan-rgb) / .55);background:rgb(var(--c-cyan-rgb) / .07);cursor:pointer}
+#logbook .lbnode.ready b{color:var(--c-cyan-hi)}
+#logbook .lbnode.ready i{color:var(--c-cyan-hi)}
+#logbook .lbnode.ready:hover{background:rgb(var(--c-cyan-rgb) / .14)}
+#logbook .lbnode.done i{color:var(--c-amber)}
 #logbook .lbnode.done u{background:var(--c-amber)}
 #logbook .lbnode.part u{background:var(--c-cyan)}
 @media (max-width:640px){ /* 窄屏 2 列时重算分隔线，避免断边 */
@@ -843,6 +878,10 @@ body.playing{cursor:none}
     <div class="bar" data-page-node-id="WZnvKycM9qSCeFVrNcJ72N"><i id="hpbar" style="width:100%" data-page-node-id="Erok93FchHrG3HcU6d1kGK"></i></div>
     <div id="shieldbar" hidden data-page-node-id="0eqAKSUO7Hg9jeQeJaUFca"><i style="width:100%" data-page-node-id="1MntG9xvVhIjndZScABHwk"></i></div>
     <div class="xprow" data-page-node-id="eyWYCUnI8zOelcWKTcT1xA"><span id="lv" class="mono" data-page-node-id="iXcZgY5H5ATXYCEtp2BlHH">LV 1</span><div class="bar xp" data-page-node-id="G6dyR6Hi0JKyd5dlTy9H8k"><i id="xpbar" style="width:0%" data-page-node-id="LS19vBWzwgorO6h62s699q"></i></div></div>
+    <div id="heatrow" hidden data-page-node-id="4p3heatrowQ7xLmN2vB5">
+      <span class="lab mono" data-page-node-id="4p3heatlabK2wR8tYzA6">HEAT</span>
+      <div class="bar heat" data-page-node-id="4p3heatbarN5dF3sVpC9"><i id="heatbar" style="width:0%" data-page-node-id="4p3heatfillJ8hM1qWeD4"></i></div>
+    </div>
     <div id="abrow" hidden data-page-node-id="C5s330H6LRLaA9BSskERcs"></div>
     <div id="strow" hidden data-page-node-id="q1xXrIwW3YDEOOeGuYzNr6"></div>
   </div>
@@ -889,12 +928,14 @@ body.playing{cursor:none}
     <div class="menu-actions" data-page-node-id="pMqoAhVD7PAPFB5Luxb6sy">
       <button id="btnLaunch" class="btn" data-i18n="m_launch" data-page-node-id="aV5dF8XRuZsW7M1KtlJEDX">LAUNCH ▸ 出击</button>
       <button id="btnContinue" class="btn ghost" hidden data-i18n="m_resume" data-page-node-id="BYU3FTlwdVGSljwm5aRuAR">继续漂移 ▸ C</button>
+      <button id="btnDaily" class="btn" data-page-node-id="__DAILY_BTN__" data-i18n="m_daily">DAILY ▸ 每日挑战</button>
       <button id="btnSaves" class="btn ghost" data-i18n="m_saves" data-page-node-id="APHyEc2RHlKhVAFVbhb6aF">SAVES ▸ 存档管理</button>
       <button id="btnLogbook" class="btn ghost" data-i18n="m_log" data-page-node-id="dWzHTpgncosz0SYYwdM33Z">LOG ▸ 航行日志</button>
       <button id="btnSettings" class="btn ghost" data-i18n="m_settings" data-page-node-id="GAEvA4l94BsYjWwrpZ9eN3">SETTINGS ▸ 设置</button>
       <button id="btnLang" class="btn ghost langbtn" data-i18n="m_lang">🌐 EN ▸ ENGLISH</button>
     </div>
     <div id="menuBest" class="mono" data-page-node-id="FChkP6ugCq4fFtWOTlP2AI"></div>
+    <div id="menuDaily" class="mono" data-page-node-id="__DAILY_PANEL__" hidden></div>
   </div>
 </div>
 
@@ -914,6 +955,7 @@ body.playing{cursor:none}
     <div id="vicScore" class="mono" data-page-node-id="EDt8EwvsB5EgIksSPKbZLL">0</div>
     <div id="vicBonus" class="mono" style="margin-top:6px;font-size:var(--fs-2);letter-spacing:.2em;color:var(--c-amber)" data-page-node-id="BdeGBYbvvyQhjVGfpKVl4u"></div>
     <div id="vicUnlock" hidden data-i18n="v_unlock" data-page-node-id="aqL49jvtXLhTZkeLI6bwGf">NEW HULL UNLOCKED — 回响 NEMESIS 已加入机库</div>
+    <div class="statline dust" id="vicDust" data-page-node-id="__V_DUST__"></div>
     <div class="statgrid" data-page-node-id="IQEOo5TwbLqLqFuAnG7pjV">
       <div data-page-node-id="9DXVtiarzfB8DEul5EJk14"><b id="vWave" class="mono" data-page-node-id="lf2eqcaFoQXYLdydFL6voI">15</b><span data-i18n="v_wave">波次</span></div>
       <div data-page-node-id="tic8FvXsXHRkv9s32viN7R"><b id="vLevel" class="mono" data-page-node-id="wdG4JzWdVVjisTu0TwWmwf">1</b><span data-i18n="v_lvl">等级</span></div>
@@ -969,6 +1011,8 @@ body.playing{cursor:none}
     </div>
     <!-- 本局关键统计：伤害输出与承伤，让"这局打得好不好"有个可比的数 -->
     <div class="statline" id="overExtra" data-page-node-id="oExtraBlk"></div>
+    <!-- 星尘结算（3.5）：本局产出 + 可用余额，指向解锁星图 -->
+    <div class="statline dust" id="overDust" data-page-node-id="__O_DUST__"></div>
     <div class="chips" id="overChips" data-page-node-id="xFgESe1KjP3AK1NdCfFW1F"></div>
     <div class="row-btns" data-page-node-id="wRCzBhpF708lrY3uZVh9eX">
       <button id="btnRetry" class="btn" data-i18n="o_retry" data-page-node-id="DPdUSs6U83Kq7e4DWaWUa6">再出击 ▸ R</button>
@@ -1019,6 +1063,16 @@ body.playing{cursor:none}
         <div class="lb-tree-nodes" id="lbTreeNodes"></div>
       </div>
     </div>
+    <!-- 局外解锁树（Phase 3.5）：花星尘换永久起始增益 —— 连败也有进展感 -->
+    <div class="sec-head" data-i18n="lb_sec7" data-node-id="lbsec7"><i></i><span>解锁星图</span><em>UNLOCKS</em></div>
+    <div class="m-dust mono" id="mDust" data-node-id="__M_DUST__"></div>
+    <div class="lb-tree meta" id="mTree" data-node-id="__M_TREE__">
+      <div class="lb-tree-hint" id="mTreeHint" data-i18n="lb_tree_hint2">点击节点解锁 · 拖拽浏览</div>
+      <div class="lb-tree-wrap" id="mTreeWrap" data-node-id="__M_WRAP__">
+        <svg class="lb-tree-links" id="mTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="lb-tree-nodes" id="mTreeNodes" data-node-id="__M_NODES__"></div>
+      </div>
+    </div>
 
     <div class="row-btns" data-page-node-id="Y1FUfV8tabhHh347u4aXN6">
       <button id="btnLbBack" class="btn" data-i18n="lb_back" data-page-node-id="dn0FsAkgpBLPRw1lPfBXoc">返回 ▸ ESC</button>
@@ -1065,8 +1119,18 @@ body.playing{cursor:none}
 
 /* ============================== utils ============================== */
 const TAU=Math.PI*2;
-const rand=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
-const irand=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+/* ============================== RNG ==============================
+   可注入种子的随机源：默认走 Math.random（与旧行为完全一致）；
+   setSeed(s) 后所有顶层随机（rand/irand/pick/shuffle）改走 mulberry32，
+   VFX 与微观暴击判定仍走 Math.random —— 「同一种子 = 相同开局」只需这 4 个函数确定。
+   clearSeed() 还原默认状态。 */
+const RND={on:false,s:0};
+function _mulberry32(){let t=RND.s+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
+function srand01(){return RND.on?_mulberry32():Math.random();}
+function setSeed(s){RND.on=true;RND.s=(s|0)||1;}
+function clearSeed(){RND.on=false;RND.s=0;}
+const rand=(a=1,b)=>b===undefined?srand01()*a:a+srand01()*(b-a);
+const irand=(a,b)=>Math.floor(a+srand01()*(b-a+1));
 
 /* ============ 设计 token 读取层（单一事实源 = <style> 的 :root） ============
    启动时读一次，缓存为 'r,g,b' 字符串；需要透明度就用 RGBA(k,a) 拼。
@@ -1176,16 +1240,26 @@ const LV_EN={
 const SYN_EN={
  storm:['Static Storm','Arc cooldown -0.35s — frozen foes are yours to chain'],
  bulwark_ram:['Ram Aegis','+20 shield cap, refilled on the spot — ram them, the shield can take it'],
- blink_ram:['Blink Ram','Enemies along your blink path take full ram damage — phased, you are the shell'],
- blink_arc:['Blink Arc','Each blink looses an arc along its trail, searing foes in passing'],
- nova_stasis:['Resonant Pulse','Shockwave deals x1.6 damage and x1.8 knockback to slowed enemies — frozen bodies shatter'],
- pulse_swarm:['Pulse Swarm','Each shockwave instantly reloads all drones — the swarm fires with every pulse'],
- judge_frost:['Frozen Judgement','The Orbital Lance deals +60% damage to slowed enemies — freeze first, pierce after'],
- rear_lance:['Parthian Lance','Firing the lance also launches one from the stern — judgement fore and aft'],
- molten_ram:['Molten Ram','Ram impacts detonate a death-wake burst at the impact point — the burn follows the blow'],
- vent_wake:['Venting Wake','Taking shield damage vents searing fire all around — even the shield fights back'],
+ blink_ram:['Blink Ram','Ram damage +2 — phased, you are the shell'],
+ blink_arc:['Blink Arc','Arc chains +1, cooldown -0.2s — your landing point always carries lightning'],
+ nova_stasis:['Resonant Pulse','Slow effect greatly amplified — foes caught in the shockwave freeze in place'],
+ pulse_swarm:['Pulse Swarm','Drone power +0.25, fire interval -0.06s — the swarm fires with every pulse'],
+ judge_frost:['Frozen Judgement','Lance cooldown -0.5s, stasis radius +40 — freeze first, pierce after'],
+ rear_lance:['Parthian Lance','+1 stern gun, lance cooldown -0.4s — judgement fore and aft'],
+ molten_ram:['Molten Ram','Ram damage +2 — the burn follows the blow'],
+ vent_wake:['Venting Wake','+15 shield cap, refilled at once — even the shield fights back'],
  swarm_arc:['Thunder Swarm','Arc cooldown -0.3s, drone power +0.2 — swarm and coil resonate as one'],
- ignite:['Ignition Mines','The death wake detonates mag-mines early, +50% blast damage — flame sweeps the minefield'],
+ ignite:['Ignition Mines','Death-wake and mag-mine blast damage +15 — flame sweeps the minefield'],
+ volley_pierce:['Volley Pierce','Shots pierce 2 more targets — many barrels, one long line'],
+ salvo_blast:['Salvo Blast','Blast radius +25%, splash damage +25% — every barrel is a firework'],
+ spray_bounce:['Spray Bounce','Bounces +1, fire rate +8% — nowhere to hide from the spray'],
+ pierce_bounce:['Piercing Bounce','Bounces +2 — it still ricochets after piercing, one shot sweeps the field'],
+ guided_pierce:['Guided Piercer','Homing +1 tier, shots pierce 1 more — the missiles queue themselves up'],
+ guided_frag:['Homing Frag','Homing range +120, blast radius +20% — chase it down, then blow it up'],
+ bounce_blast:['Bouncing Charge','Bounces +1, splash damage +30% — even corners are minefields'],
+ minefield_arc:['Minefield Arc','Arc chains +1 — mag-mines herd them together, just for you'],
+ rear_pierce:['Piercing Stern','Stern gun power +15%, shots pierce 1 more — pursuers get pierced too'],
+ stasis_mine:['Stasis Minefield','Stasis radius +60 — the enemies you hold down walk right into the mines'],
 };
 const SQUADS_EN={
  swarm:['Swarm','dense small units'],gunline:['Gunline','ranged fire suppression'],
@@ -1202,11 +1276,13 @@ const HULL_EN={
  raven:'Colossus hunter: +10% crit, +50% crit damage, +40% pickup, +6% top speed',
  swarm:'Drone carrier: starts with 1 drone · +30% drone power, +50% pickup, +8% fire rate, -10% max hull',
  nemesis:'Final wreck: a touch better everywhere, +12% fire rate, +30% pickup, +10% max hull',
+ forge:'Overheat rifling: sustained fire builds heat — damage scales 0.85x cold to 1.45x full, and topping out jams the barrel for 1.7s. +10% fire rate, +12% bullet speed, -8% max hull',
 };
 const HULL_LOCK_EN={
  raven:'Clear wave 15 — shatter the Twin Rocks to unlock',
  swarm:()=>`Lifetime kills ${SWARM_KILLS} to unlock — progress ${loadStats().k}`,
  nemesis:'Clear wave 30 — shatter the Nemesis Echo to unlock',
+ forge:'Clear wave 40 — shatter the Collapse Core to unlock',
 };
 function applyI18n(){
   document.documentElement.lang=LANG==='en'?'en':'zh-CN';
@@ -1256,6 +1332,8 @@ function repaintBuildChips(){
   if(!el.over.hidden){
     if(el.overCauseBody)el.overCauseBody.innerHTML=buildCause();
     if(el.overExtra)el.overExtra.innerHTML=buildOverExtra();
+    if(el.overDust)renderDust(el.overDust,G.lastDust||0);
+    if(el.vicDust)renderDust(el.vicDust,G.lastDust||0);
   }
 }
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -1264,8 +1342,8 @@ const mod=(n,m)=>((n%m)+m)%m;
 const d2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
 const angTo=(ax,ay,bx,by)=>Math.atan2(by-ay,bx-ax);
 const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d;};
-const pick=a=>a[(Math.random()*a.length)|0];
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const pick=a=>a[(srand01()*a.length)|0];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(srand01()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 
 /* ============================== dom ============================== */
@@ -1273,10 +1351,11 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d');
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
-  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),strow:$('strow'),wave:$('wavelabel'),enleft:$('enleft'),
+  lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),strow:$('strow'),heatrow:$('heatrow'),heatbar:$('heatbar'),
+  wave:$('wavelabel'),enleft:$('enleft'),
   bossName:$('bossname'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
-  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),
+  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),btnDaily:$('btnDaily'),menuDaily:$('menuDaily'),
   guide:$('guide'),guideTag:$('guideTag'),guideTxt:$('guideTxt'),guideKey:$('guideKey'),
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
   pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
@@ -1286,8 +1365,9 @@ const el={
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
   lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
   lbEnemies:$('lbEnemies'),lbBosses:$('lbBosses'),lbAffix:$('lbAffix'),
-  lbTree:$('lbTree'),lbTreeWrap:$('lbTreeWrap'),lbTreeLinks:$('lbTreeLinks'),lbTreeNodes:$('lbTreeNodes'),
+  lbTree:$('lbTree'),lbTreeWrap:$('lbTreeWrap'),lbTreeLinks:$('lbTreeLinks'),lbTreeNodes:$('lbTreeNodes'),mTree:$('mTree'),mTreeWrap:$('mTreeWrap'),mTreeLinks:$('mTreeLinks'),mTreeNodes:$('mTreeNodes'),mDust:$('mDust'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
+  overDust:$('overDust'),vicDust:$('vicDust'),
   flash:$('flash'),scan:$('scan'),danger:$('danger'),slowfx:$('slowfx'),aim:$('aim'),
   joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
   btnReroll:$('btnReroll'),
@@ -2158,7 +2238,7 @@ const G={
   t:0,score:0,best:0,kills:0,runT:0,bannerT:0,saveT:0,
   runId:0,runStart:0, // 当前漂移的唯一 id / 开始时刻（时间戳），多存档管理用
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,hitstop:0,
-  achQueue:null,achCool:0,achPrimed:false,noMod:false,flawless:false,
+  achQueue:null,achCool:0,achPrimed:false,noMod:false,flawless:false,grav:null,
   rarPity:0, // 连续未出 rare+ 卡的升级次数（伪随机补偿，见 rollChoices）
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
@@ -2256,24 +2336,32 @@ const SECTORS=[
 ];
 function sectorOf(n){let s=SECTORS[0];for(const x of SECTORS)if(n>=x.from)s=x;return s;}
 /* BOSS 映射：每 5 波一场，6 场各不相同的巨像 */
-const BOSS_AT={5:'rock',10:'eye',15:'twin',20:'hydra',25:'warden',30:'nemesis'};
+const BOSS_AT={5:'rock',10:'eye',15:'twin',20:'hydra',25:'warden',30:'nemesis',
+  /* Phase 4.2：无尽专属两场 —— 35 静默方碑 / 40 坍缩之核 */
+  35:'monolith',40:'collapse'};
 const BOSS_NAME={rock:'MOTHER ROCK',twin:'TWIN ROCKS',eye:'VOID EYE',hydra:'HYDRA PRIME',
-  warden:'ORBITAL WARDEN',nemesis:'NEMESIS'};
-const BOSS_ZH={rock:'母岩',twin:'双子母岩',eye:'虚空之眼',hydra:'九首巨兽',warden:'环带狱卒',nemesis:'终焉回响'};
+  warden:'ORBITAL WARDEN',nemesis:'NEMESIS',monolith:'MONOLITH',collapse:'COLLAPSE CORE'};
+const BOSS_ZH={rock:'母岩',twin:'双子母岩',eye:'虚空之眼',hydra:'九首巨兽',warden:'环带狱卒',
+  nemesis:'终焉回响',monolith:'静默方碑',collapse:'坍缩之核'};
 /* 巨像机动参数：pull=追击加速度，cap=速度上限（进入狂暴阶段后 ×1.45 / ×1.35） */
 const BOSS_MV={rock:{pull:14,cap:60},twin:{pull:26,cap:95},eye:{pull:9,cap:38},
-  hydra:{pull:11,cap:52},warden:{pull:10,cap:44},nemesis:{pull:13,cap:58}};
+  hydra:{pull:11,cap:52},warden:{pull:10,cap:44},nemesis:{pull:13,cap:58},
+  /* 方碑与坍缩核都近乎不动：它们的威胁来自「场」而非位移 */
+  monolith:{pull:8,cap:34},collapse:{pull:6,cap:30}};
 /* 巨像配色：本体填充色 / 描边色 */
 const BOSS_STYLE={rock:{fill:'#1a0a07',c:'192,64,43'},twin:{fill:'#1a0a07',c:'206,88,60'},
   eye:{fill:'#1c0d06',c:'224,116,78'},hydra:{fill:'#180608',c:'168,48,44'},
-  warden:{fill:'#081320',c:'110,160,210'},nemesis:{fill:'#16151a',c:'228,233,240'}};
+  warden:{fill:'#081320',c:'110,160,210'},nemesis:{fill:'#16151a',c:'228,233,240'},
+  monolith:{fill:'#0c1118',c:'150,170,215'},collapse:{fill:'#0a0714',c:'196,148,255'}};
 /* 精英巨像：比 BOSS 弱一档的强化体，出现在两场 BOSS 之间的波次里 */
 const CHAMP_AT={8:'rock',13:'eye',18:'twin',23:'hydra',28:'warden'};
 /* 敌人解锁波次：越深入星区，敌型越丰富 */
 const EN_UNLOCK={seeker:1,tadpole:3,dart:3,gunner:4,splitter:5,weaver:6,reaver:7,
   bastion:8,shifter:9,wraith:10,
-  stalker:11,lancer:12,mine:13,orbiter:14,leech:16,mimic:17,prism:19,
-  bulwark:21,shepherd:23,nova:26};
+  stalker:11,lancer:12,mine:13,orbiter:14,
+  /* Phase 4.1 新增四型：补齐 15 / 18 / 22 / 25 四个空档波次 */
+  sower:15,leech:16,mimic:17,jammer:18,prism:19,
+  bulwark:21,brood:22,shepherd:23,sunder:25,nova:26};
 const EN_LIST=Object.keys(EN_UNLOCK);
 function enUnlocked(n){return EN_LIST.filter(t=>n>=EN_UNLOCK[t]);}
 /* 敌型显示名（航行日志图鉴用）：zh 名与 en 名各一张表，形状描述另存 ——
@@ -2281,11 +2369,15 @@ function enUnlocked(n){return EN_LIST.filter(t=>n>=EN_UNLOCK[t]);}
 const EN_ZH={seeker:'追猎者',tadpole:'蝌蚪',dart:'飞镖',gunner:'炮手',splitter:'分裂体',
   weaver:'织网者',reaver:'掠夺者',bastion:'重甲炮台',shifter:'相位闪现者',wraith:'幽灵',
   stalker:'潜行者',lancer:'长枪手',mine:'浮游雷',orbiter:'环轨炮',leech:'吸附虫',
-  mimic:'拟态体',prism:'棱镜',bulwark:'铁壁',shepherd:'牧者',nova:'新星'};
+  mimic:'拟态体',prism:'棱镜',bulwark:'铁壁',shepherd:'牧者',nova:'新星',
+  /* Phase 4.1 */
+  sower:'播雷者',jammer:'干扰者',brood:'孵育体',sunder:'裂解者'};
 const EN_EN={seeker:'Seeker',tadpole:'Tadpole',dart:'Dart',gunner:'Gunner',splitter:'Splitter',
   weaver:'Weaver',reaver:'Reaver',bastion:'Bastion',shifter:'Shifter',wraith:'Wraith',
   stalker:'Stalker',lancer:'Lancer',mine:'Mine',orbiter:'Orbiter',leech:'Leech',
-  mimic:'Mimic',prism:'Prism',bulwark:'Bulwark',shepherd:'Shepherd',nova:'Nova'};
+  mimic:'Mimic',prism:'Prism',bulwark:'Bulwark',shepherd:'Shepherd',nova:'Nova',
+  /* Phase 4.1 */
+  sower:'Sower',jammer:'Jammer',brood:'Brood',sunder:'Sunder'};
 /* 敌型特征短语：图鉴里一句话说明"它怎么打你"（与 README 图鉴表述一致，长度受控） */
 const EN_TRAIT={
   seeker:['直线追击的基础敌','Chases straight at you'],
@@ -2308,6 +2400,11 @@ const EN_TRAIT={
   bulwark:['正面偏导护盾，需绕后输出','Frontal shield — get behind it'],
   shepherd:['为周围敌人套减伤光环并修复','Buffs and heals nearby enemies'],
   nova:['缓慢逼近，死亡时剧烈爆炸','Creeps close, explodes violently on death'],
+  /* Phase 4.1 新增四型 */
+  sower:['巡航播撒浮游雷，逼你绕开雷区','Cruises and sows proximity mines'],
+  jammer:['干扰场削弱你的射速与机动','Jams your fire rate and thrust'],
+  brood:['缓慢巢体，持续孵出幼体','Slow hive — keeps hatching spawn'],
+  sunder:['突刺接触前先撕掉一层护盾','Lunge strips a layer of shield first'],
 };
 /* 词缀：中文单字 + 语义说明（AFFIX 表里只有单字 name，图鉴需要解释） */
 const AFFIX_DESC={
@@ -2317,10 +2414,10 @@ const AFFIX_DESC={
 };
 /* 编队模板：每波抽一个主题，决定敌型配比与 banner 副标题 */
 const SQUADS=[
-  {id:'swarm',  zh:'虫潮',   desc:'密集小型单位',      w:['seeker','reaver','tadpole','wraith'],        s:1.35,a:0.7},
-  {id:'gunline',zh:'炮列',   desc:'远程火力压制',      w:['gunner','weaver','orbiter','lancer','bastion'],s:0.85,a:1.15},
-  {id:'rush',   zh:'突袭',   desc:'高速冲刺近身',      w:['dart','reaver','stalker','seeker'],          s:1.1, a:0.8},
-  {id:'fortress',zh:'要塞',  desc:'重甲与炮台阵',      w:['bastion','splitter','bulwark','shepherd','mine'],s:0.8,a:1.2},
+  {id:'swarm',  zh:'虫潮',   desc:'密集小型单位',      w:['seeker','reaver','tadpole','wraith','brood'], s:1.35,a:0.7},
+  {id:'gunline',zh:'炮列',   desc:'远程火力压制',      w:['gunner','weaver','orbiter','lancer','bastion','jammer'],s:0.85,a:1.15},
+  {id:'rush',   zh:'突袭',   desc:'高速冲刺近身',      w:['dart','reaver','stalker','seeker','sunder'],  s:1.1, a:0.8},
+  {id:'fortress',zh:'要塞',  desc:'重甲与炮台阵',      w:['bastion','splitter','bulwark','shepherd','mine','sower'],s:0.8,a:1.2},
   {id:'trick',  zh:'诡术',   desc:'相位、拟态与伏击',  w:['shifter','mimic','stalker','prism','wraith'],s:1.0, a:0.9},
   {id:'mixed',  zh:'混编',   desc:'全谱系协同编队',    w:null,                                          s:1.0, a:1.0},
 ];
@@ -2337,7 +2434,8 @@ function newPlayer(){return{
   stasis:0,stasisR:260,stasisPow:0.6,stasisMax:false,
   backshot:0,backPow:0.7,backMax:false,lance:0,lanceT:0,lanceCd:5,lanceMax:false,phase:0,
   dronePow:0.6,droneCd:0.55,droneMax:false,thrMax:false,maxN:0,
-  boostT:0,rateT:0,
+  boostT:0,rateT:0,jamT:0,jamF:1,jamS:1, // jamF/jamS：干扰场的射速/极速倍率（由施加者写入，1=无干扰）
+  heat:0,heatMul:1,heatLock:0,heatOn:false, // 熔炉过热（4.3）：heatOn 仅「熔炉」为 true，其余船体 heat 恒 0、heatMul 恒 1
   death:0,deathT:0,deathBonus:0,ramCd:0,
   nova:0,novaT:0,novaMax:false,
   blink:0,blinkT:0,blinkMax:false,
@@ -2361,10 +2459,70 @@ function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0,fa:0};}
    会选熟悉的 common，这正是"构筑多样性"的来源。
    ⚠️ 新增模块必须填 rarity，否则会落进 common 兜底（`rarityOf` 的默认值），
       但那样就失去了设计意图 —— 新卡请显式分档并同步 RARITY_ZH / RARITY_EN。 */
+/* 高爆弹（frag）等级表 —— 抽成常量是因为协同里的溅射加成要拿「一级值」兜底：
+   P.splashR / P.splashDmg 初始都是 0，只有跑过 frag.apply 之后才有值，
+   直接写 P.splashR*=1.25 在零基上等于乘 0 —— 静默失效，和空 apply 是同一类坑。*/
+const FRAG_LV=[[52,0.55],[64,0.7],[78,0.85],[92,1.0],[108,1.2],[150,1.8]];
 const RARITY_W={common:1.00,rare:0.45,epic:0.18};
 const RARITY_ZH={common:'基础',rare:'进阶',epic:'核心'};
 const RARITY_EN={common:'COMMON',rare:'RARE',epic:'EPIC'};
 const RARITY_ORDER={common:0,rare:1,epic:2};
+/* ============================== 每日挑战 ==============================
+   每日种子 = 本地日期 YYYYMMDD FNV-1a 哈希成 32-bit 数；
+   同日同设备同种子 → 必选同一对规则（pickDailyRules 用 setSeed/shuffle）。
+   规则在 startGame 之后按顺序 apply，与「同种子 = 同开局」完全对应。 */
+const DAILY_RULES=[
+  {id:'startLoader',zh:'起步装载',en:'LOADED START',
+   d:'开局送 loader 等级 1 —— 弹链已上膛',
+   apply:()=>{G.build.loader=1;MOD_BY_ID.loader.apply(1);}},
+  {id:'startAegis',zh:'护盾待命',en:'AEGIS READY',
+   d:'开局送 aegis 等级 1 + 护盾立刻填满',
+   apply:()=>{G.build.aegis=1;MOD_BY_ID.aegis.apply(1);P.shield=P.shieldMax;}},
+  {id:'swiftStar',zh:'临界之星',en:'SWIFT STAR',
+   d:'暴击率 +10%、暴击伤害 +50% —— 每一发都可能致命',
+   apply:()=>{P.crit+=0.1;P.critMul+=0.5;}},
+  {id:'noRepair',zh:'不可修复',en:'NO REPAIR',
+   d:'升级三选里不放 repair —— 谨慎选择模块',
+   apply:()=>{G.noRepair=true;}},
+];
+function dailySeed(){
+  const d=new Date();
+  const s=(d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()).toString();
+  let h=2166136261>>>0;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+  return h;
+}
+function pickDailyRules(seed){
+  setSeed(seed);
+  const ids=DAILY_RULES.map(r=>r.id);
+  shuffle(ids);
+  return ids.slice(0,2).map(id=>DAILY_RULES.find(r=>r.id===id));
+}
+function startDaily(hull){
+  const seed=dailySeed();
+  const rules=pickDailyRules(seed);
+  /* 顺序关键：先标 dailyMode=true + 注入 G.daily + 置种子，再调 startGame —— 
+     startGame 看到 dailyMode=true 就不会重置 G.daily，但会在开局后自动清掉 dailyMode。
+     rules 在 startGame 完成后逐条 apply（此时 P 已经过 hull.apply）。 */
+  G.dailyMode=true;
+  G.daily={seed,date:new Date().toISOString().slice(0,10),rules};
+  setSeed(seed);
+  startGame(hull);
+  for(const r of rules) r.apply();
+}
+/* 读取每日战绩缓存（最近 7 天）：{ 'YYYY-MM-DD': {score,wave,kills,rules:[id,id]} } */
+const DAILY_KEY='nova-daily';
+function loadDaily(){try{const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'{}');return d&&typeof d==='object'?d:{}}catch(e){return {};}}
+function saveDaily(d){try{localStorage.setItem(DAILY_KEY,JSON.stringify(d));}catch(e){}}
+/* 坠毁 / 通关时把本局写入 nova-daily（仅当更高分覆盖） */
+function commitDaily(){
+  if(!G.daily)return;
+  const all=loadDaily();
+  const prev=all[G.daily.date];
+  const cur={score:G.score,wave:Wv.n,kills:G.kills,rules:G.daily.rules.map(r=>r.id)};
+  if(!prev||cur.score>prev.score)all[G.daily.date]=cur;
+  saveDaily(all);
+}
 const PITY_HARD=6; // 连续 6 次升级都没出 rare+ → 第 7 次强制塞一张（硬保底）
 function rarityOf(m){return (m&&m.rarity)||'common';}
 const MODULES=[
@@ -2402,7 +2560,7 @@ const MODULES=[
   {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',rarity:'common',max:6,type:'ability',
     lv:['命中爆炸：范围 52、溅射 55% 伤害','爆炸范围 64、溅射 70%','爆炸范围 78、溅射 85%',
         '爆炸范围 92、溅射 100%','爆炸范围 108、溅射 120%','MAX：范围 150、溅射 180% —— 金色冲击波'],
-    apply:n=>{const T=[[52,0.55],[64,0.7],[78,0.85],[92,1.0],[108,1.2],[150,1.8]][n-1];
+    apply:n=>{const T=FRAG_LV[n-1];
       P.splashR=T[0];P.splashDmg=T[1]*P.dmg;if(n===6)P.fragMax=true;}},
   {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',rarity:'rare',max:6,type:'ability',
     lv:['子弹会转向最近的敌人','制导搜索范围 +80','制导转向更急','制导搜索范围再 +100','制导转向再加强',
@@ -2521,34 +2679,72 @@ for(const m of MODULES)if(m.type!=='ability')m.type='stat';
 const ABILITY_CAP=6,STAT_CAP=6;
 
 /* ============================== 模块协同 ==============================
-   协同只在「能力型 × 能力型」之间触发 —— 数值型是纯粹的数字成长，不参与联动。
-   两个能力型同时装配即触发，效果只在「达成那一刻」结算一次（G.syn 记录，不重复叠加）；
-   标 apply:()=>{} 的协同为运行时判定，逻辑分散在各能力触发点中。 */
+   协同只在「能力型 × 能力型」之间触发 —— 数值型是纯粹的數字成长，不参与联动。
+   两个能力型同时装配即触发，效果只在「达成那一刻」结算一次（G.syn 记录，不重复叠加）。
+
+   ⚠️ 3.2 重要修正：**apply() 是唯一保证生效的入口。**
+   旧表里有 9 条写 apply:()=>{}，注释称"逻辑分散在各能力触发点" —— 实测
+   全项目**没有任何 G.syn[…] 运行时判定**，这 9 条纯属装饰：UI 显示"已激活"，
+   实际一点效果都没有。现已全部改成真实的一次性属性变更。
+   **新增协同一律写真实 apply()**，不要留空 —— 空 apply = 假深度。
+
+   ⚠️ 绝不改动 P.mine / P.nova / P.blink：它们是 MINE_LV[P.mine-1] 之类表的**下标**，
+   超过 6 会取到 undefined 直接崩。只用标量字段（pierce / ricochet / splashR /
+   teslaCd / stasisR / dronePow / ram / deathBonus …）。 */
+/* 溅射字段加成：零值时先按 frag 一级值播种再乘，保证「任何调用顺序下都真实生效」。
+   （实战里 synActive 已保证 frag>=1 级，但这里不依赖调用顺序，便于单独验证。）*/
+function splashBoost(rMul,dMul){
+  P.splashR=(P.splashR||FRAG_LV[0][0])*rMul;
+  P.splashDmg=(P.splashDmg||FRAG_LV[0][1]*P.dmg)*dMul;
+}
 const SYN=[
   {id:'storm',a:'tesla',b:'stasis',zh:'静滞雷场',d:'电弧冷却 -0.35 秒 —— 被冻住的敌人任你链击',
    apply:()=>{P.teslaCd=Math.max(0.8,P.teslaCd-0.35);}},
   {id:'bulwark_ram',a:'ram',b:'aegis',zh:'撞角力场',d:'护盾上限 +20 并立即充满 —— 撞上去，护盾扛得住',
    apply:()=>{P.shieldMax+=20;P.shield+=20;}},
-  {id:'blink_ram',a:'blink',b:'ram',zh:'折跃冲撞',d:'折跃路径上的敌人承受全额冲角伤害 —— 相位状态下的你是一发炮弹',
-   apply:()=>{}},
-  {id:'blink_arc',a:'blink',b:'tesla',zh:'闪现电弧',d:'每次折跃沿轨迹劈出一道电弧，灼烧沿途敌人',
-   apply:()=>{}},
-  {id:'nova_stasis',a:'nova',b:'stasis',zh:'共振脉冲',d:'冲击波对减速中的敌人伤害 ×1.6、击退 ×1.8 —— 冻结的躯体在振荡中碎裂',
-   apply:()=>{}},
-  {id:'pulse_swarm',a:'nova',b:'drone',zh:'脉冲机群',d:'每次冲击波为所有无人机瞬间装填 —— 机群随脉冲齐射',
-   apply:()=>{}},
-  {id:'judge_frost',a:'lance',b:'stasis',zh:'冻结审判',d:'轨道长枪对减速中的敌人伤害 +60% —— 审判先冻结，后贯穿',
-   apply:()=>{}},
-  {id:'rear_lance',a:'lance',b:'backshot',zh:'回马枪',d:'长枪发射时船尾同时射出一道长枪 —— 前后皆是审判',
-   apply:()=>{}},
-  {id:'molten_ram',a:'deathtrail',b:'ram',zh:'熔火撞角',d:'冲角撞击时在撞击点炸开一团死亡尾流 —— 撞完还要烧',
-   apply:()=>{}},
-  {id:'vent_wake',a:'deathtrail',b:'aegis',zh:'泄压尾流',d:'护盾承受伤害时向四周喷发灼热火团 —— 盾牌也会反击',
-   apply:()=>{}},
+  {id:'blink_ram',a:'blink',b:'ram',zh:'折跃冲撞',d:'冲角杀伤 +2 —— 相位状态下的你是一发炮弹',
+   apply:()=>{P.ram+=2;}},
+  {id:'blink_arc',a:'blink',b:'tesla',zh:'闪现电弧',d:'电弧链击 +1、冷却 -0.2 秒 —— 折跃的落点总带着雷光',
+   apply:()=>{P.tesla+=1;P.teslaCd=Math.max(0.8,P.teslaCd-0.2);}},
+  {id:'nova_stasis',a:'nova',b:'stasis',zh:'共振脉冲',d:'减速效果大幅增强 —— 被冲击波掀起的敌人在原地凝固',
+   apply:()=>{P.stasisPow+=0.6;}},
+  {id:'pulse_swarm',a:'nova',b:'drone',zh:'脉冲机群',d:'无人机火力 +0.25、开火间隔 -0.06 秒 —— 机群随脉冲齐射',
+   apply:()=>{P.dronePow+=0.25;P.droneCd=Math.max(0.2,P.droneCd-0.06);}},
+  {id:'judge_frost',a:'lance',b:'stasis',zh:'冻结审判',d:'长枪冷却 -0.5 秒、静止场范围 +40 —— 先冻结，后贯穿',
+   apply:()=>{P.lanceCd=Math.max(2,P.lanceCd-0.5);P.stasisR+=40;}},
+  {id:'rear_lance',a:'lance',b:'backshot',zh:'回马枪',d:'追加一门尾炮、长枪冷却 -0.4 秒 —— 前后皆是审判',
+   apply:()=>{P.backshot+=1;P.lanceCd=Math.max(2,P.lanceCd-0.4);}},
+  {id:'molten_ram',a:'deathtrail',b:'ram',zh:'熔火撞角',d:'冲角杀伤 +2 —— 撞完还要烧',
+   apply:()=>{P.ram+=2;}},
+  {id:'vent_wake',a:'deathtrail',b:'aegis',zh:'泄压尾流',d:'护盾上限 +15 并立即补满 —— 盾牌也会反击',
+   apply:()=>{P.shieldMax+=15;P.shield=Math.min(P.shieldMax,P.shield+15);}},
   {id:'swarm_arc',a:'tesla',b:'drone',zh:'雷驰机群',d:'电弧冷却 -0.3 秒、无人机火力 +0.2 —— 机群与线圈同频共振',
    apply:()=>{P.teslaCd=Math.max(0.8,P.teslaCd-0.3);P.dronePow+=0.2;}},
-  {id:'ignite',a:'mine',b:'deathtrail',zh:'燃雷',d:'死亡尾流经过磁雷会将其提前引爆，爆炸伤害 +50% —— 火舌扫过雷区',
-   apply:()=>{}},
+  {id:'ignite',a:'mine',b:'deathtrail',zh:'燃雷',d:'尾流与磁雷的爆炸伤害 +15 —— 火舌扫过雷区',
+   apply:()=>{P.deathBonus+=15;}},
+  /* ---------- 以下 10 条为 3.2 新增：优先补齐孤儿卡 ----------
+     twin / pierce / ricochet / frag / guided 这 5 张在旧表里一条协同都没有，
+     拿了等于纯数值堆叠、没有构筑方向 —— 这是"每局手感雷同"的主因之一。 */
+  {id:'volley_pierce',a:'twin',b:'pierce',zh:'齐射穿刺',d:'子弹多穿透 2 个目标 —— 多根枪管，成排贯穿',
+   apply:()=>{P.pierce+=2;}},
+  {id:'salvo_blast',a:'twin',b:'frag',zh:'散爆齐射',d:'爆炸范围 +25%、溅射伤害 +25% —— 每根枪管都在放礼花',
+   apply:()=>{splashBoost(1.25,1.25);}},
+  {id:'spray_bounce',a:'twin',b:'ricochet',zh:'流弹幕',d:'反弹次数 +1、射速 +8% —— 满屏流弹无处可躲',
+   apply:()=>{P.ricochet+=1;P.fireRate*=1.08;}},
+  {id:'pierce_bounce',a:'pierce',b:'ricochet',zh:'穿甲跳弹',d:'反弹次数 +2 —— 穿透之后照样弹，一发横扫全场',
+   apply:()=>{P.ricochet+=2;}},
+  {id:'guided_pierce',a:'guided',b:'pierce',zh:'制导穿甲',d:'制导转向 +1 级、子弹多穿透 1 个 —— 制导弹会自己排队',
+   apply:()=>{P.homing+=1;P.pierce+=1;}},
+  {id:'guided_frag',a:'guided',b:'frag',zh:'追踪榴弹',d:'制导搜索范围 +120、爆炸范围 +20% —— 追上去再炸开',
+   apply:()=>{P.homeR+=120;splashBoost(1.2,1);}},
+  {id:'bounce_blast',a:'ricochet',b:'frag',zh:'跳雷',d:'反弹次数 +1、溅射伤害 +30% —— 墙角也是雷区',
+   apply:()=>{P.ricochet+=1;splashBoost(1,1.3);}},
+  {id:'minefield_arc',a:'mine',b:'tesla',zh:'雷场电击',d:'电弧链击 +1 —— 磁雷把敌人聚成一堆，正好一网打尽',
+   apply:()=>{P.tesla+=1;}},
+  {id:'rear_pierce',a:'backshot',b:'pierce',zh:'贯穿尾炮',d:'尾炮火力 +15%、子弹多穿透 1 个 —— 身后的追兵同样被贯穿',
+   apply:()=>{P.backPow+=0.15;P.pierce+=1;}},
+  {id:'stasis_mine',a:'stasis',b:'mine',zh:'停滞雷区',d:'静止场范围 +60 —— 被拖住的敌人正好踩进雷区',
+   apply:()=>{P.stasisR+=60;}},
 ];
 function synActive(s){return P&&(G.build[s.a]|0)>=1&&(G.build[s.b]|0)>=1;}
 /* 结算新达成的协同，返回本次新增的协同列表 */
@@ -2600,6 +2796,7 @@ function rollChoices(){
   const capped=ownedAbilities.size>=ABILITY_CAP;
   const statCapped=ownedStats.size>=STAT_CAP;
   let pool=MODULES.filter(m=>(G.build[m.id]||0)<m.max);
+  if(G.noRepair)pool=pool.filter(m=>m.id!=='repair');
   if(capped){ // 能力型已满 6 种：剔除未曾拥有的能力型
     pool=pool.filter(m=>m.type!=='ability'||ownedAbilities.has(m.id));
   }
@@ -2659,6 +2856,19 @@ function rollChoices(){
 }
 
 /* ============================== hulls ============================== */
+/* ---- 熔炉过热（Phase 4.3）----
+   持续开火累积热量：**累积速率恒定**，与射速解耦 —— 否则高射速构筑会在 1 秒内烧穿、
+   过热从"节奏取舍"退化成"不许点射"，与「越堆射速越吃亏」的设计意图相悖。
+   伤害在冷膛 HEAT_COLD 与满膛 HEAT_HOT 之间线性浮动，热量见顶锁死炮膛强制散热。
+   ⚠️ HEAT_VENT 必须与 HEAT_MAX/HEAT_LOCK 对齐（锁膛结束时正好排空），
+      否则会出现"解锁瞬间还残留热量、立刻二次过热"的抖动。 */
+const HEAT_MAX=100;    // 热量上限
+const HEAT_UP=30;      // 开火时每秒累积 —— 满膛 3.3s，与射速无关
+const HEAT_COOL=34;    // 停火时每秒散热 —— 满膛排空约 2.9s
+const HEAT_LOCK=1.7;   // 锁膛时长
+const HEAT_VENT=HEAT_MAX/HEAT_LOCK; // 锁膛期间每秒强制散热（约 58.8 —— 刚好排空）
+const HEAT_COLD=0.85;  // 冷膛伤害倍率
+const HEAT_HOT=1.45;   // 满膛伤害倍率
 const HULLS=[
   {id:'peregrine',zh:'游隼',en:'Peregrine',g:'➤',desc:'标准巡逻船体 —— 速度、火力、装甲均衡',apply:()=>{}},
   {id:'rapier',zh:'轻剑',en:'Rapier',g:'»',desc:'玻璃大炮：速度与机动 +18%、射速 +15%，最大船体 -20%',
@@ -2678,6 +2888,11 @@ const HULLS=[
     apply:()=>{P.dmg*=1.08;P.fireRate*=1.12;P.magnet*=1.3;P.crit+=0.04;
       P.maxHp=Math.round(P.maxHp*1.1);P.hp=P.maxHp;P.maxSpeed*=1.04;},
     lockNote:'肃清第 30 波 · 击碎终焉回响后解锁'},
+  {id:'forge',zh:'熔炉',en:'Forge',g:'❖',
+    desc:'过热膛线：持续开火累积热量 —— 伤害在冷膛 0.85× 与满膛 1.45× 之间浮动，热量见顶锁死炮膛 1.7 秒；射速 +10%、弹速 +12%，最大船体 -8%',
+    apply:()=>{P.heatOn=true;P.fireRate*=1.10;P.bspd*=1.12;
+      P.maxHp=Math.round(P.maxHp*0.92);P.hp=P.maxHp;},
+    lockNote:'肃清第 40 波 · 击碎坍缩之核后解锁'},
 ];
 /* 船体持久化解锁：JSON 数组存储；兼容旧格式（'1' = raven 已解锁） */
 const HULL_KEY='nova-hulls';
@@ -2692,7 +2907,7 @@ function loadHullArr(){
 }
 function saveHullArr(a){try{localStorage.setItem(HULL_KEY,JSON.stringify(a));}catch(e){}}
 function hullUnlocked(id){
-  if(id==='raven'||id==='nemesis')return loadHullArr().includes(id);
+  if(id==='raven'||id==='nemesis'||id==='forge')return loadHullArr().includes(id);
   if(id==='swarm')return loadStats().k>=SWARM_KILLS||loadHullArr().includes('swarm');
   return true;
 }
@@ -2812,7 +3027,8 @@ function pickHull(i){
   const h=HULLS[i]||HULLS[0];
   if(!hullUnlocked(h.id))return;
   el.hulls.hidden=true;
-  startGame(h);
+  if(G.dailyMode){G.dailyMode=false;startDaily(h);}
+  else startGame(h);
 }
 
 /* ====================== 手机端手牌模式（deck） ======================
@@ -2956,7 +3172,7 @@ window.addEventListener('keydown',e=>{
   if(G.mode==='menu'&&e.code==='KeyC'){resumeRun();return;}
   if(G.mode==='menu'&&e.code==='KeyL'){openLogbook();return;}
   if((G.mode==='logbook'||G.mode==='saves')&&e.code==='Escape'){toMenu();return;}
-  if(G.mode==='hulls'&&/^Digit[1-6]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
+  if(G.mode==='hulls'&&/^Digit[1-7]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
   if(G.mode==='hulls'&&e.code==='Escape'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return;}
   if(G.mode==='victory'&&(e.code==='KeyE'||e.code==='Enter')){continueEndless();return;}
   if(G.mode==='over'&&(e.code==='KeyR'||e.code==='Enter')){startGame();return;}
@@ -3407,6 +3623,8 @@ function spawnAst(size,x,y,kind,champ){
   if(boss&&kind==='hydra')hp*=0.5;
   if(boss&&kind==='warden')hp*=1.25;
   if(boss&&kind==='nemesis')hp*=1.7;
+  if(boss&&kind==='monolith')hp*=1.9;  // 场灭窗口是额外输出机会，血量相应抬高
+  if(boss&&kind==='collapse')hp*=2.2;  // 引力井：走位成本最高，血量最高
   let r;
   if(col){hp*=0.34;r=AST_R[4]*0.62;}
   else r=AST_R[size]*(boss?1:rand(0.9,1.12));
@@ -3425,6 +3643,14 @@ function spawnAst(size,x,y,kind,champ){
         spin:rand(0.5,0.8)*(i%2?-1:1),gapSpin:rand(-0.7,0.7),hp:hp*0.16,maxHp:hp*0.16});
     }
   }
+  if(boss&&kind==='monolith'){
+    // 静默方碑：干扰场开合节律（场开 → 玩家被压制；场灭 → 核心暴露易伤）
+    a.fieldR=MONO_R;a.fieldOn=true;a.fieldT=MONO_ON;
+  }
+  if(boss&&kind==='collapse'){
+    // 坍缩之核：flipT>0 为反转（斥力），仅狂暴阶段启用；disk 是吸积盘转角
+    a.flipT=0;a.disk=rand(TAU);
+  }
   const nv=(boss||col)?16:irand(8,11);
   for(let i=0;i<nv;i++)a.verts.push({a:i/nv*TAU+rand(-0.12,0.12),r:rand(0.72,1.06)});
   G.asteroids.push(a);
@@ -3440,6 +3666,8 @@ function wardenHit(a,hx,hy){
   }
   return null;
 }
+/* 取巨像分量色串（"r,g,b"）——绘制与 VFX 一律走它，杜绝新增字面色值 */
+function st_c(a){return (BOSS_STYLE[a.bossKind]||BOSS_STYLE.rock).c;}
 /* Boss 阶段推进：血量阈值触发换阶段（清屏敌弹 + 短暂无敌 + 播报） */
 function bossStage(a,stage,txt,sub){
   a.stage=stage;a.invT=1.4;
@@ -3529,7 +3757,40 @@ const ENEMY_DEFS={
     init:e=>{e.auraR=330;e.healT=1.5;e.wob=rand(TAU);}},
   nova:{r:16,hp:8,spd:125,dmg:20,sc:150,xp:12,c:'200,85,50', // 新星：缓慢逼近，死亡剧烈爆炸
     init:e=>{e.pulse=rand(TAU);}},
+  /* Phase 4.1 新增四型（设计说明见 ENEMY_DEFS 上方注释块） */
+  sower:{r:15,hp:9,spd:130,dmg:18,sc:130,xp:11,c:'190,170,90', // 播雷者：中距巡航播撒浮游雷
+    init:e=>{e.sowT=rand(1.0,1.8);e.sown=0;e.wob=rand(TAU);}},
+  jammer:{r:16,hp:12,spd:150,dmg:14,sc:170,xp:14,c:'120,150,200', // 干扰者：绕外周放干扰场
+    init:e=>{e.orbit=rand(260,340);e.oa=angTo(P.x,P.y,e.x,e.y);e.osd=Math.random()<0.5?1:-1;
+      e.jamR=230;e.wob=rand(TAU);e.fireT=rand(1.4,2.4);}},
+  brood:{r:26,hp:22,spd:70,dmg:24,sc:240,xp:20,c:'150,190,140', // 孵育体：缓慢巢体持续孵幼体
+    init:e=>{e.hatchMax=Math.max(2.2,3.4-0.03*Wv.n);e.hatchT=rand(1.6,e.hatchMax);
+      e.hatched=0;e.wob=rand(TAU);}},
+  sunder:{r:14,hp:10,spd:230,dmg:26,sc:170,xp:15,c:'215,90,160', // 裂解者：突刺，接触先撕盾
+    init:e=>{e.state='aim';e.st=rand(0.6,1.2);}},
 };
+/* ===== Phase 4.1 新增敌型 =====
+   设计取向：现有 20 型里「支援 / 区域控制 / 召唤」三类是空的 —— 牧者只会加血，
+   浮游雷是死的不会被动投放，没有任何一型会持续补兵。下面四型各补一个缺口：
+     sower  播雷者 —— 区域控制：边巡航边播雷，把"绕开雷区"变成持续走位压力
+     jammer 干扰者 —— 对玩家减益：全局唯一的削弱场（射速 / 机动），让"站桩输出"有代价
+     brood  孵育体 —— 召唤：不打掉巢就一直补兵，逼玩家处理优先级
+     sunder 裂解者 —— 克制护盾流：接触前先撕一层护盾，aegis 流不再无脑硬吃
+   实现上全部复用现有 spawnEnemy / G.ebullets / hurtPlayer，不新增系统。 */
+const JAM_FIRE=0.65;   // 干扰场内射速倍率
+const JAM_SPD=0.8;     // 干扰场内极速倍率
+const SUNDER_STRIP=22; // 裂解者每次接触撕掉的护盾量（固定值，不随波次膨胀）
+/* Phase 4.2 新巨像常量 */
+const MONO_FIRE=0.55;   // 静默方碑干扰场：射速倍率（比干扰者更狠，但会周期性熄灭）
+const MONO_SPD=0.72;    // 静默方碑干扰场：极速倍率
+const MONO_R=300;       // 静默方碑干扰场半径
+const MONO_ON=4.2;      // 干扰场开启时长（狂暴 5.0）
+const MONO_OFF=2.6;     // 干扰场熄灭时长（狂暴 1.8）—— 这段时间核心暴露易伤
+const GRAV_R=820;       // 坍缩之核引力作用半径（边缘趋零、中心最强）
+const GRAV_PULL=430;    // 坍缩之核引力加速度峰值（与阻尼同帧，终速 ≈ g/2.1 ≈ 205）
+const HORIZON_R=0.62;   // 事件视界半径（本体半径的倍数）
+const HORIZON_DPS=26;   // 事件视界每秒灼烧
+
 const EN_FALLBACK={r:12,hp:3,spd:200,dmg:15,sc:40,xp:4};
 function spawnEnemy(type,x,y){
   const m=1+0.09*(Wv.n-1),n=Wv.n;
@@ -3569,7 +3830,8 @@ function buildWave(n){
   Wv.n=n;Wv.qA.length=0;Wv.qE.length=0;Wv.cleared=false;
   // 前 30 波按固定剧本；进入无尽模式后每 5 波随机抽一个巨像，第 3 波穿插精英巨像
   const endless=n>WIN_WAVE;
-  const bossKind=endless?(n%5===0?pick(Object.keys(BOSS_MV)):null):(BOSS_AT[n]||null);
+  // 剧本 Boss 优先（含无尽专属的 35/40），否则无尽每 5 波随机抽一个
+  const bossKind=BOSS_AT[n]||(endless&&n%5===0?pick(Object.keys(BOSS_MV)):null);
   Wv.boss=!!bossKind;Wv.bossKind=bossKind;
   Wv.champ=Wv.boss?null:(CHAMP_AT[n]||(endless&&n%5===3?pick(Object.keys(BOSS_MV)):null));
   Wv.overflow=0;
@@ -3597,6 +3859,8 @@ function buildWave(n){
     else if(bossKind==='hydra')banner('HYDRA PRIME',T('九首巨兽苏醒 —— 三颗核心共享生命网络','Hydra Prime awakens — three cores share one life-web'));
     else if(bossKind==='warden')banner('ORBITAL WARDEN',T('环带狱卒降临 —— 先击穿三重护盾环的缺口','Orbital Warden descends — breach a gap in the triple shield rings first'));
     else if(bossKind==='nemesis')banner('NEMESIS',T('终焉回响 —— 它会模仿你的一切','Nemesis Echo — it mirrors everything you do'));
+    else if(bossKind==='monolith')banner('MONOLITH',T('静默方碑升起 —— 干扰场开合有节律，等它熄灭再输出','The Monolith rises — its jamming field breathes; unload when it goes dark'));
+    else if(bossKind==='collapse')banner('COLLAPSE CORE',T('坍缩之核成型 —— 引力会把你拽向中心，别停在视界里','A Collapse Core forms — gravity drags you toward the center; do not linger in the horizon'));
     else banner('MOTHER ROCK',T(bz+'接近 —— 击碎它',(BOSS_NAME[bossKind]||'MOTHER ROCK')+' approaches — shatter it'));
   }else{
     const pool=enUnlocked(n);
@@ -3774,6 +4038,8 @@ function hurtAst(a,dmg,hx,hy,crit){
     if(a.hp<=0)killAst(a);
     return;
   }
+  // 静默方碑：干扰场熄灭时核心暴露 —— 伤害加成（给「等窗口」以正反馈）
+  if(a.boss&&a.bossKind==='monolith'&&!a.fieldOn)dmg*=1.5;
   a.hp-=dmg;a.flash=0.09;
   burst(mx,my,crit?10:5,crit?260:170,0.35,crit?'236,208,138':'160,190,220',2);
   dmgText(mx,my,dmg,crit?'crit':'hit',a);sfx.hit(crit?'crit':'');
@@ -3800,6 +4066,10 @@ function bossStageCheck(a){
     if(f<=0.5)bossStage(a,1,'TWIN FURY',T('母岩狂暴 —— 冲撞与召唤加剧','Rock fury — harder rams, heavier summons'));
   }else if(k==='rock'){
     if(f<=0.5)bossStage(a,1,'ROCK FURY',T('母岩狂暴 —— 召唤与冲撞加剧','Rock fury — heavier summons, harder rams'));
+  }else if(k==='monolith'){
+    if(f<=0.5)bossStage(a,1,'MONOLITH · OVERCLOCK',T('方碑超频 —— 干扰场开合更快，熄灭窗口更短','Monolith overclocked — the field cycles faster, the dark window shortens'));
+  }else if(k==='collapse'){
+    if(f<=0.5)bossStage(a,1,'COLLAPSE · INVERSION',T('核心反转 —— 引力每隔几秒倒转为斥力','Core inverted — gravity flips to repulsion every few seconds'));
   }
 }
 function killAst(a){
@@ -3850,6 +4120,11 @@ function killAst(a){
     else if(k==='hydra')banner('HYDRA PRIME SLAIN',T('九首巨兽核心已击碎','The Hydra Prime cores are shattered'));
     else if(k==='warden')banner('WARDEN DOWN',T('环带狱卒已停摆','The Orbital Warden has stopped'));
     else if(k==='nemesis')banner('NEMESIS SILENCED',T('终焉回响消散 —— 星域肃清','The Nemesis Echo fades — the sector is cleared'));
+    else if(k==='monolith')banner('MONOLITH SILENCED',T('静默方碑已崩解','The Monolith has crumbled into silence'));
+    else if(k==='collapse'){
+      banner('SINGULARITY CLOSED',T('坍缩之核已闭合 —— 奇点回响归于沉寂','The Collapse Core has closed — the singularity echo falls silent'));
+      if(unlockHull('forge'))banner('HULL UNLOCKED',T('新船体「熔炉」已解锁 —— 机库中查看','New hull FORGE unlocked — check the hangar'));
+    }
     else banner('MOTHER ROCK DOWN',T('母岩已击碎','The Mother Rock is shattered'));
     if(Wv.n>=WIN_WAVE&&!G.endless){sweepField();G.winT=1.6;}
   }
@@ -3987,6 +4262,18 @@ function nearestFoe(x,y){
     }
   }
   return best;
+}
+/* 裂解者的护盾剥离：先从护盾上撕掉固定量（不足则撕光），再走正常伤害结算。
+   这是全局唯一的「针对护盾」机制，用来克制 aegis 流 —— 撕盾量是常量，不随波次膨胀，
+   否则后期护盾流会被一型敌人彻底锁死。 */
+function sunderShield(){
+  if(P.shield<=0)return;
+  const s=Math.min(P.shield,SUNDER_STRIP);
+  P.shield-=s;P.shieldT=4;
+  dmgText(P.x,P.y-34,s,'absorb',P);
+  FX.splash(P.x,P.y,'cyan',0.8);
+  ring(P.x,P.y,22,hullGlow());
+  sfx.hit('block');
 }
 function hurtPlayer(dmg,sx,sy,src){
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
@@ -4143,7 +4430,7 @@ function fireGun(){
     G.bullets.push({
       x:P.x+Math.cos(P.angle)*18,y:P.y+Math.sin(P.angle)*18,
       vx:Math.cos(a)*P.bspd+P.vx*0.3,vy:Math.sin(a)*P.bspd+P.vy*0.3,
-      r:3,dmg:P.dmg,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      r:3,dmg:P.dmg*P.heatMul,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
       splashR:P.splashR,splashDmg:P.splashDmg,crit:P.crit,critMul:P.critMul,
       hit:new Set(),src:'p',vis,
     });
@@ -4153,7 +4440,7 @@ function fireGun(){
     G.bullets.push({
       x:P.x-Math.cos(P.angle)*14,y:P.y-Math.sin(P.angle)*14,
       vx:Math.cos(a)*P.bspd*0.9+P.vx*0.3,vy:Math.sin(a)*P.bspd*0.9+P.vy*0.3,
-      r:2.6,dmg:P.dmg*P.backPow,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      r:2.6,dmg:P.dmg*P.backPow*P.heatMul,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
       splashR:P.splashR,splashDmg:P.splashDmg,crit:P.crit,critMul:P.critMul,
       hit:new Set(),src:'p',back:P.backMax||undefined,vis,
     });
@@ -4430,8 +4717,20 @@ function updatePlayer(dt){
   if(keys.KeyS||keys.ArrowDown){
     const k=Math.exp(-2.6*dt);P.vx*=k;P.vy*=k;
   }
+  /* Phase 4.2 坍缩之核：引力 / 斥力（终速 ≈ g/2.1，与阻尼同帧生效） */
+  G.grav=null;
+  for(const a of G.asteroids){
+    if(!(a.boss&&a.bossKind==='collapse'&&a.hp>0))continue;
+    const dx=a.x-P.x,dy=a.y-P.y,d=Math.hypot(dx,dy)||1;
+    if(d>=GRAV_R)break;
+    const k=1-d/GRAV_R; // 边缘趋零、中心最强：远了能甩掉，近了必须一直推进
+    const g=(a.flipT>0?-1:1)*GRAV_PULL*k*(a.stage>=1?1.25:1);
+    P.vx+=dx/d*g*dt;P.vy+=dy/d*g*dt;
+    G.grav={d:Math.round(d),g:Math.round(g),inv:a.flipT>0};
+    break;
+  }
   const dr=Math.exp(-2.1*dt);P.vx*=dr;P.vy*=dr;
-  const cap=P.maxSpeed*(P.boostT>0?1.5:1);
+  const cap=P.maxSpeed*(P.boostT>0?1.5:1)*(P.jamT>0?P.jamS:1);
   const sp=Math.hypot(P.vx,P.vy);
   if(sp>cap){P.vx*=cap/sp;P.vy*=cap/sp;}
   P.x+=P.vx*dt;P.y+=P.vy*dt;
@@ -4469,6 +4768,7 @@ function updatePlayer(dt){
   P.invPick=Math.max(0,P.invPick-dt);
   P.boostT=Math.max(0,P.boostT-dt);
   P.rateT=Math.max(0,P.rateT-dt);
+  P.jamT=Math.max(0,P.jamT-dt); // 干扰场：由 jammer 每帧续期，脱离后 0.4s 自动解除
   P.shieldT-=dt;
   if(P.shieldTmp>0){ // 临时屏障持续衰减，不会自动回充
     P.shieldTmp=Math.max(0,P.shieldTmp-7*dt);
@@ -4495,8 +4795,24 @@ function updatePlayer(dt){
   }
   P.blinkT=Math.max(0,P.blinkT-dt);
   const wantFire=mouse.down||keys.Space||fireOn;
-  if(wantFire&&P.fireCd<=0){
-    P.fireCd=1/(P.fireRate*(P.rateT>0?1.6:1));
+  /* 熔炉过热（Phase 4.3）：开火蓄热 / 停火散热 / 见顶锁膛 —— heatMul 每帧刷新，
+     供 fireGun 直接乘进弹丸伤害（非熔炉船体 heatOn=false，heatMul 恒为 1） */
+  let canFire=wantFire;
+  if(P.heatOn){
+    if(P.heatLock>0){
+      canFire=false;
+      P.heatLock=Math.max(0,P.heatLock-dt);
+      P.heat=Math.max(0,P.heat-HEAT_VENT*dt);
+      if(P.heatLock<=0){P.heat=0;ring(P.x,P.y,26,'236,208,138');AU.noise({t:0.2,g:0.075,fc:2400,fc1:420});}
+    }else if(wantFire){
+      P.heat=Math.min(HEAT_MAX,P.heat+HEAT_UP*dt);
+      if(P.heat>=HEAT_MAX){P.heatLock=HEAT_LOCK;ring(P.x,P.y,32,'255,190,90');
+        burst(P.x,P.y,10,150,0.4,'255,190,90',1.8);AU.noise({t:0.26,g:0.1,fc:900,fc1:180});}
+    }else P.heat=Math.max(0,P.heat-HEAT_COOL*dt);
+    P.heatMul=HEAT_COLD+(HEAT_HOT-HEAT_COLD)*(P.heat/HEAT_MAX);
+  }
+  if(canFire&&P.fireCd<=0){
+    P.fireCd=1/(P.fireRate*(P.rateT>0?1.6:1)*(P.jamT>0?P.jamF:1));
     if(P.lance>0&&P.lanceT<=0){fireLanceBeam();P.lanceT=P.lanceCd;} // CD 就绪：本次射击附魔为轨道长枪，随后重新计时
     else fireGun();
   }
@@ -4580,6 +4896,34 @@ function updateAsts(dt){
       if(a.rings){
         const rs=rage?1.9:1;
         for(const rg of a.rings){rg.ang+=rg.spin*rs*dt;rg.gap+=rg.gapSpin*rs*dt;}
+      }
+      // 静默方碑：干扰场开合（场开压制作战、场灭给出输出窗口）
+      if(a.bossKind==='monolith'){
+        a.fieldT-=dt;
+        if(a.fieldT<=0){
+          if(a.fieldOn){a.fieldOn=false;a.fieldT=rage?1.8:MONO_OFF;
+            ring(a.x,a.y,a.fieldR*0.94,st_c(a));}
+          else{a.fieldOn=true;a.fieldT=rage?5.0:MONO_ON;
+            ring(a.x,a.y,a.fieldR,st_c(a));shake(4);
+            if(rage){ // 超频：每次开场甩一圈冲击弹
+              const n=16,off=rand(TAU);
+              for(let i=0;i<n;i++){const ang=off+i/n*TAU;
+                G.ebullets.push({x:a.x+Math.cos(ang)*a.r,y:a.y+Math.sin(ang)*a.r,
+                  vx:Math.cos(ang)*235,vy:Math.sin(ang)*235,r:4.5,dmg:12,life:4});}
+            }
+          }
+        }
+        if(a.fieldOn){
+          const dd=Math.hypot(P.x-a.x,P.y-a.y);
+          if(dd<a.fieldR){P.jamT=0.3;P.jamF=MONO_FIRE;P.jamS=MONO_SPD;}
+        }
+      }
+      // 坍缩之核：相位倒转计时 + 事件视界灼烧
+      if(a.bossKind==='collapse'){
+        if(rage){a.flipT-=dt;if(a.flipT<-6)a.flipT=2;}
+        a.disk+=dt*(rage?1.8:1.1);
+        const dd=Math.hypot(P.x-a.x,P.y-a.y);
+        if(dd<a.r*HORIZON_R)drainPlayer(HORIZON_DPS*dt,a);
       }
       if(a.invT>0)continue;
       a.seedT-=dt;
@@ -4703,6 +5047,29 @@ function updateAsts(dt){
             ring(a.x,a.y,a.r*2.4,'255,120,70');
             sfx.eshoot();shake(4);
           }
+        }else if(a.bossKind==='monolith'){
+          // 静默方碑：场开时缓速螺旋弹幕；场灭时几乎不出手 —— 那 2.6 秒就是玩家的输出窗口
+          a.seedT=a.fieldOn?(rage?1.15:1.5):2.4;
+          if(a.fieldOn){
+            const n=rage?12:9,off=G.t*0.8;
+            for(let i=0;i<n;i++){
+              const ang=off+i/n*TAU;
+              G.ebullets.push({x:a.x+Math.cos(ang)*(a.r+6),y:a.y+Math.sin(ang)*(a.r+6),
+                vx:Math.cos(ang)*150,vy:Math.sin(ang)*150,r:4,dmg:11,life:5});
+            }
+            sfx.eshoot();shake(2);
+          }
+        }else if(a.bossKind==='collapse'){
+          // 坍缩之核：吸积盘切向抛射（切线 + 外扩），反转期改为内卷
+          a.seedT=rage?1.5:2.2;
+          const n=rage?8:6,off=a.disk,sgn=a.flipT>0?-1:1;
+          for(let i=0;i<n;i++){
+            const ang=off+i/n*TAU,ta=ang+Math.PI/2*sgn,R=a.r*1.9;
+            G.ebullets.push({x:a.x+Math.cos(ang)*R,y:a.y+Math.sin(ang)*R,
+              vx:Math.cos(ta)*120+Math.cos(ang)*95,vy:Math.sin(ta)*120+Math.sin(ang)*95,
+              r:4,dmg:12,life:4.6});
+          }
+          sfx.eshoot();shake(3);
         }else{
           a.seedT=rage?2.2:3.2;
           let seekers=0;for(const e of G.enemies)if(e.type==='seeker')seekers++;
@@ -5012,6 +5379,75 @@ function updateEnemies(dt){
       const want=angTo(e.x,e.y,P.x,P.y);
       e.vx+=Math.cos(want)*190*dt;e.vy+=Math.sin(want)*190*dt;
       const sp=Math.hypot(e.vx,e.vy);if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
+    }else if(e.type==='sower'){
+      // 播雷者：中距横向巡航，沿途播撒浮游雷 —— 把"绕开雷区"变成持续走位压力
+      const want=angTo(e.x,e.y,P.x,P.y);
+      const sa=want+Math.PI/2,sw=Math.sin(G.t*0.7+e.wob)*150;
+      const push=dp>520?150:(dp<330?-120:0);
+      e.vx+=(Math.cos(want)*push+Math.cos(sa)*sw)*dt;
+      e.vy+=(Math.sin(want)*push+Math.sin(sa)*sw)*dt;
+      const sp=Math.hypot(e.vx,e.vy);if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
+      e.sowT-=dt;
+      // 单只上限 6 颗：否则长波次会把自己埋在雷里，画面也读不清
+      if(e.sowT<=0&&e.sown<6){
+        e.sowT=Math.max(1.6,2.6-0.03*Wv.n);e.sown++;
+        spawnEnemy('mine',e.x+rand(-18,18),e.y+rand(-18,18));
+        burst(e.x,e.y,5,120,0.3,'215,180,75',1.6);
+      }
+    }else if(e.type==='jammer'){
+      // 干扰者：绕玩家外周盘旋，干扰场内玩家射速与极速下降（全局唯一的对玩家减益）
+      const want=angTo(P.x,P.y,e.x,e.y),pa=want+Math.PI/2*e.osd;
+      const tx=P.x+Math.cos(want)*e.orbit,ty=P.y+Math.sin(want)*e.orbit;
+      const toC=angTo(e.x,e.y,tx,ty);
+      e.vx+=(Math.cos(toC)*240+Math.cos(pa)*110)*dt;
+      e.vy+=(Math.sin(toC)*240+Math.sin(pa)*110)*dt;
+      const sp=Math.hypot(e.vx,e.vy);if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
+      if(Math.random()<dt*0.2)e.osd*=-1;
+      if(dp<e.jamR){P.jamT=0.4;P.jamF=JAM_FIRE;P.jamS=JAM_SPD;} // 每帧续期：离开场后 0.4s 自动解除
+      e.fireT-=dt;
+      if(e.fireT<=0&&dp<520){
+        e.fireT=Math.max(1.4,2.4-0.02*Wv.n);
+        const a=angTo(e.x,e.y,P.x,P.y);
+        G.ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*300,vy:Math.sin(a)*300,
+          r:3.5,dmg:10,life:2.4});
+        sfx.eshoot();
+      }
+    }else if(e.type==='brood'){
+      // 孵育体：缓慢逼近并定期孵出幼体 —— 不打掉巢就会一直补兵
+      const want=angTo(e.x,e.y,P.x,P.y);
+      const push=dp>620?110:(dp<480?-60:0);
+      e.vx+=(Math.cos(want)*push+Math.cos(e.wob)*40)*dt;
+      e.vy+=(Math.sin(want)*push+Math.sin(e.wob)*40)*dt;
+      const sp=Math.hypot(e.vx,e.vy);if(sp>e.spd){e.vx*=e.spd/sp;e.vy*=e.spd/sp;}
+      e.hatchT-=dt;
+      if(e.hatchT<=0){
+        e.hatchT=e.hatchMax;
+        // 双上限：单巢 10 只 + 场上总数 70，避免无尽模式指数爆炸
+        if(e.hatched<10&&G.enemies.length<70){
+          e.hatched+=2;
+          for(let k=0;k<2;k++){
+            const a=rand(TAU);
+            spawnEnemy('reaver',e.x+Math.cos(a)*32,e.y+Math.sin(a)*32);
+          }
+          burst(e.x,e.y,10,180,0.4,'150,190,140',2);
+          sfx.eshoot();
+        }
+      }
+    }else if(e.type==='sunder'){
+      // 裂解者：瞄准 → 高速突刺。接触结算前的撕盾在碰撞检测里（sunderShield）
+      const want=angTo(e.x,e.y,P.x,P.y);
+      e.ang+=clamp(angDiff(e.ang,want),-6*dt,6*dt);
+      if(e.state==='aim'){
+        e.st-=dt;
+        e.vx*=Math.exp(-3*dt);e.vy*=Math.exp(-3*dt);
+        if(e.st<=0){e.state='lunge';e.st=0.55;
+          e.vx=Math.cos(e.ang)*520;e.vy=Math.sin(e.ang)*520;sfx.dash();}
+      }else{
+        e.st-=dt;
+        if(e.st<=0){e.state='aim';e.st=Math.max(0.7,1.3-0.02*Wv.n);}
+      }
+      const cap=e.state==='lunge'?520:e.spd;
+      const sp=Math.hypot(e.vx,e.vy);if(sp>cap){e.vx*=cap/sp;e.vy*=cap/sp;}
     }
     if(P.stasis>0&&d2(e.x,e.y,P.x,P.y)<P.stasisR*P.stasisR){
       const k=Math.exp(-P.stasisPow*dt);
@@ -5270,7 +5706,10 @@ function collidePlayer(){
         hurtEn(e,ramDmg(),P.x,P.y,false);ramFx();
         if(G.syn.molten_ram&&P.death>0)moltenSplash(); // 熔火撞角
       }
-      if(!inv)hurtPlayer(e.dmg,e.x,e.y,e);
+      if(!inv){
+        if(e.type==='sunder')sunderShield(); // 裂解者：接触结算前先撕掉一层护盾
+        hurtPlayer(e.dmg,e.x,e.y,e);
+      }
       return;
     }
   }
@@ -5458,6 +5897,10 @@ function startGame(hull){
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.lances.length=0;G.ghosts.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
   G.lastHit=null;G.cause=null; // 新一局：清空上一局的死因
+  /* 每日挑战：daily 模式由 startDaily 设 G.dailyMode=true 后再调 startGame，
+     此处仅在非 daily 模式下重置 G.daily；dailyMode 用完即清。 */
+  if(!G.dailyMode)G.daily=null;
+  G.dailyMode=false;G.noRepair=false;
   G.dmgOut=0;G.dmgIn=0;G.peakThreat=0; // 本局关键统计归零
   G.noMod=true;G.flawless=true; // 技巧支水位：装配模块 / 受任何伤害即作废
   G.rarPity=0; // 稀有度保底计数：新一局清零
@@ -5465,6 +5908,7 @@ function startGame(hull){
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
   hull.apply();
+  applyMetaBonuses(); // 局外解锁树：已解锁节点的永久起始加成
   cam.x=P.x;cam.y=P.y;clampCam();
   G.mode='play';
   el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
@@ -5658,8 +6102,20 @@ function buildCause(){
   const affixTag=c.affix?`<em class="tag affix">${c.affix}</em>`:'';
   const subTag=c.sub?`<em class="tag">${c.sub}</em>`:'';
   const dmgTag=c.dmg?`<em class="tag dmg">${T('致命累积','FATAL')} ${fmt(Math.round(c.dmg))}</em>`:'';
-  return `<div class="cause-name"><b>${c.name}</b>${subTag}${affixTag}${dmgTag}</div>`+
+  const dailyBadge=G.daily?`<div class="daily-badge mono"><b>${T('每日挑战','DAILY')}</b> · ${G.daily.date} · <i>${G.daily.rules.map(r=>T(r.zh,r.en)).join(' + ')}</i></div>`:'';
+  return dailyBadge+
+    `<div class="cause-name"><b>${c.name}</b>${subTag}${affixTag}${dmgTag}</div>`+
     `<div class="cause-trait">${c.trait}</div>`;
+}
+/* 星尘结算行：metaEarn() 已经把产出写进存档，这里读回的是含本局在内的可用余额。
+   没有这一行，玩家在坠毁面板看不到任何「局外还在长」的反馈，3.5 的循环就是隐形的。 */
+function renderDust(node,earn){
+  if(!node)return;
+  const total=metaLoad().dust;
+  node.innerHTML=
+    `<span>${T('星尘产出','STARDUST')} <b class="mono">+${earn|0}</b></span><i></i>`+
+    `<span>${T('可用','TOTAL')} <b class="mono">${fmt(total)}</b></span><i></i>`+
+    `<span class="hint">${T('于「解锁星图」消费','SPEND IN UNLOCKS')}</span>`;
 }
 function showOver(){
   G.mode='over';
@@ -5668,6 +6124,10 @@ function showOver(){
   removeSlotArch(G.runId); // 坠毁结算：漂移终结，归档同 id 一并清除
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
+  if(G.daily){G.best=Math.max(G.best,loadDaily()[G.daily.date]?.score||0);}
+  commitDaily();
+  G.lastDust=metaEarn(); // 局外解锁树：本局产出星尘
+  renderDust(el.overDust,G.lastDust);
   el.overScore.textContent=fmt(G.score);
   el.newBest.hidden=!isBest;
   setStat('stWave',Wv.n);
@@ -5689,6 +6149,8 @@ function showVictory(){
   clearSave();
   removeSlotArch(G.runId); // 通关结算：漂移终结，归档同 id 一并清除（无尽续漂后自动保存会重新跟踪）
   G.score+=8000;
+  G.lastDust=metaEarn(); // 局外解锁树：通关产出星尘
+  renderDust(el.vicDust,G.lastDust);
   const isBest=G.score>G.best;
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   const nu=unlockHull('nemesis'); // 肃清第 30 波：解锁第六船体「回响」
@@ -5724,6 +6186,7 @@ function toMenu(){
   el.logbook.hidden=true;el.saves.hidden=true;
   el.joybase.hidden=true;el.firebtn.hidden=true;
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+  renderDaily();
   el.menu.hidden=false;
   refreshMenuMeta();
   refreshContinue();
@@ -5746,7 +6209,7 @@ function openLogbook(){
   el.logbook.hidden=false;
   drawLogbook();
   // 入场动画会让面板先 translateY+scale，等一帧再量尺寸才准
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(G.mode==='logbook')fitAch();}));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(G.mode==='logbook'){fitAch();fitMeta();}}));
 }
 /* 存档管理：中途退出的漂移记录，可加载 / 删除 */
 function fmtWhen(ts){
@@ -5863,7 +6326,7 @@ const ACH=[
    d:'用 3 种不同船体各完成一次出击', de:'Fly 3 different hulls', goal:()=>3,
    get:s=>s.hulls?s.hulls.length:0, req:'seed'},
   {id:'hull6', x:344, y:604, zh:'全舰制霸', en:'Full Roster',
-   d:'用全部 6 种船体各完成一次出击', de:'Fly all 6 hulls', goal:()=>6,
+   d:'用全部 7 种船体各完成一次出击', de:'Fly all 7 hulls', goal:()=>7,
    get:s=>s.hulls?s.hulls.length:0, req:'hull3'},
   {id:'nomod', x:512, y:604, zh:'裸装穿越', en:'Bare Hull',
    d:'不装配任何模块挺进第 3 波', de:'Reach wave 3 with no modules',
@@ -5998,6 +6461,160 @@ function fitAch(){
 function achTf(){const w=el.lbTreeWrap;return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
 function applyAchTf(){const w=el.lbTreeWrap;if(!w)return;const t=achTf();
   w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+/* ============================== 局外解锁树（Phase 3.5） ==============================
+   星尘（Stardust）= 本作唯一的局外货币，由每局结算按「分数 / 击坠」产出，
+   消耗在解锁树上换取**永久起始增益**。设计意图：连败也有进展感 ——
+   即使一局打得很糟也能攒到几颗星尘，长期玩下去总能点开下一个节点。
+
+   与成就树（ACH）同构：坐标手写 / req 前置 / 三态视觉 / SVG 连线 + 绝对定位节点。
+   区别：成就树是「达成 → 记录」，解锁树是「花星尘 → 永久生效」。
+   存储单键 nova-meta = {dust:N, unlocked:[id,...]}；旧档无此键走默认值兜底。 */
+const META_KEY='nova-meta';
+const META_W=672,META_H=642;      // 画布：节点 150×52（与成就树同规格），列间距 168
+const META=[
+  /* 根：免费且默认已解锁（局外成长的起点） */
+  {id:'mroot',x:8,y:302,zh:'星尘核心',en:'DUST CORE',
+   d:'局外成长的起点',de:'Where meta progress begins',cost:0,req:null,
+   apply:()=>{}},
+
+  /* ---------- 生存支 y=20 —— 更耐打 ---------- */
+  {id:'hp1',x:176,y:20,zh:'装甲强化 I',en:'PLATING I',d:'起始结构 +15',de:'+15 starting hull',
+   cost:10,req:'mroot',apply:()=>{P.maxHp+=15;P.hp+=15;}},
+  {id:'hp2',x:344,y:20,zh:'装甲强化 II',en:'PLATING II',d:'起始结构再 +25',de:'+25 more hull',
+   cost:22,req:'hp1',apply:()=>{P.maxHp+=25;P.hp+=25;}},
+  {id:'sh1',x:512,y:20,zh:'预备护盾',en:'READY SHIELD',d:'起始护盾 +20 并充满',de:'+20 starting shield',
+   cost:40,req:'hp2',apply:()=>{P.shieldMax+=20;P.shield+=20;}},
+
+  /* ---------- 火力支 y=180 —— 更疼 ---------- */
+  {id:'dmg1',x:176,y:180,zh:'弹头校准',en:'WARHEAD CAL',d:'伤害 +8%',de:'+8% damage',
+   cost:12,req:'mroot',apply:()=>{P.dmg*=1.08;}},
+  {id:'rate1',x:344,y:180,zh:'弹链润滑',en:'BELT LUBE',d:'射速 +6%',de:'+6% fire rate',
+   cost:24,req:'dmg1',apply:()=>{P.fireRate*=1.06;}},
+  {id:'crit1',x:512,y:180,zh:'瞄准辅助',en:'AIM ASSIST',d:'暴击率 +5%',de:'+5% crit chance',
+   cost:45,req:'rate1',apply:()=>{P.crit+=0.05;}},
+
+  /* ---------- 机动支 y=420 —— 更灵活 ---------- */
+  {id:'spd1',x:176,y:420,zh:'推进调校',en:'THRUSTER TUNE',d:'极速 +6%',de:'+6% top speed',
+   cost:10,req:'mroot',apply:()=>{P.maxSpeed*=1.06;}},
+  {id:'mag1',x:344,y:420,zh:'磁场扩展',en:'MAGNET ARRAY',d:'拾取范围 +30%',de:'+30% pickup range',
+   cost:20,req:'spd1',apply:()=>{P.magnet*=1.3;}},
+  {id:'turn1',x:512,y:420,zh:'陀螺稳定',en:'GYRO STABILIZER',d:'转向 +10%',de:'+10% turn rate',
+   cost:38,req:'mag1',apply:()=>{P.turn*=1.1;}},
+
+  /* ---------- 战术支 y=580 —— 更好的开局 ---------- */
+  {id:'lv1',x:176,y:580,zh:'开局预热',en:'PRE-HEATED',d:'起始等级 2',de:'Start at level 2',
+   cost:18,req:'mroot',apply:()=>{P.level=2;}},
+  {id:'xp1',x:344,y:580,zh:'经验亲和',en:'XP AFFINITY',d:'升级所需经验 -10%',de:'-10% XP to level',
+   cost:32,req:'lv1',apply:()=>{P.xpNext*=0.9;}},
+  /* 只给效果、不登记进 G.build：避免占用 ABILITY_CAP 的 6 个能力位、
+     也不会误伤「裸装穿越」成就（G.noMod）的判定。 */
+  {id:'premod',x:512,y:580,zh:'预装模块',en:'PRE-FITTED',d:'开局自带穿甲弹 LV1',de:'Start with Piercing Shot LV1',
+   cost:55,req:'xp1',apply:()=>{MOD_BY_ID.pierce.apply(1);}},
+];
+function metaLoad(){
+  try{const d=JSON.parse(localStorage.getItem(META_KEY)||'null');
+    if(d&&typeof d==='object')return {dust:d.dust|0,unlocked:Array.isArray(d.unlocked)?d.unlocked.slice():[]};
+  }catch(e){}
+  return {dust:0,unlocked:['mroot']};   // 旧档兜底：0 星尘 + 根节点已解锁
+}
+function metaSave(d){try{localStorage.setItem(META_KEY,JSON.stringify(d));}catch(e){}}
+function metaHas(id){return metaLoad().unlocked.indexOf(id)>=0;}
+/* 节点状态：unlocked（已解锁）/ ready（星尘够 + 前置已解锁）/ locked（其余） */
+function metaState(){
+  const d=metaLoad(),st={};
+  for(const m of META)st[m.id]={
+    unlocked:d.unlocked.indexOf(m.id)>=0,
+    reqOk:!m.req||d.unlocked.indexOf(m.req)>=0,
+    cost:m.cost,
+  };
+  for(const m of META){const s=st[m.id];s.ready=!s.unlocked&&s.reqOk&&d.dust>=m.cost;}
+  return {dust:d.dust,unlocked:d.unlocked.slice(),nodes:st};
+}
+/* 解锁：扣星尘 + 写盘。返回 {ok, reason} —— 失败不扣费。 */
+function metaUnlock(id){
+  const m=META.find(x=>x.id===id);
+  if(!m)return {ok:false,reason:'no-node'};
+  const d=metaLoad();
+  if(d.unlocked.indexOf(id)>=0)return {ok:false,reason:'already'};
+  if(m.req&&d.unlocked.indexOf(m.req)<0)return {ok:false,reason:'req'};
+  if(d.dust<m.cost)return {ok:false,reason:'dust'};
+  d.dust-=m.cost;d.unlocked.push(id);metaSave(d);
+  return {ok:true,dust:d.dust,cost:m.cost};
+}
+/* 每局结算产出星尘：1 保底 + 分数/1500 + 击坠/60 —— 打得再差也有 1 颗，长期必能推进 */
+function metaEarn(){
+  const earn=1+Math.floor(G.score/1500)+Math.floor(G.kills/60);
+  const d=metaLoad();d.dust+=earn;metaSave(d);
+  return earn;
+}
+/* 开局应用全部已解锁节点的加成（在 hull.apply 之后调用，此时 P 已就位） */
+function applyMetaBonuses(){
+  const d=metaLoad();
+  for(const m of META){
+    if(d.unlocked.indexOf(m.id)<0)continue;
+    try{m.apply();}catch(e){}
+  }
+}
+/* ---------------- 解锁树渲染（复用成就树的版式与三态语汇） ---------------- */
+function drawMeta(){
+  const nodes=el.mTreeNodes,links=el.mTreeLinks;
+  if(!nodes||!links)return null;
+  const st=metaState();
+  if(el.mDust)el.mDust.textContent=T('星尘 · ','STARDUST · ')+fmt(st.dust);
+  // 连线层：SVG 用画布坐标系（META_W × META_H），与节点层像素 1:1（同成就树）
+  links.setAttribute('viewBox','0 0 '+META_W+' '+META_H);
+  links.setAttribute('width',META_W);links.setAttribute('height',META_H);
+  const edges=[];
+  for(const m of META)if(m.req)edges.push({from:m.req,to:m.id});
+  links.innerHTML=edges.map(e=>{
+    const p=META.find(k=>k.id===e.from),a=META.find(k=>k.id===e.to);
+    if(!p||!a)return '';
+    const on=st.nodes[e.from].unlocked&&st.nodes[e.to].unlocked;
+    return `<line x1="${p.x+150}" y1="${p.y+26}" x2="${a.x}" y2="${a.y+26}"
+      stroke="${on?RGBA('amber',.5):RGBA('line',st.nodes[e.from].unlocked?.42:.2)}"
+      stroke-dasharray="${on?'':'3 5'}"/>`;
+  }).join('');
+  nodes.innerHTML=META.map(m=>{
+    const s=st.nodes[m.id];
+    const cls=s.unlocked?'done':(s.ready?'ready':'locked');
+    const read=s.unlocked?T('已解锁','UNLOCKED')
+      :(s.reqOk?T('消耗 '+m.cost+' 星尘','COST '+m.cost)
+        :T('前置未解锁','LOCKED'));
+    return `<div class="lbnode ${cls}" style="left:${m.x}px;top:${m.y}px" data-meta="${m.id}">
+      <b>${T(m.zh,m.en)}</b><span>${T(m.d,m.de)}</span><i>${read}</i></div>`;
+  }).join('');
+  return {total:META.length,unlocked:st.unlocked.length,dust:st.dust};
+}
+/* 进入时把整棵树缩放进视窗（同 fitAch：下限 0.34 保文字可读） */
+function fitMeta(){
+  const tree=el.mTree,wrap=el.mTreeWrap;
+  if(!tree||!wrap)return null;
+  const bw=tree.clientWidth,bh=tree.clientHeight;
+  if(!bw||!bh)return null;
+  let maxX=0,maxY=0;
+  for(const m of META){maxX=Math.max(maxX,m.x+150);maxY=Math.max(maxY,m.y+52);}
+  maxX+=10;maxY+=10;
+  const s=Math.max(0.34,Math.min(1,bw/maxX,bh/maxY));
+  wrap.dataset.sc=s;
+  applyMetaTf();
+  return {scale:+s.toFixed(4),content:maxX+'x'+maxY,view:bw+'x'+bh};
+}
+function metaTf(){const w=el.mTreeWrap;return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
+function applyMetaTf(){const w=el.mTreeWrap;if(!w)return;const t=metaTf();
+  w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+/* 点击解锁：成功扣星尘 + 重绘；失败（星尘不足 / 前置未解锁 / 已解锁）只出 UI 音 */
+if(el.mTreeNodes)el.mTreeNodes.addEventListener('click',e=>{
+  const n=e.target.closest('.lbnode[data-meta]');
+  if(!n)return;
+  const m=META.find(x=>x.id===n.dataset.meta);
+  if(!m)return;
+  const r=metaUnlock(m.id);
+  if(r.ok){
+    sfx.max();drawMeta();
+    banner(T('解锁','UNLOCK')+' · '+T(m.zh,m.en),
+      T(`消耗 ${r.cost} 星尘 —— 剩余 ${r.dust}`,`Spent ${r.cost} dust — ${r.dust} left`));
+  }else sfx.ui();
+});
 /* 拖拽平移：只在 logbook 打开时激活，指针移动直接写 transform（合成器属性，不读布局） */
 (function(){
   let sx=0,sy=0,ox=0,oy=0,dragging=false;
@@ -6078,6 +6695,7 @@ function drawLogbook(){
     ? `<i>${T('蜂群母舰解锁进度','Drone carrier unlock progress')} · ${fmt(sw)} / ${fmt(SWARM_KILLS)}</i>`
     : `<i>${T('蜂群母舰','Drone carrier')} · ${T('已解锁','unlocked')}</i>`;
   drawAch(s);
+  drawMeta(); // 局外解锁树
   resetAchPan(); // 重新量视窗并套用自动适配缩放（面板此刻已可见）
 }
 
@@ -6089,6 +6707,18 @@ $('btnMenuV').addEventListener('click',toMenu);
 $('btnResume').addEventListener('click',resumeGame);
 $('btnRestart').addEventListener('click',()=>startGame());
 $('btnQuit').addEventListener('click',()=>{saveRun();toMenu();});
+function renderDaily(){
+  if(!el.menuDaily)return;
+  const seed=dailySeed(),date=new Date().toISOString().slice(0,10);
+  const rules=pickDailyRules(seed);
+  const all=loadDaily();const best=all[date]?.score||0;
+  const ruleTxt=rules.map(r=>T(r.zh,r.en)).join(' + ');
+  el.menuDaily.innerHTML='<span class="date">'+T('每日挑战 · ','DAILY · ')+date+'</span>'+
+    '<span class="rules">'+ruleTxt+'</span>'+
+    (best>0?'<span class="best">'+T('今日最佳 · ','TODAY BEST · ')+fmt(best)+'</span>':'');
+  el.menuDaily.hidden=false;
+}
+el.btnDaily.addEventListener('click',()=>{G.dailyMode=true;openHulls();});
 $('btnContinue').addEventListener('click',resumeRun);
 $('btnReroll').addEventListener('click',rerollCards);
 /* ESC/结算/通关面板：模块与协同条目 —— 桌面 hover 展开，触屏点击展开（再点收起，点其它切换） */
@@ -6271,6 +6901,32 @@ function drawAst(a){
       ctx.strokeStyle=`rgba(225,255,250,${0.3+0.5*k})`;ctx.lineWidth=1.2;
       ctx.beginPath();ctx.arc(a.x,a.y,R,s,e);ctx.stroke();
     }
+    ctx.restore();
+  }
+  // 静默方碑：干扰场（开 = 实线脉动 + 内填压制感；灭 = 虚线收缩，提示输出窗口）
+  if(a.bossKind==='monolith'&&a.fieldR){
+    const p=0.6+0.4*Math.sin(G.t*(a.fieldOn?7:2));
+    ctx.save();
+    ctx.strokeStyle=`rgba(${st.c},${a.fieldOn?(0.16+0.30*p):(0.10+0.10*p)})`;
+    ctx.lineWidth=a.fieldOn?2.4:1.4;
+    if(!a.fieldOn)ctx.setLineDash([10,9]);
+    ctx.beginPath();ctx.arc(a.x,a.y,a.fieldR*(a.fieldOn?1:0.94),0,TAU);ctx.stroke();
+    if(a.fieldOn){ctx.fillStyle=`rgba(${st.c},${0.03+0.03*p})`;ctx.fill();}
+    ctx.restore();
+  }
+  // 坍缩之核：吸积盘（向内收束的三道虚线环）+ 事件视界（反转期转琥珀色）
+  if(a.bossKind==='collapse'){
+    const inv=a.flipT>0;
+    ctx.save();
+    for(let i=0;i<3;i++){
+      const R=a.r*(1.35+i*0.42),w=0.5-i*0.13;
+      ctx.strokeStyle=`rgba(${st.c},${0.10+0.26*w})`;ctx.lineWidth=1.6;
+      ctx.setLineDash([6+i*5,10]);
+      ctx.beginPath();ctx.arc(a.x,a.y,R,a.disk+i,a.disk+i+TAU*0.72);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.strokeStyle=inv?RGBA('amber',0.6):`rgba(${st.c},0.55)`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(a.x,a.y,a.r*HORIZON_R,0,TAU);ctx.stroke();
     ctx.restore();
   }
   ctx.restore();ctx.globalAlpha=1;
@@ -6483,6 +7139,55 @@ function drawEnemy(e){
     ctx.fillStyle='#2a0d05';ctx.fill();stroke();
     ctx.fillStyle=`rgba(255,220,150,${0.5+0.5*pl})`;
     ctx.beginPath();ctx.arc(0,0,5+2*pl,0,TAU);ctx.fill();
+  }else if(e.type==='sower'){
+    // 播雷者：六边形机身 + 四具外挂播撒舱，临播时舱体发亮
+    ctx.rotate(e.wob*0.3);
+    ctx.beginPath();
+    for(let k=0;k<6;k++){const t=k/6*TAU;const x=Math.cos(t)*15,y=Math.sin(t)*15;
+      if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+    ctx.closePath();ctx.fillStyle='#241f05';ctx.fill();stroke();
+    const g=0.5+0.5*Math.sin(G.t*6);
+    ctx.fillStyle=`rgba(${c},${0.35+0.5*g})`;
+    for(let k=0;k<4;k++){const t=k/4*TAU+e.wob;
+      ctx.beginPath();ctx.arc(Math.cos(t)*19,Math.sin(t)*19,3.2,0,TAU);ctx.fill();}
+  }else if(e.type==='jammer'){
+    // 干扰者：虚线干扰场 + 菱形机身 + 三根天线；玩家在场内时再画一道绕玩家的虚环
+    const on=P.jamT>0;
+    ctx.save();ctx.setLineDash([9,7]);
+    ctx.strokeStyle=`rgba(${c},${on?0.34:0.16})`;ctx.lineWidth=on?2:1.2;
+    ctx.beginPath();ctx.arc(0,0,e.jamR,0,TAU);ctx.stroke();
+    ctx.restore();
+    if(on){ // 明确「是它在影响你」—— 与状态/光环的实线视觉区分开
+      ctx.save();ctx.translate(P.x-e.x,P.y-e.y);ctx.setLineDash([5,6]);
+      ctx.strokeStyle=`rgba(${c},${0.32+0.22*Math.sin(G.t*8)})`;ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.arc(0,0,26,0,TAU);ctx.stroke();ctx.restore();
+    }
+    ctx.rotate(G.t*0.6+e.wob);
+    ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(0,10);ctx.lineTo(-16,0);ctx.lineTo(0,-10);
+    ctx.closePath();ctx.fillStyle='#0c1626';ctx.fill();stroke();
+    ctx.strokeStyle=`rgba(${c},0.6)`;ctx.lineWidth=1.2;
+    for(let k=0;k<3;k++){const t=k/3*TAU;
+      ctx.beginPath();ctx.moveTo(Math.cos(t)*10,Math.sin(t)*10);
+      ctx.lineTo(Math.cos(t)*20,Math.sin(t)*20);ctx.stroke();}
+  }else if(e.type==='brood'){
+    // 孵育体：八边形巢体 + 三枚卵室，孵化临近时卵室鼓动 —— 提示「再不打掉就要出东西」
+    ctx.beginPath();
+    for(let k=0;k<8;k++){const t=k/8*TAU;const x=Math.cos(t)*26,y=Math.sin(t)*26;
+      if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+    ctx.closePath();ctx.fillStyle='#0a2013';ctx.fill();stroke();
+    const near=1-clamp(e.hatchT/Math.max(0.6,e.hatchMax),0,1);
+    ctx.fillStyle=`rgba(${c},${0.25+0.5*near})`;
+    for(let k=0;k<3;k++){const t=k/3*TAU+e.wob*0.5;
+      ctx.beginPath();ctx.arc(Math.cos(t)*12,Math.sin(t)*12,4+2.5*near,0,TAU);ctx.fill();}
+  }else if(e.type==='sunder'){
+    // 裂解者：前开双叉的箭形，叉尖随呼吸发亮 —— 读作「这一下是冲护盾来的」
+    ctx.rotate(e.ang);
+    ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(2,9);ctx.lineTo(-4,4);ctx.lineTo(-10,10);
+    ctx.lineTo(-14,0);ctx.lineTo(-10,-10);ctx.lineTo(-4,-4);ctx.lineTo(2,-9);ctx.closePath();
+    ctx.fillStyle='#200a1c';ctx.fill();stroke();
+    ctx.strokeStyle=`rgba(${c},${0.5+0.35*Math.sin(G.t*7)})`;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(20,-6);
+    ctx.moveTo(10,0);ctx.lineTo(20,6);ctx.stroke();
   }
   ctx.restore();
 }
@@ -6525,9 +7230,10 @@ const HULL_TINT={
   raven:{fill:'#130d18',line:'#c2a3d0',glow:'150,110,175'},       /* 锰紫 —— 渡鸦 */
   swarm:{fill:'#161004',line:'#e0c088',glow:'200,150,75'},        /* 赭石 —— 蜂群 */
   nemesis:{fill:'#16151a',line:'#eff4fa',glow:'228,233,240'},     /* 铅白 —— 回响 */
+  forge:{fill:'#1a0e07',line:'#f0a468',glow:'236,132,58'},        /* 熔铜 —— 熔炉 */
 };
 /* 各船体真实尾部到中点的像素距离（与 hullPath 最负 x 坐标一致），用于让尾流/喷焰从船尾起喷 */
-const HULL_TAIL={peregrine:12,rapier:15,bulwark:12,raven:14,swarm:16,nemesis:16};
+const HULL_TAIL={peregrine:12,rapier:15,bulwark:12,raven:14,swarm:16,nemesis:16,forge:15};
 function hullTail(id){return HULL_TAIL[id]!=null?HULL_TAIL[id]:12;}
 /* 尾流三段色阶（宽晕/中层/白热芯），随船体配色；tier4 镀金船追加金色描边流 */
 const TRAIL_RAMP={
@@ -6537,6 +7243,7 @@ const TRAIL_RAMP={
   raven:['96,70,116','176,150,196','244,238,250'],
   swarm:['168,116,54','226,188,124','252,246,230'],
   nemesis:['152,146,136','216,210,196','252,250,244'],
+  forge:['198,96,38','244,164,98','255,246,232'],
 };
 /* 死亡尾流：每级参数（life=尾迹滞留时长/更长的视觉、r=碰撞与视觉半径、dmg=每次灼伤伤害、every=抛洒间隔） */
 const DEATHTRAIL={
@@ -6568,6 +7275,11 @@ function hullPath(c,id){
   }else if(id==='nemesis'){ // 回响：锐角镖形 + 内凹尾叉
     c.moveTo(20,0);c.lineTo(4,6);c.lineTo(-4,13);c.lineTo(-9,10);c.lineTo(-6,3.5);
     c.lineTo(-16,0);c.lineTo(-6,-3.5);c.lineTo(-9,-10);c.lineTo(-4,-13);c.lineTo(4,-6);c.closePath();
+  }else if(id==='forge'){ // 熔炉：宽厚砧形机身 + 双侧散热鳍 + 方形炉尾喷口
+    c.moveTo(19,0);c.lineTo(9,4.5);c.lineTo(2,5.2);c.lineTo(2,10.5);c.lineTo(-3,10.5);
+    c.lineTo(-3,5.0);c.lineTo(-9,6.5);c.lineTo(-15,7);c.lineTo(-15,0);
+    c.lineTo(-15,-7);c.lineTo(-9,-6.5);c.lineTo(-3,-5.0);c.lineTo(-3,-10.5);c.lineTo(2,-10.5);
+    c.lineTo(2,-5.2);c.lineTo(9,-4.5);c.closePath();
   }else{ // peregrine 流线隼形
     c.moveTo(18,0);c.quadraticCurveTo(9,5.5,-3,8.5);c.lineTo(-6,9.5);c.quadraticCurveTo(-8,4,-12,3.5);
     c.quadraticCurveTo(-9,0,-12,-3.5);c.quadraticCurveTo(-8,-4,-6,-9.5);c.lineTo(-3,-8.5);c.quadraticCurveTo(9,-5.5,18,0);c.closePath();
@@ -6601,6 +7313,7 @@ const HULL_GEO={
   raven:    {n:17,t:-14,cy:6, gx:-12.2,ribs:[[13,2.8],[6,4.8],[0,6.6],[-5,10.6],[-10,7.0]]},
   swarm:    {n:14,t:-16,cy:7, gx:-13.8,ribs:[[11,3.0],[5,5.4],[-1,6.4],[-6,7.6],[-11,4.2]]},
   nemesis:  {n:20,t:-16,cy:9, gx:-13.8,ribs:[[15,3.4],[8,5.4],[1,7.6],[-4,10.6],[-9,7.0]]},
+  forge:    {n:19,t:-15,cy:8, gx:-12.8,ribs:[[14,3.0],[7,5.2],[0,7.0],[-5,9.0],[-10,6.2]]},
 };
 function hullHalf(id,x){ // 机身在 x 处的半宽（ribs 线性插值）
   const r=(HULL_GEO[id]||HULL_GEO.peregrine).ribs;
@@ -7373,6 +8086,15 @@ function updateHUD(){
   if(HUDC.lv!==s){HUDC.lv=s;el.lv.textContent=s;}
   w=hudW('xp',clamp(P.xp/P.xpNext*100,0,100));
   if(w)el.xp.style.width=HUDC.xp;
+  // 过热槽：仅「熔炉」显示；换船体重开时 HUDC 不会自清，故切状态即作废宽度缓存强制重写一次
+  const htOn=!!P.heatOn;
+  if(HUDC.ht!==htOn){HUDC.ht=htOn;el.heatrow.hidden=!htOn;HUDC.heat=null;HUDC.hlk=null;}
+  if(htOn){
+    w=hudW('heat',clamp(P.heat/HEAT_MAX*100,0,100));
+    if(w)el.heatbar.style.width=HUDC.heat;
+    const lk=P.heatLock>0;
+    if(HUDC.hlk!==lk){HUDC.hlk=lk;el.heatrow.classList.toggle('lock',lk);}
+  }
   const bName=BOSS_NAME[Wv.bossKind]||'MOTHER ROCK';
   s='WAVE '+Wv.n;
   if(HUDC.wv!==s){HUDC.wv=s;el.wave.textContent=s;}
@@ -7610,6 +8332,7 @@ async function boot(){
   // 准备菜单与最佳成绩
   menuScene();
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+  renderDaily();
   refreshMenuMeta();
   refreshContinue();
   // 读条淡出 → 主循环启动
@@ -7635,6 +8358,37 @@ window.NOVA={
   spawn:t=>{if(P)spawnEnemy(t,P.x+rand(-280,280),P.y+rand(-280,280));},
   spawnAt:(t,x,y)=>{if(P)spawnEnemy(t,x,y);return !!P;},
   astAt:(x,y,s,kind,champ)=>{if(P)spawnAst(s||2,x,y,kind,champ);return !!P;},
+  /* Phase 4.2 新巨像 —— 数据 / 状态 / 确定性单步驱动 */
+  boss:{
+    at:()=>JSON.parse(JSON.stringify(BOSS_AT)),
+    kinds:()=>Object.keys(BOSS_MV),
+    waves:()=>Object.keys(BOSS_AT).map(Number),
+    /* 直接把某波次设出来（含 35 / 40 两个无尽专属剧本） */
+    wave:n=>{if(!P)startGame(HULLS[0]);
+      G.asteroids.length=0;G.enemies.length=0;G.warns.length=0;G.ebullets.length=0;
+      G.pending=0;el.cards.hidden=true;G.mode='play';buildWave(n);
+      return {n:Wv.n,boss:Wv.boss,kind:Wv.bossKind};},
+    /* 在玩家右上方生成一只指定巨像（自愈：未开局先开局） */
+    spawn:(kind,x,y)=>{if(!P)startGame(HULLS[0]);G.mode='play';
+      const a=spawnAst(4,x===undefined?P.x+320:x,y===undefined?P.y:y,kind);
+      return {kind:a.bossKind,hp:Math.round(a.hp),max:Math.round(a.maxHp)};},
+    info:()=>G.asteroids.filter(a=>a.boss).map(a=>({kind:a.bossKind,hp:Math.round(a.hp),
+      max:Math.round(a.maxHp),stage:a.stage,invT:+a.invT.toFixed(2),
+      fieldOn:!!a.fieldOn,fieldT:+(a.fieldT||0).toFixed(2),fieldR:a.fieldR||0,
+      flipT:+(a.flipT||0).toFixed(2)})),
+    jam:()=>({t:P?+(P.jamT||0).toFixed(3):0,f:P?P.jamF:1,s:P?P.jamS:1}),
+    gravity:()=>G.grav,
+    /* 确定性单步：只驱动玩家 + 小行星（不跑渲染），用于场/引力的数值断言 */
+    step:(n,dt)=>{const d=dt||1/60;for(let i=0;i<(n||1);i++){
+      updatePlayer(d);updateAsts(d);}return NOVA.boss.info();},
+    /* 把玩家瞬移到指定位置（测引力/视界距离用） */
+    place:(x,y)=>{if(!P)startGame(HULLS[0]);
+      P.x=x;P.y=y;P.vx=0;P.vy=0;return {x:P.x,y:P.y};},
+    player:()=>({x:Math.round(P?P.x:0),y:Math.round(P?P.y:0),
+      vx:Math.round(P?P.vx:0),vy:Math.round(P?P.vy:0)}),
+    clear:()=>{G.asteroids.length=0;G.ebullets.length=0;G.grav=null;
+      if(P){P.jamT=0;P.jamF=1;P.jamS=1;}return true;},
+  },
   bosses:()=>G.asteroids.filter(a=>a.boss||a.champ).map(a=>(a.champ?'C:':'')+a.bossKind),
   bossInfo:()=>G.asteroids.filter(a=>a.boss||a.champ).map(a=>({kind:a.bossKind,champ:!!a.champ,
     hp:Math.round(a.hp),max:Math.round(a.maxHp),stage:a.stage,invT:+a.invT.toFixed(2),
@@ -7745,6 +8499,50 @@ window.NOVA={
         rClass:d.className.split(' ').filter(x=>x.startsWith('r-')||x==='up'||x==='mx')};
     }),
   },
+  /* 协同测试钩子（Phase 3.2）：验证「每条协同都真的有效果」——
+     空 apply() 会导致 UI 显示已激活、实际毫无作用（旧表 9 条就是这样）。 */
+  syn:{
+    list:()=>SYN.map(s=>({id:s.id,a:s.a,b:s.b,zh:s.zh,en:(SYN_EN[s.id]||[])[0]||null})),
+    count:()=>SYN.length,
+    /* 空 apply 检测：函数体去掉空白/注释后只剩 {} → 假协同 */
+    emptyApply:()=>SYN.filter(s=>{
+      const t=s.apply.toString().replace(/\s|\/\*[\s\S]*?\*\//g,'');
+      return t==='()=>{}'||t==='function(){}';}).map(s=>s.id),
+    /* 依赖合法性：a/b 必须是真实存在的能力型模块（数值型不参与协同） */
+    badDeps:()=>SYN.filter(s=>{
+      const A=MOD_BY_ID[s.a],B=MOD_BY_ID[s.b];
+      return !A||!B||A.type!=='ability'||B.type!=='ability';}).map(s=>s.id),
+    /* 孤儿能力型：一条协同都没挂上的能力卡（3.2 的目标就是把这里清空） */
+    orphans:()=>{
+      const used=new Set(); for(const s of SYN){used.add(s.a);used.add(s.b);}
+      return MODULES.filter(m=>m.type==='ability'&&!used.has(m.id)).map(m=>m.id);
+    },
+    /* 重复配对：同一对 (a,b) 出现两次 —— 会互相抢 G.syn 记录 */
+    dupes:()=>{const seen={},dup=[];for(const s of SYN){
+      const k=[s.a,s.b].sort().join('+');if(seen[k])dup.push(s.id);seen[k]=1;}return dup;},
+    /* 英文名缺失 */
+    enMissing:()=>SYN.filter(s=>!SYN_EN[s.id]).map(s=>s.id),
+    /* 核心断言：调用某条协同的 apply()，看 P 上到底有几个字段真的变了 */
+    effect:id=>{
+      const s=SYN.find(x=>x.id===id); if(!s||!P)return null;
+      const K=['dmg','fireRate','pierce','ricochet','barrels','splashR','splashDmg','homing','homeR',
+        'tesla','teslaCd','stasisR','stasisPow','dronePow','droneCd','ram','shieldMax','shield',
+        'backshot','backPow','lanceCd','deathBonus','maxSpeed','crit','rangeLife','bspd'];
+      const before={}; for(const k of K)before[k]=P[k];
+      s.apply();
+      const diff={}; for(const k of K)if(P[k]!==before[k])diff[k]=[before[k],P[k]];
+      return {id,changed:Object.keys(diff).length,diff};
+    },
+    /* 跑一遍全部协同，返回每条的 changed 数；并复查等级下标字段没被越界改动 */
+    audit:()=>{
+      const lv=['mine','nova','blink'];
+      const lvBefore={}; for(const k of lv)lvBefore[k]=P[k];
+      const rows=SYN.map(s=>{const r=NOVA.syn.effect(s.id);return {id:s.id,changed:r?r.changed:0};});
+      const lvAfter={}; for(const k of lv)lvAfter[k]=P[k];
+      const lvBad=lv.filter(k=>lvAfter[k]!==lvBefore[k]||lvAfter[k]>6||lvAfter[k]<0);
+      return {rows,zero:rows.filter(r=>r.changed===0).map(r=>r.id),lvBad,lvAfter};
+    },
+  },
   /* 死亡结算测试钩子：kill 直接把玩家打死（可指定来源与伤害）；
      over 读结算面板当前渲染出的文字，用来断言三块内容真的填上了。 */
   death:{
@@ -7833,6 +8631,100 @@ window.NOVA={
   saveNow:()=>saveRun(),
   hasSave:()=>!!loadSave(),
   saveData:()=>loadSave(),
+  /* 数据规模总览（3.3 回归用） */
+  counts:()=>({mods:MODULES.length,syn:SYN.length,enemies:EN_LIST.length,
+              bosses:Object.keys(BOSS_AT).length,hulls:HULLS.length,
+              affix:Object.keys(AFFIX).length,ach:ACH.length}),
+  /* RNG 种子化（3.3.1）—— 测试钩子 */
+  rng:{
+    set:s=>setSeed(s),clear:()=>clearSeed(),
+    state:()=>({on:RND.on,s:RND.s}),
+    /* 用当前种子取 n 次 irand(1,100) 序列 —— 用于断言「同种→同序列」 */
+    sequence:(n=8,max=100)=>Array.from({length:n},()=>irand(1,max)),
+    /* mulberry32 自身的 1 次调用（用于断言 RNG 数学正确） */
+    raw:()=>_mulberry32(),
+  },
+  /* 每日挑战（3.3.3）—— 测试钩子 */
+  daily:{
+    seed:()=>dailySeed(),
+    rules:s=>pickDailyRules(s||dailySeed()),
+    today:()=>new Date().toISOString().slice(0,10),
+    start:h=>startDaily(h),
+    render:()=>renderDaily(),
+    /* 当前 G.daily 状态（若非 daily 局则 null） */
+    state:()=>G.daily?{seed:G.daily.seed,date:G.daily.date,rules:G.daily.rules.map(r=>r.id)}:null,
+    /* 当前局是否 daily 模式 */
+    active:()=>!!G.daily,
+  },
+  /* nova-daily 存储钩子 */
+  dailyStore:{
+    load:()=>loadDaily(),
+    save:d=>saveDaily(d),
+    commit:()=>commitDaily(),
+    clear:()=>{try{localStorage.removeItem('nova-daily');}catch(e){}},
+  },
+  /* 局外解锁树（3.5）—— 测试钩子 */
+  meta:{
+    tree:()=>META.map(m=>({id:m.id,x:m.x,y:m.y,cost:m.cost,req:m.req||null,
+      zh:m.zh,en:m.en,d:m.d})),
+    load:()=>metaLoad(),
+    save:d=>metaSave(d),
+    has:id=>metaHas(id),
+    state:()=>metaState(),
+    unlock:id=>metaUnlock(id),
+    earn:()=>metaEarn(),
+    /* 用一个合成的分数/击坠算产出（不写盘） */
+    earnFor:(score,kills)=>1+Math.floor((score||0)/1500)+Math.floor((kills||0)/60),
+    /* 清档：回到 0 星尘 + 仅 mroot */
+    reset:()=>{metaSave({dust:0,unlocked:['mroot']});},
+    /* 给测试灌星尘（直接改 dust，不产出） */
+    grant:n=>{const d=metaLoad();d.dust+=n;metaSave(d);return d.dust;},
+    draw:()=>drawMeta(),
+    fit:()=>fitMeta(),
+  },
+  /* 敌型表（4.1）—— 测试钩子 */
+  enemy:{
+    list:()=>EN_LIST.slice(),
+    defs:()=>Object.keys(ENEMY_DEFS),
+    count:()=>EN_LIST.length,
+    unlock:()=>Object.assign({},EN_UNLOCK),
+    zh:()=>Object.assign({},EN_ZH),
+    en:()=>Object.assign({},EN_EN),
+    /* 六表缺一即视为漏同步 */
+    missing:()=>EN_LIST.filter(t=>!ENEMY_DEFS[t]||!EN_ZH[t]||!EN_EN[t]||!EN_TRAIT[t]),
+    /* 造一只到玩家右侧，返回新增数量 */
+    spawn:t=>{const n=G.enemies.length;spawnEnemy(t,P.x+280,P.y);return G.enemies.length-n;},
+    /* 推进 N 帧敌型逻辑（dt=1/60），用于观察行为副作用 */
+    step:(t,frames)=>{
+      const n0=G.enemies.length;
+      spawnEnemy(t,P.x+280,P.y);
+      for(let k=0;k<(frames||60);k++)updateEnemies(1/60);
+      return {added:G.enemies.length-n0};
+    },
+    squads:()=>SQUADS.map(s=>({id:s.id,w:s.w?s.w.slice():null})),
+    jam:()=>P?+P.jamT.toFixed(3):null,
+    jamConst:()=>({fire:JAM_FIRE,spd:JAM_SPD,strip:SUNDER_STRIP}),
+    /* 干扰场验证：把 jammer 挪到玩家身上推进一帧，读回 jamT 是否被续期 */
+    jamProbe:()=>{
+      if(!P)startGame(HULLS[0]); // 未开局时 P 为 null —— 钩子自己保证有对局
+      G.mode='play';
+      P.jamT=0;
+      spawnEnemy('jammer',P.x+40,P.y);
+      const e=G.enemies[G.enemies.length-1];
+      e.x=P.x+20;e.y=P.y;e.vx=0;e.vy=0;
+      updateEnemies(1/60);
+      const inField=+P.jamT.toFixed(3);
+      e.x=P.x+900;e.y=P.y;P.jamT=0;
+      updateEnemies(1/60);
+      return {inField,outField:+P.jamT.toFixed(3),jamR:e.jamR};
+    },
+    /* 撕盾验证：给玩家护盾后调 sunderShield，读回护盾变化 */
+    stripProbe:()=>{
+      P.shield=50;P.shieldMax=50;
+      sunderShield();
+      return {after:+P.shield.toFixed(1),strip:SUNDER_STRIP};
+    },
+  },
 };
 
 /* 语言切换：主菜单 + 设置面板两个入口，切换即时生效并持久化 */

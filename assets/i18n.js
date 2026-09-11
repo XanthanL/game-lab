@@ -93,7 +93,7 @@
       styles: ["dream", "pool", "weird", "vaporwave", "synthwave", "glitch"] },
     { id: "art", zh: "艺术运动", en: "Art",
       styles: ["construct", "bauhaus", "deco", "memphis", "pop", "swiss", "morandi", "washi",
-               "decon", "ink", "futurism", "diagonal"] },
+               "decon", "ink", "shanshui", "futurism", "diagonal"] },
     { id: "game", zh: "游戏界面", en: "Games",
       styles: ["mc", "gtavc", "gtasa", "gta4", "gta5", "pipboy", "cyberpunk",
                "rdr2", "p5", "aperture", "halo", "splatoon", "skate"] },
@@ -165,19 +165,36 @@
     futurism: { short: { zh: "未来", en: "FUTR" }, chip: { zh: "未来主义", en: "Futurism" }, full: { zh: "未来主义 · Futurism", en: "Italian Futurism" } },
     hermes: { short: { zh: "电光蓝", en: "ELEC" }, chip: { zh: "电光蓝", en: "Electric Blue" }, full: { zh: "电光蓝", en: "Electric Blue" } },
     klein: { short: { zh: "克莱因蓝", en: "KLEIN" }, chip: { zh: "克莱因蓝", en: "Klein Blue" }, full: { zh: "克莱因蓝", en: "Klein Blue" } },
-    diagonal: { short: { zh: "对角", en: "DIAG" }, chip: { zh: "对角线计划", en: "Diagonal" }, full: { zh: "对角线计划 · Diagonal", en: "Diagonal Archive" } }
+    diagonal: { short: { zh: "对角", en: "DIAG" }, chip: { zh: "对角线计划", en: "Diagonal" }, full: { zh: "对角线计划 · Diagonal", en: "Diagonal Archive" } },
+    shanshui: { short: { zh: "山水", en: "INK" }, chip: { zh: "水墨山水", en: "Ink Landscape" }, full: { zh: "水墨山水 · 黑白", en: "Ink Landscape · Monochrome" } }
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
   var skinBar = document.getElementById("skinBar");
   function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "glass"; }
   function currentStyle() { return normStyle(root.getAttribute("data-style")); }
-  function applyStyle(s, persist) {
-    s = normStyle(s);
+  /* 真正落地的那一步：写属性 + 存盘 + 跨组跳转 + 同步按钮态 */
+  function commitStyle(s, persist) {
     root.setAttribute("data-style", s);
     if (persist) { try { localStorage.setItem(SKEY, s); } catch (e) {} }
     /* 选到别的组的皮肤时，页码自动跟着跳过去，否则选中态看不见 */
     if (skinBar && typeof jumpGroup === "function" && GROUP_OF[s] !== curGroup) jumpGroup(GROUP_OF[s], true);
     labelStyle();
+  }
+  /* 换肤过渡：淡出 → 换 → 淡入。SWITCH_MS 与 CSS 的 body opacity 过渡对齐（180ms）。
+     只在用户主动切换时播放；首次进入、reduced-motion、重选同一套都不播。 */
+  var SWITCH_MS = 180;
+  var reduceMQ = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  function applyStyle(s, persist) {
+    s = normStyle(s);
+    var prev = currentStyle();
+    if (!persist || s === prev || (reduceMQ && reduceMQ.matches)) { commitStyle(s, persist); return; }
+    root.classList.add("style-fading");
+    window.setTimeout(function () {
+      commitStyle(s, persist);
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () { root.classList.remove("style-fading"); });
+      });
+    }, SWITCH_MS);
   }
   function labelStyle() {
     var cur = currentStyle();

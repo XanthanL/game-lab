@@ -1,7 +1,7 @@
 # 奇点回响 · 开发规划与交接指南
 
 > **这份文档是给下一个会话的执行手册。** 不依赖任何对话上下文，读完就能开工。
-> 行号基于 2026-09-11 的 `index.html`（7740 行 / 418 KB）实测，**会漂**，以函数名为锚点。
+> 行号基于 2026-09-11 的 `index.html`（7845 行 / 425 KB）实测，**会漂**，以函数名为锚点。
 > 详细背景见 `ROADMAP.md`（六阶段路线图）、`DESIGN-SYSTEM.md`（token 与方向）、
 > `.impeccable.md`（设计上下文）。本文是它们的**进度与执行层**，不是替代品。
 
@@ -14,14 +14,15 @@
 | Phase 0 风格锚定 | ✅ 完成 | 含 A（等价 token 化）+ B（换方向）+ B.1（配色修订） |
 | Phase 1 战斗反馈 | ✅ 完成 | 伤害飘字 / 命中音效 / 击杀出口 / 拾取反馈 |
 | **Phase 2 引导与信息** | ✅ **完成** | 2.1 / 2.2 / 2.3 / 2.4 / 2.5 全部落地 |
-| **Phase 3 构筑深度** | 🔄 **进行中** | **3.4 成就树已完成**（18 节点 / 22 连线）；**3.1 / 3.2 / 3.3 / 3.5 待做** |
-| Phase 4 内容扩充 | ⬜ 未开始 | |
+| **Phase 3 构筑深度** | ✅ **完成** | **3.4 + 3.1 + 3.2 + 3.3 + 3.5 全部完成**（详见 §4） |
+| **Phase 4 内容扩充** | 🔄 **进行中** | **4.1 新敌型 + 4.2 新 Boss + 4.3 新船体完成**（敌型 20→24 · 巨像 6→8 · 船体 6→7）；4.4–4.5 待做 |
 | Phase 5 平台打磨 | ⬜ 未开始 | |
 
 **当前代码健康度（已实测）**：JS 语法 OK · `audit-tokens.js` 全绿 · 无残留临时文件。
-**下一步建议：Phase 3.1 卡牌稀有度 / 升阶**（`MODULES` 加 rarity 字段 + 出现权重，
-是 Phase 3 里唯一能立刻改变"每局构筑手感"的一项；3.2 协同扩展可与它并行）。
-`index.html` 现 7740 行 / 418 KB。
+**下一步建议：Phase 4.4 新武器行为**（加进 `MODULES`，并检查 `rollChoices` 的 ability/stat
+加权是否失衡，见 §5）。
+`index.html` 现 **8737 行 / 478 KB**（含 4.1 四种新敌型 + 4.2 两尊新巨像 + 4.3 第七船体
+「熔炉」的数据 + 行为 + 绘制 + HUD 槽）。
 
 ---
 
@@ -65,6 +66,16 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 | `.workbuddy/shots/phase2-4-check.js` | **死亡结算 10 项**（环境/敌型/巨像死因、词缀标签、关键统计、三块同屏、英文、竖屏、语言热切换、死因固化） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase2-5-check.js` | **UI 转场统一 11 项**（覆盖层曲线唯一性、裸缓动计数、`.sec-head` 跨面板同规格、死亡面板回归、竖屏两面板、英文、连读 3 次稳定、数据无回归、keyframes 完整性） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase3-4-check.js` | **成就树 12 项**（树结构/依赖闭包/坐标唯一、全锁档、全达成档、中段三态、进度百分比算术、船体支、汇总聚合、弹窗文案、弹窗去重、英文、竖屏、图鉴回归） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase3-1-check.js` | **卡牌稀有度 10 项**（rarity 字段完整性、权重分布、保底计数确定性、卡面类目与标签、升阶标记、MAX 互斥、英文、竖屏、模块数/roll 大小回归、modStats 回归） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase3-2-check.js` | **协同扩展 10 项**（22 条计数、空 apply 归零、依赖合法、孤儿清零、无重复 / EN 缺漏、初始 P 上 22 条 apply 全部真实改字段≥1、协同表下标安全、样例效果、实机触发链路、模块/成就树回归） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase3-2-shots.js` | 留档截图：暂停面板 7/22 协同（桌面 / 竖屏）+ 卡面协同块 4 on | 人工 |
+| `.workbuddy/shots/phase3-3-check.js` | **每日挑战 12 项**（RNG 默认 / 同种子同序列 / 不同种子不同序列 / clearSeed 还原、DAILY_RULES 池稳定、dailySeed 32-bit + 同日不变、rollChoices 尊重 G.noRepair、startDaily 链路、renderDaily 写入、commitDaily 写盘 + 徽章、菜单按钮 + 模块/协同/成就回归、移动端布局） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase3-3-shots.js` | 留档截图：菜单 btnDaily + menuDaily 面板 / 死亡面板含 daily 徽章 / 移动端 | 人工 |
+| `.workbuddy/shots/phase3-5-check.js` | **局外解锁树 17 项**（树结构 / 默认档 / 产出公式 / 扣费 / req 守卫 / dust 守卫 / 重复守卫 / 7 节点开局加成 / 基线 / 存储往返 / 三态视觉 / 点击解锁链路 / 竖屏适配 / 数据规模回归 + **3.5c 坠毁面板星尘行 / 通关面板星尘行 / 切英文后重绘**） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase3-5-shots.js` | 留档截图：桌面·初始档（0 星尘，全锁）/ 桌面·中期档（208 星尘 + 7 节点解锁）/ 竖屏 390×844 适配 | 人工 |
+| `.workbuddy/shots/phase4-1-check.js` | **新敌型 12 项**（六表同步 / 解锁波次 ≤30 / 定义完整性 / `SQUADS` 收录 / 四种可生成 / 播雷 6 颗 / 干扰场进出 / 干扰射速比 / 孵化双上限 / 裂解撕盾 / 图鉴 24 格 / 数据规模回归），**自带留档截图** | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase4-2-check.js` | **新巨像 14 项**（五表同步 / 剧本 Boss 优先于无尽随机 / 新字段初始化 / 干扰场开合节律 / 场内外 jam 读写 / 场灭易伤 ×1.5 / 狂暴窗口 2.6→1.8 / 引力拉扯 + 半径外归零 / 事件视界 26dps / 狂暴反转 / 图鉴 8 格 / 数据规模回归 / 4.1 jammer 未破 / 英文图鉴），**自带留档截图** | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase4-3-check.js` | **新船体 16 项**（四表同步 / 机库文案 / 解锁门禁与持久化 / 机库 7 卡锁定→解锁 / apply 属性 / **蓄热与射速解耦** / 满膛锁膛→排空归零 / 冷膛 0.85×↔满膛 1.45× 含背射 / 其余 6 船零溢出 / HUD 过热槽 / 击碎坍缩之核解锁链路 / `hullPath` 新形状 / 图鉴 7 格 + 成就 7 / 数据规模回归 / 英文机库 / 实机），**自带留档截图** | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase1/` | 战斗反馈四档对照截图 | 人工 |
 | `.workbuddy/shots/zero-diff.js` | **零视觉变化**验证（冻结时钟 + 定种子 + 帧冻结 + 禁 CSS 动画后逐像素） | `diff=0` |
 
@@ -315,35 +326,288 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 **回退点**：`.workbuddy/backups/singularity-echo_phase3-4-pre.html`
 **截图**：`.workbuddy/shots/phase3/3-4-*.png`
 
-### ⬜ 3.1 卡牌稀有度 / 升阶 —— **下一个做这个**
+### ✅ 3.1 卡牌稀有度 / 升阶（已完成）
 
-`MODULES`（~2143）加 rarity 字段 + 出现权重；重复获得可升阶。
-**这是 Phase 3 里唯一能立刻改变"每局构筑手感"的一项。**
+**分档原则不是"越稀有越强"，而是「越稀有越特化」** —— 这样稀有卡才有"要不要赌一把"的决策重量，
+而不是"反正更强必选"。
 
-### ⬜ 3.2 协同扩展
+| 档 | 权重 | 数量 | 语义 | 卡 |
+|---|---|---|---|---|
+| **common 基础** | 1.00 | 11 | 纯数值成长 / 无依赖通用能力，构筑的地基 | hull thruster loader warhead crit magnet regen pierce ricochet twin frag |
+| **rare 进阶** | 0.45 | 8 | 明确玩法倾向、需搭配才发挥，或强度明显高于同级 | guided ram backshot leech overdrive phase aegis drone |
+| **epic 核心** | 0.18 | 7 | 能单独改变玩法形态的"构筑引擎"（多数连着 2~3 条协同） | tesla stasis nova lance blink deathtrail mine |
 
-`SYN`（~2300）12 条 → 20+ 条，优先补冷门卡联动。可与 3.1 并行。
+**数据跟着卡走**：`rarity` 是 `MODULES` 每项的字段（不是外部映射表），新增卡必须显式分档，
+否则会落进 `rarityOf()` 的 `common` 兜底 —— 那样就失去了设计意图。
 
-### ⬜ 3.3 每日挑战
+**加权与保底**（`rollChoices`）：
+- 权重 = `RARITY_W[rarity]` × 能力型加权（`1 + 已投资能力数 × 0.22`），与原有权重**相乘**而非替换。
+- **伪随机补偿**：`G.rarPity` 记录连续未出 rare+ 的升级次数 → dry ≥3 时 rare+ 权重 ×2.2，
+  dry ≥5 时 ×4.0，dry 触及 `PITY_HARD=6` 时**强制把一张 common 换成 rare+**（换完归零）。
+  ⚠️ 保底前必须判断"池里是否真有 rare+" —— 后期局 rare+ 全满级时 `candRare` 为空，
+  此时静默跳过是**正确行为**（无卡可换），不是 bug。
+- ⚠️ 保底计数在 `startGame` 清零、在**每次 offer 结算后**更新（含 rare+ → 归零，不含 → +1）。
 
-种子化 run（固定种子 + 固定卡池 + 特殊规则）。需要先确认 `rollChoices` 的随机源
-是否可注入种子（当前是 `Math.random` 系）。
+**卡面视觉**（`renderCards`）：
+- `r-rare` / `r-epic` 类 → 换边色 + 顶部渐变线 + 图标/英文行换色。
+  common **不加类**，沿用默认钢蓝边 —— 与成就树三态同源（钢蓝 / 青 / 黄铜）。
+  实测：epic 边 `rgba(201,162,39,.6)`、rare 边 `rgba(124,178,221,.55)`。
+- `.tag.rar` 稀有度标签（基础 / 进阶 / 核心，英文 COMMON / RARE / EPIC），三档不同色。
+- **升阶标记**：已持有且未满级 → 加 `up` 类（青色左缘）+ `.up-mark`「↑ 升阶 LVn」。
+  满级卡走原有 `mx`（MAX 金边），**两者互斥**（`up` 只在非 max 时加）。
 
-### ⬜ 3.5 局外解锁树
+**测试钩子**：`NOVA.cards.{rarity,roll,pity,faces}`（`roll(n)` 重置 build+pity 采纯权重分布；
+`faces()` 读卡面类名与标签）。
+**断言脚本**：`.workbuddy/shots/phase3-1-check.js`（10 项，全绿）。
+**回退点**：`.workbuddy/backups/singularity-echo_phase3-1-pre.html`
+**截图**：`.workbuddy/shots/phase3/3-1-*.png`
 
-消耗累计数据解锁起始增益，让连败也有进展感。**可复用 3.4 的树渲染**
-（`achProgress` / `drawAch` 的结构是通用的，换一份数据 + 换一个存储键即可）。
+### ✅ 3.2 协同扩展（已完成）
 
-**验收**：连续 10 局不会拿到相同构筑；连败 3 局后仍有可感知的进度。
+`SYN` **12 → 22 条**，并把原本 9 条「空 `apply()`」全部改成真实生效的一次性属性变更。
+
+**这轮最大的发现不是"协同太少"，而是"协同是假的"**：旧表 12 条里只有 3 条
+（`storm` / `bulwark_ram` / `swarm_arc`）真的改了属性，其余 9 条 `apply:()=>{}` 是空函数，
+而**运行时根本没有任何地方读 `G.syn[id]`** —— 它们照样在面板上标亮为「已激活」，
+玩家以为拿到了加成，实则零效果。这是比"内容少"严重得多的问题，所以本轮
+优先级从"补数量"改成"先让已有的全真"。
+
+**新增 10 条（优先补孤儿卡）**：旧表里 `twin` / `pierce` / `ricochet` / `frag` / `guided`
+这 5 张卡**一条协同都没有**，拿了等于纯数值堆叠、没有构筑方向 —— 这是"每局手感雷同"的主因。
+
+| 协同 | 组合 | 效果 |
+|---|---|---|
+| `volley_pierce` 齐射穿刺 | twin + pierce | `P.pierce+=2` |
+| `salvo_blast` 散爆齐射 | twin + frag | 爆炸范围 ×1.25、溅射 ×1.25 |
+| `spray_bounce` 流弹幕 | twin + ricochet | 反弹 +1、射速 ×1.08 |
+| `pierce_bounce` 穿甲跳弹 | pierce + ricochet | `P.ricochet+=2` |
+| `guided_pierce` 制导穿甲 | guided + pierce | 制导 +1 级、穿透 +1 |
+| `guided_frag` 追踪榴弹 | guided + frag | 搜索范围 +120、爆炸范围 ×1.2 |
+| `bounce_blast` 跳雷 | ricochet + frag | 反弹 +1、溅射 ×1.3 |
+| `minefield_arc` 雷场电击 | mine + tesla | `P.tesla+=1` |
+| `rear_pierce` 贯穿尾炮 | backshot + pierce | 尾炮火力 +15%、穿透 +1 |
+| `stasis_mine` 停滞雷区 | stasis + mine | `P.stasisR+=60` |
+
+**修复的 9 条空 apply**：`blink_ram`(+2 冲角) / `blink_arc`(链击+1、冷却-0.2) /
+`nova_stasis`(减速+0.6) / `pulse_swarm`(机群火力+0.25、间隔-0.06) /
+`judge_frost`(长枪冷却-0.5、静止场+40) / `rear_lance`(尾炮+1、长枪冷却-0.4) /
+`molten_ram`(+2 冲角) / `vent_wake`(盾上限+15 并补满) / `ignite`(爆炸伤害+15)。
+
+**`SYN_EN` 同步 22 条**，测试钩子 `NOVA.syn.{list,count,emptyApply,badDeps,orphans,dupes,enMissing,effect,audit}`。
+10 项断言全过（含「22 条 apply 在初始 `P` 上必须至少改 1 个字段」、
+**「`P.mine`/`P.nova`/`P.blink` 下标不动」的协同表安全检查**），`audit-tokens.js` 全绿，
+`phase2-check` / `phase2-3-check` / `phase2-5-check` / `phase3-4-check` / `phase3-1-check` 无回归。
+回退点 `.workbuddy/backups/index_*_phase3-2-pre.html`，截图 `.workbuddy/shots/phase3/3-2-*.png`。
+
+### ✅ 3.3 每日挑战（已完成）
+
+**关键设计**：「同一种子 = 完全相同的一局」是核心承诺 —— 玩家每日面对同一对规则、
+同一模块分布、同样的开局优势 → 真正的「技术比拼 + 当日最优」而非纯运气。
+
+**1. RNG 种子化（3.3.1）**：抽常量表 `RND={on,s}` + `mulberry32` + `setSeed/clearSeed`。
+把 `rand/irand/pick/shuffle` 这 4 个顶层随机函数改成走 `srand01()`：
+- 默认状态：`srand01()` 走 `Math.random()`，与旧行为**字节级一致**；
+- 种子状态：`setSeed(s)` 后所有 `rand/irand/pick/shuffle` 走 `mulberry32`，
+  VFX 与微观暴击判定仍走 `Math.random`（保证「同开局」承诺的同时不影响动画）。
+**只改 4 个函数、29 处 `Math.random` 调用中无需改 1 行**，全部自动跟随。
+
+**2. 规则池（3.3.2）**：4 条规则，pickDailyRules 用 `setSeed + shuffle` 选 2 条：
+- `startLoader` 起步装载（送 loader LV1，射速 +12%）
+- `startAegis` 护盾待命（送 aegis LV1 + 护盾立刻填满）
+- `swiftStar` 临界之星（暴击率 +10%、暴击伤害 +50%）
+- `noRepair` 不可修复（升级三选不放 repair）
+`rollChoices` 在 `G.noRepair=true` 时剔除 `repair` 候选；
+`startDaily` 顺序：`G.dailyMode=true` + `G.daily={...}` + `setSeed` + `startGame` + 逐条 `apply`，
+**`startGame` 看到 `G.dailyMode=true` 不重置 `G.daily`**（否则本句之后 `for r of G.daily.rules` 崩）。
+
+**3. 入口与结算（3.3.3）**：
+- **菜单**：btnDaily（`DAILY ▸ 每日挑战`，与 btnLaunch 同级）+ menuDaily 面板
+  （「日期 / 今日规则 / 今日最佳」三段），回菜单/首次进入自动 `renderDaily()` 刷新；
+- **死亡面板**：`buildCause` 顶部加 `daily-badge`（日期 + 规则名，青边分隔线）；
+- **存储键 `nova-daily`**：`commitDaily` 在 `commitDaily` 时按「更高分覆盖」
+  写 `{date:{score,wave,kills,rules:[id,id]}}`；showOver 顺道 `commitDaily`。
+- **每日种子**：`dailySeed()` = `YYYYMMDD` 走 FNV-1a 哈希成 32-bit 整数；同日同设备同种子 → 同规则。
+
+**测试钩子** `NOVA.rng.{set,clear,sequence,raw,state}` / `NOVA.daily.{seed,rules,today,start,render,state,active}` / `NOVA.dailyStore.{load,save,commit,clear}` / `NOVA.counts`。
+
+**12 项断言全过**：`audit-tokens.js` 全绿，`phase2-check`(10) / `phase2-3-check`(10) / `phase2-4-check`(10) / `phase2-5-check`(11) / `phase3-4-check`(12) / `phase3-1-check`(10) / `phase3-2-check`(10) **无回归**。
+
+回退点 `.workbuddy/backups/singularity-echo_phase3-3-pre.html` + `index_*_phase3-3-post.html`；
+截图 `.workbuddy/shots/phase3/3-3-*.png`（12 张断言 + 3 张留档）。
+
+### ✅ 3.5 局外解锁树 · Stardust 星尘（已完成，3.5c 加结算可见化）
+
+**核心目的**：让连败也有进展感 —— 玩家无论胜败每局都拿到 **Stardust（星尘）**，
+永久解锁起始增益。货币可见、进度可见、消费可见，循环透明。
+
+#### 1. 数据层
+
+**13 个节点 · 4 条支线 + 1 根**（画布 672×642）：
+
+| 支线 | 节点（id · 效果 · cost） | y |
+|---|---|---|
+| 根 | `mroot`（永远已解锁 · cost 0） | 302 |
+| 生存 | `hp1`(maxHp+15, 10) → `hp2`(maxHp+25, 22) → `sh1`(shieldMax+20, 40) | 20 |
+| 火力 | `dmg1`(dmg×1.08, 12) → `rate1`(fireRate×1.06, 24) → `crit1`(crit+0.05, 45) | 180 |
+| 机动 | `spd1`(maxSpeed×1.06, 10) → `mag1`(magnet×1.3, 20) → `turn1`(turn×1.1, 38) | 420 |
+| 战术 | `lv1`(level=2 开局, 18) → `xp1`(xpNext×0.9, 32) → `premod`(pierce LV1, 55) | 580 |
+
+**存储键 `nova-meta = {dust:N, unlocked:[id,...]}`**（旧档无此键 → 默认 `{dust:0, unlocked:['mroot']}`，
+**零新存储键破坏**兼容性，类比 3.4 统计 schema 扩展）。`unlocked` 至少包含 `mroot`。
+
+**星尘产出公式**（在 `showOver` / `showVictory` 结算时一次性入账）：
+```
+earn = 1 + ⌊score / 1500⌋ + ⌊kills / 60⌋
+```
+例：0/0 → 1 · 1500/60 → 3 · 9000/300 → 12 · 45000/1200 → 51（断言 3-5-03 实测）。
+
+#### 2. 守卫链（`metaUnlock` 返回 `{ok, reason}`）
+
+| 失败原因 | 含义 | 触发 |
+|---|---|---|
+| `no-node` | id 不在 META 表里 | 内部异常 |
+| `already` | 重复解锁 | `unlocked.indexOf(id) >= 0` |
+| `req` | 前置节点未解锁 | `metaHas(id.req)` false |
+| `dust` | 星尘不足 | `dust < cost` |
+
+**成功路径**：`dust -= cost` 后 `push(id)` → 持久化 → 返回 `{ok:true, dust, cost}`。
+`cost` 字段给 UI 显示「消耗 10 星尘 —— 剩余 40」。
+
+#### 3. 三态视觉（沿用 3.4 `lbnode` 语汇）
+
+- **locked**（暗轮廓）：未达成或前置未满
+- **ready**（青边 + 青底 + cursor:pointer）：可点击
+- **done**（金边 + 金底）：已解锁，悬停仍可读但不可点
+
+`drawMeta()` 走与 `drawAch()` 同一渲染骨架：SVG 连线（成本色虚线） + 绝对定位节点 + dust 读数。
+`fitMeta()` 自适应缩放（floor 0.34，对齐 `fitAch`），竖屏 390 视口下 scale ≈ 0.4375 不溢出。
+
+#### 4. 开局加成链路（`applyMetaBonuses`）
+
+`startGame` 在 `hull.apply()` 之后立刻调用 `applyMetaBonuses()` —— 把 `unlocked`
+按顺序写入 `P`，**支持任意前缀组合**。实测：
+```
+解 hp1/hp2/sh1/dmg1/spd1/mag1/lv1  → P.maxHp=140 P.shieldMax=20 P.dmg=1.08
+                                    P.maxSpeed=360 P.magnet=195 P.level=2
+零解锁                            → P.maxHp=100 P.dmg=1 P.maxSpeed=340
+                                    P.magnet=150 P.level=1（基线）
+```
+**`premod` 故意不注册进 `G.build`**（详见 §7 坑 38），让玩家可以开局就拥有 pierce 而不占用
+模块位 / 触发 `G.noMod` 反成就。
+
+#### 5. 3.5c · 结算面板星尘行（新增）
+
+**问题**：3.5 结算时只算了 `G.lastDust=metaEarn()`，面板上没有任何展示 →
+3.5 的核心循环对玩家 **完全不可见**。修复：
+- 坠毁面板 / 通关面板各加一行 `<div class="statline dust">`，
+  内容「星尘产出 +N · 可用 M · 于「解锁星图」消费」，琥珀色与「星尘」语义一致。
+- `renderDust(node, earn)` 把本局产出 + 累计余额（`metaLoad().dust`，含本局）
+  一次性拼出来；`applyI18n` 切语言时一并重绘，**杜绝中英混排**。
+- 三断言：`3-5-15-over-dust`（9000 分 + 300 杀 → 「+12 · 12」）/ `3-5-16-victory-dust`
+  （通关 20000 分 + 800 杀 + 8000 加成 → 「+32 · 32」）/ `3-5-17-dust-i18n`（切英文后无中文）。
+
+#### 6. 测试钩子
+
+`NOVA.meta.{tree,load,save,has,state,unlock,earn,earnFor,reset,grant,draw,fit}` 12 个。
+`NOVA.counts().meta=13`。**17 项无头断言全过**（断言 1-14 数据 + UI + 回归，
+15-17 3.5c 结算可见化），前 8 个 phase（2/2-3/2-4/2-5/3-4/3-1/3-2/3-3 共 90 项）**无回归**。
+`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase3-5-post.html`，截图 `.workbuddy/shots/phase3/3-5-*.png`。
 
 ---
 
-## 5. Phase 4 · 内容体量扩充 ⬜
+## 5. Phase 4 · 内容体量扩充 🔄 进行中
 
-- 4.1 新敌型 → 挂 `EN_UNLOCK`（~2100，同步解锁波次与 `AFFIX` 兼容性）
-- 4.2 新 Boss → 挂 `BOSS_AT` + `BOSS_MV`（第 35/40 波或无尽专属）
-- 4.3 新船体 → **四处全同步**（`HULL_TINT` / `HULL_GEO` / `HULL_TAIL` / `TRAIL_RAMP`）
-  + `hullPath` 形状 + 机库文案 + 解锁条件
+#### ✅ 4.1 新敌型（已完成 2026-09-11）
+
+**敌型 20 → 24 种**，补上原本的三个空位：**区域控制 / 玩家减益 / 召唤**
+（原 20 种里区域控制只有静态的 `mine`，没有任何玩家减益，也没有召唤者）。
+
+| 类型 | 中文 / EN | 解锁 | 定位 | 机制 |
+|---|---|---|---|---|
+| `sower` | 播雷者 SOWER | W15 | 区域控制 | 每 1.0–1.8s 布 1 颗雷（每只上限 6），自身不主动贴身 |
+| `jammer` | 干扰者 JAMMER | W18 | 玩家减益 | 绕玩家 260–340 半径公转，`jamR=230` 场内给 `P.jamT` 续期 |
+| `brood` | 孵育体 BROOD | W22 | 召唤 | 每 `max(2.2, 3.4-0.03·波次)`s 孵 1 只 reaver，**每巢 10 / 场上 70 双上限** |
+| `sunder` | 裂解者 SUNDER | W25 | 反护盾 | 230 速突进；接触撕掉 `SUNDER_STRIP=22` 点护盾（**固定值，不随波次膨胀**） |
+
+- **三个常量**：`JAM_FIRE=0.65`（干扰场内射速倍率）/ `JAM_SPD=0.8`（极速倍率）/ `SUNDER_STRIP=22`。
+- **玩家新字段** `P.jamT`（`newPlayer` 初始化，每帧衰减）；**在场内每帧续期 0.4s，
+  离开后 0.4s 自动解除** —— 不需要写"离开检测"。
+- **干扰链路乘性叠加**：`P.fireCd = 1/(P.fireRate * (P.rateT>0?1.6:1) * (P.jamT>0?JAM_FIRE:1))`，
+  极速同理乘 `JAM_SPD`。**与既有 `rateT`/`boostT` 增益相乘而非覆盖。**
+- **反护盾** `sunderShield()`：扣盾 → `dmgText(...,'absorb')` + `FX.splash('cyan')` +
+  `ring()` + `sfx.hit('block')` —— 全复用 Phase 1 的「被挡」反馈档，**零新增反馈语汇**。
+- **六表同步**（顺序别乱）：`ENEMY_DEFS` → `EN_UNLOCK` → `EN_ZH`/`EN_EN`/`EN_TRAIT`
+  → `EN_LIST` → `SQUADS`。⚠️ 新敌型定义**必须写进 `ENEMY_DEFS` 本体**（见 §7 内容扩充第 42 条）。
+- **测试钩子** `NOVA.enemy.*`；**12 项无头断言全过**，前 9 个 phase
+  （2 / 2-3 / 2-4 / 2-5 / 3-1 / 3-2 / 3-3 / 3-4 / 3-5，**共 101 项**）**无回归**。
+  `audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase4-1-post.html`，
+  截图 `.workbuddy/shots/phase4/4-1-*.png`。
+
+#### ✅ 4.2 新 Boss（已完成 2026-09-11）
+
+**巨像 6 → 8**，两场都是**无尽专属**（W35 / W40），补上原本缺的两种威胁形态：
+**场地压制**与**位移操控**（原 6 尊都是"弹幕 + 召唤"的变体，没有一个操控玩家位移）。
+
+| 波次 | 中文 / EN | 机制 |
+|---|---|---|
+| W35 | 静默方碑 MONOLITH | 干扰场**开合节律**：场开 4.2s（狂暴 5.0）压射速 ×0.55 / 极速 ×0.72；场灭 2.6s（狂暴 1.8）核心暴露、**受伤 ×1.5** |
+| W40 | 坍缩之核 COLLAPSE | **引力井**：`GRAV_R=820` 内持续拉扯（峰值 430，终速 ≈205）；`r×0.62` 事件视界每秒灼烧 26；狂暴后每 8s 倒转 2s 为斥力 |
+
+- **九个常量**：`MONO_FIRE=0.55` / `MONO_SPD=0.72` / `MONO_R=300` / `MONO_ON=4.2` /
+  `MONO_OFF=2.6` / `GRAV_R=820` / `GRAV_PULL=430` / `HORIZON_R=0.62` / `HORIZON_DPS=26`。
+- **干扰参数化**（4.1 的遗留问题）：`JAM_FIRE/JAM_SPD` 是常量，Boss 想要不同强度只能复制 →
+  新增 `P.jamF` / `P.jamS`（`P.jamT` 只管时长），**施加者写入、消费点统一读**。
+  4.1 的 `jammer` 数值与既有行为零改动。
+- **五表同步**：`BOSS_AT` / `BOSS_NAME` / `BOSS_ZH` / `BOSS_MV` / `BOSS_STYLE`。
+  图鉴巨像名录与 `NOVA.counts().bosses` **都从 `BOSS_AT` 派生** → 加 Boss 无需改 UI。
+- **剧本优先**：`buildWave` 改成 `BOSS_AT[n]||(endless&&n%5===0?pick(Object.keys(BOSS_MV)):null)` ——
+  原写法里 `n>WIN_WAVE` 走无尽分支，`BOSS_AT[35]` 永远读不到。
+- `st_c(a)` 取巨像分量色串，绘制与 VFX 一律走它（R4 零新增字面量）。
+- **测试钩子** `NOVA.boss.{at,kinds,waves,wave,spawn,info,jam,gravity,step,place,player,clear}`；
+  **14 项无头断言全过**，前 10 个 phase（2 / 2-3 / 2-4 / 2-5 / 3-1 / 3-2 / 3-3 / 3-4 / 3-5 / 4-1
+  共 113 项）**无回归**。`audit-tokens.js` 全绿。
+  回退点 `.workbuddy/backups/index_*_phase4-2-post.html`，截图 `.workbuddy/shots/phase4/4-2-*.png`。
+- ⚠️ 顺手修掉 4.1-08 的**静默失效**：参数化后该断言只写 `P.jamT` 不写 `jamF/jamS`，
+  比值从 1.538 退化成 1 却仍打印 `ok`。已补三件套 + `ok` 硬断言（详见 §7 第 52 条）。
+
+#### ✅ 4.3 新船体（已完成 2026-09-11）
+
+**船体 6 → 7**：第七船体 **「熔炉 FORGE」❖**（熔铜配色 `#1a0e07` / `#f0a468` / `236,132,58`），
+解锁挂 **肃清第 40 波 · 击碎坍缩之核** —— 与 4.2 新增的 W40 巨像呼应
+（此前 raven↔W15、nemesis↔W30，**无尽 30 波之后一直没有里程碑奖励**）。
+
+**机制 · 过热膛线**（首个带"持续状态"的船体 —— 其余 6 艘都是一次性属性改写）
+
+| 状态 | 行为 |
+|---|---|
+| 持续开火 | 热量 **+30/s**（满膛 3.3s），伤害在 **冷膛 0.85× → 满膛 1.45×** 之间线性浮动 |
+| 停火 | 热量 **−34/s**（满膛排空约 2.9s） |
+| 热量见顶 | **锁死炮膛 1.7s**，期间强制散热、解锁瞬间归零（`HEAT_VENT` 排空） |
+
+- **七个常量**：`HEAT_MAX=100` / `HEAT_UP=30` / `HEAT_COOL=34` / `HEAT_LOCK=1.7` /
+  `HEAT_VENT=HEAT_MAX/HEAT_LOCK`（≈58.8，**必须与前两者对齐** —— 否则解锁瞬间残留热量、
+  立刻二次过热产生抖动）/ `HEAT_COLD=0.85` / `HEAT_HOT=1.45`。
+- **蓄热走"速率"而非"每发累加"**：`HEAT_UP*dt` 与射速解耦（断言验证射速 ×3 后 1s 蓄热仍是 30）。
+  若按每发累加，高射速构筑会在 1 秒内烧穿，"节奏取舍"退化成"不许点射"，
+  与堆射速的构筑意图相悖。
+- **新玩家字段** `P.heat` / `P.heatMul` / `P.heatLock` / `P.heatOn`：
+  `heatOn` 只有熔炉为 `true`，**其余 6 艘 `heat` 恒 0、`heatMul` 恒 1**（已逐船断言，零溢出）。
+  `heatMul` 在 `updatePlayer` 每帧刷新、`fireGun` 直接乘进弹丸伤害（主弹与背射弹都吃）。
+- **HUD 过热槽** `#heatrow`（`HEAT` 标签 + `.bar.heat`，黄铜→朱砂渐变，满膛转警示色），
+  仅熔炉显示。⚠️ `HUDC` 缓存在换船体重开时**不自清** → 切显示状态即作废宽度缓存强制重写一次。
+- **四处全同步 + `hullPath` 新分支**：`HULL_TINT` / `HULL_GEO` / `HULL_TAIL` / `TRAIL_RAMP`
+  + 形状（宽厚砧形 + 双侧散热鳍 + 方形炉尾喷口）。
+  `HULL_TAIL.forge=15` 必须等于 `-HULL_GEO.forge.t`（已断言），否则尾流从船身中段喷出。
+- **联动四处**：机库数字键 `Digit[1-6]`→`[1-7]`、`HULL_EN` / `HULL_LOCK_EN`、
+  成就「全舰制霸」`hull6.goal()` **6→7**（**id 保留** —— 存档按 id 记已达成，改 id 会丢档）、
+  `NOVA.counts().hulls` 自动变 7。
+- **16 项无头断言全过**，前 11 个 phase（2 / 2-3 / 2-4 / 2-5 / 3-1 / 3-2 / 3-3 / 3-4 / 3-5 /
+  4-1 / 4-2，**共 129 项**）**无回归**。`audit-tokens.js` 全绿（51 hex + 30 rgb 全在白名单）。
+  回退点 `.workbuddy/backups/index_*_phase4-3-pre.html`，
+  截图 `.workbuddy/shots/phase4/4-3-*.png`。
+
+**待做**
+
 - 4.4 新武器行为 → 加进 `MODULES`，并检查 `rollChoices` 的 ability/stat 加权是否失衡
 - 4.5 无尽模式专属机制（30 波后不重复随机 Boss，加轮换与强化层）
 
@@ -445,6 +709,15 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 29. **测试里读 CSS 属性要等面板渲染完成**：`openLogbook()` 后立刻读 `animationName`
     可能还是上一轮残留；断言前加一次 `requestAnimationFrame` × 2 或直接读
     `getComputedStyle` 的最终值（2.5 连读 3 次确认 `stable=true`）。
+30. **断言阈值的单位要盯紧**：3.1 的占比断言里 `pct()` 返回的是 **63.0（百分制）**，
+    却拿去和 `0.70` 比 → 恒 false，而打印出来的 `63.0%` 看着完全正常。
+    **症状：数值对了但 `ok=false`。** 百分制阈值一律写 `70` 而不是 `0.70`。
+31. **`#cards` 覆盖层里是 `.cards-in` 不是 `.panel`** —— 量升级面板尺寸时
+    `querySelector('#cards .panel')` 恒为 null（`TypeError: reading 'getBoundingClientRect'`）。
+    各覆盖层内部结构不统一：`#cards`/`#hulls` 用 `.cards-in`，`#victory`/`#pause`/`#over` 用 `.panel`。
+32. **构造"确定性的稀有度场景"要借 `NOVA.debug`**：想让池里只剩某一档，
+    就在游戏作用域里 `G.build={}` 后把目标档全部 `=6`（满级即出池）。
+    比"随机跑很多次看统计"可靠得多 —— 后者永远测不到保底这类边界分支。
 
 ### 玩法事实（别想当然）
 25. 游戏**没有冲刺**；**护盾只有 aegis 船有** —— 任何引导/文案/UI 别假设它们通用。
@@ -456,6 +729,157 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 29. **`G.noMod` / `G.flawless` 是"本局标记"不是累计值**：`startGame` 置 true，
     一旦装配模块 / 受任何伤害即置 false。累计水位（`s.nomod` / `s.flaw`）只在
     `flushStats` 里、且**标记仍为 true 时**才抬升 —— 两者混淆会让成就瞬间全开。
+30. **实测稀有度占比 63/26/12，不是纯权重的 69/23/8 —— 这是设计预期，不是 bug。**
+    `rollChoices` 强制每 offer **至少 2 张能力型**，而能力型 16 张里有 12 张是 rare+
+    （common 仅 twin/pierce/ricochet/frag 4 张），所以 rare+ 被显著放大。
+    别拿"全池纯权重"的理论值去校准断言，会误判成分布写错了。
+31. **`rarity` 是 `MODULES` 每项的字段，不是外部映射表** —— 新增卡必须显式分档，
+    否则落进 `rarityOf()` 的 `common` 兜底。**批量插字段的正则要用 `,max:` 作锚**，
+    插完必须校验：无 `,,`、无 `'x'max:`（我第一版把它插成了 `,,rarity:'common'max:6`，
+    语法没报错但数据全坏 —— 是 `node --check` 抓不到的那类错误）。
+32. **`up`（升阶）与 `mx`（MAX）互斥**：`up` 只在"已持有且未满级"时加，
+    满级走 `mx`。两者可以同时出现在 className 里（`card up mx`），
+    但 `up-mark` 文案只在非 max 时渲染 —— 断言别只看类名，要连文案一起看。
+33. **「空 apply」协同是沉默失效的真坑**（3.2）：旧 `SYN` 12 条里 9 条 `apply:()=>{}` 是空函数，
+    且**运行时没有任何地方读 `G.syn[id]`** —— 它们照样在 UI 标亮为已激活。
+    验证姿势不是看 `G.syn` 的键存在，而是**每个 apply 必须真实改 `P`**。
+    断言 `effect()` 在初始 `P` 上跑一次后，比对前后 ~26 个标量字段，确保 `minChanged>=1`。
+    这条和 29（`G.noMod`/`G.flawless` 的本局/累计混淆）是同一类「数据看着对、行为空转」。
+34. **乘法协同遇零基字段 = 静默失效**（3.2）：`P.splashR`/`P.splashDmg` 初始为 0，
+    只有 `frag.apply` 跑过才有值 —— 直接 `*=1.25` 永远乘零。
+    写 `splashBoost(rMul,dMul)`：用 `FRAG_LV[0]` 一级值播种再乘。
+    抽常量表 `FRAG_LV` 后 `frag.apply` 与协同共用，避免硬编码重复。
+    新增任何「对可能为 0 的字段做乘法」的协同都要照此办理。
+35. **`P.mine`/`P.nova`/`P.blink` 是 `MINE_LV[P.mine-1]` 之类表的下标**（3.2 警告固化）：
+    协同 `apply` 里永远别动这三个字段（连续 += 会越界 → `undefined` → 直接崩）。
+    只用纯标量：`pierce` / `ricochet` / `splashR` / `splashDmg` / `teslaCd` / `stasisR` /
+    `dronePow` / `droneCd` / `ram` / `deathBonus` / `backshot` / `backPow` / `homeR` /
+    `homing` / `shieldMax` / `shield` / `fireRate` / `dmg` / `maxSpeed` / `magnet`。
+36. **`rollChoices` 是裸 `Math.random`**（3.3 已完成）：每日挑战的随机源抽成可注入种子。
+    **最终方案：只改 `rand/irand/pick/shuffle` 4 个顶层函数走 `srand01()`，VFX 与微观判定仍走 `Math.random`** —— 29 处 `Math.random` 调用中无需改 1 行，「同种子 = 同开局」的承诺由这 4 个函数兜底。
+    ⚠️ 「全部用种子化的 `Math.random`」也是可行方案但 diff 大且风险面广，**只换顶层函数**是性价比最高的路径。
+37. **`startDaily` 的调用顺序坑**（3.3）：`G.daily={...}` + `setSeed` + `startGame` + `for r of G.daily.rules`
+    看似自然，但 `startGame` 会重置 `G.daily=null` → 后面的 `r.apply` 拿到 null 崩。
+    **修法：startGame 看到 `G.dailyMode=true` 时跳过 `G.daily` 重置**（但仍清掉 `G.dailyMode`）。
+    startDaily 顺序因此改成：先设 `G.dailyMode=true` + 注入 `G.daily` + `setSeed`，
+    再调 `startGame`，最后逐条 `apply`。
+38. **测试脚本在 IIFE 里访问 `G`/`SYN`/`MODULES`/`ACH` 全部 `not defined`**（3.3 踩到）
+    —— 一律走 `NOVA.*` 钩子（`NOVA.counts()` / `NOVA.syn.count()` / `NOVA.cards.*` / `NOVA.logbook.ach`）。
+    之前 phase 的脚本可能碰巧能用直接访问是因为没有触发 IIFE 边界（顶层常量声明即可见）。
+    **新加测试钩子时统一进 NOVA.*，避免日后别的脚本踩同样的坑。**
+
+33. **「空 apply」协同是沉默失效的真坑**（3.2）：旧 `SYN` 12 条里 9 条 `apply:()=>{}` 是空函数，
+    且**运行时没有任何地方读 `G.syn[id]`** —— 它们照样在 UI 标亮为已激活。
+    验证姿势不是看 `G.syn` 的键存在，而是**每个 apply 必须真实改 `P`**。
+    断言 `effect()` 在初始 `P` 上跑一次后，比对前后 ~26 个标量字段，确保 `minChanged>=1`。
+    这条和 29（`G.noMod`/`G.flawless` 的本局/累计混淆）是同一类「数据看着对、行为空转」。
+34. **乘法协同遇零基字段 = 静默失效**（3.2）：`P.splashR`/`P.splashDmg` 初始为 0，
+    只有 `frag.apply` 跑过才有值 —— 直接 `*=1.25` 永远乘零。
+    写 `splashBoost(rMul,dMul)`：用 `FRAG_LV[0]` 一级表值播种再乘。
+    抽常量表 `FRAG_LV` 后 `frag.apply` 与协同共用，避免硬编码重复。
+    新增任何「对可能为 0 的字段做乘法」的协同都要照此办理。
+35. **`P.mine`/`P.nova`/`P.blink` 是 `MINE_LV[P.mine-1]` 之类表的下标**（3.2 警告固化）：
+    协同 `apply` 里永远别动这三个字段（连续 += 会越界 → `undefined` → 直接崩）。
+    只用纯标量：`pierce` / `ricochet` / `splashR` / `splashDmg` / `teslaCd` / `stasisR` /
+    `dronePow` / `droneCd` / `ram` / `deathBonus` / `backshot` / `backPow` / `homeR` /
+    `homing` / `shieldMax` / `shield` / `fireRate` / `dmg` / `maxSpeed` / `magnet`。
+36. **`rollChoices` 是裸 `Math.random`**（3.3 待办前置）：每日挑战要先把随机源
+    抽成可注入种子的函数（`rng()` / `seedRng(seed)`），再改 `rollChoices` /
+    `buildWave` 的 `Math.random` 调用点。**先确认、再动手**，免得每改一处忘一处。
+37. **`hidden` 容器里量不到尺寸**（3.5 复用 3.4 教训）：`fitMeta()` 依赖 `clientWidth`，
+    但 `openLogbook()` 若先 draw 后 unhide → 宽高全 0、缩放退化成 1、最右一列被裁。
+    `openLogbook()` 已内化为「`hidden=false` → `drawLogbook()` → 双 `rAF` 后再
+    `fitAch(); fitMeta();`」三步走，**调任何 fit* 前必须先开日志**。
+38. **`premod` 故意不注册进 `G.build`**（3.5 设计决定）：该节点给开局 `pierce=1`，
+    若走 `apply()` 把 `pierce LV1` push 进 `G.build`，会同时：
+    ① 占一个 `ABILITY_CAP=6` 模块位；
+    ② 触发「零模块」玩法的 `G.noMod` 状态为 false → 反成就 `nomod` 永远拿不到。
+    修法：`premod.apply` 直接 `P.pierce = 1`（不走模块系统），与开局加成同一套机制。
+39. **`metaState.ready` 要先算 reqOk 再算 dust**（3.5 实现顺序坑）：状态机是
+    `unlocked=已解锁` / `ready=可解锁` / `locked=未达成`，`ready = !unlocked && reqOk && dust>=cost`。
+    `reqOk` 是先于 `dust` 的硬门槛 —— 即使有钱也要先把前置做满。错把 `dust` 算在前面，
+    会让「前置未满但有钱」错误地显示成 ready，**视觉上诱导玩家以为能解锁**。
+40. **强制点击真实点击要先 `scrollIntoView`**（3.5-12 静默失败教训）：
+    `logbook` 面板滚动条很长，节点若不在视口内，`p.click(sel, {force:true})` 仍会把
+    真实鼠标事件派发到节点屏幕坐标上 —— 但该坐标**可能被面板外其他元素覆盖**，
+    表现为「dust 不变 / cls 仍是 ready」。修法：点击前先
+    `document.querySelector('[data-node-id="lbsec7"]').scrollIntoView({block:'center'})`，
+    再等 ≥400ms 让 fit 完成 + 滚动结束。
+41. **零基础字段乘法协同静默失效**（3.2 旧坑 · 3.5 复核时再撞）：`P.splashR` / `P.splashDmg`
+    默认 0，`*= 1.25` 永远得 0。3.5 写 `applyMetaBonuses` 时如果有人把 `dmg` 当成「加法 +
+    ×系数」叠加在已归零字段上，要像 3.2 那样先**用常量表一级值播种**（例：`P.dmg = P.dmg *
+    1.08`，而不要 `P.splashR *= 1.25` 这种从零起步的乘法）。开新字段时回头看 `FRAG_LV` 那种
+    `if(!P)startGame(HULLS[0]); G.mode='play';` 之类自愈入口，别假设调用方已开局。
+
+### 内容扩充（Phase 4 · 新增敌型 / Boss / 船体）
+
+42. **R4 的动态色板白名单只认 `const ENEMY_DEFS={…\n};` 这一个正则**（4.1 第一版踩到）：
+    我把四个新敌型放进独立的 `ENEMY_DEFS_41` 子表再 `Object.assign` 合并 ——
+    **功能完全正常、断言也全过**，但 R4 的色板提取看不见子表，把 4 个机体色 + 4 个高光色
+    判成「白名单外字面量」，**一次性报 8 条 R4 错**。
+    **修法：新敌型一律直接写进 `ENEMY_DEFS` 花括号本体**（顺带让 `EN_LIST` 与图鉴自动拾取）。
+    同规则适用于 `HULL_TINT` / `TRAIL_RAMP` / `BOSS_STYLE` 这几张被动态提取的表。
+43. **高光色从敌型自己的 `c` 派生，别再写新字面量**：`rgba(${e.c},0.35)` 足矣 ——
+    `ENEMY_DEFS.c` 是 `"190,170,90"` 这类**空格分隔分量串**（不是 hex），
+    既天然落在 R4 白名单内，又保证机体色与高光永远同源（改一处两边一起变）。
+44. **`ENEMY_DEFS` 是对象，`.length` 恒 `undefined`**（4.1 顺手修掉的真 bug）：
+    `NOVA.counts().enemies` 原本写 `ENEMY_DEFS.length` → 一直是 `undefined`，
+    因为此前没有任何断言读它的值，潜伏至今。
+    正确写法 `EN_LIST.length`。**同理 `BOSS_AT` / `AFFIX` / `HULL_TINT` 全是对象，
+    取数量一律 `Object.keys().length` 或对应的 `*_LIST`。**
+45. **依赖 `P` 的测试钩子必须自愈**（4.1-07 崩溃）：`NOVA.enemy.jamProbe()` 若在
+    `startGame` 之前调用 → `P` 为 `null` → `Cannot set properties of null (setting 'jamT')`。
+    钩子开头加 `if(!P)startGame(HULLS[0]); G.mode='play';`，**别假设调用方已开局**。
+46. **召唤型必须双上限，且场满时"暂停"而非"丢弃"**（4.1 `brood` 设计结论）：
+    只有「每巢上限」→ 多巢叠加仍指数爆炸；只有「场上上限」→ 单个巢吃满后其他巢白孵。
+    `brood` 用「每巢 10 + 场上 70」双闸门，场上已满时**不推进孵化计时**，
+    避免出现"玩家躲着不打就永远不刷"的退化策略。
+47. **反护盾数值取固定常量，不要随波次膨胀**（4.1 `sunder`）：
+    `SUNDER_STRIP=22` 是常量 —— 若改按比例/按波次，后期 aegis 玩家会被一击剥空、
+    前期又完全无感，两个极端都不好玩。
+48. **无尽分支会吃掉剧本 Boss**（4.2）：`buildWave` 原写法
+    `endless?(n%5===0?pick(...):null):(BOSS_AT[n]||null)` —— `n>WIN_WAVE` 一律走无尽分支，
+    **`BOSS_AT[35]` 永远读不到**，新 Boss 加进去也不出场。
+    改成 `BOSS_AT[n]||(endless&&n%5===0?pick(...):null)`：**剧本优先、随机兜底**。
+    以后再给无尽加固定剧本，先查这一行。
+49. **玩家减益要参数化：`jamT` 只管时长，倍率另存 `P.jamF`/`P.jamS`**（4.2）：
+    4.1 把 `JAM_FIRE/JAM_SPD` 写成常量，Boss 想要不同强度就得复制一份乘数。
+    改成施加者一次写入 `{jamT, jamF, jamS}`、消费点统一 `P.jamT>0?P.jamF:1`。
+    ⚠️ **`P.jamT` 的衰减写在 `updatePlayer` 里** —— 测试里只循环 `updateEnemies`
+    永远不会衰减（4-2-13 第一版因此恒 0.4，看着像"干扰没解除"）。
+50. **引力必须在阻尼之前施力，且必须有作用半径**（4.2 `collapse`）：
+    `P.vx+=…` 放在 `Math.exp(-2.1*dt)` 阻尼之前，终速 ≈ `g/2.1`；
+    没有 `GRAV_R` 上限时全图都被拉、远了也甩不掉 —— 一定要
+    `if(d>=GRAV_R)break;` 让边缘归零，**中心最强、边缘趋零**才有"冲出去"的操作空间。
+51. **`NOVA.lang` 不在根上，在 `NOVA.death.lang`**（4.2 踩到）：
+    `p.evaluate(()=>NOVA.lang('en'))` 报 `NOVA.lang is not a function`。
+    钩子是分域挂的（`death` / `logbook` / `cards` / `boss` / `enemy` …），
+    用之前先 `grep -n "  lang:"` 确认归属。
+52. **参数化改造会让旧断言"静默假绿"**（4.2 复核 4.1 时抓到）：
+    把 `JAM_FIRE` 从"消费点直接读常量"改成"读 `P.jamF`"之后，4.1-08 只写 `P.jamT=1`
+    不再影响射速 —— **比值从 1.538 退化成 1，而脚本依然打印 `ok`**（它只做 JSON 输出、
+    没有判定）。**任何"改消费点"的重构，都要回头检查读作旧路径的断言**；
+    数值型断言一律带 `ok:Math.abs(实测-期望)<ε` 字段，别只打印。**
+53. **新船体要改五处，漏哪处都不报错**（4.3）：`HULL_TINT` / `HULL_GEO` / `HULL_TAIL` /
+    `TRAIL_RAMP` 四张表 + `hullPath()` 一个分支。
+    **漏 `HULL_TINT`** → `HULL_TINT[id]||HULL_TINT.peregrine` 静默套用游隼配色（新船长成蓝色）；
+    **漏 `hullPath` 分支** → 落进 `else`（peregrine 兜底），画成游隼形；
+    **漏 `HULL_TAIL` / `TRAIL_RAMP`** → 尾流从船身中段喷出、配色借用游隼。
+    `HULL_TAIL[id]` 必须等于 `-HULL_GEO[id].t`（尾部最负 x 坐标），已有断言锁死。
+54. **`el.style.width` 会被浏览器归一化**：写入 `'50.0%'` 读回是 `'50%'` ——
+    断言写 `w==='50.0%'` **永远为假**。一律 `parseFloat(w)===50`。
+55. **背射弹的 `back` 标记是 falsy 陷阱**：源码写 `back:P.backMax||undefined`，
+    `P.backMax=false` 时背射弹的 `back` 是 `undefined`，`!b.back` 把它也算成主弹 ——
+    `filter(b=>!b.back).pop()` 拿到的是背射弹（4.3-08 据此算出 0.2559 的假偏差）。
+    **测试里先把 `P.backMax=true` 再分辨主弹 / 背射弹。**
+56. **船体数量是散落的硬编码**（加第 7 艘时四处要同步改）：机库数字键 `/^Digit[1-6]$/`、
+    成就「全舰制霸」`goal:()=>6`、以及各断言脚本里的 `c.hulls===6`。
+    ⚠️ **成就 id 一个字都别改**（`hull6` 保持原样，只改 `goal`/文案）——
+    `nova-ach` 按 id 记已达成，改 id 会让老玩家丢档。
+57. **"持续状态"型机制不要用"每发累加"**：蓄热若写成 `heat+=k`（每发），
+    高射速构筑 1 秒烧穿，机制的"节奏取舍"就退化成"不许点射"，与堆射速的构筑意图相悖。
+    改成 `heat+=HEAT_UP*dt`（**速率恒定、与射速解耦**）后，`updatePlayer` 每帧刷新倍率、
+    `fireGun` 直接乘即可。**同类机制（充能 / 过热 / 连击衰减）都按速率写。**
 
 ---
 
@@ -494,7 +918,14 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 | 2026-09-11 | Phase 2.3 航行日志重构完成：图鉴（20 敌型 + 6 巨像 + 3 词缀，全复用现有数据）+ 成就星图容器（`ACH` 手写坐标 / SVG 双类边 / `fitAch` 自适应缩放 / 拖拽平移 / `nova-ach` 缓存）。`audit-tokens.js` 全绿，10 项无头断言全过。回退点 `.workbuddy/backups/singularity-echo_phase2-3-pre.html`，截图 `.workbuddy/shots/phase3/` |
 | 2026-09-11 | Phase 2.4 死亡结算升级完成：死因块（巨像 / 敌型 / 环境三档 + 词缀与致命累积标签）+ 关键统计行（输出 / 承伤 / 峰值威胁 / 换伤比）+ 构筑回顾。数据层新增 `G.lastHit`/`G.cause`/`dmgOut`/`dmgIn`/`peakThreat`，`hurtPlayer`/`drainPlayer` 加 `src` 参数，敌方子弹用 `nearestFoe` 就近归因。10 项无头断言全过，`phase2-check.js` / `phase2-3-check.js` 无回归。回退点 `.workbuddy/backups/singularity-echo_phase2-4-pre.html`，截图 `.workbuddy/shots/phase4/` |
 | 2026-09-11 | **Phase 2.5 UI 转场统一完成 → Phase 2 收官**。裸缓动关键字 18 → 1（唯一保留 `.boot-bar::after` 匀速扫光）；`.overlay` 入场改用 `--ease-drawer` 抽屉曲线 + 距离提到 14px；`.lb-sec` → `.sec-head` 提升为 `#over`/`#logbook` 共享区块标题（14 处同步，`specMatch=true`）；顺手修掉真实潜伏 bug `@keyframesbootSweep`（少空格 → 启动条扫光一直是死代码），并新增 keyframes 完整性检查锁死。11 项断言全过，`audit-tokens.js` 全绿，`phase2-check.js` / `phase2-3-check.js` / `phase2-4-check.js` 无回归。回退点 `.workbuddy/backups/singularity-echo_phase2-4-pre.html`，截图 `.workbuddy/shots/phase2/2-5-01…11` |
-| 2026-09-11 | **Phase 3.4 成就树完成（Phase 3 首项）**。占位 7 节点 → **18 节点 / 22 连线**（画布 1008×688，坐标手写）：四条支线（击坠 100→4000 / 波次 5→35 / 时长 10min→5h / 技巧「3 船·6 船·零模块·无伤」）+ 汇总节点 `dependsOn` 6 项聚合。**统计 schema 5 → 8 字段**（`hulls` 船体数组 / `nomod` / `flaw`，旧档默认值兜底，**零新存储键**）。三态视觉（暗轮廓 < 蓝边蓝底 < 金边金底）+ 2px 进度条 + 「前置 5/6」聚合读数。达成瞬间弹窗（`achCheck`/`achTick`，banner+音效+金环，2.2s 冷却，**旧档首开静默补记不刷屏**）。`fitAch` 缩放下限 0.34。12 项断言全过，`audit-tokens.js` 全绿，`phase2-check.js` / `phase2-3-check.js` 无回归。回退点 `.workbuddy/backups/singularity-echo_phase3-4-pre.html`，截图 `.workbuddy/shots/phase3/3-4-*.png` |
+| 2026-09-11 | **Phase 3.1 卡牌稀有度 / 升阶完成**。26 项 `MODULES` 加 `rarity` 字段（common 11 / rare 8 / epic 7，权重 1.00 / 0.45 / 0.18），分档原则是「越稀有越特化」而非「越稀有越强」。`rollChoices` 权重改为「稀有度 × 原能力型加权」相乘，新增伪随机补偿 `G.rarPity`（dry≥3 ×2.2 / dry≥5 ×4.0 / dry≥`PITY_HARD=6` 强制换一张 rare+）。卡面新增 `r-rare`（青边）/ `r-epic`（金边）+ `.tag.rar` 三档标签 + 升阶标记（`up` 类 + 「↑ 升阶 LVn」）。实测分布 63/26/12（能力型保底放大 rare+，属预期）。10 项断言全过，`audit-tokens.js` 全绿，`phase2-check.js` / `phase3-4-check.js` 无回归。回退点 `.workbuddy/backups/singularity-echo_phase3-1-pre.html`，截图 `.workbuddy/shots/phase3/3-1-*.png` |
+| 2026-09-11 | **Phase 4.1 新敌型完成（Phase 4 首项）**。敌型 **20 → 24 种**，补上原设计的三个空位：**区域控制 / 玩家减益 / 召唤**。`sower` 播雷者（W15，每 1.0–1.8s 布雷、每只上限 6）/ `jammer` 干扰者（W18，绕玩家 260–340 公转，`jamR=230` 场内射速 ×0.65、极速 ×0.8）/ `brood` 孵育体（W22，孵 reaver，每巢 10 + 场上 70 双上限，场满暂停计时）/ `sunder` 裂解者（W25，接触撕掉固定 22 点护盾）。新增常量 `JAM_FIRE=0.65` / `JAM_SPD=0.8` / `SUNDER_STRIP=22` 与玩家字段 `P.jamT`（每帧续期 0.4s、离场自动解除），干扰与既有 `rateT`/`boostT` **乘性叠加**。`sunderShield()` 全复用 Phase 1 的「被挡」反馈档，零新增反馈语汇。**踩坑**：R4 动态白名单只扫 `ENEMY_DEFS` 本体 → 子表 + `Object.assign` 会报 8 条 R4 错（功能却是好的）；顺手修掉 `counts().enemies` 用 `ENEMY_DEFS.length`（对象 → 恒 `undefined`）的潜伏 bug。**12 项断言全过**，前 9 个 phase（共 101 项）**无回归**，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase4-1-post.html`，截图 `.workbuddy/shots/phase4/4-1-*.png` |
+| 2026-09-11 | **Phase 4.2 新 Boss 完成**。巨像 **6 → 8 种**，两场均为无尽专属：**W35 静默方碑 MONOLITH**（干扰场开合节律：场开 4.2s 压射速 ×0.55 / 极速 ×0.72，场灭 2.6s 核心暴露受伤 ×1.5，狂暴后窗口缩到 1.8s）/ **W40 坍缩之核 COLLAPSE**（引力井：`GRAV_R=820` 内持续拉扯、终速 ≈205，`r×0.62` 事件视界 26dps 灼烧，狂暴后每 8s 倒转 2s 为斥力）。补上原 6 尊都没有的两种威胁形态 —— **场地压制**与**位移操控**。**干扰参数化**：4.1 的 `JAM_FIRE/JAM_SPD` 是常量，Boss 需要不同强度 → 新增 `P.jamF`/`P.jamS`（`P.jamT` 只管时长），施加者写入、消费点统一读，4.1 `jammer` 行为零改动。**剧本优先**：`buildWave` 改为 `BOSS_AT[n]\|\|(endless&&n%5===0?pick(...):null)`，否则无尽分支会把 W35/W40 覆盖掉。`st_c(a)` 取巨像分量色串，R4 零新增字面量。**踩坑**：① 无尽分支吃掉剧本 Boss；② `P.jamT` 衰减在 `updatePlayer` 里，只跑 `updateEnemies` 不会解除；③ 引力须在阻尼前施力且要有作用半径；④ `NOVA.lang` 在 `NOVA.death.lang` 下。**顺手修掉 4.1-08 静默失效**：参数化后该断言只写 `P.jamT`，比值 1.538→1 却仍打印 `ok`，已补三件套 + `ok` 硬断言。**14 项断言全过**，前 10 个 phase（共 113 项）**无回归**，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase4-2-post.html`，截图 `.workbuddy/shots/phase4/4-2-*.png` |
+| 2026-09-11 | **Phase 4.3 新船体完成**。船体 **6 → 7**：第七船体 **「熔炉 FORGE」❖**（熔铜配色），解锁挂 **肃清第 40 波 · 击碎坍缩之核**，与 4.2 的 W40 巨像呼应（无尽 30 波后原先没有里程碑奖励）。**首个带"持续状态"的船体** —— 其余 6 艘都是一次性属性改写。**过热膛线**：持续开火热量 +30/s（满膛 3.3s），伤害在 **冷膛 0.85× ↔ 满膛 1.45×** 线性浮动，见顶**锁死炮膛 1.7s** 并强制散热归零；停火 −34/s。七个常量 `HEAT_MAX=100` / `HEAT_UP=30` / `HEAT_COOL=34` / `HEAT_LOCK=1.7` / `HEAT_VENT=HEAT_MAX/HEAT_LOCK` / `HEAT_COLD=0.85` / `HEAT_HOT=1.45`；**蓄热按速率而非每发累加**（与射速解耦，否则高射速构筑 1 秒烧穿、"节奏取舍"退化成"不许点射"）。新玩家字段 `P.heat`/`P.heatMul`/`P.heatLock`/`P.heatOn`，非熔炉船体 `heat` 恒 0、`heatMul` 恒 1（逐船断言零溢出）。HUD 新增过热槽 `#heatrow`（仅熔炉显示，满膛转朱砂警示色；`HUDC` 不自清 → 切状态即作废宽度缓存）。**四处全同步 + `hullPath` 新分支**（宽厚砧形 + 双侧散热鳍 + 方形炉尾喷口，`HULL_TAIL=15` 对齐 `-HULL_GEO.t`）。**联动四处**：机库数字键 `Digit[1-6]`→`[1-7]`、`HULL_EN`/`HULL_LOCK_EN`、成就「全舰制霸」`goal` 6→7（**id 保留以免丢档**）、`NOVA.counts().hulls` 自动 7。**16 项断言全过**，前 11 个 phase（共 129 项）**无回归**，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase4-3-pre.html`，截图 `.workbuddy/shots/phase4/4-3-*.png` |
+| 2026-09-11 | **Phase 3.4 成就树完成（Phase 3 首项）**。
+| 2026-09-11 | **Phase 3.2 协同扩展完成**。
+| 2026-09-11 | **Phase 3.5 局外解锁树完成（Phase 3 收官）**。**Stardust 星尘**：每局结算按 `1+⌊score/1500⌋+⌊kills/60⌋` 入账，连败也有进展感。**13 节点 / 4 支线 + 根**（生存 hp→sh / 火力 dmg→crit / 机动 spd→turn / 战术 lv→premod），画布 672×642，**画布规格独立于 3.4 成就树**（1008×688）避免互相覆盖。**`nova-meta` 存储**：`{dust, unlocked}`；旧档无键走 `{0, ['mroot']}` 默认值兜底，**零新存储键破坏兼容性**。**四档守卫** `no-node` / `already` / `req` / `dust`，全部返回 `{ok,reason}` 不抛异常。**三态视觉**沿用 3.4 `lbnode` 语汇（暗轮廓 < 青边青底 ready < 金边金底 done）。`applyMetaBonuses` 在 `hull.apply()` 之后立刻生效（`startGame` 内），**支持任意前缀组合**；`premod` 故意不注册进 `G.build`（避开「零模块」反成就 + `ABILITY_CAP`）。**3.5c 结算可见化**：3.5 算了 `G.lastDust` 但面板零展示 → 核心循环对玩家隐形。新增 `renderDust(node,earn)` 给坠毁 / 通关面板各加琥珀色 `星尘产出 +N \| 可用 M \| 于「解锁星图」消费` 行；`applyI18n` 切语言时一并重绘杜绝中英混排。**测试钩子** `NOVA.meta.{tree,load,save,has,state,unlock,earn,earnFor,reset,grant,draw,fit}` 12 个。**17 项断言全过**（1-14 数据 + UI + 回归 / 15-17 3.5c 结算可见化），前 8 个 phase（2/2-3/2-4/2-5/3-4/3-1/3-2/3-3 共 90 项）**无回归**。`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase3-5-post.html`，截图 `.workbuddy/shots/phase3/3-5-*.png` |
+| 2026-09-11 | **Phase 3.3 每日挑战完成**。**RNG 种子化**：抽 `RND={on,s}` + `mulberry32` + `setSeed/clearSeed`，`rand/irand/pick/shuffle` 这 4 个顶层随机函数走 `srand01()`；默认行为与旧版完全一致，种子化后所有 VFX/微观判定仍走 `Math.random`（**29 处调用中无需改 1 行**，4 个函数兜底）。**规则池 4 条**：`startLoader` / `startAegis` / `swiftStar` / `noRepair`；`pickDailyRules` 用 `setSeed + shuffle` 选 2 条；`dailySeed` = `YYYYMMDD` FNV-1a 哈希成 32-bit。`rollChoices` 尊重 `G.noRepair`；`startDaily` 用 `G.dailyMode` 保护 `G.daily` 不被 `startGame` 重置（顺序坑）。**菜单 btnDaily + menuDaily 面板**（日期 / 今日规则 / 今日最佳）；**死亡面板 daily-badge**（日期 + 规则名）。**`nova-daily` 存储**：`commitDaily` 按「更高分覆盖」写 `{date:{score,wave,kills,rules}}`。12 项断言全过，`audit-tokens.js` 全绿，前 7 个 phase（2 / 2-3 / 2-4 / 2-5 / 3-4 / 3-1 / 3-2 共 73 项）**无回归**。回退点 `.workbuddy/backups/singularity-echo_phase3-3-pre.html` + `index_*_phase3-3-post.html`；截图 `.workbuddy/shots/phase3/3-3-*.png` |`SYN` 12 → **22 条**，并把原本 9 条「空 `apply()`」全部改成真实生效的一次性属性变更（旧表只在 UI 标亮、运行时零效果）。**新增 10 条优先补「孤儿卡」联动**：twin / pierce / ricochet / frag / guided 五张旧表一条协同都没有，现在两两配对都连得上（详见 §4 3.2 表格）。零基字段乘法协同静默失效这条坑一并修掉：抽常量表 `FRAG_LV`，新增 `splashBoost(rMul,dMul)` 用一级值播种再乘。**`P.mine`/`P.nova`/`P.blink` 是表下标不可动**这条警告固化为注释 + 断言 `audit()` 检查项。10 项断言全过（含「22 条 apply 在初始 `P` 上必须至少改 1 个字段」与下标安全），`audit-tokens.js` 全绿，`phase2-check` / `phase2-3-check` / `phase2-5-check` / `phase3-4-check` / `phase3-1-check` 无回归。回退点 `.workbuddy/backups/index_*_phase3-2-pre.html`，截图 `.workbuddy/shots/phase3/3-2-*.png` |占位 7 节点 → **18 节点 / 22 连线**（画布 1008×688，坐标手写）：四条支线（击坠 100→4000 / 波次 5→35 / 时长 10min→5h / 技巧「3 船·6 船·零模块·无伤」）+ 汇总节点 `dependsOn` 6 项聚合。**统计 schema 5 → 8 字段**（`hulls` 船体数组 / `nomod` / `flaw`，旧档默认值兜底，**零新存储键**）。三态视觉（暗轮廓 < 蓝边蓝底 < 金边金底）+ 2px 进度条 + 「前置 5/6」聚合读数。达成瞬间弹窗（`achCheck`/`achTick`，banner+音效+金环，2.2s 冷却，**旧档首开静默补记不刷屏**）。`fitAch` 缩放下限 0.34。12 项断言全过，`audit-tokens.js` 全绿，`phase2-check.js` / `phase2-3-check.js` 无回归。回退点 `.workbuddy/backups/singularity-echo_phase3-4-pre.html`，截图 `.workbuddy/shots/phase3/3-4-*.png` |
 
 ---
 
