@@ -1,0 +1,77 @@
+:root {
+  /* ── 颜色（锚点 `swiss-utility` 签名 · 底色档 `ink` · 色相 264° / 彩度档 2 / 色温 +0.0）── */
+  --bg:        #110F09;   /* surface=ink · oklch(0.170 0.012 90) */
+  --bg-soft:   #1F1C13;
+  --fg:        #EFEDE7;   /* 对 --bg 对比度 16.3:1 */
+  --muted:     #7E7B74;   /* 对 --bg 对比度 4.6:1（正文下限 4.5） */
+  --line:      rgba(255,255,255,.16);
+  --accent:    #87AAF1;   /* 强调 / 装饰；大字下限 3:1 = 8.2:1 */
+  --accent-ink:#4C78DA;   /* 可做正文链接，对比度 4.6:1 */
+  --accent-soft: rgba(135,170,241,.10);
+
+  /* ── 反同质化指纹（同批次内这三项都必须唯一）── */
+  --surface:   "ink";   /* 底色档 */
+  --variant:   "a";   /* 尺度变体轴：原值 */
+
+  /* ── 字体（具名搭配 · 来源：族备用池 `grid` 第 3 对 · 北欧理性）── */
+  --font-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body:    "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-cjk:     "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display-name: "Familjen Grotesk";   /* 反同质化比对用：全库唯一 */
+  --font-body-name:    "IBM Plex Sans";
+  /* 搭配理由：Familjen Grotesk 的窄骨架自带冷感，IBM Plex Sans 提供工程味正文。 */
+  --weight-display: 600;   /* 标题取重端 */
+  --weight-body:    400;   /* 正文取轻端；字重总数 ≤2 */
+
+  /* ── 字阶（公比 1.2，基准 15px，6 级封顶）── */
+  --fs-xs: 12px;   /* 1.2^-1 × 15 = 12.5 */
+  --fs-base: 15px;   /* 1.2^0 × 15 = 15.0 */
+  --fs-lg: 18px;   /* 1.2^1 × 15 = 18.0 */
+  --fs-xl: 22px;   /* 1.2^2 × 15 = 21.6 */
+  --fs-2xl: 26px;   /* 1.2^3 × 15 = 25.9 */
+  --fs-display: 37px;   /* 1.2^5 × 15 = 37.3 */
+
+  /* ── 行高（字号越大越紧；CJK 主站整体上浮）── */
+  --lh-xs: 1.55;
+  --lh-base: 1.5;
+  --lh-lg: 1.28;
+  --lh-xl: 1.16;
+  --lh-2xl: 1.08;
+  --lh-display: 1.02;
+
+  /* ── 字距 ── */
+  --trk-display: 0.0em;   /* 大字负字距 */
+  --trk-heading: 0.0em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;   /* 全大写 / 微标签正字距 */
+
+  /* ── 间距（基数 4px，全部为它的整数倍）── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── 形状 ── */
+  --radius-sm: 0px;
+  --radius:    0px;
+  --radius-lg: 0px;
+  --shadow: none;   /* 用 --line 分区替代 */
+
+  /* ── 版心 ── */
+  --measure: 960px;   /* 主容器；全站共用，禁止各区块自定 max-width */
+  --prose-width: 74ch;   /* 正文列宽目标（45–75ch 之间才算合格） */
+  --gutter: 16px;   /* 页面边距，独立于纵向节奏栅格 */
+
+  /* ── 中轴（决定对齐策略，见 layouts.md）── */
+  --axis: left-rail;
+
+  /* ── 动效（性格：snap）── */
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+  --ease: cubic-bezier(.2,0,.2,1);
+}

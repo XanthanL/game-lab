@@ -1,0 +1,418 @@
+/* ============================================================
+   老陈家面馆 · style.css
+   token 真源：design-system/MASTER.md（emit_tokens.py 0.8.0 生成，
+   --anchor retro-nostalgic --surface paper --variant a）
+   本文件 :root 与 MASTER.md 逐值一致，不得单方改动。
+   ============================================================ */
+
+/* ── 自托管字体（latin 子集，font-display: swap）──────────── */
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/dm-serif-display-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("assets/fonts/dm-sans-latin.woff2") format("woff2");
+}
+
+:root {
+  /* ── 颜色（锚点 `retro-nostalgic` 签名 · 底色档 `paper` · 色相 45° / 彩度档 2 / 色温 +1.0）── */
+  --bg:        #FCF5F0;   /* surface=paper · oklch(0.975 0.016 60) */
+  --bg-soft:   #F8E9DE;
+  --fg:        #231D18;   /* 对 --bg 对比度 15.5:1 */
+  --muted:     #77706A;   /* 对 --bg 对比度 4.6:1（正文下限 4.5） */
+  --line:      rgba(0,0,0,.12);
+  --accent:    #964C28;   /* 强调 / 装饰；大字下限 3:1 = 5.8:1 */
+  --accent-ink:#BD4F0A;   /* 可做正文链接，对比度 4.6:1 */
+  --accent-soft: rgba(150,76,40,.10);
+
+  /* ── 反同质化指纹 ── */
+  --surface:   "paper";
+  --variant:   "a";
+
+  /* ── 字体（具名搭配 · 来源：锚点 `retro-nostalgic`）── */
+  --font-display: "DM Serif Display", "Playfair Display", serif;
+  --font-body:    "DM Sans", "Inter", "PingFang SC", sans-serif;
+  --font-mono:    "Fragment Mono", ui-monospace, Consolas, monospace;
+  --font-cjk:     "Source Han Serif SC", "Noto Serif SC", "Songti SC", serif;
+  --font-display-name: "DM Serif Display";
+  --font-body-name:    "DM Sans";
+  --weight-display: 700;
+  --weight-body:    400;
+
+  /* 中英混排标题的合成栈：西文走 display，中文落宋体系（MASTER.md 派生值） */
+  --font-heading: "DM Serif Display", "Source Han Serif SC", "Noto Serif SC", "Songti SC", serif;
+
+  /* ── 字阶（公比 1.333，基准 17px，6 级封顶）── */
+  --fs-xs: 13px;
+  --fs-base: 17px;
+  --fs-lg: 23px;
+  --fs-xl: 30px;
+  --fs-2xl: 40px;
+  --fs-display: 72px;
+
+  /* ── 行高 ── */
+  --lh-xs: 1.75;
+  --lh-base: 1.7;
+  --lh-lg: 1.48;
+  --lh-xl: 1.36;
+  --lh-2xl: 1.22;
+  --lh-display: 1.08;
+
+  /* ── 字距 ── */
+  --trk-display: 0.005em;
+  --trk-heading: 0.0025em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;
+
+  /* ── 间距（基数 8px）── */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+  --space-7: 96px;
+  --space-8: 128px;
+
+  /* ── 形状 ── */
+  --radius-sm: 2px;
+  --radius:    4px;
+  --radius-lg: 8px;
+  --shadow: none;
+
+  /* ── 版心 ── */
+  --measure: 1040px;
+  --prose-width: 62ch;
+  --gutter: 16px;
+
+  /* ── 中轴 ── */
+  --axis: left-rail;
+
+  /* ── 动效（soft）── */
+  --dur-fast: 180ms;
+  --dur-normal: 320ms;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+/* ── 基础 ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  letter-spacing: var(--trk-body);
+  -webkit-font-smoothing: antialiased;
+}
+/* 做旧网点纸纹（装饰，灰度下即淡纹理，不承载信息） */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(150, 76, 40, .05) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  z-index: 0;
+}
+main, header, footer { position: relative; z-index: 1; }
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+@media (min-width: 760px) {
+  .wrap { padding-inline: var(--space-5); }
+}
+
+h1, h2, h3 { font-family: var(--font-heading); font-weight: var(--weight-display); margin: 0; }
+p { margin: 0; }
+a { color: var(--accent-ink); text-underline-offset: .18em; }
+a:hover { color: var(--accent); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-sm); }
+
+/* ── Hero（editorial-hero · 签名 1：超大标题压首屏）───────── */
+.hero { padding-block: var(--space-7) var(--space-6); }
+@media (min-width: 760px) { .hero { padding-block: var(--space-8) var(--space-7); } }
+
+.kicker {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  color: var(--accent);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.hero h1 {
+  font-size: clamp(44px, 12vw, var(--fs-display));
+  line-height: var(--lh-display);
+  letter-spacing: var(--trk-display);
+}
+
+/* 招牌面块 */
+.sign-dish { margin-top: var(--space-5); }
+.sign-dish .dish-name {
+  font-family: var(--font-heading);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-xl);
+}
+.tag {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: var(--trk-label);
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 2px 10px;
+  margin-left: var(--space-2);
+  vertical-align: .35em;
+}
+.sign-dish .price-line {
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.sign-dish .price {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-2xl);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.sign-dish .price small {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  color: var(--muted);
+  margin-left: var(--space-1);
+  letter-spacing: 0;
+}
+
+/* CTA：单一主按钮 + 次要文字链接 */
+.cta-row {
+  margin-top: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.btn {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: var(--fs-base);
+  border-radius: var(--radius);
+  padding: 14px var(--space-4);
+  transition: background var(--dur-fast) var(--ease);
+}
+.btn:hover { background: var(--accent-ink); color: var(--bg); }
+.cta-row .alt { font-size: var(--fs-base); color: var(--muted); }
+.cta-row .alt + .alt { margin-left: calc(-1 * var(--space-2)); }
+
+/* ── 菜单（签名 2：章节超大编号）────────────────────────── */
+.menu { padding-block: var(--space-6); }
+@media (min-width: 760px) { .menu { padding-block: var(--space-7); } }
+
+.menu section + section { margin-top: var(--space-6); }
+@media (min-width: 760px) { .menu section + section { margin-top: var(--space-7); } }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.sec-no {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: clamp(44px, 7vw, var(--fs-display));
+  line-height: 1;
+  color: var(--line);
+  color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.sec-head h2 {
+  font-size: var(--fs-xl);
+  letter-spacing: var(--trk-heading);
+}
+.sec-head .count {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* 台账行：品名 ……… 价格（点线引价，照菜单的「……」） */
+.ledger { list-style: none; margin: 0; padding: 0; }
+.ledger li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-block: 14px;
+}
+.ledger li + li { border-top: 1px solid var(--line); }
+.ledger .name {
+  font-family: var(--font-cjk);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+}
+.ledger .note {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ledger .leader {
+  flex: 1;
+  min-width: var(--space-6);
+  border-bottom: 2px dotted var(--line);
+  transform: translateY(-.28em);
+}
+.ledger .price {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ledger .price .unit { font-weight: var(--weight-body); color: var(--muted); font-size: var(--fs-base); }
+
+.extras {
+  margin-top: var(--space-3);
+  font-size: var(--fs-base);
+  color: var(--muted);
+}
+.extras b { color: var(--fg); font-weight: 700; }
+
+/* 窄屏：菜名旁的备注（如「大碗 18 元」）掉到自己的行，避免菜名折行 */
+@media (max-width: 480px) {
+  .ledger li { flex-wrap: wrap; }
+  .ledger .note { flex-basis: 100%; order: 9; }
+  .ledger .leader { min-width: var(--space-5); }
+}
+
+/* ── 照片（细线框小圆角，如老印刷照片卡；页脚已标注 AI 生成示意图）─ */
+.photo {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+.photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.hero-grid { display: grid; gap: var(--space-5); align-items: center; }
+@media (min-width: 900px) {
+  .hero-grid { grid-template-columns: 1.15fr .85fr; gap: var(--space-6); }
+}
+.hero-photo { aspect-ratio: 4 / 3; }
+.hero-photo img { object-position: 50% 62%; }
+@media (min-width: 900px) {
+  .hero-photo { aspect-ratio: 7 / 8; }
+  .hero-photo img { object-position: 50% 50%; }
+}
+
+.photos { display: grid; gap: var(--space-2); margin: 0; }
+.photos .photo { aspect-ratio: 3 / 2; }
+@media (min-width: 760px) {
+  .photos { gap: var(--space-3); }
+  .photos.c2 { grid-template-columns: 1fr 1fr; }
+  .photos.c3 { grid-template-columns: repeat(3, 1fr); }
+  .photos.c3 .photo { aspect-ratio: 4 / 3; }
+}
+.strip { padding-block: 0 var(--space-6); }
+@media (min-width: 760px) { .strip { padding-block: 0 var(--space-7); } }
+.story-photos { margin-top: var(--space-5); }
+.visit-photos { margin-bottom: var(--space-4); }
+
+/* ── 店史（签名 3：引用跨栏出血；签名 4：首字下沉）───────── */
+.story { padding-block: var(--space-6); }
+@media (min-width: 760px) { .story { padding-block: var(--space-7); } }
+
+.story .years {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: var(--fs-2xl);
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+.story .years small {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  color: var(--fg);
+  margin-left: var(--space-2);
+}
+.story blockquote {
+  margin: 0 0 var(--space-4) 0;
+  padding-left: var(--space-3);
+  border-left: 4px solid var(--accent);
+  font-family: var(--font-heading);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-2xl);
+  letter-spacing: var(--trk-heading);
+}
+@media (min-width: 1140px) {
+  /* 跨栏出血：右缘越过 --measure（签名 3），仅在版心外有留白的桌面宽度启用 */
+  .story blockquote { margin-right: calc(-1 * var(--space-7)); }
+}
+.story .prose { max-width: var(--prose-width); }
+.story .prose::first-letter {
+  float: left;
+  font-family: var(--font-heading);
+  font-weight: var(--weight-display);
+  font-size: calc(var(--fs-2xl) * 1.7);
+  line-height: .82;
+  color: var(--accent);
+  padding-right: var(--space-2);
+  padding-top: .08em;
+}
+
+/* ── 到店（不可折叠 · 永不缩到 12px 以下）────────────────── */
+.visit { padding-block: var(--space-6) var(--space-7); }
+.visit .panel {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
+@media (min-width: 760px) { .visit .panel { padding: var(--space-5); } }
+.visit h2 { font-size: var(--fs-xl); margin-bottom: var(--space-3); }
+.visit dl { margin: 0; display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
+@media (min-width: 560px) { .visit dl { grid-template-columns: 8em 1fr; gap: var(--space-2) var(--space-4); } }
+.visit dt {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  color: var(--muted);
+  padding-top: .35em;
+}
+.visit dd { margin: 0; font-size: var(--fs-base); }
+.visit dd .tel { font-weight: 700; font-variant-numeric: tabular-nums; }
+.visit dd small { display: block; color: var(--muted); font-size: var(--fs-xs); }
+
+/* ── 页脚 ─────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--line);
+  padding-block: var(--space-4) var(--space-6);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+footer .f-name { font-family: var(--font-heading); color: var(--fg); font-size: var(--fs-base); }
+footer .colophon { margin-top: var(--space-1); }

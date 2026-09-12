@@ -1,0 +1,82 @@
+/* ============================================================
+   tokens.css — 设计系统唯一生效 token 文件（本站的唯一真源）
+   锚点：swiss-utility（grid 族 · utility-board · left-rail）
+   颜色/容器宽来源：styles/specs/swiss-utility.md（spec 优先）
+   字阶/行高/字距/栅格/动效来源：signatures.json 经 emit_tokens.py 确定性展开
+   字体搭配来源：fonts.json 锚点条目（display 全库唯一）
+   修改前先读 design-system/MASTER.md —— 两份必须逐值一致
+   ============================================================ */
+
+:root {
+  /* ── 颜色（spec swiss-utility：信息型强调色，纯白底）── */
+  --bg:        #FFFFFF;
+  --bg-soft:   #F6F6F6;
+  --fg:        #111111;   /* 对 --bg 19.0:1 */
+  --muted:     #767676;   /* 对 --bg 4.54:1（正文下限 4.5） */
+  --line:      #DCDCDC;   /* 1px 分区线，替代阴影 */
+  --accent:    #1F3FD8;   /* 钴蓝：信息型强调色（对 --bg 7.6:1，可做正文） */
+  --accent-ink: #1F3FD8;  /* 可做正文链接（7.6:1 ≥ 4.5） */
+  --accent-soft: rgba(31, 63, 216, .08);
+
+  /* ── 字体（fonts.json · swiss-utility：Archivo × Inter × IBM Plex Mono）── */
+  --font-display: "Archivo", "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body:    "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", monospace;
+  --font-display-name: "Archivo";   /* 反同质化比对：全库唯一 */
+  --font-body-name:    "Inter";
+  /* 搭配理由：Archivo 的紧致骨架像公交站牌与价目表；IBM Plex Mono 的规整等宽撑起台账的数字列。 */
+  --weight-display: 600;
+  --weight-body:    400;
+
+  /* ── 字阶（公比 1.2，基准 15px，6 级封顶）── */
+  --fs-xs: 12px;      /* 1.2^-1 × 15 = 12.5 */
+  --fs-base: 15px;    /* 1.2^0 × 15 = 15.0 */
+  --fs-lg: 18px;      /* 1.2^1 × 15 = 18.0 */
+  --fs-xl: 22px;      /* 1.2^2 × 15 = 21.6 */
+  --fs-2xl: 26px;     /* 1.2^3 × 15 = 25.9 */
+  --fs-display: 37px; /* 1.2^5 × 15 = 37.3 */
+
+  /* ── 行高（字号越大越紧；无单位）── */
+  --lh-xs: 1.55;
+  --lh-base: 1.5;
+  --lh-lg: 1.28;
+  --lh-xl: 1.16;
+  --lh-2xl: 1.08;
+  --lh-display: 1.02;
+
+  /* ── 字距 ── */
+  --trk-display: 0em;      /* 签名值 0：中英混排标题不加负字距 */
+  --trk-heading: 0em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;   /* 全大写 / 微标签 */
+
+  /* ── 间距（基数 4px，纵向节奏只允许这些值的整数倍）── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── 形状（零装饰：直角 + 1px 线）── */
+  --radius-sm: 0px;
+  --radius:    0px;
+  --radius-lg: 0px;
+  --shadow: none;
+
+  /* ── 版心与台账 ── */
+  --measure: 960px;     /* 主容器，全站共用，禁止各区块自定 max-width */
+  --prose-width: 74ch;  /* 正文列宽目标（grid 族带 62–78ch） */
+  --gutter: 16px;
+  --row-h: 44px;        /* 台账行高，固定便于扫读 */
+
+  /* ── 中轴 ── */
+  --axis: left-rail;
+
+  /* ── 动效（性格：snap）── */
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+  --ease: cubic-bezier(.2, 0, .2, 1);
+}

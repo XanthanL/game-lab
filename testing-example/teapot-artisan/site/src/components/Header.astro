@@ -1,0 +1,27 @@
+---
+import Seal from './Seal.astro';
+import { strings, switchPath, siteEmail, type Lang } from '../lib/i18n';
+
+interface Props {
+  lang: Lang;
+  pathname: string;
+}
+const { lang, pathname } = Astro.props;
+const s = strings(lang);
+const other: Lang = lang === 'en' ? 'zh' : 'en';
+const worksHref = lang === 'en' ? '/#works' : '/zh/#works';
+const aboutHref = lang === 'en' ? '/about/' : '/zh/about/';
+const isHome = pathname === '/' || pathname === '/zh/' || pathname === '/zh';
+const isAbout = pathname.startsWith(aboutHref);
+---
+<header class="site-head">
+  <div class="wrap head-in">
+    <a class="brand" href={lang === 'en' ? '/' : '/zh/'}>簪三制壶</a>
+    <nav class="site-nav" aria-label={lang === 'en' ? 'Main' : '导航'}>
+      <a href={worksHref} aria-current={isHome ? 'page' : undefined}>{s.nav.works}</a>
+      <a href={aboutHref} aria-current={isAbout ? 'page' : undefined}>{s.nav.about}</a>
+      <span class="nav-sep" aria-hidden="true">·</span>
+      <a href={switchPath(pathname, other)} lang={other === 'zh' ? 'zh-Hans' : 'en'} aria-label={s.nav.switchAria}>{s.nav.switch}</a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>锐角 ACUTE ANGLE · 预约制理发店</title>
+  <meta name="description" content="锐角 ACUTE ANGLE——开在市中心创意园里的预约制理发店。微信预约，每一单从约定的时间开始。">
+  <meta name="theme-color" content="#110F09">
+  <meta property="og:title" content="锐角 ACUTE ANGLE · 预约制理发店">
+  <meta property="og:description" content="开在市中心创意园里的预约制理发店。微信预约。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4 30 28H2z' fill='%23EFEDE7'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/familjen-grotesk-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/ibm-plex-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="design-system/tokens.css">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body id="top">
+
+  <header class="board-bar">
+    <div class="container bar-inner">
+      <a class="brand" href="#top">锐角<span class="brand-en mono">ACUTE ANGLE</span></a>
+      <nav class="bar-nav mono" aria-label="页内导航">
+        <a href="#services">服务</a>
+        <a href="#booking">预约</a>
+        <a href="#visit">到店</a>
+      </nav>
+      <span class="bar-status mono"><span class="dot" aria-hidden="true">●</span> 预约制 · BY APPOINTMENT</span>
+      <a class="btn btn-accent" href="#booking">微信预约</a>
+    </div>
+  </header>
+
+  <main class="board">
+
+    <!-- 01 · 主张 -->
+    <section class="block block-hero">
+      <div class="container">
+        <h1>锐角</h1>
+        <p class="hero-en mono">ACUTE ANGLE</p>
+        <p class="lead">开在市中心创意园里的预约制理发店。每一单，从约定的时间开始。</p>
+        <div class="hero-cta">
+          <a class="btn btn-accent" href="#booking">微信预约 <span class="arrow" aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-meta mono">创意园 <span class="todo">[待填：园名]</span> · 营业时间 <span class="todo">[待填]</span></p>
+      </div>
+    </section>
+
+    <!-- 02 · 服务 -->
+    <section class="block" id="services">
+      <div class="container">
+        <p class="kicker"><span class="en mono">01 · SERVICES</span><span class="zh">服务</span></p>
+        <div class="ledger" role="list">
+          <div class="ledger-head mono" aria-hidden="true">
+            <span>No.</span><span>项目 ITEM</span><span>说明 NOTES</span><span class="dur">时长 TIME</span><span></span>
+          </div>
+          <div class="ledger-row" role="listitem">
+            <span class="no mono">01</span>
+            <span class="name"><span class="todo">[待填：服务项目]</span></span>
+            <span class="desc"><span class="todo">[待填：包含内容与说明]</span></span>
+            <span class="dur mono"><span class="todo">[待填]</span></span>
+            <span class="arrow mono" aria-hidden="true">→</span>
+          </div>
+          <div class="ledger-row" role="listitem">
+            <span class="no mono">02</span>
+            <span class="name"><span class="todo">[待填：服务项目]</span></span>
+            <span class="desc"><span class="todo">[待填：包含内容与说明]</span></span>
+            <span class="dur mono"><span class="todo">[待填]</span></span>
+            <span class="arrow mono" aria-hidden="true">→</span>
+          </div>
+          <div class="ledger-row" role="listitem">
+            <span class="no mono">03</span>
+            <span class="name"><span class="todo">[待填：服务项目]</span></span>
+            <span class="desc"><span class="todo">[待填：包含内容与说明]</span></span>
+            <span class="dur mono"><span class="todo">[待填]</span></span>
+            <span class="arrow mono" aria-hidden="true">→</span>
+          </div>
+          <p class="ledger-note">以上为占位结构——正式项目、说明与时长由店主确认后替换。服务价格到店面询。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · 预约（全页唯一主动作） -->
+    <section class="block block-booking" id="booking">
+      <div class="container">
+        <p class="kicker"><span class="en mono">02 · BOOKING</span><span class="zh">预约</span></p>
+        <h2>预约</h2>
+        <p class="lead">全部服务采取预约制。添加微信，约定你的时段。</p>
+        <div class="booking-grid">
+          <div class="booking-main">
+            <p class="field-label mono">WECHAT · 微信号</p>
+            <p class="wechat-line">
+              <code class="wechat-id mono" id="wx-id"><span class="todo">[待填：微信号]</span></code>
+              <button class="btn btn-accent" type="button" id="copy-wx">复制微信号</button>
+            </p>
+            <p class="copy-status mono" id="copy-status" role="status" aria-live="polite"></p>
+            <ul class="rules">
+              <li><span class="dot" aria-hidden="true">●</span> 预约时段以微信确认为准</li>
+              <li><span class="dot" aria-hidden="true">●</span> <span class="todo">[待填：其他预约说明]</span></li>
+            </ul>
+          </div>
+          <div class="qr-slot" aria-label="微信二维码占位">
+            <span class="mono">QR CODE<br>微信二维码位<br><span class="todo">[待填]</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · 到店（label rail：字段名独占窄列，通栏竖线分隔） -->
+    <section class="block" id="visit">
+      <div class="container">
+        <p class="kicker"><span class="en mono">03 · VISIT</span><span class="zh">到店</span></p>
+        <dl class="info-list">
+          <div class="info-row">
+            <dt class="mono">ADDRESS · 地址</dt>
+            <dd>市中心 · 创意园 <span class="todo">[待填：园名]</span>，详址 <span class="todo">[待填]</span></dd>
+          </div>
+          <div class="info-row">
+            <dt class="mono">HOURS · 营业时间</dt>
+            <dd><span class="todo">[待填]</span></dd>
+          </div>
+          <div class="info-row">
+            <dt class="mono">TEL · 电话</dt>
+            <dd><span class="todo">[待填]</span></dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="board-foot">
+    <div class="container foot-inner">
+      <span class="brand-foot mono">锐角 ACUTE ANGLE</span>
+      <span class="foot-cta mono"><a href="#booking">预约 BOOKING <span class="arrow" aria-hidden="true">→</span></a></span>
+      <span class="foot-meta mono">© 2026 锐角 · BY APPOINTMENT ONLY</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var btn = document.getElementById('copy-wx');
+      var status = document.getElementById('copy-status');
+      btn.addEventListener('click', function () {
+        var text = document.getElementById('wx-id').textContent.trim();
+        var settled = false;
+        var done = function () {
+          if (settled) return; settled = true;
+          status.textContent = '已复制 ✓';
+          setTimeout(function () { status.textContent = ''; }, 2000);
+        };
+        var fail = function () {
+          if (settled) return; settled = true;
+          status.textContent = '复制失败，请手动添加';
+        };
+        var legacy = function () {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          ok ? done() : fail();
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, legacy);
+          /* 部分 WebView 里 writeText 的 promise 永不落定（等权限），超时走回退 */
+          setTimeout(legacy, 800);
+        } else {
+          legacy();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

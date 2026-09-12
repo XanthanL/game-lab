@@ -1,0 +1,166 @@
+/* ============================================================
+   style.css — 二手唱片库存查询站
+   布局原型：utility-board ｜ 中轴：left-rail（一切 flush-left）
+   token 唯一来源：tokens.css（本文件不出现硬编码色值/字号/间距）
+   ============================================================ */
+
+/* ── 自托管字体（latin 子集；中文走系统栈）── */
+@font-face { font-family: "Archivo"; src: url("fonts/archivo-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Archivo"; src: url("fonts/archivo-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+
+/* ── 基底 ── */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-base);
+}
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* 视觉签名 4：全站唯一容器宽，全部区块左对齐同一基线 */
+.wrap { max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── 顶栏 board-bar：品牌 + LIVE 数据戳（签名 3）── */
+.board-bar { border-bottom: 1px solid var(--line); }
+.board-bar .wrap { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); padding-top: var(--space-3); padding-bottom: var(--space-3); flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--fs-lg); letter-spacing: var(--trk-heading); }
+.brand .sub { font-family: var(--font-body); font-weight: var(--weight-body); font-size: var(--fs-xs); color: var(--muted); margin-left: var(--space-2); }
+.live { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.live .dot { color: var(--accent); }
+
+/* [待填] 占位标记：红色虚线，替换店名/地址后自动消失（删掉 span 的 placeholder 类即可） */
+.placeholder { border-bottom: 1px dashed #C43A2A; color: var(--muted); }
+
+/* ── 页首 ── */
+.page-head { padding-top: var(--space-6); padding-bottom: var(--space-5); }
+.page-head h1 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--fs-2xl); line-height: var(--lh-2xl); letter-spacing: var(--trk-display); }
+.page-head p { margin: var(--space-2) 0 0; color: var(--muted); max-width: var(--prose-width); }
+
+/* ── 工具条 ── */
+.controls { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: stretch; padding-bottom: var(--space-4); border-bottom: 1px solid var(--fg); }
+.search { flex: 1 1 240px; }
+.search label, .field label { display: block; font-size: var(--fs-xs); color: var(--muted); margin-bottom: 2px; letter-spacing: var(--trk-label); }
+.search input, .field select {
+  width: 100%; height: 36px; padding: 0 var(--space-2);
+  font-family: var(--font-body); font-size: var(--fs-base); color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.search input:focus, .field select:focus { border-color: var(--accent); outline: none; }
+.field { flex: 0 1 auto; min-width: 120px; }
+
+/* 状态分段按钮（签名 2 的载体之一：状态始终是文字，不靠颜色） */
+.status-group { display: flex; align-items: flex-end; }
+.status-group .btns { display: flex; }
+.status-group button {
+  appearance: none; border: 1px solid var(--line); border-left-width: 0; border-radius: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: var(--fs-base); line-height: 1;
+  padding: 10px var(--space-3); height: 36px;
+  cursor: pointer; transition: background var(--dur-fast) var(--ease);
+}
+.status-group button:first-child { border-left-width: 1px; }
+.status-group button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.status-group button .n { font-family: var(--font-mono); font-size: var(--fs-xs); margin-left: 4px; }
+
+/* ── 结果行 ── */
+.result-line { display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); color: var(--muted); }
+.result-line .clear { appearance: none; background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.12em; }
+
+/* ── 台账 ledger（签名 1 / 2 / 4）── */
+.ledger-head, .row { display: grid; grid-template-columns: 56px minmax(0, 1.15fr) 52px 104px 68px minmax(0, 1fr) 88px 80px; column-gap: 14px; align-items: baseline; }
+.ledger-head {
+  position: sticky; top: 0; z-index: 2; background: var(--bg);
+  border-bottom: 1px solid var(--fg); padding: var(--space-2) 0;
+  font-size: var(--fs-xs); color: var(--muted);
+}
+.row { position: relative; border-bottom: 1px solid var(--line); padding: var(--space-3) 0; min-height: var(--row-h); }
+.row > * { min-width: 0; }
+.c-id    { grid-column: 1; }
+.c-main  { grid-column: 2; }
+.c-year  { grid-column: 3; }
+.c-format{ grid-column: 4; }
+.c-cond  { grid-column: 5; }
+.c-note  { grid-column: 6; }
+.c-price { grid-column: 7; }
+.c-status{ grid-column: 8; }
+
+.c-id { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); }
+.c-main .album { display: block; font-weight: var(--weight-display); overflow-wrap: anywhere; }
+.c-main .artist { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 2px; }
+.c-year, .c-format, .c-cond { font-size: var(--fs-xs); }
+.c-note { font-size: var(--fs-xs); color: var(--muted); overflow-wrap: anywhere; }
+.c-price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.c-price .ask { color: var(--muted); font-family: var(--font-body); font-size: var(--fs-xs); }
+
+/* 状态文字标签：方括号语义用边框表达，颜色从不单独传达状态 */
+.tag { display: inline-block; font-size: var(--fs-xs); line-height: 1; padding: 4px 6px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.is-stock    { color: var(--accent); }
+.tag.is-reserved { color: var(--fg); }
+.tag.is-sold     { color: var(--muted); }
+.tag.is-unknown  { color: var(--muted); border-style: dashed; }
+
+/* 已售行：整行降调 + 删除线（不依赖颜色） */
+.row.is-sold .album { text-decoration: line-through; text-decoration-thickness: from-font; }
+.row.is-sold .c-main .artist, .row.is-sold .c-note { color: var(--muted); }
+
+/* 空状态 */
+.empty { padding: var(--space-7) 0; color: var(--muted); }
+.empty button { appearance: none; background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 0.12em; }
+
+/* ── 说明区 ── */
+.notes { padding: var(--space-5) 0 0; max-width: var(--prose-width); }
+.notes .label { font-size: var(--fs-xs); letter-spacing: var(--trk-label); color: var(--fg); margin-right: var(--space-2); }
+.notes p { margin: 0; font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); }
+
+/* ── 页脚 ── */
+.site-foot { margin-top: var(--space-7); border-top: 1px solid var(--fg); padding: var(--space-4) 0 var(--space-6); }
+.site-foot .wrap { padding-top: 0; padding-bottom: 0; }
+.site-foot p { margin: 0 0 var(--space-1); font-size: var(--fs-xs); color: var(--muted); }
+.site-foot .hint { color: var(--fg); }
+.site-foot .mono { font-size: var(--fs-xs); }
+
+/* 数据异常提示（data.js 缺失/为空） */
+.dataload-error { border: 1px solid #C43A2A; padding: var(--space-4); margin: var(--space-5) 0; max-width: var(--prose-width); }
+.dataload-error h2 { margin: 0 0 var(--space-2); font-size: var(--fs-lg); font-family: var(--font-display); font-weight: var(--weight-display); }
+.dataload-error p { margin: 0; font-size: var(--fs-base); }
+
+/* ── 移动端/窄屏：台账行改竖排卡片式（内容顺序不变，编号并进元信息行）── */
+@media (max-width: 919px) {
+  .page-head { padding-top: var(--space-5); }
+  .page-head h1 { font-size: var(--fs-xl); }
+  .ledger-head { display: none; }
+  .row { display: block; padding: var(--space-3) 80px var(--space-3) 0; }
+  .c-main { display: inline; }
+  .c-main .album { display: inline; font-size: var(--fs-base); }
+  .c-main .artist { display: inline; margin: 0 0 0 var(--space-1); }
+  .c-main .artist::before { content: "· "; }
+  .c-price { position: absolute; top: var(--space-3); right: 0; text-align: right; }
+  /* 价格区常驻（含「到店询价」），行内文字不得侵入 */
+  .c-price { max-width: 78px; }
+  .c-year, .c-format, .c-cond, .c-id, .c-status { display: inline; margin-right: 0; }
+  .c-year::before, .c-format::before, .c-cond::before { content: "· "; color: var(--line); }
+  .c-id { margin-right: var(--space-2); }
+  .c-year, .c-format, .c-cond, .c-id { color: var(--muted); }
+  .c-status { margin-left: 0; }
+  .c-status .tag { margin-top: 6px; }
+  .c-note { display: block; margin-top: 2px; }
+  .row.is-sold .c-main .album { text-decoration: line-through; }
+  /* 状态行独立：标签换行显示在元信息之后 */
+  .c-status::before { content: ""; display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

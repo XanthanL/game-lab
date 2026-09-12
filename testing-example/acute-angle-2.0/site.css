@@ -1,0 +1,402 @@
+/* ============================================================
+   锐角 ACUTE ANGLE 2.0 · site.css
+   布局层：utility-board 原型 + left-rail 中轴（swiss-utility · ink 底）
+   数值全部取自 design-system/tokens.css；本文件不另设颜色/尺寸
+   视觉签名：label rail 竖线 / kicker 延伸细线 / 深底反白台账 / 底色微差分区 / 等宽数字右对齐
+   ============================================================ */
+
+/* 自托管 Latin 子集（fonts.json loading: self）；CJK 落 --font-cjk 系统栈 */
+@font-face {
+  font-family: "Familjen Grotesk";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/familjen-grotesk-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/ibm-plex-sans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body), var(--font-cjk);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  font-weight: var(--weight-body);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent-soft); }
+
+.mono {
+  font-family: var(--font-mono), var(--font-cjk);
+  font-variant-numeric: tabular-nums;
+}
+
+a { color: inherit; }
+
+/* 中轴：唯一容器，全站共用，flush-left */
+.container {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ── 顶栏（台账板板头）── */
+.board-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding-block: var(--space-3);
+}
+
+.brand {
+  font-family: var(--font-display), var(--font-cjk);
+  font-weight: var(--weight-display);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-en {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  letter-spacing: var(--trk-label);
+  margin-left: var(--space-2);
+  font-weight: var(--weight-body);
+}
+
+.bar-nav { display: flex; gap: var(--space-5); }
+
+.bar-nav a {
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.bar-nav a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 0.12em; }
+
+.bar-status {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dot { color: var(--accent); }
+
+/* ── CTA：全页唯一强色块（淡钴蓝底 + 墨黑字，8.2:1）；hover 反白 ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-body), var(--font-cjk);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  background: var(--accent);
+  color: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.btn-accent:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn .arrow { font-family: var(--font-mono); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── 区块节奏：1px 细线 + 底色微差，无卡片无阴影 ── */
+.block { padding-block: var(--space-8); }
+
+.block + .block { border-top: 1px solid var(--line); }
+
+/* 锚点跳转预留 sticky 顶栏高度（v1 实测教训） */
+.block[id] { scroll-margin-top: var(--space-8); }
+
+/* 签名 2：kicker 编号行 + 细线延伸到版心右缘 */
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  margin-bottom: var(--space-6);
+}
+
+.kicker .en { letter-spacing: var(--trk-label); text-transform: uppercase; }
+.kicker .zh { font-family: var(--font-body), var(--font-cjk); letter-spacing: var(--trk-body); }
+
+.kicker::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+  margin-left: var(--space-4);
+}
+
+h2 {
+  font-family: var(--font-display), var(--font-cjk);
+  font-size: var(--fs-xl);
+  font-weight: var(--weight-display);
+  line-height: var(--lh-xl);
+  margin-bottom: var(--space-4);
+}
+
+.lead {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+  max-width: var(--prose-width);
+}
+
+/* ── 01 · 主张 ── */
+.block-hero { padding-block: var(--space-8) var(--space-7); }
+
+h1 {
+  font-family: var(--font-display), var(--font-cjk);
+  font-size: var(--fs-display);
+  font-weight: var(--weight-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--trk-display);
+}
+
+.hero-en {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  letter-spacing: var(--trk-label);
+  margin-top: var(--space-2);
+}
+
+.block-hero .lead { margin-top: var(--space-6); }
+
+.hero-cta { margin-top: var(--space-6); }
+
+.hero-meta {
+  margin-top: var(--space-6);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* ── 02 · 服务（台账清单；签名 3：深底反白 hover）── */
+.ledger-head {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr 1.4fr 6rem 1.5rem;
+  gap: var(--space-4);
+  align-items: center;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr 1.4fr 6rem 1.5rem;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: var(--row-h);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ledger-row:hover { background: var(--bg-soft); }
+
+.ledger-row .no { font-size: var(--fs-xs); color: var(--muted); }
+.ledger-row .name { font-family: var(--font-display), var(--font-cjk); font-weight: var(--weight-display); }
+.ledger-row .desc { color: var(--muted); }
+
+/* 签名 5：等宽数字右对齐成列 */
+.ledger-row .dur { font-size: var(--fs-xs); color: var(--muted); text-align: right; }
+.ledger-head .dur { text-align: right; }
+
+.ledger-row .arrow { color: var(--muted); transition: color var(--dur-fast) var(--ease); }
+.ledger-row:hover .arrow { color: var(--accent); }
+
+.ledger-note {
+  font-family: var(--font-mono), var(--font-cjk);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  padding-block: var(--space-3);
+}
+
+/* ── 03 · 预约（签名 4：底色微差分区，深一档的黑）── */
+.block-booking { background: var(--bg-soft); }
+
+.block-booking .lead { margin-bottom: var(--space-6); }
+
+.booking-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-7);
+  align-items: start;
+}
+
+.field-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.wechat-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.wechat-id {
+  font-size: var(--fs-lg);
+  font-weight: var(--weight-display);
+  font-style: normal;
+}
+
+.copy-status { font-size: var(--fs-xs); color: var(--accent); min-height: 1.59em; margin-top: var(--space-2); }
+
+.rules {
+  list-style: none;
+  margin-top: var(--space-5);
+}
+
+.rules li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+}
+
+.rules .dot { color: var(--fg); font-size: var(--fs-xs); }
+
+.qr-slot {
+  width: 128px;
+  height: 128px;
+  border: 1px dashed var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: var(--lh-xs);
+}
+
+/* ── 04 · 到店（签名 1：label rail——字段名独占窄列，通栏竖线分隔）── */
+.info-row {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: 0;
+  padding-block: 0;
+  border-bottom: 1px solid var(--line);
+  min-height: var(--row-h);
+}
+
+.info-row dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+  padding-block: var(--space-3);
+  padding-right: var(--space-4);
+  display: flex;
+  align-items: center;
+}
+
+.info-row dd {
+  padding-block: var(--space-3);
+  padding-left: var(--space-4);
+  display: flex;
+  align-items: center;
+}
+
+/* ── 页脚 ── */
+.board-foot {
+  border-top: 1px solid var(--line);
+  padding-block: var(--space-5);
+}
+
+.foot-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4) var(--space-6);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.brand-foot { color: var(--fg); font-weight: var(--weight-display); }
+
+.foot-cta { margin-left: auto; }
+
+.foot-cta a { text-decoration: none; }
+.foot-cta a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 0.12em; }
+
+/* ── [待填] 占位标记（红色虚线框，深底提亮版）── */
+.todo {
+  color: #E5897D;
+  border: 1px dashed rgba(229, 137, 125, .55);
+  padding-inline: var(--space-1);
+}
+
+/* ── 响应式 ── */
+@media (max-width: 720px) {
+  .bar-status, .brand-en { display: none; }
+  .bar-inner { gap: var(--space-4); }
+  .bar-nav { gap: var(--space-4); }
+  .bar-nav a { font-size: var(--fs-xs); }
+  .btn { padding: var(--space-2) var(--space-3); font-size: var(--fs-xs); }
+  .block { padding-block: var(--space-7); }
+
+  .ledger-head { display: none; }
+
+  .ledger-row {
+    grid-template-columns: 2.5rem 1fr 1.5rem;
+    grid-template-areas:
+      "no name arrow"
+      ". desc desc"
+      ". dur dur";
+    align-items: start;
+    row-gap: var(--space-1);
+    padding-block: var(--space-3);
+  }
+  .ledger-row .no { grid-area: no; }
+  .ledger-row .name { grid-area: name; }
+  .ledger-row .desc { grid-area: desc; }
+  .ledger-row .dur { grid-area: dur; text-align: left; }
+  .ledger-row .arrow { grid-area: arrow; }
+
+  .booking-grid { grid-template-columns: 1fr; gap: var(--space-6); }
+
+  /* label rail 保留竖线，列宽收窄 */
+  .info-row { grid-template-columns: 8rem 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}

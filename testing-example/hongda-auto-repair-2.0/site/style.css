@@ -1,0 +1,329 @@
+/* ============================================================
+   宏达汽修 2.0 · data-dense-app / utility-board / left-rail
+   token 见 tokens.css（唯一真源，design-system/MASTER.md 为可读副本）
+   自托管字体（latin 子集，CJK 走系统栈，运行时零第三方请求）
+   ============================================================ */
+
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/barlow-condensed-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body-mixed);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-base);
+  letter-spacing: var(--trk-body);
+  line-break: strict;
+  /* 给吸底 CTA 让位：48 + 24 */
+  padding-bottom: calc(var(--space-7) + var(--space-5));
+}
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 顶栏：品牌 + 今日状态 ─────────────────────────── */
+.bar-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding-block: var(--space-3);
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-display-mixed);
+  font-size: var(--fs-xl);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--trk-heading);
+}
+
+.live {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.live .dot { color: var(--accent); }
+.live.is-closed .dot { color: var(--muted); }
+
+/* ── 区块：1px 线分区，纵向节奏全落 --space 栅格 ───── */
+section { border-top: 1px solid var(--line); }
+
+section .wrap { padding-block: var(--space-5); }
+
+h2 {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display-mixed);
+  font-size: var(--fs-lg);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--trk-heading);
+}
+
+.upd {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* ── 价目台账（视觉签名①⑦：列分隔竖线 + 左侧标签栏）── */
+.ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledger li {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--price-w);
+  align-items: center;
+  min-height: var(--row-h);
+  border-bottom: 1px solid var(--line);
+}
+
+.ledger .rail,
+.ledger .rail-cell {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-2);
+  border-right: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-display);
+  color: var(--muted);
+}
+
+.ledger .item {
+  min-width: 0;
+  padding-block: var(--space-2);
+  padding-right: var(--space-3);
+  padding-left: var(--space-3);
+}
+
+.ledger .name { font-weight: var(--weight-display); }
+
+.ledger .note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-xs);
+  color: var(--muted);
+}
+
+.ledger .price,
+.ledger .price-h {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+  border-left: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 视觉签名②：等宽数字右对齐成列 */
+.ledger .price, .ledger .price-h { justify-content: flex-end; }
+
+.ledger li.head {
+  min-height: 0;
+  border-bottom: 1px solid var(--fg);
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-body);
+  color: var(--muted);
+}
+
+.ledger li.head .rail { color: var(--muted); font-weight: var(--weight-body); }
+
+/* ── 营业时间 ─────────────────────────────────────── */
+.hours {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hours li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-4);
+  align-items: baseline;
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.hours .t {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-block;
+  border: 1px solid var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--fs-xs);
+}
+
+.today {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.today .dot { color: var(--accent); }
+.today.is-closed .dot { color: var(--muted); }
+
+/* ── 电话 ─────────────────────────────────────────── */
+.phone-big {
+  display: inline-block;
+  min-height: var(--row-h);
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--accent);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-2xl);
+  font-weight: var(--weight-display);
+  line-height: var(--lh-base);
+  color: var(--accent-ink);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.phone-big:active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.call-sub {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+}
+
+/* ── 到店 ─────────────────────────────────────────── */
+.addr { margin: 0; }
+
+.addr-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* ── [待填] 占位标记（数据补真后自动消失）──────────── */
+.tbd {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-1);
+  border: 1px dashed var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  vertical-align: middle;
+}
+
+/* ── 页脚 ─────────────────────────────────────────── */
+footer { border-top: 1px solid var(--line); }
+
+footer .wrap { padding-block: var(--space-5); }
+
+footer p {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+footer p + p { margin-top: var(--space-1); }
+
+/* ── 吸底 CTA：整页唯一强色块，唯一动作是拨号 ─────── */
+.cta-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 10;
+  background: var(--accent);
+}
+
+.cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 56px; /* 4 栅格 ×14 */
+  color: #FFFFFF;
+  font-size: var(--fs-base);
+  font-weight: var(--weight-display);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.cta .num {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  letter-spacing: var(--trk-body);
+}
+
+.cta:active { background: var(--accent-ink); }
+
+/* ── 窄屏：标签栏收窄 ─────────────────────────────── */
+@media (max-width: 480px) {
+  :root { --rail-w: 56px; }
+}
+
+/* ── 焦点态（可访问性底线）────────────────────────── */
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cta:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-big, .cta { transition: none; }
+}

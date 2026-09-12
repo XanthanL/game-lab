@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>唱片库存 · 有没有货，自己查</title>
+  <meta name="description" content="二手唱片店库存自助查询：有没有货、什么版本、多少钱，每周日更新。">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- 顶栏：品牌 + LIVE 数据戳（数据戳由 data.js 自动带出，勿手改） -->
+  <header class="board-bar">
+    <div class="wrap">
+      <!-- [待填] 把下面的「[店名待定]」换成你的店名，并删掉 placeholder 这个词 -->
+      <span class="brand"><span class="placeholder">[店名待定]</span><span class="sub">二手唱片</span></span>
+      <span class="live mono" id="live-stamp"><span class="dot">●</span> 库存更新于 —</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <h1>唱片库存</h1>
+      <p>有没有货、什么版本、多少钱，都在这一页。看中了记下编号，到店找店主。</p>
+    </div>
+
+    <section id="controls" aria-label="搜索与筛选">
+      <div class="controls">
+        <div class="search">
+          <label for="search-box">搜索</label>
+          <input type="search" id="search-box" placeholder="艺人 / 专辑 / 年份 / 版本备注…"
+                 autocomplete="off" inputmode="search">
+        </div>
+        <div class="status-group" role="group" aria-label="按状态筛选">
+          <div class="btns">
+            <button type="button" data-status="在架" aria-pressed="true">在架<span class="n"></span></button>
+            <button type="button" data-status="已预留" aria-pressed="false">已预留<span class="n"></span></button>
+            <button type="button" data-status="已售" aria-pressed="false">已售<span class="n"></span></button>
+            <button type="button" data-status="其他" aria-pressed="false" hidden>其他<span class="n"></span></button>
+            <button type="button" data-status="全部" aria-pressed="false">全部<span class="n"></span></button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="filter-format">格式</label>
+          <select id="filter-format"></select>
+        </div>
+        <div class="field">
+          <label for="filter-condition">品相</label>
+          <select id="filter-condition"></select>
+        </div>
+      </div>
+    </section>
+
+    <div class="result-line mono" id="result-line" aria-live="polite"></div>
+
+    <section aria-label="库存台账" role="table" aria-rowcount="-1">
+      <div class="ledger-head" role="row">
+        <span class="c-id">编号</span>
+        <span class="c-main">唱片</span>
+        <span class="c-year mono">年份</span>
+        <span class="c-format">格式</span>
+        <span class="c-cond">品相</span>
+        <span class="c-note">版本 / 备注</span>
+        <span class="c-price">价格</span>
+        <span class="c-status">状态</span>
+      </div>
+      <div id="ledger" role="rowgroup"></div>
+
+      <div class="empty" id="empty-state" hidden>
+        没有符合条件的唱片。<button type="button" id="empty-clear">清除筛选</button>
+      </div>
+
+      <div class="dataload-error" id="dataload-error" hidden>
+        <h2>库存数据没加载出来</h2>
+        <p>如果这是店主：把每周导出的 CSV 拖到「更新网站.bat」图标上，重新生成 data.js 再刷新本页。</p>
+      </div>
+    </section>
+
+    <div class="notes">
+      <span class="label">品相说明</span>
+      <p>近全新 ＞ 九成 ＞ 八成 ＞ 七成，为店主人工评定；二手唱片有正常使用痕迹，具体以到店实物为准。未标价格的唱片请到店询价。</p>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <!-- [待填] 下面一行换成：地址 · 营业时间 · 联系方式，然后删掉 placeholder 这个词 -->
+      <p><span class="placeholder">地址 · 营业时间 [待填]</span></p>
+      <p class="hint">库存每周日更新，以到店实物为准；看中了记下编号（如 V-007）到店预留。</p>
+      <p class="mono" id="foot-stamp">数据生成于 —</p>
+    </div>
+  </footer>
+
+  <noscript>
+    <div class="wrap" style="padding:24px 16px">本页需要开启 JavaScript 才能查询库存。</div>
+  </noscript>
+
+  <script src="data.js"></script>
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

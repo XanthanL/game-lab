@@ -1,0 +1,88 @@
+{
+  "source": "E:\\Code\\mine-skills\\testing-example\\2.0\\source-images",
+  "files": {
+    "5b3d1c7707ea9f000b29884cd76dd6e5_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "794173b3ff19b0e607d7650d0451e5fd_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "7ed027a7b9ef7dc73736ac35eb2d3cc7_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "83aa4187797d601230c515928880d2ad_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "8e0f443f2f9796da227d5e65e83b23bf_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "ba6b5d644b4af3ef1184357caac5d2e3_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "d7c79e6945e5c6dfa2ec9783aff8c5d3_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "f68065db3fab45205ecc0192e6561d22_original.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    }
+  },
+  "assets": [
+    {
+      "file": "assets/5b3d1c7707ea9f000b29884cd76dd6e5_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "5b3d1c7707ea9f000b29884cd76dd6e5_original.jpg"
+    },
+    {
+      "file": "assets/794173b3ff19b0e607d7650d0451e5fd_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "794173b3ff19b0e607d7650d0451e5fd_original.jpg"
+    },
+    {
+      "file": "assets/7ed027a7b9ef7dc73736ac35eb2d3cc7_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "7ed027a7b9ef7dc73736ac35eb2d3cc7_original.jpg"
+    },
+    {
+      "file": "assets/83aa4187797d601230c515928880d2ad_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "83aa4187797d601230c515928880d2ad_original.jpg"
+    },
+    {
+      "file": "assets/8e0f443f2f9796da227d5e65e83b23bf_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "8e0f443f2f9796da227d5e65e83b23bf_original.jpg"
+    },
+    {
+      "file": "assets/ba6b5d644b4af3ef1184357caac5d2e3_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "ba6b5d644b4af3ef1184357caac5d2e3_original.jpg"
+    },
+    {
+      "file": "assets/d7c79e6945e5c6dfa2ec9783aff8c5d3_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "d7c79e6945e5c6dfa2ec9783aff8c5d3_original.jpg"
+    },
+    {
+      "file": "assets/f68065db3fab45205ecc0192e6561d22_original.jpg",
+      "srcFormat": "PNG",
+      "srcName": "f68065db3fab45205ecc0192e6561d22_original.jpg"
+    }
+  ],
+  "warnings": []
+}

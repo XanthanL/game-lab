@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  拾花 2.0 · 杭州街坊的手作花店
+  skill: website-style-router v0.8.0 · 锚点 craft-artisanal · plain-html
+  维护说明（店主看这里）：
+  1. 红色虚线框里的 [待填] 都是等你填的：把「[待填]」改成真实内容即可。
+  2. 花目表格填完后，删掉对应行的 class="todo-row"，红框消失。
+  3. 换照片：把 assets/ 下同名 jpg 换成你的实拍（文件名不变即可）。
+  4. 颜色字号在 design-system/tokens.css，不懂不要动。
+============================================================ -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>拾花 · 杭州街坊的手作花店</title>
+  <meta name="description" content="拾花，杭州的街坊花店。花一枝一枝挑、一束一束包。到店挑花，微信、电话订花。">
+  <meta name="theme-color" content="#FAE9DD">
+  <meta property="og:title" content="拾花 · 杭州街坊的手作花店">
+  <meta property="og:description" content="花一枝一枝挑、一束一束包。到店挑花，微信、电话订花。">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <link rel="stylesheet" href="design-system/tokens.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- 门牌：楷体大字居中压首屏（视觉签名 1） -->
+  <header class="hero">
+    <div class="wrap">
+      <span class="kicker">SHIHUA · HANGZHOU</span>
+      <h1>拾花</h1>
+      <p class="claim">路过进来挑一束；想送人，微信上说一声。</p>
+      <div class="hero-cta">
+        <a class="cta" href="#dinghua">微信订花</a>
+        <span class="tel">电话&nbsp;<u><span class="todo-tag">[待填]</span></u></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- 01 门口：通栏图 880 -->
+    <section id="menkou">
+      <h2><span class="idx">01</span>店在街边</h2>
+      <figure class="fig-wide">
+        <img src="assets/storefront.jpg" alt="店门口摆着鲜花的花桶，梧桐树影落在白墙黑瓦上" width="2000" height="1035">
+        <figcaption>门口的花桶</figcaption>
+      </figure>
+      <p class="lead">店在街边，门口摆着花桶，路过就能看见。进来挑花，或者站在门口闻一闻，都行。</p>
+    </section>
+
+    <!-- 02 手作：图行 1 左（视觉签名 2 起点）+ 跨栏引言（视觉签名 3）+ 图行 2 右 -->
+    <section id="shouzuo">
+      <h2><span class="idx">02</span>手上的活</h2>
+      <div class="duo">
+        <figure class="duo-fig">
+          <img src="assets/hand-tied.jpg" alt="双手正在用麻绳捆扎一束粉白的花" loading="lazy" width="1888" height="1148">
+          <figcaption>包扎花束的手</figcaption>
+        </figure>
+        <div class="prose">
+          <p>花在这里是一枝一枝挑出来的：去刺、配叶、麻绳扎紧、牛皮纸一包。手上的事，急不来。</p>
+        </div>
+      </div>
+      <blockquote class="pullquote">花是一枝一枝挑的，一束一束包的。</blockquote>
+      <div class="duo rev">
+        <figure class="duo-fig fig-sm">
+          <img src="assets/tools.jpg" alt="木桌上的麻绳、修枝剪和洒水壶" loading="lazy" width="1536" height="1413">
+          <figcaption>麻绳与花剪</figcaption>
+        </figure>
+        <div class="prose">
+          <p>麻绳、花剪、洒水壶，都是天天用的老东西。用得越久，越顺手。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 在售花目：图行 3 左 + 4 右；价格待店主填写 -->
+    <section id="huamu">
+      <h2><span class="idx">03</span>在售花目</h2>
+      <p class="lead">店里有什么、什么价，写在这张表上。</p>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">品名</th>
+            <th scope="col">花材</th>
+            <th scope="col">规格</th>
+            <th scope="col" class="price">价格</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 三个占位行：把 [待填] 换成真实文字，填完删除该行 class="todo-row" -->
+          <tr class="todo-row">
+            <td>[待填]</td><td>[待填]</td><td>[待填]</td><td class="price">[待填]</td>
+          </tr>
+          <tr class="todo-row">
+            <td>[待填]</td><td>[待填]</td><td>[待填]</td><td class="price">[待填]</td>
+          </tr>
+          <tr class="todo-row">
+            <td>[待填]</td><td>[待填]</td><td>[待填]</td><td class="price">[待填]</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="table-note">上表为价目占位，待店主填写。</p>
+      <div class="duo rev" style="margin-top: var(--space-5);">
+        <figure class="duo-fig">
+          <img src="assets/bouquet-kraft.jpg" alt="牛皮纸包着的粉白花束，摆在旧木桌上" loading="lazy" width="1376" height="1575">
+          <figcaption>牛皮纸花束</figcaption>
+        </figure>
+        <div class="prose">
+          <p>常备的花束样式，牛皮纸一包就能带走。想要别的花材，微信上说一声，照着配。</p>
+        </div>
+      </div>
+      <div class="duo">
+        <figure class="duo-fig fig-sm">
+          <img src="assets/bouquet-champagne.jpg" alt="香槟色系的大花束，玫瑰、芍药配尤加利和芦苇" loading="lazy" width="1376" height="1575">
+          <figcaption>香槟色花束</figcaption>
+        </figure>
+        <div class="prose">
+          <p>送人挑大束的：香槟色配白瓷一样的芍药，拿出来体面。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 店里·到店：图行 5 左 + 6 右 -->
+    <section id="daodian">
+      <h2><span class="idx">04</span>来店里坐坐</h2>
+      <div class="duo">
+        <figure class="duo-fig">
+          <img src="assets/shop-interior.jpg" alt="店内的木架和玻璃瓶里插满鲜花" loading="lazy" width="1888" height="1148">
+          <figcaption>店里的木架与瓶花</figcaption>
+        </figure>
+        <div class="prose">
+          <p>店里不大，木架上摆满瓶瓶罐罐的花。慢慢看，看中了喊一声就行。</p>
+        </div>
+      </div>
+      <ul class="info-list">
+        <li>
+          <span class="k">地址</span>
+          <span class="v"><span class="todo-tag">[待填]</span></span><!-- 填：真实门店地址 -->
+        </li>
+        <li>
+          <span class="k">营业时间</span>
+          <span class="v"><span class="todo-tag">[待填]</span></span><!-- 填：如 09:00–20:00 -->
+        </li>
+      </ul>
+      <div class="duo rev">
+        <figure class="duo-fig fig-sm">
+          <img src="assets/plants-window.jpg" alt="窗边桌上的琴叶榕盆栽和多肉，阳光落在叶子上" loading="lazy" width="1536" height="1413">
+          <figcaption>窗边的绿植</figcaption>
+        </figure>
+        <div class="prose">
+          <p>不止切花。窗边还有好养的绿植和小多肉，配好盆，抱回家就能活。</p>
+          <!-- 「抱回家就能活」若与实际养护承诺不符，可改成「抱回家慢慢养」 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 订花：主 CTA 的落点 -->
+    <section id="dinghua">
+      <h2><span class="idx">05</span>订花</h2>
+      <p class="lead">加微信或打电话，说想要的花和时间。</p>
+      <ul class="info-list">
+        <li>
+          <span class="k">微信</span>
+          <span class="v"><span class="todo-tag">[待填]</span></span><!-- 填：微信号 -->
+        </li>
+        <li>
+          <span class="k">电话</span>
+          <span class="v"><span class="todo-tag">[待填]</span></span><!-- 填：填好后可改成 <a class="num" href="tel:手机号"> -->
+        </li>
+      </ul>
+    </section>
+
+    <!-- 06 花在家：通栏图收尾 -->
+    <section id="huijia">
+      <h2><span class="idx">06</span>花在家</h2>
+      <figure class="fig-wide">
+        <img src="assets/vase-home.jpg" alt="玻璃瓶里插着粉紫色的花，摆在木桌窗边" loading="lazy" width="2000" height="1035">
+        <figcaption>带回家的一瓶花</figcaption>
+      </figure>
+      <p class="lead">挑一束带回家，往瓶子里一插，屋里就亮了。</p>
+    </section>
+
+  </main>
+
+  <!-- 信任条：只写已知事实 -->
+  <section class="trust">
+    <div class="wrap">
+      <p>实体门店 · 杭州 · 街坊生意</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>拾花 · 杭州 · 街坊生意<br>© <span class="num">2026</span> 拾花</p>
+    </div>
+  </footer>
+
+</body>
+</html>

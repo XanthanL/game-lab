@@ -360,7 +360,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
    （比常态的 --glass-sm 更"实"），再点亮前面那颗小圆点。 */
 .skin-bar {
   display: flex; flex-direction: column; gap: 12px;
-  margin: 0 0 30px;
+  /* 下面紧接「随机切换风格」按钮，两者同属风格组，别拉太开。
+     原 30px + 按钮自身 2px = 上方 32px，而按钮到下方导航只有 6px，重心是反的。 */
+  margin: 0 0 16px;
 }
 /* 上排：标签 + 7 个分组 tab */
 .skin-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -407,7 +409,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .skin-chip[aria-pressed="true"] { color: var(--ink); box-shadow: var(--glass); }
 .skin-chip[aria-pressed="true"]::before { opacity: 1; box-shadow: 0 0 0 3px var(--spot-c); }
 @media (max-width: 560px) {
-  .skin-bar { gap: 10px; margin-bottom: 26px; }
+  .skin-bar { gap: 10px; margin-bottom: 14px; }
   .skin-head { gap: 8px; }
   .skin-tab { padding: 4px 9px; font-size: 9.5px; letter-spacing: 0.06em; }
   .skin-chips { gap: 8px; }
@@ -419,7 +421,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
    这枚是「随便来一套」）。颜色带兜底，避免个别皮肤未定义 --accent 时塌掉。 */
 .skin-random {
   display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
-  margin: 2px 0 0; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+  /* 上贴风格组、下离分区导航：16px / 28px(+导航自身 6px = 34px) */
+  margin: 0 0 28px; padding: 9px 16px; border-radius: 999px; cursor: pointer;
   font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
   color: var(--accent, #f5a524); border: 1px solid var(--accent, #f5a524);
   background: var(--glass-bg);
@@ -437,6 +440,32 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .skin-random:active { transform: translateY(0); }
 @media (max-width: 560px) {
   .skin-random { padding: 8px 12px; font-size: 9.5px; letter-spacing: 0.04em; }
+}
+
+/* 子页筛选框（样例站点索引在用）：外观全吃皮肤变量，跟着 50 套皮肤一起换装。
+   placeholder 不是 data-zh 能管的属性，双语由页面脚本按 <html data-lang> 自己换。 */
+.sub-search {
+  /* 上贴 lede、下离导航：24px(lede 自身) / 30px(+导航自身 6px = 36px)。
+     原先上方 44px、下方仅 6px，看着像挂在导航上而不是跟着说明文字。 */
+  width: 100%; max-width: 420px; margin: 0 0 30px;
+  padding: 11px 16px; font-family: var(--mono); font-size: 12px;
+  color: var(--ink); background: var(--glass-bg);
+  border: 1px double var(--glass-border); border-radius: 999px;
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-sm); outline: none;
+  transition: border-color .4s var(--ease), box-shadow .4s var(--ease);
+}
+.sub-search::placeholder { color: var(--ink-3); }
+.sub-search:focus, .sub-search:focus-visible { border-color: var(--accent); box-shadow: var(--glass); }
+/* 卡片 meta 里的目录名：等宽小字，和卡片标题拉开层级 */
+.card-dir {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .02em; color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 筛选无结果 / 列表为空的提示（样例站点索引在用） */
+.empty {
+  grid-column: 1 / -1; margin: 0; padding: 20px 2px;
+  color: var(--ink-3); font-size: 13px;
 }
 
 /* ============ 风格切换：胶囊下拉菜单（7 档）============
@@ -778,7 +807,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 /* 分区间距用 margin-top（板块之间），面板内留白用 padding（面板边缘→内容） */
 .sec {
   margin-top: clamp(80px, 12vh, 140px);
-  padding: 36px calc(var(--pad) * 0.6) 44px;
+  /* 左右内边距归零：让分区内容（清单卡片）与 hero 文字严格左右对齐，与首页门户区同一规则。
+     ⚠️ 不影响 .sec::before 背景图 —— 绝对定位的包含块是 padding box，
+     它本来就等于 hero 宽，去掉 padding 后尺寸不变，装饰照旧向外渗出。 */
+  padding: 36px 0 clamp(20px, 4vh, 44px);
   position: relative; isolation: isolate;
 }
 /* 第一个板块（游戏）：与 Hero 之间的间距，等同板块之间的间距 */
@@ -825,7 +857,14 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
 .sec-count em { font-style: normal; color: var(--ink-2); }
 
 /* ============ Bento 网格：块状扫视，替代一条条往下读 ============ */
-.grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 30px; }
+/* 与首页门户区同一档间距：子页卡片随「与 hero 对齐」变宽后，沿用 16px 会显得挤。
+   行距 > 列距，上下两排不黏在一起。
+   （首页 .portal-grid 自带同值覆盖且排在后面，不受这里影响。） */
+.grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 30px;
+  column-gap: clamp(18px, 2.2vw, 28px);
+  row-gap: clamp(22px, 2.8vw, 36px);
+}
 .card {
   grid-column: span 2;
   display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
@@ -928,11 +967,20 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
   .toc a { padding: 10px 16px; }
 }
 
-/* ============ 首页三门户：三个大方框，作品列表进子页 ============
-   首页只留下「游戏 / 实验 / 站点」三张入口卡，点进去才是各自的清单，
-   不必再一路往下翻。卡片直接复用 .card，所有皮肤自动换装。 */
-.portal-grid { grid-template-columns: repeat(3, 1fr); }
-.portal-grid .card { grid-column: auto; min-height: 268px; padding: 26px 26px 20px; }
+/* ============ 首页门户：四个大方框，作品列表进子页 ============
+   首页只留下「游戏 / 实验 / 站点 / 样例站点」四张入口卡，点进去才是各自的清单，
+   不必再一路往下翻。卡片直接复用 .card，所有皮肤自动换装。
+   四张卡走 2×2 —— 三列的话第四张会孤零零掉到第二行。 */
+.portal-grid {
+  grid-template-columns: repeat(2, 1fr);
+  /* 盒子比三列时大了一圈，Gutters 必须跟着放大：沿用 .grid 的 16px 会让
+     四块糊成一整片（桌面端尤其明显）。卡片内边距同步加大，让内容也喘口气。
+     行间距比列间距再大一点 —— 上下两排各是一个视觉板块，挨太近会显得黏住。
+     移动端一列时恢复原值 —— 那个排布本来就不挤。 */
+  column-gap: clamp(18px, 2.2vw, 28px);
+  row-gap: clamp(22px, 2.8vw, 36px);
+}
+.portal-grid .card { grid-column: auto; min-height: 276px; padding: 32px 32px 26px; }
 .portal .card-title { font-size: clamp(24px, 2.6vw, 31px); }
 .portal .card-what { -webkit-line-clamp: 4; }
 .portal .card-meta { align-items: baseline; }
@@ -941,17 +989,22 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   text-transform: none; letter-spacing: 0.02em; font-size: 11px; color: var(--ink-3);
 }
-/* 首页三门户：贴着 hero 排，不留大段空白（要顶过 .sec:first-of-type 的同优先级规则）*/
-.sec.sec-portals { margin-top: clamp(8px, 2vh, 24px); padding-top: 0; padding-bottom: clamp(12px, 2vh, 24px); }
+/* 首页门户：左右内边距归零，让四个框的左右边缘和 hero 文字严格对齐
+   （.hero 自身的左右 padding 就是 0，四块只需不再额外内缩）。
+   与 hero 之间留一段呼吸，别黏在一起（要顶过 .sec:first-of-type 的同优先级规则）*/
+.sec.sec-portals { margin-top: clamp(18px, 3.5vh, 40px); padding: 0 0 clamp(20px, 4vh, 44px); }
 .portal-grid { margin-top: 0; }
-/* 门户区不要分区背景图——那是为长清单准备的，三张大方框用纯背景更清爽 */
+/* 门户区不要分区背景图——那是为长清单准备的，四张方框用纯背景更清爽 */
 .sec.sec-portals::before { display: none; }
+/* 两侧留白不再单独调：已改为与 hero 完全对齐（见上方 .sec.sec-portals 的 padding 归零）。
+   （期间试过向外突破 .wrap 贴到屏幕边，留白只剩 32px，观感太满，已放弃。） */
 /* 子页：子页 hero 紧跟着 .sec 清单，收掉原 80-140px 的巨大段距 */
-.sub-hero + .sec { margin-top: clamp(20px, 3vh, 36px); }
+/* 与首页门户区同一档间距（clamp(18px,3.5vh,40px)），四个子页的板块节奏统一 */
+.sub-hero + .sec { margin-top: clamp(18px, 3.5vh, 40px); }
 @media (max-width: 900px) { .portal-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) {
-  .portal-grid { grid-template-columns: 1fr; }
-  .portal-grid .card { min-height: 0; }
+  .portal-grid { grid-template-columns: 1fr; gap: 16px; }
+  .portal-grid .card { min-height: 0; padding: 26px 26px 20px; }
 }
 
 /* ============ 子页头部：面包屑 + 更小的标题 ============ */

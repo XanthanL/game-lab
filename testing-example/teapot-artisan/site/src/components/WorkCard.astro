@@ -1,0 +1,36 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { strings, type Lang } from '../lib/i18n';
+
+interface Props {
+  work: {
+    slug: string;
+    numZh: string;
+    numEn: string;
+    img: string;
+    title: Record<'en' | 'zh', string>;
+    form: Record<'en' | 'zh', string>;
+    alt: Record<'en' | 'zh', string>;
+  };
+  lang: Lang;
+}
+
+const images = import.meta.glob<{ default: ImageMetadata }>('../assets/works/*.jpg', { eager: true });
+const { work, lang } = Astro.props;
+const meta = images[`../assets/works/${work.img}`]?.default;
+const href = (lang === 'en' ? '/works/' : '/zh/works/') + work.slug + '/';
+const primary = work.title[lang];
+const crossTitle = lang === 'en' ? work.title.zh : work.title.en;
+const num = lang === 'en' ? work.numEn : work.numZh;
+---
+<li class="work-card fade">
+  <a href={href}>
+    <span class="work-num" aria-hidden="true">{num}</span>
+    <figure>
+      {meta && <Image src={meta} alt={work.alt[lang]} widths={[456, 912]} sizes="(max-width: 720px) 100vw, 456px" format="webp" loading="lazy" />}
+    </figure>
+    <h3 class="work-name">{primary}</h3>
+    <p class="work-cross"><span class="cross-zh">{crossTitle}</span> · {work.form[lang]}</p>
+  </a>
+</li>

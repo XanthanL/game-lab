@@ -1,0 +1,80 @@
+/* ============================================================
+   涂涂画画 2.0 · design tokens
+   生成:emit_tokens.py --anchor quiet-luxury --surface paper --variant a --pair 0
+   skill 版本:v0.8.0
+   锚点特化(仅两处,均已声明理由):
+   1. --font-display 栈补中文衬线回退 —— 保证中文大标在所有平台走衬线
+      (emitted 栈止于 generic serif,安卓会退化为黑体)
+   2. --font-body 栈补 Windows/鸿蒙中文黑体具名回退 —— 同理,避免匿名 generic
+   本文件与 design-system/MASTER.md 逐值一致,改动须两处同步
+   ============================================================ */
+:root {
+  /* ── 颜色(锚点 quiet-luxury 签名 · 底色档 paper · 色相 70° / 彩度档 0 / 色温 +0.0)── */
+  --bg:        #F9F7EF;   /* surface=paper · oklch(0.975 0.010 90) 纸白 */
+  --bg-soft:   #F0ECE2;   /* 图片容器底色 */
+  --fg:        #201E19;   /* 对 --bg 对比度 15.5:1 */
+  --muted:     #747169;   /* 对 --bg 对比度 4.6:1(正文下限 4.5) */
+  --line:      rgba(0,0,0,.12);
+  --accent:    #785E40;   /* 青铜金,强调/装饰;大字下限 3:1 = 5.6:1 */
+  --accent-ink:#856D52;   /* 可做正文链接,对比度 4.6:1 */
+  --accent-soft: rgba(120,94,64,.10);
+
+  /* ── 反同质化指纹(同批次内 anchor/display 唯一,surface/axis ≤2)── */
+  --surface:   "paper";   /* 底色档:纸白 */
+  --variant:   "a";   /* 尺度变体轴:原值(quiet-luxury 首次使用,按轴说明取默认) */
+
+  /* ── 字体(具名搭配 · 来源 fonts.json 锚点 quiet-luxury)── */
+  --font-display: "Cormorant Garamond", "EB Garamond", Georgia, "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --font-body:    "Jost", "Inter", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-cjk:     "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --weight-display: 400;   /* 标题取重端 */
+  --weight-body:    300;   /* 正文取轻端;字重总数 ≤2 */
+
+  /* ── 字阶(公比 1.5,基准 17px,6 级封顶)── */
+  --fs-xs: 11.5px;
+  --fs-base: 17px;
+  --fs-lg: 26px;
+  --fs-xl: 38px;
+  --fs-2xl: 57px;
+  --fs-display: 86px;
+
+  /* ── 行高(字号越大越紧,全部无单位)── */
+  --lh-xs: 1.95;
+  --lh-base: 1.9;
+  --lh-lg: 1.52;
+  --lh-xl: 1.42;
+  --lh-2xl: 1.32;
+  --lh-display: 1.22;
+
+  /* ── 字距(0.02em 为锚点签名的疏朗大字,属 layouts/typography 允许的东方留白例外)── */
+  --trk-display: 0.02em;
+  --trk-heading: 0.01em;
+  --trk-body: 0em;
+  --trk-label: 0.08em;
+
+  /* ── 间距(基数 16px,全部为整数倍)── */
+  --space-1: 16px;
+  --space-2: 32px;
+  --space-3: 48px;
+  --space-4: 64px;
+  --space-5: 96px;
+  --space-6: 128px;
+  --space-7: 192px;
+  --space-8: 256px;
+
+  /* ── 形状(直角)── */
+  --radius: 0px;
+  --shadow: none;
+
+  /* ── 版心与中轴 ── */
+  --measure: 1120px;
+  --prose-width: 54ch;
+  --gutter: 16px;
+  --axis: center-axis;   /* hero/宣言居中;正文左对齐;作品流按 split 栏比交错 */
+
+  /* ── 动效(性格 drift)── */
+  --dur-fast: 300ms;
+  --dur-normal: 600ms;
+  --ease: cubic-bezier(.16,.84,.24,1);
+}

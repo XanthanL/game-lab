@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>涂涂画画 · 儿童美术教室</title>
+  <meta name="description" content="涂涂画画是一间儿童美术教室。孩子的画，值得一面白墙。预约试听课。">
+  <meta name="theme-color" content="#F9F7EF">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F9F7EF'/%3E%3Crect x='7' y='7' width='18' height='18' fill='%23785E40'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/fonts/fonts.css?v=2">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="topbar__brand" href="#top">涂涂画画</a>
+    <a class="topbar__cta" href="#trial">预约试听</a>
+  </header>
+
+  <main id="top">
+
+    <!-- 首屏:宣言居中,签名①字体即图形 -->
+    <section class="hero">
+      <span class="mono hero__kicker">Tutu Art Studio · 儿童美术教室</span>
+      <h1>涂涂画画</h1>
+      <p class="hero__line">孩子的画，值得一面白墙。</p>
+      <span class="mono hero__stat">馆藏作品 <span id="work-count">—</span> 件 · 持续上新</span>
+      <span class="hero__scroll" aria-hidden="true">↓</span>
+    </section>
+
+    <!-- 作品流:split-narrative 交错栏 + 章节断点 -->
+    <section class="section" id="works">
+      <div class="section__head">
+        <span class="mono">Gallery · 馆藏 <span id="works-label-n">—</span> 件</span>
+        <h2>作品</h2>
+      </div>
+      <ul class="stream" id="stream">
+        <li class="mono">正在布展……</li>
+      </ul>
+      <noscript>
+        <p class="mono">请启用 JavaScript 查看作品画廊。</p>
+      </noscript>
+    </section>
+
+    <!-- 理念 -->
+    <section class="section" id="about">
+      <div class="section__head">
+        <span class="mono">About</span>
+        <h2>我们</h2>
+      </div>
+      <div class="prose">
+        <p class="lede">涂涂画画是一间儿童美术教室。</p>
+        <p>在这里，画不被打分，也不被比较。每一张随手涂鸦都被当作作品对待——装裱、展出、认真收好。孩子负责画，墙负责等。</p>
+        <p>我们收集孩子的每一张画，像美术馆对待藏品一样对待它们。因为被认真对待过的东西，会教人认真。</p>
+        <p class="sig">—— 涂涂画画</p>
+      </div>
+    </section>
+
+    <!-- 教室环境:照片待上架 -->
+    <section class="section" id="space">
+      <div class="section__head">
+        <span class="mono">The Space</span>
+        <h2>教室</h2>
+      </div>
+      <div class="space-grid">
+        <div class="space-slot"><span class="mono">教室照片 · 待上架</span></div>
+        <div class="space-slot"><span class="mono">教室照片 · 待上架</span></div>
+        <div class="space-slot"><span class="mono">教室照片 · 待上架</span></div>
+      </div>
+      <p class="mono space-note">Photo coming soon —— 环境照片整理后替换此处</p>
+    </section>
+
+    <!-- 试听:转化区 -->
+    <section class="section" id="trial">
+      <div class="section__head">
+        <span class="mono">Book a Trial</span>
+        <h2>试听</h2>
+      </div>
+      <div class="prose">
+        <p class="lede">先来画一张，再决定要不要留下。</p>
+        <p>试听课按孩子年龄分班，画什么、怎么画，来了就知道。预约后我们会与您确认时间。</p>
+      </div>
+      <div class="trial-cols">
+        <ul class="trial-list">
+          <li><span class="k">适合年龄</span><span class="todo">[待填]</span></li>
+          <li><span class="k">班级人数</span><span class="todo">[待填]</span></li>
+          <li><span class="k">课程时长</span><span class="todo">[待填]</span></li>
+          <li><span class="k">试听费用</span><span class="todo">[待填]</span></li>
+        </ul>
+        <div class="trial-cta">
+          <p class="todo"><span class="mono">WeChat</span>微信号 / 二维码 [待填]</p>
+          <p class="todo"><span class="mono">Tel</span>咨询电话 [待填]</p>
+          <p class="todo"><span class="mono">Address</span>教室地址 [待填]</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <span class="footer__brand">涂涂画画</span>
+      <span class="footer__latin">Tutu Art Studio · Children's Art</span>
+      <span class="mono">© 2026 涂涂画画 · <a href="#top">回到顶部</a></span>
+      <span class="mono">ICP 备案号 [待填]</span>
+    </div>
+  </footer>
+
+  <!-- 移动端底部常驻 CTA(试听区可见时自动退场) -->
+  <nav class="cta-bar" id="cta-bar" aria-label="预约试听">
+    <a href="#trial">预约试听课</a>
+  </nav>
+
+  <!-- 灯箱 -->
+  <div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="作品查看">
+    <span class="mono lb__counter" id="lb-counter">1 / 1</span>
+    <button class="lb__close" id="lb-close" aria-label="关闭">×</button>
+    <img class="lb__img" id="lb-img" src="" alt="">
+    <button class="lb__nav lb__nav--prev" id="lb-prev" aria-label="上一件">←</button>
+    <button class="lb__nav lb__nav--next" id="lb-next" aria-label="下一件">→</button>
+    <p class="lb__caption" id="lb-caption"></p>
+  </div>
+
+  <script src="js/works-data.js"></script>
+  <script src="js/gallery.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{
+  "source": "E:\\Code\\mine-skills\\testing-example\\maimang-site-2.0\\_staging",
+  "files": {
+    "01-hero-loaves-wheat.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "02-soft-euro-crumb.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "03-matcha-toast.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "04-bagels.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "05-rye-pumpernickel.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "06-studio-dough.jpg": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    }
+  },
+  "assets": [
+    {
+      "file": "assets/01-hero-loaves-wheat.jpg",
+      "srcFormat": "PNG",
+      "srcName": "01-hero-loaves-wheat.jpg"
+    },
+    {
+      "file": "assets/02-soft-euro-crumb.jpg",
+      "srcFormat": "PNG",
+      "srcName": "02-soft-euro-crumb.jpg"
+    },
+    {
+      "file": "assets/03-matcha-toast.jpg",
+      "srcFormat": "PNG",
+      "srcName": "03-matcha-toast.jpg"
+    },
+    {
+      "file": "assets/04-bagels.jpg",
+      "srcFormat": "PNG",
+      "srcName": "04-bagels.jpg"
+    },
+    {
+      "file": "assets/05-rye-pumpernickel.jpg",
+      "srcFormat": "PNG",
+      "srcName": "05-rye-pumpernickel.jpg"
+    },
+    {
+      "file": "assets/06-studio-dough.jpg",
+      "srcFormat": "PNG",
+      "srcName": "06-studio-dough.jpg"
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,172 @@
+/* ============================================================
+   拾花 2.0 · 组件层（值一律取 design-system/tokens.css）
+   锚点 craft-artisanal：手作工艺 —— 照片为主角、楷体大字标、暖纸底、soft 动效
+   中轴 center-axis：hero 与通栏图居中；正文/列表/表格保持左对齐
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { line-break: strict; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: var(--measure); margin-inline: auto; padding-inline: var(--gutter); }
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  color: var(--muted);
+}
+
+/* 中轴：文字内容一律左对齐（hero/通栏图/信任条除外） */
+h2, h3, p, ul, ol, table { text-align: left; }
+
+/* ── Hero（门牌）：center-axis —— 拾花居中压首屏（视觉签名 1）── */
+.hero { padding-block: var(--space-8) var(--space-7); text-align: center; }
+.hero .kicker {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.22em;
+  color: var(--accent-ink);
+  display: block;
+  margin-bottom: var(--space-3);
+}
+.hero h1 {
+  font-family: var(--font-cjk);
+  font-size: var(--fs-display);
+  font-weight: 400;               /* Marcellus/文楷单字重，600 会伪粗（见 MASTER 偏离登记） */
+  line-height: var(--lh-display);
+  letter-spacing: var(--trk-display);
+}
+.hero .claim {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+  max-width: var(--prose-width);
+  margin: var(--space-4) auto 0;
+}
+.hero-cta {
+  margin-top: var(--space-4);
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  align-items: center; justify-content: center;
+}
+.cta {
+  display: inline-block;
+  background: var(--accent);
+  color: #FFFFFF;                  /* 白字对 --accent 6.26:1 */
+  font-weight: var(--weight-display);
+  font-size: var(--fs-base);
+  line-height: 1;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.cta:hover { background: #7A3F0E; } /* 同色相加深 */
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hero .tel { font-size: var(--fs-base); color: var(--muted); }
+.hero .tel u { text-decoration: underline dashed rgba(148,78,18,.45); text-underline-offset: 4px; }
+
+/* ── 通栏图（880 档）：与 hero 同一居中轴，图注同轴 ── */
+.fig-wide { margin: 0 auto var(--space-6); width: min(880px, 100%); text-align: center; }
+.fig-wide img, .duo img, .ph img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--line); }
+figcaption { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--space-2); }
+
+/* ── 区块节奏 ── */
+section { padding-block: var(--space-7); border-top: 1px solid var(--line); }
+section h2 {
+  font-family: var(--font-cjk);
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  line-height: var(--lh-xl);
+  margin-bottom: var(--space-4);
+}
+section h2 .idx { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--accent-ink); margin-right: var(--space-2); vertical-align: 3px; }
+section .lead { max-width: var(--prose-width); margin-bottom: var(--space-5); }
+section .lead, .duo .prose p { color: var(--fg); }
+.duo .prose p + p { margin-top: var(--space-3); }
+
+/* ── 图文交替（视觉签名 2）：图行奇偶互换，图位 320/520 两档 ── */
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-5);
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
+.duo .duo-fig { width: min(520px, 100%); text-align: left; }
+.duo .fig-sm { width: min(320px, 100%); }
+.duo.rev { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+.duo.rev .duo-fig { order: 2; text-align: right; }
+.duo.rev figcaption { text-align: right; }
+
+/* ── 跨栏引言（视觉签名 3）：向左出血，超出正文列 ── */
+.pullquote {
+  font-family: var(--font-cjk);
+  font-size: var(--fs-xl);
+  line-height: var(--lh-xl);
+  border-left: 3px solid var(--accent);
+  padding-left: var(--space-4);
+  margin-left: calc(-1 * var(--space-6)); /* 出血 64px，仍在版心与视口内 */
+  margin-block: var(--space-5);
+}
+
+/* ── 价签表 ── */
+.table-note { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--space-2); }
+table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-5); }
+thead th {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  color: var(--muted);
+  font-weight: var(--weight-display);
+  text-align: left;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  border-bottom: 1px solid var(--fg);
+}
+thead th.price { text-align: right; padding-right: 0; }
+tbody td { padding: var(--space-2) var(--space-2) var(--space-2) 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody td.price { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0; }
+
+/* [待填] 占位：红虚线框 + 标签，显式可见 */
+.todo-row { border: 1.5px dashed rgba(148,78,18,.45); }
+.todo-row td { border-bottom: none; color: var(--accent); font-size: var(--fs-xs); font-family: var(--font-mono); }
+.todo-row + .todo-row { margin-top: -1.5px; }
+.todo-tag { color: var(--accent); font-family: var(--font-mono); font-size: var(--fs-xs); }
+.todo-inline u { text-decoration: underline dashed rgba(148,78,18,.45); text-underline-offset: 4px; }
+
+/* ── 信息行（到店 / 订花）── */
+.info-list { list-style: none; max-width: var(--prose-width); }
+.info-list li { display: flex; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.info-list .k { flex: 0 0 5.5em; color: var(--muted); }
+.info-list .v { color: var(--fg); }
+
+/* ── 信任条与页脚 ── */
+.trust { background: var(--bg-soft); border-top: none; }
+.trust p { text-align: center; }
+footer { padding-block: var(--space-5); }
+footer p { font-size: var(--fs-xs); color: var(--muted); text-align: center; }
+
+/* ── 移动端（≤640px）：交替改单列、hero 限幅 48px（见 MASTER 偏离登记）── */
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .hero { padding-block: var(--space-6) var(--space-6); }
+  .hero h1 { font-size: 48px; }
+  section { padding-block: var(--space-6); }
+  .duo, .duo.rev { grid-template-columns: 1fr; }
+  .duo .duo-fig, .duo.rev .duo-fig, .duo .fig-sm { width: 100%; order: 0; text-align: left; }
+  .duo.rev figcaption { text-align: left; }
+  .pullquote { margin-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

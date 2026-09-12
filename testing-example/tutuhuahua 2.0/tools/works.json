@@ -1,0 +1,41 @@
+{
+  "_说明": "每幅画一条。key = inbox 里的原始文件名。title=画名 media=媒介 author=小朋友名字(留空则页面不显示) age=年龄。改完保存,再跑 python tools/build.py。",
+  "works": {
+    "image-2c016979d4c35314ae9e9f2ef769f792.jpg": {
+      "title": "飞向太空",
+      "media": "水彩",
+      "author": "",
+      "age": ""
+    },
+    "image-62fce70fbe004fdfa81c69c9d5be0352.jpg": {
+      "title": "深海里的鲸",
+      "media": "线描",
+      "author": "",
+      "age": ""
+    },
+    "image-919885ee1504a3bc69ea42ef7302d7bc.jpg": {
+      "title": "爸爸妈妈和我",
+      "media": "蜡笔",
+      "author": "",
+      "age": ""
+    },
+    "image-aa9e2ec17d9b3915d051deb1b0d916a4.jpg": {
+      "title": "彩虹花园",
+      "media": "蜡笔",
+      "author": "",
+      "age": ""
+    },
+    "image-bf1b6b4093ada750610cc08d3647e8a1.jpg": {
+      "title": "猫与金鱼",
+      "media": "水彩",
+      "author": "",
+      "age": ""
+    },
+    "image-e8bb99a185f16584f4f11642bb51839e.jpg": {
+      "title": "喷火龙与火山",
+      "media": "蜡笔",
+      "author": "",
+      "age": ""
+    }
+  }
+}

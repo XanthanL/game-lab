@@ -884,6 +884,64 @@ html[data-rm] .overlay{animation:none}
 .synlist i{color:var(--c-ink-2);font-style:normal;letter-spacing:.04em}
 .row-btns{display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 
+/* ---------- 5.6 排行榜 ---------- */
+.bdlist{margin-top:10px;max-height:44vh;overflow-y:auto}
+.bdrow{display:grid;grid-template-columns:30px 1fr 62px 52px 58px;gap:8px;align-items:baseline;
+  padding:7px 5px;border-bottom:1px solid rgb(var(--c-steel-rgb) / .16)}
+.bdrow.head{font-size:var(--fs-1);letter-spacing:.16em;color:var(--c-ink-2);
+  border-bottom-color:rgb(var(--c-cyan-rgb) / .32)}
+.bdrow.me{background:rgb(var(--c-amber-rgb) / .09)}
+.bdrow .rk{font-family:ui-monospace,Consolas,monospace;color:var(--c-amber)}
+.bdrow.head .rk{color:var(--c-ink-2)}
+.bdrow .sc{font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-4);color:var(--c-ink-hi)}
+.bdrow .sub{font-size:var(--fs-1);color:var(--c-ink-2);letter-spacing:.06em}
+.bdrow .num{font-family:ui-monospace,Consolas,monospace;text-align:right;color:var(--c-cyan)}
+.bdempty{padding:20px 2px;text-align:center;color:var(--c-ink-2);letter-spacing:.1em}
+.bdrank{margin-top:9px;color:var(--c-amber);letter-spacing:.14em;font-size:var(--fs-2)}
+/* ---------- 6.1 种子模式 ---------- */
+.sdrow{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;flex-wrap:wrap}
+#sdInput{width:12ch;padding:8px 10px;text-align:center;letter-spacing:.2em;text-transform:uppercase;
+  font-size:var(--fs-4);color:rgb(var(--c-white-rgb));background:var(--c-void);
+  border:1px solid rgb(var(--c-cyan-rgb) / .35);border-radius:2px}
+#sdInput:focus{outline:none;border-color:rgb(var(--c-cyan-rgb) / .75)}
+.sdhint{margin-top:10px;font-size:var(--fs-1);color:var(--c-steel);line-height:1.7;text-align:center}
+.sdcode{margin-top:8px;color:var(--c-amber);letter-spacing:.16em;font-size:var(--fs-2)}
+/* ---------- 6.2 难度档 ---------- */
+.difrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.diflab{width:100%;text-align:center;font-size:var(--fs-1);color:var(--c-steel);letter-spacing:.16em}
+.dif{padding:6px 16px;font-size:var(--fs-2);letter-spacing:.1em;color:var(--c-ink);
+  background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .25);border-radius:2px;cursor:pointer}
+.dif.on{color:var(--c-void);background:var(--c-amber);border-color:var(--c-amber)}
+.dif.lock{opacity:.4;cursor:not-allowed}
+/* ---------- 6.3 自定义挑战 ---------- */
+.rmodrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.rmodbump{width:100%;text-align:center;font-size:var(--fs-1);color:var(--c-amber);letter-spacing:.14em}
+.rmod{padding:5px 13px;font-size:var(--fs-2);letter-spacing:.08em;color:var(--c-ink);
+  background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .25);border-radius:2px;cursor:pointer}
+.rmod.on{color:var(--c-void);background:var(--c-cyan);border-color:var(--c-cyan)}
+.rmod.lock{opacity:.4;cursor:not-allowed}
+/* ---------- 6.4 工坊式卡池 ---------- */
+.poolrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px;
+  max-width:min(94vw,720px);margin-left:auto;margin-right:auto}
+.poolrow .chi{padding:3px 9px;font-size:var(--fs-1);letter-spacing:.06em;color:var(--c-ink);
+  background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .2);border-radius:1px;cursor:pointer;line-height:1.4}
+.poolrow .chi.on{color:var(--c-void);background:var(--c-foe);border-color:var(--c-foe)}
+.poolrow .chi.dis{opacity:.35;cursor:not-allowed}
+.poolbump{width:100%;text-align:center;font-size:var(--fs-1);color:var(--c-steel);letter-spacing:.14em}
+.poolbump .num{color:var(--c-foe);font-weight:bold}
+/* ---------- 6.5 幽灵回放 ---------- */
+.ghostrow{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+  margin-top:12px;max-width:min(94vw,720px);margin-left:auto;margin-right:auto}
+.ghostlab{font-size:var(--fs-1);color:var(--c-steel);letter-spacing:.12em;line-height:1.5}
+.ghostlab b{color:var(--c-cyan-hi);font-weight:normal}
+.ghostlab i{color:var(--c-amber);font-style:normal}
+.ghostrow .gclr{padding:3px 11px;font-size:var(--fs-1);letter-spacing:.08em;color:var(--c-ink);
+  background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .25);border-radius:1px;cursor:pointer}
+.ghostrow .gclr:hover{border-color:var(--c-foe);color:var(--c-foe)}
+/* ---------- 5.6 分享卡片 ---------- */
+#shareImg{display:block;width:min(560px,90vw);margin:10px auto 0;
+  border:1px solid rgb(var(--c-cyan-rgb) / .3);background:var(--c-void)}
+
 /* ---------- touch ---------- */
 #joybase{position:fixed;width:106px;height:106px;border-radius:50%;border:1px solid rgb(var(--c-cyan-rgb) / .35);
   background:rgb(var(--c-cyan-rgb) / .05);z-index:var(--z-touch);pointer-events:none;transform:translate(-50%,-50%)}
@@ -1004,8 +1062,10 @@ html[data-rm] .overlay{animation:none}
       <button id="btnLaunch" class="btn" data-i18n="m_launch" data-page-node-id="aV5dF8XRuZsW7M1KtlJEDX">LAUNCH ▸ 出击</button>
       <button id="btnContinue" class="btn ghost" hidden data-i18n="m_resume" data-page-node-id="BYU3FTlwdVGSljwm5aRuAR">继续漂移 ▸ C</button>
       <button id="btnDaily" class="btn" data-page-node-id="__DAILY_BTN__" data-i18n="m_daily">DAILY ▸ 每日挑战</button>
+      <button id="btnSeed" class="btn ghost" data-i18n="m_seed">SEED ▸ 自定义种子</button>
       <button id="btnSaves" class="btn ghost" data-i18n="m_saves" data-page-node-id="APHyEc2RHlKhVAFVbhb6aF">SAVES ▸ 存档管理</button>
       <button id="btnLogbook" class="btn ghost" data-i18n="m_log" data-page-node-id="dWzHTpgncosz0SYYwdM33Z">LOG ▸ 航行日志</button>
+      <button id="btnBoard" class="btn ghost" data-i18n="m_board">BOARD ▸ 排行榜</button>
       <button id="btnSettings" class="btn ghost" data-i18n="m_settings" data-page-node-id="GAEvA4l94BsYjWwrpZ9eN3">SETTINGS ▸ 设置</button>
       <button id="btnLang" class="btn ghost langbtn" data-i18n="m_lang">🌐 EN ▸ ENGLISH</button>
     </div>
@@ -1018,6 +1078,10 @@ html[data-rm] .overlay{animation:none}
 <div id="hulls" class="overlay" hidden data-page-node-id="7YeBgENyG6xpMeNkVbF5xC">
   <div class="cards-in" data-page-node-id="HKrBYk8WWJyqAcntsJolsP">
     <h2 data-page-node-id="ruNuChH5DOKwjIQMV3UwVf">CHOOSE HULL<span data-i18n="h_sub" data-page-node-id="4EZY7QqC0kdgMCrPkZrCJI">选择出厂船体 —— 击败巨像解锁更多</span></h2>
+    <div class="difrow" id="diffRow"></div>
+    <div class="rmodrow" id="rmodRow"></div>
+    <div class="poolrow" id="poolRow"></div>
+    <div class="ghostrow" id="ghostRow"></div>
     <div id="hullrow" data-page-node-id="SWJS8uTeI6V4y2vXhjZf4j"></div>
     <div class="keyhint mono" data-page-node-id="DALGxQlMZFTcuegl35UG6f"><span class="kd" data-i18n="h_kd" data-page-node-id="e7bArAumvpgtpd1yDwZGur">1 – 5 或点按选择</span><span class="mh" data-i18n="h_mh" data-page-node-id="XRfFl7TXc72yprimQAKqGn">◀ 左右滑动浏览 ▶ · 点按即出击</span></div>
   </div>
@@ -1038,8 +1102,11 @@ html[data-rm] .overlay{animation:none}
       <div data-page-node-id="lHlqgWIbJCVfFD1LXGHISX"><b id="vTime" class="mono" data-page-node-id="PqNhO5BOOBL0GNtwHN6RJG">0:00</b><span data-i18n="v_time">用时</span></div>
     </div>
     <div class="chips" id="vicChips" data-page-node-id="zQdalkxTO6KYnPktwhxJDY"></div>
+    <div class="bdrank" id="vicRank" hidden></div>
+    <div class="sdcode" id="vicSeed" hidden></div>
     <div class="row-btns" data-page-node-id="7QUW3tU7uFmNCZnkL9lPDq">
       <button id="btnEndless" class="btn" data-i18n="v_endless" data-page-node-id="oi76jcED2La916psncK27C">无尽漂移 ▸ E</button>
+      <button id="btnShareV" class="btn ghost" data-i18n="v_share">CARD ▸ 分享卡片</button>
       <button id="btnMenuV" class="btn ghost" data-i18n="v_menu" data-page-node-id="FHCz3cNqa2EeRl4eMYFR74">返回标题</button>
     </div>
   </div>
@@ -1057,12 +1124,56 @@ html[data-rm] .overlay{animation:none}
     </div>
     <div class="statline" id="pStats" data-page-node-id="CwuMheZsCunYg9TSRvh6Uj"></div>
     <div class="chips" id="pauseChips" data-page-node-id="sl4bCAI9AVZJUmaB1Vu9Is"></div>
-    <div class="synlist" id="pauseSyn" data-page-node-id="lYcToqpVYJCnecC5d0R9la"></div>
+    <div class="synlist" id="pauseSyn" data-page-node-id="sl4bCAI9AVZJUmaB1Vu9Is"></div>
+    <div class="sdcode" id="pSeed" hidden></div>
     <div class="row-btns" data-page-node-id="9FBiGeQSXKPWxps6V2t8ok">
       <button id="btnResume" class="btn" data-i18n="p_resume" data-page-node-id="lkoNg5ViiffmJ2sweuWbjP">继续</button>
       <button id="btnRestart" class="btn ghost" data-i18n="p_restart" data-page-node-id="kenlRQVaIAjpzqxpwpC985">重开本局</button>
       <button id="btnSettingsP" class="btn ghost" data-i18n="p_settings" data-page-node-id="B3dev3eWj7u2lIhmCRtpx8">SETTINGS ▸ 设置</button>
+      <button id="btnShot" class="btn ghost" data-i18n="p_shot">SNAP ▸ 截图</button>
       <button id="btnQuit" class="btn ghost" data-i18n="p_quit" data-page-node-id="d0JyH42UDZErzMwfb89xGo">返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<!-- 6.1 自定义种子：同种子 = 同编队 / 同选卡，可分享给别人复跑 -->
+<div id="seedpanel" class="overlay" hidden>
+  <div class="panel">
+    <h2>SEEDED RUN<span data-i18n="sd_sub">同一个种子，同一局</span></h2>
+    <div class="sdrow">
+      <input id="sdInput" maxlength="6" placeholder="XXXXXX" autocomplete="off" spellcheck="false">
+      <button id="sdRand" class="btn ghost" data-i18n="sd_rand">随机</button>
+    </div>
+    <div class="sdhint" data-i18n="sd_hint">留空 = 每局随机 · 6 位短码会记在成绩卡上，朋友输入同一个码就能跑完全相同的一局</div>
+    <div class="row-btns">
+      <button id="sdGo" class="btn" data-i18n="sd_go">出击</button>
+      <button id="sdBack" class="btn ghost" data-i18n="sd_back">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5.6 本地排行榜：只存本机，Top10 -->
+<div id="board" class="overlay" hidden>
+  <div class="panel">
+    <h2>LEADERBOARD<span data-i18n="bd_sub">本机最佳十次漂移</span></h2>
+    <div class="bdlist" id="bdList"></div>
+    <div class="row-btns">
+      <button id="btnBdClear" class="btn ghost" data-i18n="bd_wipe">清空记录</button>
+      <button id="btnBdClose" class="btn" data-i18n="bd_close">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5.6 分享卡片：离屏 canvas 画的成绩卡，可保存 / 走系统分享 -->
+<div id="sharecard" class="overlay" hidden>
+  <div class="panel">
+    <h2>SHARE CARD<span data-i18n="sh_sub">成绩卡片</span></h2>
+    <img id="shareImg" alt="">
+    <div class="sdhint" data-i18n="sh_seedhint">卡片右上角的 6 位种子码 —— 朋友在 SEEDED RUN 里输入同一个码，就能跑完全相同的一局</div>
+    <div class="row-btns">
+      <button id="btnShSave" class="btn" data-i18n="sh_save">保存图片</button>
+      <button id="btnShShare" class="btn ghost" data-i18n="sh_share" hidden>分享</button>
+      <button id="btnShClose" class="btn ghost" data-i18n="sh_close">关闭</button>
     </div>
   </div>
 </div>
@@ -1089,8 +1200,11 @@ html[data-rm] .overlay{animation:none}
     <!-- 星尘结算（3.5）：本局产出 + 可用余额，指向解锁星图 -->
     <div class="statline dust" id="overDust" data-page-node-id="__O_DUST__"></div>
     <div class="chips" id="overChips" data-page-node-id="xFgESe1KjP3AK1NdCfFW1F"></div>
+    <div class="bdrank" id="overRank" hidden></div>
+    <div class="sdcode" id="overSeed" hidden></div>
     <div class="row-btns" data-page-node-id="wRCzBhpF708lrY3uZVh9eX">
       <button id="btnRetry" class="btn" data-i18n="o_retry" data-page-node-id="DPdUSs6U83Kq7e4DWaWUa6">再出击 ▸ R</button>
+      <button id="btnShareO" class="btn ghost" data-i18n="o_share">CARD ▸ 分享卡片</button>
       <button id="btnMenu" class="btn ghost" data-i18n="o_menu" data-page-node-id="DYZdfF5SYiBevD3bkaTLtw">返回标题</button>
     </div>
   </div>
@@ -1235,11 +1349,40 @@ const TAU=Math.PI*2;
    可注入种子的随机源：默认走 Math.random（与旧行为完全一致）；
    setSeed(s) 后所有顶层随机（rand/irand/pick/shuffle）改走 mulberry32，
    VFX 与微观暴击判定仍走 Math.random —— 「同一种子 = 相同开局」只需这 4 个函数确定。
-   clearSeed() 还原默认状态。 */
-const RND={on:false,s:0};
+   clearSeed() 还原默认状态。
+
+   6.1 的两层约定（想加随机的先读这段）：
+   【布局 / 奖励层】编队、精英、词缀、掉落、选卡 —— 走 srand01()，且决策点用 seedAt()
+   键控重播种，保证「同种子 + 同推进 = 同结果」，不受战斗时长影响。
+   【战斗 / 表现层】弹道散布、AI 出手节拍、走位翻转、暴击、粒子 —— 走 Math.random()，
+   绝不进布局流：它们的调用次数取决于玩家怎么打，一旦进流会把后续编队与选卡推歪。 */
+const RND={on:false,s:0,s0:0};
 function _mulberry32(){let t=RND.s+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
 function srand01(){return RND.on?_mulberry32():Math.random();}
-function setSeed(s){RND.on=true;RND.s=(s|0)||1;}
+function setSeed(s){RND.on=true;RND.s=(s|0)||1;RND.s0=RND.s;}
+/* 6.1 键控重播种：把流拉回 f(原始种子, 上下文键, 序号)。
+   为什么必须有：战斗里每帧都在消耗 rand()（弹道散布 / AI 节拍 / 生成抖动），
+   战斗时长一变，流的位置就变 —— 下一波编队与下一次选卡会跟着漂。
+   布局与奖励是「决策点」而不是「过程」，在每个决策点按 (kind,idx) 重播种，
+   它们就只依赖 (种子, 波次/等级)，与打多久、怎么打完全无关。 */
+function seedAt(k,i){
+  if(!RND.on)return;
+  const x=(RND.s0^Math.imul(k,0x9E3779B1)^Math.imul((i|0)+1,0x85EBCA6B))|0;
+  RND.s=x||1;
+}
+/* 6.1 种子短码：6 位 base36（ZZZZZZ = 2176782335），好念好抄好贴链接。
+   上限取 36^6-1 而不是 2^32-1 —— 只有 6 位才装得下，多一位就不好口头传播了。 */
+const SEED_MAX=2176782335;
+/* 6 位码装不下 32 位整数，超出上限的一律折叠到 [1,SEED_MAX]。
+   ⚠️ seedCode / codeSeed / 落种 必须用同一个折法，否则「卡片上印的码」和「真跑的种子」
+      会对不上 —— 之前用 Math.min 夹，结果所有超限种子都显示成同一个 ZZZZZZ。
+   每日挑战的种子是按日期算的，天然可能超限，所以每日不显示码、显示日期（见 setSeedLine）。 */
+function normSeed(v){const x=(v>>>0)%SEED_MAX;return x||SEED_MAX;}
+function seedCode(n){let s=normSeed(n).toString(36).toUpperCase();
+  while(s.length<6)s='0'+s;return s;}
+function codeSeed(c){const v=parseInt(String(c||'').trim(),36);
+  if(!Number.isFinite(v)||v<=0)return 0;
+  return normSeed(v);}
 function clearSeed(){RND.on=false;RND.s=0;}
 const rand=(a=1,b)=>b===undefined?srand01()*a:a+srand01()*(b-a);
 const irand=(a,b)=>Math.floor(a+srand01()*(b-a+1));
@@ -1306,14 +1449,16 @@ function hexTriple(h){const v=parseInt(h.slice(1),16);
 const OPTS_KEY='nova-opts';
 const OPT_Q=['auto','high','mid','low'];
 const OPT_CB=['off','rg','by'];
-const OPTS={quality:'auto',shake:1,nebula:1,glow:1,parts:1,motion:0,cb:'off'};
-const OPT_BOOL=['shake','nebula','glow','parts','motion'];
+const OPTS={quality:'auto',shake:1,nebula:1,glow:1,parts:1,motion:0,cb:'off',ghost:1};
+const OPT_BOOL=['shake','nebula','glow','parts','motion','ghost'];
 function loadOpts(){
   let s=null;try{s=JSON.parse(localStorage.getItem(OPTS_KEY)||'null');}catch(e){}
   if(!s||typeof s!=='object')return false;
   if(OPT_Q.indexOf(s.quality)>=0)OPTS.quality=s.quality;
   if(OPT_CB.indexOf(s.cb)>=0)OPTS.cb=s.cb;
-  for(const k of OPT_BOOL)OPTS[k]=s[k]?1:0;
+  /* ⚠️ 必须判 k in s —— 后加的开关（如 6.5 ghost）在老存档里根本没有这个键，
+        无条件写 0 会让新功能对老玩家默认关闭，等于白做。 */
+  for(const k of OPT_BOOL)if(k in s)OPTS[k]=s[k]?1:0;
   return true;
 }
 function saveOpts(){try{localStorage.setItem(OPTS_KEY,JSON.stringify(OPTS));}catch(e){}}
@@ -1394,6 +1539,19 @@ const I18N_EN={
  st_rm:'Reduce motion',
  st_rm_hint:'Kills screen shake, camera kick and looping animations. While it is on, the screen-shake toggle is overridden.',
  or_hint:'Landscape plays better — tap to dismiss',
+ m_board:'BOARD ▸ LEADERBOARD',
+ bd_sub:'Top 10 runs on this device',bd_wipe:'Clear records',bd_close:'Back',
+ bd_empty:'No runs yet — go fly one',
+ bd_h_score:'SCORE',bd_h_wave:'WAVE',bd_h_kills:'KILLS',bd_h_time:'TIME',
+ bd_m_clear:'CLEAR',bd_m_daily:'DAILY',bd_m_endless:'ENDLESS',bd_m_standard:'STANDARD',
+ ov_rank:'THIS RUN',ov_norank:'Outside top 10',
+ m_seed:'SEED ▸ CUSTOM SEED',sd_sub:'Same seed, same run',sd_rand:'RANDOM',sd_go:'LAUNCH',
+ sd_back:'BACK',
+ sd_hint:'Blank = random each run · the 6-char code is printed on your share card — a friend who types it flies the exact same run',
+ sd_daily:'DAILY',sd_seed:'SEED',
+ sh_seedhint:'The 6-char code at the top right — type it in SEEDED RUN to fly the exact same run',
+ p_shot:'SNAP ▸ Screenshot',o_share:'CARD ▸ Share card',v_share:'CARD ▸ Share card',
+ sh_sub:'Run card',sh_save:'Save image',sh_share:'Share',sh_close:'Close',
  hud_mute:'Sound — M',hud_pause:'Pause — P',
 };
 
@@ -1557,13 +1715,13 @@ const el={
   wave:$('wavelabel'),enleft:$('enleft'),
   bossName:$('bossname'),bossbar:$('bossbar'),bossFill:$('bossbar').querySelector('i'),
   score:$('score'),best:$('best'),ptime:$('ptime'),banner:$('banner'),bMain:$('bannerMain'),bSub:$('bannerSub'),
-  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),btnDaily:$('btnDaily'),menuDaily:$('menuDaily'),
+  cards:$('cards'),cardrow:$('cardrow'),menu:$('menu'),menuBest:$('menuBest'),btnContinue:$('btnContinue'),btnDaily:$('btnDaily'),btnSeed:$('btnSeed'),menuDaily:$('menuDaily'),
   guide:$('guide'),guideTag:$('guideTag'),guideTxt:$('guideTxt'),guideKey:$('guideKey'),
   pause:$('pause'),pauseChips:$('pauseChips'),pauseSyn:$('pauseSyn'),pWave:$('pWave'),pLevel:$('pLevel'),pKills:$('pKills'),
   pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
   overCauseBody:$('overCauseBody'),overExtra:$('overExtra'),overCause:$('overCause'),
-  hulls:$('hulls'),hullrow:$('hullrow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
+  hulls:$('hulls'),hullrow:$('hullrow'),diffRow:$('diffRow'),rmodRow:$('rmodRow'),poolRow:$('poolRow'),ghostRow:$('ghostRow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
   lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
   lbEnemies:$('lbEnemies'),lbBosses:$('lbBosses'),lbAffix:$('lbAffix'),
@@ -1572,6 +1730,9 @@ const el={
   overDust:$('overDust'),vicDust:$('vicDust'),
   flash:$('flash'),scan:$('scan'),danger:$('danger'),slowfx:$('slowfx'),aim:$('aim'),
   joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),orhint:$('orhint'),
+  board:$('board'),bdList:$('bdList'),sharecard:$('sharecard'),shareImg:$('shareImg'),
+  overRank:$('overRank'),vicRank:$('vicRank'),
+  seedpanel:$('seedpanel'),sdInput:$('sdInput'),pSeed:$('pSeed'),overSeed:$('overSeed'),vicSeed:$('vicSeed'),
   btnReroll:$('btnReroll'),
   saves:$('saves'),saveList:$('saveList'),
   settings:$('settings'),bgmVol:$('bgmVol'),sfxVol:$('sfxVol'),bgmVal:$('bgmVal'),sfxVal:$('sfxVal'),
@@ -2483,6 +2644,9 @@ const G={
   /* 无尽轮换袋（4.5）：8 选 1 无记忆随机的连续重复率是 11.6%（200 局里 148 局中招），
      改成「一轮一洗牌」的袋抽。两个袋子互相独立 —— 共用会让精英巨像把 Boss 袋抽空。 */
   bossBag:null,champBag:null,bossLast:null,champLast:null,
+  rmods:[], // 6.3 自定义挑战：开局时从 G_RMODS 冻结，局内改选择不影响本局
+  ban:[],   // 6.4 卡池工坊：开局时从 G_BAN 冻结，局内改禁用不影响本局
+  gdt:0.1,gpts:null,gn:0,gplay:null, // 6.5 幽灵：录制步长 / 轨迹扁平数组 / 已录点数 / 本局影子
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
@@ -3120,6 +3284,7 @@ function synPlan(id){
    能力型与数值型都最多装配 6 种：拿满后不再出现该类新模块，只刷已拥有且未满级的。
    未全 max 时每次刷新至少 2 张能力型（能力池不足时以实际数量为限）。 */
 function rollChoices(){
+  seedAt(0xCAFD,(P&&P.level)||0);   // 6.1：选卡 = f(种子, 等级)
   const ownedAbilities=new Set(),ownedStats=new Set();
   for(const m of MODULES){
     if((G.build[m.id]||0)>0){
@@ -3129,6 +3294,10 @@ function rollChoices(){
   const capped=ownedAbilities.size>=ABILITY_CAP;
   const statCapped=ownedStats.size>=STAT_CAP;
   let pool=MODULES.filter(m=>(G.build[m.id]||0)<m.max);
+  /* 6.4 卡池工坊：禁用模块直接从池子里剔除。
+     必须在 rarity/cap 过滤之前 —— 否则一个被禁用且已 maxed 的模块本来就不该出现，
+     剔除前后等价；但禁用未拿过的模块会改变 offer 构成，必须在这里挡。 */
+  if(G.ban&&G.ban.length)pool=pool.filter(m=>G.ban.indexOf(m.id)<0);
   if(G.noRepair)pool=pool.filter(m=>m.id!=='repair');
   if(capped){ // 能力型已满 6 种：剔除未曾拥有的能力型
     pool=pool.filter(m=>m.type!=='ability'||ownedAbilities.has(m.id));
@@ -3155,7 +3324,7 @@ function rollChoices(){
       return m.type==='ability'?rw*abilityBoost:rw;
     });
     let sum=0;for(const w of weights)sum+=w;
-    let r=Math.random()*sum,idx=0;
+    let r=srand01()*sum,idx=0;
     for(let i=0;i<plist.length;i++){r-=weights[i];if(r<=0){idx=i;break;}}
     return plist.splice(idx,1)[0];
   };
@@ -3330,10 +3499,280 @@ function drawHullCache(g,id,tier){
   g.drawImage(c,0,0,150,92);
   return true;
 }
+function renderDiffs(){
+  if(!el.diffRow)return;
+  const st=loadStats(),row=el.diffRow;
+  row.innerHTML='';
+  const lab=document.createElement('div');
+  lab.className='diflab';lab.textContent=T('难度','DIFFICULTY');
+  row.appendChild(lab);
+  for(const d of DIFFS){
+    const un=diffUnlocked(d);
+    const b=document.createElement('button');
+    b.className='dif'+(G_DIFF===d.id?' on':'')+(un?'':' lock');
+    b.dataset.diff=d.id;
+    b.textContent=T(d.zh,d.en);
+    b.title=T(d.d,d.de)+(un?'':T(' · 抵达第 '+d.req+' 波后解锁',' · reach wave '+d.req+' to unlock'));
+    b.addEventListener('click',()=>{
+      if(!diffUnlocked(d)){sfx.ui();return;}
+      G_DIFF=d.id;diffSave(d.id);renderDiffs();sfx.ui();
+    });
+    row.appendChild(b);
+  }
+}
+
+/* 6.3 自定义挑战：多选（最多 3 个），条上实时显示叠加后的得分倍率 */
+function renderPool(){
+  if(!el.poolRow)return;
+  const row=el.poolRow;row.innerHTML='';
+  const cnt=G_BAN.length;
+  const lab=document.createElement('div');
+  lab.className='poolbump';
+  lab.innerHTML=T('卡池工坊','WORKSHOP')
+    +(cnt?(' '+cnt+'/'+POOL_MAX):(' '+T('未禁用 - 最多 '+POOL_MAX+' 个','OFF - up to '+POOL_MAX)));
+  row.appendChild(lab);
+  for(const m of MODULES){
+    const on=G_BAN.indexOf(m.id)>=0;
+    const full=!on && G_BAN.length>=POOL_MAX;
+    const b=document.createElement('button');
+    b.className='chi'+(on?' on':'')+(full?' dis':'');
+    b.dataset.pool=m.id;
+    b.title=T(m.zh||m.id,m.en||m.id)+(on?T(' · 点击恢复',' · unban'):(full?T(' · 禁用位已满',' · slots full'):T(' · 点击禁用',' · ban')));
+    b.textContent=T(m.zh||m.id,m.en||m.id);
+    b.addEventListener('click',()=>{
+      const i=G_BAN.indexOf(m.id);
+      if(i>=0)G_BAN.splice(i,1);
+      else{if(G_BAN.length>=POOL_MAX){sfx.ui();return;}G_BAN.push(m.id);}
+      poolSave(G_BAN);renderPool();sfx.ui();
+    });
+    row.appendChild(b);
+  }
+}
+function renderRmods(){
+  if(!el.rmodRow)return;
+  const row=el.rmodRow;row.innerHTML='';
+  const cnt=G_RMODS.length;
+  const lab=document.createElement('div');
+  lab.className='rmodbump';
+  lab.textContent=T('自定义挑战','CHALLENGE')
+    +(cnt?' · '+cnt+'/'+RMOD_MAX+' · '+T('得分','SCORE')+' ×'+rmodScOf(G_RMODS).toFixed(2)
+         :' · '+T('未启用 —— 最多叠加 '+RMOD_MAX+' 个','OFF — stack up to '+RMOD_MAX));
+  row.appendChild(lab);
+  for(const m of RMODS){
+    const un=rmodUnlocked(m),on=G_RMODS.indexOf(m.id)>=0;
+    const b=document.createElement('button');
+    b.className='rmod'+(on?' on':'')+(un?'':' lock');
+    b.dataset.rmod=m.id;
+    b.textContent=T(m.zh,m.en);
+    b.title=T(m.d,m.de)+(un?'':T(' · 抵达第 '+m.req+' 波后解锁',' · reach wave '+m.req+' to unlock'));
+    b.addEventListener('click',()=>{
+      if(!rmodUnlocked(m)){sfx.ui();return;}
+      const i=G_RMODS.indexOf(m.id);
+      if(i>=0)G_RMODS.splice(i,1);
+      else{if(G_RMODS.length>=RMOD_MAX)G_RMODS.shift();G_RMODS.push(m.id);}
+      rmodSave(G_RMODS);renderRmods();sfx.ui();
+    });
+    row.appendChild(b);
+  }
+}
+/* ======================= 6.5 幽灵回放（GHOST REPLAY） =======================
+   把上一局的飞行轨迹录成影子，下一局按同一条时间轴并排跑 ——
+   不是「重放同一局」，而是「跟过去的自己赛跑」。
+   三条设计约束（各自都踩过一次才定下来）：
+   · 按 G.runT 采样而不是按帧 —— runT 只在 play/inter 涨，暂停与三选一界面
+     天然不录；且掉帧时按 runT 补点，采样密度恒定，影子不会忽快忽慢；
+   · 扁平数组 [x,y,ang,...] 存轨迹，满了就地 2:1 抽稀并把 dt 翻倍 ——
+     时长无上限、点数有上限，不必预分配也不必砍掉尾巴（砍尾巴等于删掉最精彩的一段）；
+   · 按「难度 + 挑战 + 卡池」指纹分组，每组只留最高分那一局 ——
+     换配置时不会拿一条不可比的影子来赛跑；每日另起一组，同日同种子，最公平。 */
+const GHOST_KEY='nova-ghost';
+const GHOST_DT0=0.1;      // 初始采样间隔 10Hz
+const GHOST_CAP=3600;     // 采样点上限（扁平数组长度 = 点数 × 3）
+const GHOST_SLOTS=6;      // 最多保留 6 组配置指纹，超出淘汰最久未刷新的
+const GHOST_MIN=40;       // 少于 40 点（4 秒）的局不值得留影子
+let GHOSTS={};            // {fp:{sc,t,w,hull,sd,diff,rm,bn,v,dt,n,pts,ts}}
+
+function ghostLoad(){
+  try{
+    const v=JSON.parse(localStorage.getItem(GHOST_KEY)||'{}');
+    if(v&&typeof v==='object'){
+      const o={};
+      for(const k in v){
+        const g=v[k];
+        /* 校验放在读档而不是存档：旧版本 / 手改 / 半截写入的脏数据在这里一次性挡掉。
+           ⚠️ 下界是 6（= 2 个采样点，插值所需的最小长度）而不是 9 ——
+              测试里两条点的短轨迹是合法数据，按 9 判会被静默丢掉，表现为"存了却读不回来"。 */
+        if(g&&typeof g==='object'&&Array.isArray(g.pts)&&g.pts.length>=6&&g.dt>0){
+          g.n=Math.min(g.n|0,Math.floor(g.pts.length/3)); // n 越界（截断写入）就地钳回
+          if(g.n>=2)o[k]=g;
+        }
+      }
+      return o;
+    }
+  }catch(e){}
+  return {};
+}
+function ghostStore(){
+  try{localStorage.setItem(GHOST_KEY,JSON.stringify(GHOSTS));}catch(e){}
+}
+/* 局内指纹：一律读冻结后的 G.diff/G.rmods/G.ban */
+function ghostFp(){
+  if(G.daily)return 'daily:'+G.daily.date;
+  return [G.diff||'standard',(G.rmods||[]).join('+')||'-',(G.ban||[]).join('+')||'-'].join('|');
+}
+/* 机库指纹：读「即将开这一局」的选择 —— 与 ghostFp 同格式，开局冻结后二者必然相等 */
+function ghostFpMenu(){
+  if(G.dailyMode)return 'daily:'+new Date().toISOString().slice(0,10);
+  return [G_DIFF,(G_RMODS||[]).join('+')||'-',(G_BAN||[]).join('+')||'-'].join('|');
+}
+function ghostSel(){return GHOSTS[ghostFpMenu()]||null;}
+/* 采样：按 runT 补到该有的点数为止；guard 防极端掉帧把一帧补成几百点 */
+function ghostRec(){
+  if(!G.gpts||!P)return;
+  let guard=0;
+  while(guard++<20){
+    const want=Math.floor(G.runT/G.gdt)+1;
+    if(G.gn>=want)break;
+    ghostPush(P.x,P.y,P.angle);
+  }
+}
+function ghostPush(x,y,a){
+  const q=G.gpts;
+  if(q.length>=GHOST_CAP*3){
+    /* 抽稀：保留偶数下标，dt 翻倍 —— 已录时长不变，点数减半，游标同步折半。
+       ⚠️ G.gn 必须跟着折半，否则下一帧的 want 会瞬间落后几千点，被 guard 卡住后
+          影子时间戳与实际采样率对不上，整条轨迹压缩成一条直线。 */
+    const n=[];
+    for(let i=0;i<q.length;i+=6)n.push(q[i],q[i+1],q[i+2]);
+    q.length=0;
+    for(let i=0;i<n.length;i++)q.push(n[i]);
+    G.gdt*=2;G.gn=Math.floor(G.gn/2);
+    return ghostPush(x,y,a);
+  }
+  q.push(Math.round(x),Math.round(y),Math.round(a*100)/100);
+  G.gn++;
+}
+/* 播放：按 runT 线性插值；角度走最短弧，否则 ±π 处整船会瞬间翻个面 */
+function ghostAt(t){
+  const g=G.gplay;
+  if(!g||!g.n)return null;
+  const p=g.pts,n=g.n,k=t/g.dt,i=Math.floor(k);
+  if(i>=n-1)return null;          // 影子已经跑完它那一局
+  const j=i<0?0:i,f=k-i;
+  const x0=p[j*3],y0=p[j*3+1],a0=p[j*3+2];
+  const x1=p[j*3+3],y1=p[j*3+4],a1=p[j*3+5];
+  let da=a1-a0;
+  while(da>Math.PI)da-=TAU;
+  while(da<-Math.PI)da+=TAU;
+  return {x:x0+(x1-x0)*f,y:y0+(y1-y0)*f,ang:a0+da*f,i:j};
+}
+/* 归档：只在打破「本组配置」纪录时覆盖 —— 打得差的一局不该顶掉巅峰那条影子 */
+function ghostSave(){
+  if(!G.gpts||G.gn<GHOST_MIN||!P)return false;
+  const fp=ghostFp(),sc=Math.round(G.score);
+  const old=GHOSTS[fp];
+  if(old&&(old.sc||0)>=sc)return false;
+  GHOSTS[fp]={sc:sc,t:Math.round(G.runT),w:Wv.n,
+    hull:(G.lastHull&&G.lastHull.id)||'peregrine',
+    sd:G.seed?seedCode(G.seed):'',
+    diff:G.diff||'standard',rm:(G.rmods||[]).slice(),bn:(G.ban||[]).slice(),
+    v:G.mode==='victory'?1:0,
+    dt:G.gdt,n:G.gn,pts:G.gpts.slice(0,G.gn*3),ts:Date.now()};
+  const ks=Object.keys(GHOSTS);
+  if(ks.length>GHOST_SLOTS){      // 超槽：淘汰最久没刷新的一组（LRU，不是最早创建的）
+    ks.sort((a,b)=>(GHOSTS[a].ts||0)-(GHOSTS[b].ts||0));
+    delete GHOSTS[ks[0]];
+  }
+  ghostStore();
+  return true;
+}
+/* 世界内渲染：影子走「钢蓝虚线轮廓」—— 与玩家（实心 + 尾焰）和折跃残影
+   （lighter 加法亮影）三者互不混淆：影子是测绘记录，属结构色，不发光。 */
+function drawGhostRun(){
+  const g=G.gplay;
+  if(!g||!OPTS.ghost||!P)return;
+  const p=g.pts,n=g.n,tEnd=g.dt*(n-1),s=ghostAt(G.runT);
+  ctx.save();
+  /* ① 已飞过的航迹：抽稀到最多 220 段，随影子同步生长 —— 一条"过去"铺在脚下 */
+  const up=s?Math.min(n-1,s.i):n-1;
+  if(up>0){
+    const step=Math.max(1,Math.ceil(up/220));
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=RGBA('steel',0.26);ctx.lineWidth=1.1;
+    ctx.beginPath();
+    for(let i=0;i<=up;i+=step){
+      const x=p[i*3],y=p[i*3+1];
+      if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);
+    }
+    ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
+  }
+  if(s){
+    /* ② 影子船：虚线轮廓 + 一圈呼吸光环，一眼能认出它不是实体 */
+    ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.ang);
+    ctx.strokeStyle=RGBA('cyan',0.6);ctx.lineWidth=1.5;
+    ctx.setLineDash([4,3]);
+    hullPath(ctx,g.hull||'peregrine');
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle=RGBA('cyan',0.22);ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(0,0,20+3*Math.sin(G.t*2.4),0,TAU);ctx.stroke();
+    ctx.restore();
+    /* ③ 间距读数：拉开 90 以上才显示，贴身缠斗时不拿数字挡视线 */
+    const d=Math.hypot(s.x-P.x,s.y-P.y);
+    if(d>90){
+      ctx.fillStyle=RGBA('cyan',0.5);
+      ctx.font='9px ui-monospace,Consolas,monospace';ctx.textAlign='center';
+      ctx.fillText('Δ'+Math.round(d),s.x,s.y-26);
+      ctx.textAlign='left';
+    }
+  }else if(G.runT>=tEnd&&G.runT<tEnd+2.4){
+    /* ④ 影子终点：它那一局到此为止 —— 撑过这个点就是超越了过去的自己 */
+    const k=1-(G.runT-tEnd)/2.4;
+    const lx=p[(n-1)*3],ly=p[(n-1)*3+1];
+    ctx.globalAlpha=k*0.85;
+    ctx.strokeStyle=RGBA('amber',0.9);ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(lx-7,ly-7);ctx.lineTo(lx+7,ly+7);
+    ctx.moveTo(lx+7,ly-7);ctx.lineTo(lx-7,ly+7);ctx.stroke();
+    ctx.beginPath();ctx.arc(lx,ly,13+(1-k)*22,0,TAU);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+/* 机库状态行：影子来自哪一局，一眼可查；换配置看不到别人的影子 */
+function renderGhostRow(){
+  if(!el.ghostRow)return;
+  const row=el.ghostRow;row.innerHTML='';
+  const fp=ghostFpMenu(),g=GHOSTS[fp];
+  const lab=document.createElement('div');
+  lab.className='ghostlab';
+  if(!g){
+    lab.innerHTML=T('影子','GHOST')+' · '
+      +T('暂无 —— 打完一局自动录下','NONE — finish a run to record one');
+  }else{
+    lab.innerHTML=T('影子','GHOST')+' · <b>'+fmt(g.sc)+'</b>'
+      +' · '+T('第 ','WAVE ')+g.w+' · '+fmtT(g.t)
+      +(g.sd?(' · '+T('种子','SEED')+' '+g.sd):'')
+      +(G.dailyMode?'':' · '+diffName(g.diff||'standard')
+        +modTags(g.rm)+(g.bn&&g.bn.length?(' · '+T('工坊','WORKSHOP')+'x'+g.bn.length):''));
+  }
+  row.appendChild(lab);
+  if(g){
+    const b=document.createElement('button');
+    b.className='gclr';b.dataset.gclr=fp;
+    b.textContent=T('清除','CLEAR');
+    b.addEventListener('click',()=>{delete GHOSTS[fp];ghostStore();renderGhostRow();sfx.ui();});
+    row.appendChild(b);
+  }
+}
 function openHulls(){
   G.mode='hulls';
   el.menu.hidden=true;
   el.hullrow.innerHTML='';
+  renderDiffs();   // 6.2 难度选择放在「出击前」这一步
+  renderRmods();   // 6.3 自定义挑战（多选，最多 3 个）
+  renderPool();    // 6.4 卡池工坊（禁用模块，最多 8/29）
+  renderGhostRow();// 6.5 幽灵回放：影子状态行（按当前选择取对应的那条）
   HULLS.forEach((h,i)=>{
     const div=document.createElement('div');
     div.className='card';
@@ -3601,6 +4040,9 @@ function padRepeat(dt){
 /* 手柄在菜单里点"返回" —— 与 ESC 的语义逐条对齐，不要另立一套 */
 function padBack(){
   if(!el.settings.hidden){closeSettings();return true;}
+  if(!el.seedpanel.hidden){closeSeed();return true;}   /* 6.1 种子面板不占 G.mode，按可见性关 */
+  if(!el.sharecard.hidden){closeShare();return true;}   /* 5.6 分享面板盖在对局之上，先关它 */
+  if(!el.board.hidden){closeBoard();return true;}   /* 5.6 board 不占 G.mode，按可见性关 */
   if(G.mode==='logbook'||G.mode==='saves'){toMenu();return true;}
   if(G.mode==='hulls'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return true;}
   if(G.mode==='pause'){resumeGame();return true;}
@@ -3609,7 +4051,8 @@ function padBack(){
 /* 当前可见面板里可聚焦的按钮（用于十字键 / 摇杆上下移动焦点） */
 function padTargets(){
   const out=[];
-  for(const root of [el.menu,el.hulls,el.pause,el.over,el.victory,el.settings,el.saves,el.logbook]){
+  for(const root of [el.menu,el.hulls,el.pause,el.over,el.victory,el.settings,el.saves,el.logbook,
+                    el.board,el.sharecard,el.seedpanel]){   /* 5.6 + 6.1 */
     if(!root||root.hidden)continue;
     for(const b of root.querySelectorAll('button')){
       if(b.hidden||b.disabled)continue;
@@ -3721,6 +4164,7 @@ function setTouch(v){
   el.firebtn.hidden=!v||!inRun();
   if(!v){el.joybase.hidden=true;joy.on=false;}
   guideRefresh(); // 引导文案分键鼠 / 触屏两套，切换输入方式要立刻换过来
+  orientHint();   // 5.5 竖屏提示依赖 isTouch，切换输入方式同样要立刻重算
 }
 function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying';}
 /* ---- 5.5 竖屏提示 ----
@@ -4257,10 +4701,10 @@ function spawnAst(size,x,y,kind,champ){
   const boss=size===4&&!champ;
   const col=size===4&&!!champ; // 精英巨像：体型与血量弱一档，不锁波次进度
   if(x===undefined){const p=edgePoint();x=p.x;y=p.y;}
-  const hpMul=(1+0.07*(Math.max(Wv.n,1)-1))*eTierHp();  // 4.5：× 强化层血量系数
+  const hpMul=(1+0.07*(Math.max(Wv.n,1)-1))*eTierHp()*diffNow().hp*rmodMul('hp');  // 4.5 强化层 · 6.2 难度 · 6.3 挑战
   let hp=AST_HP[size]*hpMul;
   let elite=false;
-  if(!boss&&!col&&Wv.n>=3&&Math.random()<0.08){elite=true;hp*=1.8;}
+  if(!boss&&!col&&Wv.n>=3&&srand01()<0.08){elite=true;hp*=1.8;}
   if(boss&&kind==='twin')hp*=0.55;
   if(boss&&kind==='eye')hp*=0.85;
   if(boss&&kind==='hydra')hp*=0.5;
@@ -4334,9 +4778,9 @@ const AFFIX={
 function applyAffix(e){
   if(e.boss||e.affix)return;
   const chance=Math.min(0.05+0.011*Wv.n,0.20); // 随波次缓升，封顶 20%
-  if(Math.random()>chance)return;
+  if(srand01()>chance)return;
   const ks=Object.keys(AFFIX);
-  const k=ks[(Math.random()*ks.length)|0];
+  const k=ks[(srand01()*ks.length)|0];
   e.affix=k;e.affixC=AFFIX[k].c;
   AFFIX[k].apply(e);
 }
@@ -4437,8 +4881,9 @@ const HORIZON_DPS=26;   // 事件视界每秒灼烧
 const EN_FALLBACK={r:12,hp:3,spd:200,dmg:15,sc:40,xp:4};
 function spawnEnemy(type,x,y){
   /* 4.5：基础线性成长 × 强化层指数成长（0 层时 eTierXxx() 全为 1，与旧版一致） */
-  const m=(1+0.09*(Wv.n-1))*eTierHp(),n=Wv.n;
-  const dm=eTierDmg(),sm=eTierSpd();
+  const D=diffNow(),M=modNow();   // 6.2 难度 · 6.3 挑战（两者相乘，绝不互相覆盖）
+  const m=(1+0.09*(Wv.n-1))*eTierHp()*D.hp*M.hp,n=Wv.n;
+  const dm=eTierDmg()*D.dmg*M.dmg,sm=eTierSpd()*D.spd*M.spd;
   const d=ENEMY_DEFS[type]||EN_FALLBACK;
   const e={type,x,y,vx:0,vy:0,flash:0,age:0,st:0,state:'',ang:angTo(x,y,P.x,P.y),sd:Math.random()<0.5?1:-1,trailTick:0};
   e.r=d.r;
@@ -4471,9 +4916,121 @@ function dropXp(x,y,v){
   }
 }
 
+/* ============================== 难度档（6.2） ==============================
+   三档只改「敌人多强 / 多密 / 打你多痛」与「得分系数」，**不碰玩家输出** ——
+   调数值的永远是这张表，别散到 spawn / AI 里去乘。
+   sc = 得分系数：深渊更难，榜上必须值更多分，否则没人会选。
+   req = 解锁所需的历史最佳波次（0 = 一直可选）。 */
+const DIFFS=[
+ {id:'cruise',  zh:'巡航', en:'CRUISE',   hp:0.75,dmg:0.7, spd:0.9, cnt:0.85,sc:0.8,req:0,
+  d:'敌人更少更脆 —— 先摸清构筑',de:'Fewer, softer foes — room to learn your build'},
+ {id:'standard',zh:'标准', en:'STANDARD', hp:1,   dmg:1,   spd:1,   cnt:1,   sc:1,  req:0,
+  d:'设计基准难度',de:'The balance the game was tuned for'},
+ {id:'abyss',   zh:'深渊', en:'ABYSS',    hp:1.35,dmg:1.3, spd:1.12,cnt:1.2, sc:1.4,req:15,
+  d:'更多更硬更痛 —— 得分 ×1.4',de:'More, tougher, deadlier — score ×1.4'}
+];
+const DIFF_KEY='nova-diff';
+let G_DIFF='standard';
+function diffLoad(){try{const v=localStorage.getItem(DIFF_KEY);
+  if(v&&DIFFS.some(d=>d.id===v))return v;}catch(e){}
+  return 'standard';}
+function diffSave(v){try{localStorage.setItem(DIFF_KEY,v);}catch(e){}}
+function diffUnlocked(d){return !d.req||(loadStats().w|0)>=d.req;}
+function diffName(id){const d=DIFFS.find(x=>x.id===id);return d?T(d.zh,d.en):'';}
+/* 局内一律以 G.diff 为准 —— 选难度是在机库里做的，
+   开局后即便 G_DIFF 被改写（测试 / 设置），当前这局的数值也不许跟着变。 */
+function diffNow(){
+  const id=(G&&G.diff)?G.diff:G_DIFF;
+  return DIFFS.find(x=>x.id===id)||DIFFS[1];
+}
+/* ============================== 6.3 自定义挑战 ==============================
+   难度档改的是「整体压力有多大」，Modifier 改的是「压力长什么样」——
+   同一个深渊档，挂蜂群和挂铁壁是两种完全不同的局，这是难度档给不了的。
+   只留 5 个、最多叠 3 个：组合数够玩（C(5,1)+C(5,2)+C(5,3)=25），又不至于让每一局都无从比较。
+   hp/dmg/spd/cnt = 敌人三围与密度的乘数 —— 与难度档**相乘**，绝不覆盖
+   pk  = 补给刷新间隔倍率        php = 玩家船体上限倍率
+   sc  = 得分加成（**累加**不连乘：三个 0.35 是 ×2.05 而不是 ×2.46，避免叠满爆表）
+   req = 解锁所需历史最佳波次 */
+const RMODS=[
+ {id:'swarm',  zh:'蜂群',en:'SWARM',   hp:0.8,dmg:1,   spd:1,   cnt:1.45,pk:1,  php:1,  sc:0.30,req:0,
+  d:'敌人数量 ×1.45，单体更脆',de:'+45% enemies, each much softer'},
+ {id:'bulwark',zh:'铁壁',en:'BULWARK', hp:1.7,dmg:1,   spd:0.85,cnt:1,   pk:1,  php:1,  sc:0.35,req:0,
+  d:'敌人血量 ×1.7，但更慢',de:'+70% enemy hull, slower'},
+ {id:'gale',   zh:'疾风',en:'GALE',    hp:1,  dmg:1.15,spd:1.35,cnt:1,   pk:1,  php:1,  sc:0.35,req:8,
+  d:'敌人更快更痛',de:'Faster, deadlier foes'},
+ {id:'barren', zh:'荒芜',en:'BARREN',  hp:1,  dmg:1,   spd:1,   cnt:1,   pk:2.2,php:1,  sc:0.40,req:8,
+  d:'补给刷新间隔 ×2.2',de:'Pickups far more scarce'},
+ {id:'brittle',zh:'脆命',en:'BRITTLE', hp:1,  dmg:1,   spd:1,   cnt:1,   pk:1,  php:0.5,sc:0.60,req:15,
+  d:'船体上限 ×0.5',de:'Half max hull'}
+];
+const RMOD_KEY='nova-rmods';
+const RMOD_MAX=3;
+let G_RMODS=[];   // 机库里选中的 id，开局时被拷进 G.rmods 冻结
+function rmodLoad(){
+  try{const v=JSON.parse(localStorage.getItem(RMOD_KEY)||'[]');
+    if(Array.isArray(v))return v.filter(i=>RMODS.some(m=>m.id===i)).slice(0,RMOD_MAX);}catch(e){}
+  return [];
+}
+function rmodSave(v){try{localStorage.setItem(RMOD_KEY,JSON.stringify(v||[]));}catch(e){}}
+function rmodUnlocked(m){return !m.req||(loadStats().w|0)>=m.req;}
+/* 局内一律以 G.rmods 为准 —— 与 G.diff 同一条规矩：开局后改选择不许影响当前局。
+   ⚠️ 判据是 Array.isArray 而不是长度：G.rmods=[]（没挂任何挑战）也是有效状态，
+      用长度判会回落到菜单里的选择，等于局内偷偷生效。 */
+function rmodSel(){
+  const ids=Array.isArray(G&&G.rmods)?G.rmods:G_RMODS;
+  return (ids||[]).map(i=>RMODS.find(m=>m.id===i)).filter(Boolean);
+}
+function rmodMul(k){let v=1;for(const m of rmodSel())v*=m[k];return v;}
+function rmodIds(){return rmodSel().map(m=>m.id);}
+function rmodScOf(ids){let v=1;for(const i of (ids||[])){const m=RMODS.find(x=>x.id===i);if(m)v+=m.sc;}return v;}
+function rmodSc(){return rmodScOf(rmodIds());}
+function rmodTags(){return rmodSel().map(m=>T(m.zh,m.en)).join('+');}
+/* 记录/榜单/卡片用：从一串 id 拼出「 · 蜂群+脆命」，没有就给空串 */
+function modTags(ids){
+  const l=(ids||[]).map(i=>RMODS.find(m=>m.id===i)).filter(Boolean);
+  return l.length?(' · '+l.map(m=>T(m.zh,m.en)).join('+')):'';
+}
+/* 六个应用点每帧都问，统一走这个快照，别到处 rmodMul() 各算各的 */
+function modNow(){return {hp:rmodMul('hp'),dmg:rmodMul('dmg'),spd:rmodMul('spd'),
+  cnt:rmodMul('cnt'),pk:rmodMul('pk'),php:rmodMul('php')};}
+/* 得分系数 = 难度档 × 挑战加成 */
+function scoreMul(){return diffNow().sc*rmodSc();}
+/* 得分统一走这里：系数必须一次算清，不能散在 5 个加分点各乘各的 */
+function addScore(v){G.score+=v*scoreMul();}
+/* ============================== 6.4 工坊式卡池 ==============================
+   难度档改压力大小，挑战改压力形状 —— 卡池改的是「你这一局能不能拿到想要的卡」。
+   29 个模块里总有几个是「拿就完事」，也有几个是「绝不点」。把后者禁掉，
+   三选卡里垃圾位就少一截，构筑成功率明显上去 —— 给老玩家的真正福利。
+   与 G.diff/G.rmods 同条规矩：开局冻结为 G.ban，局内改禁用不许影响本局。 */
+const POOL_KEY='nova-pool';
+const POOL_MAX=8;   // 最多禁用 8 / 29
+let G_BAN=[];
+function poolLoad(){
+  try{const v=JSON.parse(localStorage.getItem(POOL_KEY)||'[]');
+    if(Array.isArray(v))return v.filter(id=>MODULES.some(m=>m.id===id)).slice(0,POOL_MAX);}catch(e){}
+  return [];
+}
+function poolSave(v){try{localStorage.setItem(POOL_KEY,JSON.stringify(v||[]));}catch(e){}}
+function poolSel(){
+  const ids=Array.isArray(G&&G.ban)?G.ban:G_BAN;
+  return (ids||[]).slice();
+}
+function poolTags(){
+  return G_BAN.length?(' · '+T('工坊','WORKSHOP')+' x'+G_BAN.length):'';
+}
+/* 船体上限倍率必须排在 hull.apply() 与局外加成**之后** —— 否则会被后面的 +20/+60 盖掉 */
+function applyRmods(){
+  const php=rmodMul('php');
+  if(php===1)return;
+  P.maxHp=Math.max(20,Math.round(P.maxHp*php));
+  P.hp=Math.min(P.hp,P.maxHp);
+}
+
 /* ============================== wave director ============================== */
 function buildWave(n){
-  Wv.n=n;Wv.qA.length=0;Wv.qE.length=0;Wv.cleared=false;
+  Wv.n=n;
+  seedAt(0x5EED,n);   // 6.1：编队 = f(种子, 波次)
+  Wv.qA.length=0;Wv.qE.length=0;Wv.cleared=false;
   // 前 30 波按固定剧本；进入无尽模式后每 5 波随机抽一个巨像，第 3 波穿插精英巨像
   const endless=n>WIN_WAVE;
   /* 剧本 Boss 优先（含无尽专属的 35/40）—— 4.2 的规矩，别让无尽分支吃掉它们。
@@ -4520,7 +5077,7 @@ function buildWave(n){
     const pool=enUnlocked(n);
     const wish=(sq.w||[]).filter(t=>pool.indexOf(t)>=0);
     /* 4.5：每层强化多刷 ETIER_EXTRA 只敌人（封顶 +10）。t=0 时与旧版完全一致。 */
-    const total=Math.min(38+eTierExtra(Wv.tier),Math.round((7+n*1.35)*(sq.s||1))+eTierExtra(Wv.tier));
+    const total=Math.min(38+eTierExtra(Wv.tier),Math.round((7+n*1.35)*(sq.s||1)*diffNow().cnt*rmodMul('cnt'))+eTierExtra(Wv.tier));
     const mainN=wish.length?Math.round(total*0.62):0;
     // 主题主力 + 谱系混编，保证每波风味不同又不会单调
     for(let i=0;i<mainN;i++)Wv.qE.push(pick(wish));
@@ -4597,7 +5154,7 @@ function director(dt){
 }
 function waveClear(){
   Wv.cleared=true;Wv.between=2.6;
-  G.score+=40*Wv.n;ftext(P.x,P.y-40,'+'+40*Wv.n,'236,208,138');
+  addScore(40*Wv.n);ftext(P.x,P.y-40,'+'+40*Wv.n,'236,208,138');
   banner('WAVE CLEAR',T('区域清空 · 奖励 +'+40*Wv.n,'sector clear · bonus +'+40*Wv.n));
   G.mode='inter';
 }
@@ -4614,14 +5171,14 @@ const PU={
 /* 掉落权重：越强的越稀有。boost 30 / heal 26 / rate 20 / 屏障 13 / 无敌 6 / 升级 5 */
 function spawnPickup(force){
   if(G.pickups.length>=3&&!force)return;
-  const r=Math.random();
+  const r=srand01();
   const type=r<0.30?'boost':(r<0.56?'heal':(r<0.76?'rate':(r<0.89?'shield':(r<0.95?'invuln':'level'))));
   const p=viewPoint();
   G.pickups.push({type,x:p.x,y:p.y,t:0,life:12});
 }
 function updatePickups(dt){
   G.pickT-=dt;
-  if(G.pickT<=0){G.pickT=rand(7,12);spawnPickup();}
+  if(G.pickT<=0){G.pickT=rand(7,12)*rmodMul('pk');spawnPickup();}   // 6.3 荒芜：补给更稀
   for(let i=G.pickups.length-1;i>=0;i--){
     const u=G.pickups[i];
     u.t+=dt;
@@ -4729,7 +5286,7 @@ function bossStageCheck(a){
 }
 function killAst(a){
   const i=G.asteroids.indexOf(a);if(i>=0)swapDel(G.asteroids,i);
-  G.kills++;G.score+=a.score;
+  G.kills++;addScore(a.score);
   ftext(a.x,a.y-32,'+'+a.score,a.elite?'236,208,138':'170,200,230');
   burst(a.x,a.y,8+a.size*7,120+a.size*60,0.6,a.elite?'236,208,138':'150,175,205',2.4);
   shatter(a.x,a.y,3+a.size*2,160,a.elite?'236,208,138':'150,175,205',a.r*0.38);
@@ -4750,7 +5307,7 @@ function killAst(a){
     G.pickups.push({type:'heal',x:a.x,y:a.y,t:0,life:15});
   }
   if(a.champ){ // 精英巨像：厚赏（大量经验碎片 + 必定掉落 + 必掉回血）
-    G.score+=300;
+    addScore(300);
     for(let k=0;k<2;k++)spawnAst(3,a.x+rand(-40,40),a.y+rand(-40,40));
     spawnPickup(true);
     G.pickups.push({type:'heal',x:a.x+rand(-20,20),y:a.y+rand(-20,20),t:0,life:15});
@@ -4823,7 +5380,7 @@ function killEn(e){
   G.kills++;
   const def=ENEMY_DEFS[e.type]||EN_FALLBACK; // 分数与掉落同样查表，不再另存两份字面量
   const gain=e.affix?Math.round(def.sc*1.6):def.sc; // 精英词缀：1.6 倍分
-  G.score+=gain;
+  addScore(gain);
   /* 得分抬到本体上方 28px：伤害数字占着敌人中心，两者同点会完全糊在一起
      （实测 absorb 与 +分数 会重叠成一个读不出的色块） */
   ftext(e.x,e.y-28,'+'+gain,e.affixC||'255,170,120');
@@ -4930,7 +5487,8 @@ function sunderShield(){
   ring(P.x,P.y,22,hullGlow());
   sfx.hit('block');
 }
-function hurtPlayer(dmg,sx,sy,src){
+function hurtPlayer(dmg0,sx,sy,src){
+  let dmg=dmg0*diffNow().dmg*rmodMul('dmg');   // 6.2 难度 · 6.3 挑战：只改「打你多痛」，玩家输出一视同仁
   if(P.invuln>0||(G.mode!=='play'&&G.mode!=='inter'))return;
   if(tryBlink(dmg,sx,sy))return; // 相位折跃：重击袭来时折跃脱险，该次伤害作废
   /* 受击：负向 kick = 镜头轻微后拉（读作被击退），叠一道色差撕裂。
@@ -4974,7 +5532,7 @@ function hurtPlayer(dmg,sx,sy,src){
 function drainPlayer(dmg,src){
   if(G.mode!=='play'&&G.mode!=='inter')return;
   if(P.invPick>0)return;
-  let d=dmg;
+  let d=dmg*diffNow().dmg*rmodMul('dmg');   // 6.2 难度 · 6.3 挑战
   if(P.shieldTmp>0){
     const s=Math.min(P.shieldTmp,d);P.shieldTmp-=s;d-=s;
     if(P.shieldTmp<=0)P.shieldTmpMax=0;
@@ -6585,7 +7143,7 @@ function menuScene(){
     a.vx=rand(-30,30);a.vy=rand(-30,30);
   }
 }
-function startGame(hull){
+function startGame(hull,seed){
   AU.ensure();
   fireOn=false;el.firebtn.classList.remove('hot');
   const prev=loadSave();
@@ -6607,11 +7165,30 @@ function startGame(hull){
   G.noMod=true;G.flawless=true; // 技巧支水位：装配模块 / 受任何伤害即作废
   G.bossBag=null;G.champBag=null;G.bossLast=null;G.champLast=null; // 4.5 轮换袋
   G.rarPity=0; // 稀有度保底计数：新一局清零
+  /* 6.1 种子：seed 省略时取 G.pendingSeed（种子面板 / URL 快捷开局），
+     再没有就是 0 = 每局随机。daily 由 startDaily 先置 G.dailyMode，那条路自己带种子。 */
+  if(seed===undefined)seed=G.pendingSeed||0;
+  G.pendingSeed=0;
+  if(seed){G.seed=normSeed(seed);setSeed(G.seed);G.daily=null;G.dailyMode=false;}
+  else{G.seed=0;if(!G.dailyMode)clearSeed();}
+  /* 6.2 每日挑战固定标准难度，保证同日可比。
+     ⚠️ 判据必须是 G.daily 而不是 G.dailyMode —— 上面那行 `G.dailyMode=false`
+        已经把它清掉了，用 dailyMode 判会永远走到玩家自选的那一档。 */
+  G.diff=G.daily?'standard':G_DIFF;
+  /* 6.3 挑战同样在开局时冻结 —— 每日挑战一律不带 Modifier，保证同日可比 */
+  G.rmods=G.daily?[]:(G_RMODS||[]).slice(0,RMOD_MAX);
+  /* 6.4 卡池工坊同样冻结 —— 每日挑战一律按默认池，跨玩家与跨日都可比 */
+  G.ban=G.daily?[]:(G_BAN||[]).slice(0,POOL_MAX);
+  /* 6.5 幽灵回放：开局瞬间冻结轨迹缓冲与影子 —— 必须排在 diff/rmods/ban 冻结之后，
+     否则指纹算的是上一局的残留值；局内改设置也不影响本局。 */
+  G.gdt=GHOST_DT0;G.gpts=[];G.gn=0;
+  G.gplay=OPTS.ghost?(GHOSTS[ghostFp()]||null):null;
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
   hull.apply();
   applyMetaBonuses(); // 局外解锁树：已解锁节点的永久起始加成
+  applyRmods();       // 6.3 船体上限类 Modifier 必须排在船体加成之后
   cam.x=P.x;cam.y=P.y;clampCam();
   G.mode='play';
   el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
@@ -6629,6 +7206,7 @@ function pauseGame(){
   setStat('pLevel',P.level);
   setStat('pKills',G.kills);
   setStat('pTime',fmtT(G.runT));
+  setSeedLine(el.pSeed);   // 6.1 局内随时能看到本局种子
   setStat('pStats',T(
     `伤害 ${P.dmg.toFixed(2)} · 射速 ${P.fireRate.toFixed(1)}/s · 极速 ${Math.round(P.maxSpeed)} · `+
     `暴击 ${Math.round(P.crit*100)}% · 穿透 ${P.pierce} · 枪管 ${P.barrels} · 拾取半径 ${Math.round(P.magnet)}`,
@@ -6820,6 +7398,208 @@ function renderDust(node,earn){
     `<span>${T('可用','TOTAL')} <b class="mono">${fmt(total)}</b></span><i></i>`+
     `<span class="hint">${T('于「解锁星图」消费','SPEND IN UNLOCKS')}</span>`;
 }
+/* ============================== 5.6 本地排行榜 ==============================
+   只存本机 Top 10。键名压到一两个字母：localStorage 只有 ~5MB 总量，
+   一局一条、玩家能打到几百局，长键名是纯浪费（且读起来也不见得清楚）。 */
+const BOARD_KEY='nova-board',BOARD_MAX=10;
+let BOARD=[];
+function loadBoard(){
+  let a=null;try{a=JSON.parse(localStorage.getItem(BOARD_KEY)||'null');}catch(e){}
+  BOARD=(Array.isArray(a)?a:[]).filter(r=>r&&typeof r.s==='number')
+        .sort((x,y)=>y.s-x.s).slice(0,BOARD_MAX);
+}
+function saveBoard(){try{localStorage.setItem(BOARD_KEY,JSON.stringify(BOARD));}catch(e){}}
+/* 返回 1-based 名次；0 = 没挤进 Top 10。
+   ⚠️ BOARD.indexOf(r) 依赖「r 与入栈的是同一个引用」——sort 之后位置即名次。 */
+function boardAdd(r){
+  BOARD.push(r);
+  BOARD.sort((a,b)=>b.s-a.s);
+  const i=BOARD.indexOf(r);
+  BOARD=BOARD.slice(0,BOARD_MAX);
+  saveBoard();
+  return i<BOARD_MAX?i+1:0;
+}
+function boardClear(){BOARD=[];saveBoard();}
+function boardRec(win){
+  const h=(G.lastHull&&G.lastHull.id)||'peregrine',d=new Date();
+  return {s:Math.round(G.score),w:Wv.n,k:G.kills,l:P?P.level:1,t:Math.round(G.runT),
+          h:h,d:(d.getMonth()+1)+'/'+d.getDate(),
+          m:G.daily?2:(G.endless?1:0),v:win?1:0,at:Date.now(),
+          /* 6.1 种子码：随机局留空。存短码而不是数字 —— 一眼能念、能抄、能贴。 */
+          sd:G.seed?seedCode(G.seed):'',
+          df:G.diff||'standard',     /* 6.2 难度 */
+          rm:(G.rmods||[]).slice(), /* 6.3 自定义挑战 */
+          bn:(G.ban||[]).slice()};   /* 6.4 卡池工坊 */
+}
+function bdMode(r){
+  return r.v?T('肃清','CLEAR'):(r.m===2?T('每日','DAILY'):
+        (r.m===1?T('无尽','ENDLESS'):T('标准','STANDARD')));
+}
+function renderBoard(hi){
+  const L=el.bdList;
+  if(!BOARD.length){
+    L.innerHTML=`<div class="bdempty">${T('还没有记录 —— 去漂一次','No runs yet — go fly one')}</div>`;
+    return;
+  }
+  let h=`<div class="bdrow head"><span class="rk">#</span><span>${T('分数','SCORE')}</span>`
+      +`<span class="num">${T('波次','WAVE')}</span><span class="num">${T('击坠','KILLS')}</span>`
+      +`<span class="num">${T('存活','TIME')}</span></div>`;
+  for(let i=0;i<BOARD.length;i++){
+    const r=BOARD[i],hd=HULLS.find(x=>x.id===r.h);
+    h+=`<div class="bdrow${hi===i+1?' me':''}"><span class="rk">${i+1}</span>`
+      +`<span><b class="sc">${fmt(r.s)}</b> `
+      +`<i class="sub">${hd?T(hd.zh,hd.en):'—'} · ${bdMode(r)} · ${r.d}${r.sd?' · '+r.sd:''}`
+      +`${r.df&&r.df!=='standard'?' · '+diffName(r.df):''}${modTags(r.rm)}${(r.bn&&r.bn.length?' · '+T('工坊','WORKSHOP')+'x'+r.bn.length:'')}</i></span>`
+      +`<span class="num">${r.w}</span><span class="num">${r.k}</span>`
+      +`<span class="num">${fmtT(r.t)}</span></div>`;
+  }
+  L.innerHTML=h;
+}
+let boardFrom=null;
+/* 6.1 自定义种子 */
+function setSeedLine(node){
+  if(!node)return;
+  const txt=G.daily?('DAILY · '+G.daily.date.slice(5).replace('-','/'))
+                   :(G.seed?('SEED · '+seedCode(G.seed)):'');
+  node.textContent=txt;node.hidden=!txt;
+}
+function openSeed(){
+  el.seedpanel.hidden=false;
+  if(!el.sdInput.value)el.sdInput.value=seedCode(G.seed||irand(1,SEED_MAX));
+  try{el.sdInput.focus();el.sdInput.select();}catch(e){}
+}
+function closeSeed(){el.seedpanel.hidden=true;}
+function seedGo(){
+  let v=el.sdInput.value.trim().toUpperCase();
+  let sd=v?codeSeed(v):0;
+  if(v&&!sd)sd=irand(1,SEED_MAX);          // 码不合法 → 给个随机的，别静默开随机局
+  el.sdInput.value=seedCode(sd);
+  G.pendingSeed=sd;closeSeed();sfx.ui();
+  G.dailyMode=false;G.daily=null;
+  openHulls();                              // 与每日挑战同一条流程：先选船体再出击
+}
+/* ?seed=XXXXXX 直达（分享链接） */
+function seedFromUrl(){
+  const q=(location.search||'')+'&'+(location.hash||'').replace(/^#/,'');
+  const m=/[?&#]seed=([0-9A-Za-z]{1,8})/.exec(q);
+  if(!m)return false;
+  const sd=codeSeed(m[1]);
+  if(!sd)return false;
+  G.pendingSeed=sd;G.dailyMode=false;G.daily=null;
+  startGame(G.lastHull||HULLS[0]);
+  return true;
+}
+
+function openBoard(hi){
+  boardFrom=G.mode;renderBoard(hi||0);
+  if(G.mode==='menu')el.menu.hidden=true;   /* 否则 padTargets 会把菜单按钮一起收进来 */
+  el.board.hidden=false;sfx.ui();
+}
+function closeBoard(){
+  el.board.hidden=true;
+  if(boardFrom==='menu')el.menu.hidden=false;
+  boardFrom=null;
+}
+
+/* ============================== 5.6 分享卡片 ==============================
+   离屏 canvas 画一张 1200×630 的成绩卡。**颜色一律走 PAL** ——
+   5.3 的色盲模式换了 token，卡片自动跟着换；卡片是拿给别人看的，更要保证辨色。 */
+const SH_W=1200,SH_H=630;
+const SH_UI='"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+const SH_MONO='ui-monospace,Consolas,"Cascadia Mono",monospace';
+function shC(k,a){return `rgba(${PAL[k]||'255,0,255'},${a===undefined?1:a})`;}
+function shFont(g,px,fam){g.font=px+'px '+(fam||SH_UI);}
+function shBuild(){
+  const ids=Object.keys(G.build||{}).slice(0,6);
+  const n=ids.map(id=>MOD_BY_ID[id]?T(MOD_BY_ID[id].zh,MOD_BY_ID[id].en):id);
+  return n.length?n.join(' · '):T('裸船出战','Bare hull');
+}
+function shareCard(rec,rank){
+  const c=document.createElement('canvas');c.width=SH_W;c.height=SH_H;
+  const g=c.getContext('2d');
+  /* 底 + 网格：与局内 drawArena 同一套语汇（深墨底 + 钢蓝结构线） */
+  g.fillStyle=shC('void');g.fillRect(0,0,SH_W,SH_H);
+  g.strokeStyle=shC('line',0.5);g.lineWidth=1;g.beginPath();
+  for(let x=0;x<=SH_W;x+=60){g.moveTo(x+.5,0);g.lineTo(x+.5,SH_H);}
+  for(let y=0;y<=SH_H;y+=60){g.moveTo(0,y+.5);g.lineTo(SH_W,y+.5);}
+  g.stroke();
+  g.strokeStyle=shC('cyan',0.35);g.lineWidth=2;g.strokeRect(24,24,SH_W-48,SH_H-48);
+  shFont(g,26,SH_MONO);g.fillStyle=shC('cyan-hi');g.fillText('SINGULARITY ECHO',64,96);
+  shFont(g,20);g.fillStyle=shC('ink',0.8);g.fillText(T('奇点回响','Singularity Echo'),64,128);
+  g.strokeStyle=shC('cyan',0.28);g.lineWidth=1;
+  g.beginPath();g.moveTo(64,152);g.lineTo(SH_W-64,152);g.stroke();
+  shFont(g,120,SH_MONO);g.fillStyle=shC('ink-hi');g.fillText(fmt(rec.s),64,300);
+  shFont(g,22,SH_MONO);g.fillStyle=shC('amber');g.fillText(bdMode(rec),64,344);
+  /* 6.1 种子码放这里而不是页脚：它在「模式」同一行，语义上同属"这局是什么局" */
+  if(rec.sd){shFont(g,20,SH_MONO);g.fillStyle=shC('amber',0.85);
+    g.textAlign='right';g.fillText('SEED · '+rec.sd,SH_W-64,344);g.textAlign='left';}
+  const cells=[[T('波次','WAVE'),rec.w],[T('击坠','KILLS'),rec.k],
+               [T('等级','LEVEL'),rec.l],[T('存活','TIME'),fmtT(rec.t)]];
+  const bw=(SH_W-128)/4;
+  for(let i=0;i<4;i++){
+    const x=64+i*bw;
+    shFont(g,18);g.fillStyle=shC('ink',0.75);g.fillText(cells[i][0],x,430);
+    shFont(g,40,SH_MONO);g.fillStyle=shC('cyan-hi');g.fillText(String(cells[i][1]),x,472);
+  }
+  g.strokeStyle=shC('cyan',0.2);g.beginPath();g.moveTo(64,510);g.lineTo(SH_W-64,510);g.stroke();
+  const hd=HULLS.find(x=>x.id===rec.h);
+  shFont(g,22);g.fillStyle=shC('ink',0.9);
+  g.fillText((hd?T(hd.zh,hd.en):'—')+' · '+shBuild()+(rec.df?' · '+diffName(rec.df):'')+modTags(rec.rm)+(rec.bn&&rec.bn.length?' · '+T('工坊','WORKSHOP')+'x'+rec.bn.length:''),64,556);
+  shFont(g,20,SH_MONO);g.fillStyle=shC('ink',0.6);
+  g.textAlign='right';g.fillText(rec.d+(rank?' · #'+rank:''),SH_W-64,556);g.textAlign='left';
+  return c;
+}
+/* ---- 5.6 局内截图 ----
+   主画布是 2D context，toDataURL 不受 preserveDrawingBuffer 影响，随时可截。
+   ⚠️ 流体星云层是独立的 WebGL canvas，**不在**主画布上，截图里不会出现 —— 这是预期。 */
+function grabShot(){try{return cv.toDataURL('image/png');}catch(e){return '';}}
+function saveUrl(url,name){
+  if(!url)return false;
+  const a=document.createElement('a');a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();a.remove();return true;
+}
+function dataToBlob(u){
+  const p=String(u).split(',');const b=atob(p[1]||'');
+  const arr=new Uint8Array(b.length);
+  for(let i=0;i<b.length;i++)arr[i]=b.charCodeAt(i);
+  return new Blob([arr],{type:'image/png'});
+}
+let SH_REC=null,SH_RANK=0;
+function openShare(){
+  if(!SH_REC)SH_REC=boardRec(false);
+  el.shareImg.src=shareCard(SH_REC,SH_RANK).toDataURL('image/png');
+  el.sharecard.hidden=false;
+  $('btnShShare').hidden=!(navigator.share);
+}
+function closeShare(){el.sharecard.hidden=true;}
+function shareNative(){
+  try{
+    const f=new File([dataToBlob(el.shareImg.src)],'echo-card.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]});return;}
+    navigator.share({title:'SINGULARITY ECHO'});
+  }catch(e){}
+}
+$('btnBoard').addEventListener('click',()=>openBoard(0));
+$('btnBdClose').addEventListener('click',closeBoard);
+$('btnBdClear').addEventListener('click',()=>{
+  if(!BOARD.length)return;
+  if(!confirm(T('清空全部排行榜记录？','Clear all leaderboard records?')))return;
+  boardClear();renderBoard(0);sfx.ui();
+});
+$('btnShot').addEventListener('click',()=>saveUrl(grabShot(),'echo-'+Date.now()+'.png'));
+/* 6.1 种子面板 */
+el.btnSeed.addEventListener('click',openSeed);
+$('sdGo').addEventListener('click',seedGo);
+$('sdBack').addEventListener('click',closeSeed);
+$('sdRand').addEventListener('click',()=>{el.sdInput.value=seedCode(irand(1,SEED_MAX));sfx.ui();});
+el.sdInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();seedGo();}});
+$('btnShareO').addEventListener('click',openShare);
+$('btnShareV').addEventListener('click',openShare);
+$('btnShClose').addEventListener('click',closeShare);
+$('btnShSave').addEventListener('click',()=>saveUrl(el.shareImg.src,'echo-card-'+Date.now()+'.png'));
+$('btnShShare').addEventListener('click',shareNative);
+loadBoard();
+
 function showOver(){
   G.mode='over';
   flushStats(); // 坠毁结算前提交末段统计，否则最后一波击坠/得分/时长会丢失
@@ -6844,6 +7624,14 @@ function showOver(){
   el.overExtra.innerHTML=buildOverExtra();
   el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   fitChips(el.overChips);
+  /* 5.6 坠毁也要进榜 —— 分数就是分数，只有通关才记会让榜长期空着 */
+  ghostSave();     // 6.5 幽灵回放：坠毁也归档（没破本组纪录则保留旧影子）
+  const oRec=boardRec(false);
+  const oRank=boardAdd(oRec);
+  SH_REC=oRec;SH_RANK=oRank;
+  el.overRank.hidden=false;setSeedLine(el.overSeed);
+  el.overRank.textContent=oRank?T('本局排名','THIS RUN')+' #'+oRank+' / '+BOARD.length
+                               :T('未进前 10','Outside top 10');
   el.over.hidden=false;
   el.hud.hidden=true;
 }
@@ -6851,7 +7639,7 @@ function showVictory(){
   G.mode='victory';
   clearSave();
   removeSlotArch(G.runId); // 通关结算：漂移终结，归档同 id 一并清除（无尽续漂后自动保存会重新跟踪）
-  G.score+=8000;
+  addScore(8000);
   G.lastDust=metaEarn(); // 局外解锁树：通关产出星尘
   renderDust(el.vicDust,G.lastDust);
   const isBest=G.score>G.best;
@@ -6867,6 +7655,13 @@ function showVictory(){
   setStat('vTime',m+':'+String(s).padStart(2,'0'));
   el.vicChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
   fitChips(el.vicChips);
+  ghostSave();     // 6.5 幽灵回放：通关局必破纪录，影子换成这一条
+  const vRec=boardRec(true);          // 5.6 通关进榜（v=1，卡片上标「肃清」）
+  const vRank=boardAdd(vRec);
+  SH_REC=vRec;SH_RANK=vRank;
+  el.vicRank.hidden=false;setSeedLine(el.vicSeed);
+  el.vicRank.textContent=vRank?T('本局排名','THIS RUN')+' #'+vRank+' / '+BOARD.length
+                              :T('未进前 10','Outside top 10');
   el.victory.hidden=false;
   el.hud.hidden=true;
   sfx.victory();
@@ -6886,7 +7681,8 @@ function toMenu(){
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
-  el.logbook.hidden=true;el.saves.hidden=true;
+  el.logbook.hidden=true;el.saves.hidden=true;el.board.hidden=true;el.sharecard.hidden=true;   /* 5.6 */
+  el.seedpanel.hidden=true;   /* 6.1 */
   el.joybase.hidden=true;el.firebtn.hidden=true;
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
   renderDaily();
@@ -7659,6 +8455,7 @@ const OPT_FX=[
   {id:'nebula',zh:'星云背景',  en:'Nebula'},
   {id:'glow',  zh:'辉光 / 故障',en:'Glow / glitch'},
   {id:'parts', zh:'粒子',     en:'Particles'},
+  {id:'ghost', zh:'幽灵回放', en:'Ghost replay'},
 ];
 function renderOpts(){
   const L=LANG==='en'?1:0;
@@ -7716,6 +8513,7 @@ window.addEventListener('pagehide',()=>{flushStats();});
 /* ============================== update ============================== */
 function updateWorld(dt){
   G.runT+=dt;
+  ghostRec();      // 6.5 幽灵回放：按 runT 采样（暂停/三选一时 runT 不涨，天然不录）
   // 峰值威胁：同屏最多敌人数量（结算面板的「关键统计」用，只在 play 阶段采样）
   if(G.mode==='play'){
     const n=G.enemies.length+G.asteroids.length;
@@ -8870,6 +9668,7 @@ function draw(){
   }
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   if(G.mode!=='menu'&&P&&(G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='pause')){
+    drawGhostRun(); // 6.5 幽灵回放：影子画在船体之下，被玩家与光束压住
     drawLances(); // 轨道长枪光束画在船体之下，使激光从船首"射出"而非盖住船身
     drawShip();
   }
@@ -9269,7 +10068,12 @@ async function boot(){
   // 准备菜单与最佳成绩
   menuScene();
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+  G_DIFF=diffLoad();   // 6.2 记住上次选的难度
+  G_RMODS=rmodLoad();  // 6.3 记住上次选的挑战组合
+  G_BAN=poolLoad();    // 6.4 记住上次选的禁用组合
+  GHOSTS=ghostLoad();  // 6.5 读回各组配置的最佳轨迹
   renderDaily();
+  seedFromUrl();   // 6.1 分享链接直达：带了 ?seed= 就不进菜单，直接开局
   refreshMenuMeta();
   refreshContinue();
   // 读条淡出 → 主循环启动
@@ -9728,6 +10532,31 @@ window.NOVA={
       return {right:Math.round(innerWidth-r.right),bottom:Math.round(innerHeight-r.bottom),
               w:Math.round(r.width),h:Math.round(r.height)};},
   },
+  /* ---- 5.6 排行榜 / 分享 / 截图 ---- */
+  board:{
+    list:()=>BOARD.map(r=>Object.assign({},r)),
+    add:r=>boardAdd(r),
+    clear:()=>{boardClear();renderBoard(0);return BOARD.length;},
+    rec:()=>boardRec(false),
+    max:()=>BOARD_MAX,key:()=>BOARD_KEY,
+    load:()=>{loadBoard();return BOARD.length;},
+    raw:()=>{try{return localStorage.getItem(BOARD_KEY)||'';}catch(e){return '';}},
+    render:h=>{renderBoard(h||0);return el.bdList.querySelectorAll('.bdrow').length;},
+    open:h=>{openBoard(h||0);return {shown:!el.board.hidden,menuHidden:el.menu.hidden};},
+    close:()=>{closeBoard();return el.board.hidden;},
+    rows:()=>el.bdList.querySelectorAll('.bdrow:not(.head)').length,
+  },
+  share:{
+    size:()=>({w:SH_W,h:SH_H}),
+    card:()=>{const c=shareCard(SH_REC||boardRec(false),SH_RANK);
+      return {w:c.width,h:c.height,url:c.toDataURL('image/png')};},
+    open:()=>{openShare();return {shown:!el.sharecard.hidden,src:(el.shareImg.src||'').slice(0,22)};},
+    close:()=>{closeShare();return el.sharecard.hidden;},
+    imgKind:()=>(el.shareImg.src||'').slice(0,22),
+    shot:()=>{const u=grabShot();return {kind:u.slice(0,22),len:u.length};},
+    save:name=>saveUrl(grabShot(),name||('echo-'+Date.now()+'.png')),
+    saveCard:name=>saveUrl(el.shareImg.src,name||('echo-card-'+Date.now()+'.png')),
+  },
   stats:()=>({score:G.score,kills:G.kills,level:P?P.level:0,wave:Wv.n,mode:G.mode}),
   hints:()=>edgeHints(),
   time:()=>G.runT,
@@ -9749,6 +10578,77 @@ window.NOVA={
     sequence:(n=8,max=100)=>Array.from({length:n},()=>irand(1,max)),
     /* mulberry32 自身的 1 次调用（用于断言 RNG 数学正确） */
     raw:()=>_mulberry32(),
+  },
+  /* 难度档（6.2）—— 测试钩子 */
+  diff:{
+    list:()=>DIFFS.map(d=>({id:d.id,hp:d.hp,dmg:d.dmg,spd:d.spd,cnt:d.cnt,sc:d.sc,req:d.req})),
+    now:()=>diffNow().id,sel:()=>G_DIFF,run:()=>G.diff||'standard',
+    pick:id=>{G_DIFF=id;diffSave(id);return G_DIFF;},
+    unlocked:id=>{const d=DIFFS.find(x=>x.id===id);return d?diffUnlocked(d):false;},
+    setWave:w=>{const st=loadStats();st.w=w|0;saveStats(st);return loadStats().w;},
+    store:()=>localStorage.getItem(DIFF_KEY),
+    name:id=>diffName(id),
+  },
+  /* 幽灵回放（6.5）—— 测试钩子 */
+  ghost:{
+    cap:()=>GHOST_CAP,slots:()=>GHOST_SLOTS,min:()=>GHOST_MIN,
+    all:()=>Object.keys(GHOSTS),
+    fp:()=>ghostFp(),fpMenu:()=>ghostFpMenu(),
+    sel:()=>{const g=GHOSTS[ghostFpMenu()];
+      return g?{sc:g.sc,w:g.w,n:g.n,dt:g.dt,t:g.t,hull:g.hull,sd:g.sd}:null;},
+    rec:()=>({gn:G.gn,gdt:G.gdt,len:G.gpts?G.gpts.length:0}),
+    at:t=>ghostAt(t===undefined?G.runT:t),
+    play:()=>{const g=G.gplay;return g?{n:g.n,dt:g.dt,sc:g.sc,hull:g.hull}:null;},
+    push:(x,y,a)=>{if(!G.gpts)G.gpts=[];if(!G.gdt)G.gdt=GHOST_DT0;
+      ghostPush(x,y,a);return {gn:G.gn,gdt:G.gdt,len:G.gpts.length};},
+    save:()=>ghostSave(),
+    store:()=>localStorage.getItem(GHOST_KEY),
+    wipe:()=>{GHOSTS={};ghostStore();return Object.keys(GHOSTS).length;},
+    set:(fp,g)=>{GHOSTS[fp]=g;ghostStore();return JSON.stringify(!!GHOSTS[fp]);},
+    opt:v=>{if(v!==undefined)OPTS.ghost=v?1:0;return OPTS.ghost;},
+    start:()=>{startGame(HULLS[0]);return JSON.stringify(!!G.gplay);},
+    render:()=>{renderGhostRow();return el.ghostRow?el.ghostRow.children.length:0;},
+  },
+  /* 卡池工坊（6.4）—— 测试钩子 */
+  pool:{
+    list:()=>MODULES.map(m=>({id:m.id,type:m.type,max:m.max})),
+    max:()=>POOL_MAX,sel:()=>G_BAN.slice(),run:()=>(G.ban||[]).slice(),
+    pick:ids=>{G_BAN=(ids||[]).filter(i=>MODULES.some(m=>m.id===i)).slice(0,POOL_MAX);
+      poolSave(G_BAN);return G_BAN.slice();},
+    render:()=>{renderPool();return el.poolRow?el.poolRow.children.length:0;},
+    store:()=>localStorage.getItem(POOL_KEY),
+    setWave:w=>{const st=loadStats();st.w=w|0;saveStats(st);return loadStats().w;},
+    start:ids=>{G_BAN=(ids||[]).slice(0,POOL_MAX);startGame(HULLS[0]);return (G.ban||[]).slice();},
+    contains:id=>{G_BAN=[];startGame(HULLS[0]);var p=rollChoices();
+      return p.map(c=>c.id).indexOf(id)<0;},
+  },
+  /* 自定义挑战（6.3）—— 测试钩子 */
+  rmod:{
+    list:()=>RMODS.map(m=>({id:m.id,hp:m.hp,dmg:m.dmg,spd:m.spd,cnt:m.cnt,pk:m.pk,php:m.php,sc:m.sc,req:m.req})),
+    max:()=>RMOD_MAX,sel:()=>G_RMODS.slice(),run:()=>(G.rmods||[]).slice(),
+    pick:ids=>{G_RMODS=(ids||[]).filter(i=>RMODS.some(m=>m.id===i)).slice(0,RMOD_MAX);
+      rmodSave(G_RMODS);return G_RMODS.slice();},
+    unlocked:id=>{const m=RMODS.find(x=>x.id===id);return m?rmodUnlocked(m):false;},
+    mul:()=>modNow(),sc:()=>rmodSc(),scoreMul:()=>scoreMul(),tags:()=>rmodTags(),
+    store:()=>localStorage.getItem(RMOD_KEY),
+    setWave:w=>{const st=loadStats();st.w=w|0;saveStats(st);return loadStats().w;},
+    start:(ids,hull)=>{G_RMODS=(ids||[]).slice(0,RMOD_MAX);startGame(hull||HULLS[0]);return (G.rmods||[]).slice();},
+    render:()=>{renderRmods();return el.rmodRow?el.rmodRow.children.length:0;},
+  },
+  /* 自定义种子（6.1）—— 测试钩子 */
+  seed:{
+    code:n=>seedCode(n),parse:c=>codeSeed(c),max:()=>SEED_MAX,
+    now:()=>G.seed,daily:()=>(G.daily?G.daily.seed:0),pending:()=>G.pendingSeed||0,
+    open:()=>{openSeed();return !el.seedpanel.hidden;},
+    close:()=>{closeSeed();return el.seedpanel.hidden;},
+    fill:v=>{el.sdInput.value=String(v||'');return el.sdInput.value;},
+    go:v=>{if(v!==undefined)el.sdInput.value=String(v);seedGo();
+      return {panel:el.seedpanel.hidden,seed:G.pendingSeed};},
+    start:sd=>{G.pendingSeed=normSeed(sd);startGame(HULLS[0]);return G.seed;},
+    url:()=>seedFromUrl(),
+    line:()=>{const t=G.daily?('DAILY · '+seedCode(G.daily.seed))
+                            :(G.seed?('SEED · '+seedCode(G.seed)):'');return t;},
+    rng:()=>({on:RND.on,s:RND.s,s0:RND.s0}),
   },
   /* 每日挑战（3.3.3）—— 测试钩子 */
   daily:{

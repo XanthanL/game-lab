@@ -1,0 +1,58 @@
+{
+  "source": "E:\\Code\\mine-skills\\testing-example\\teapot-artisan\\assets",
+  "files": {
+    "cup-celadon-01.png": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "gaiwan-porcelain-01.png": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "kettle-iron-01.png": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "pot-zisha-01.png": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    },
+    "tea-tools-bamboo-01.png": {
+      "type": "image",
+      "images": 1,
+      "assets": 1
+    }
+  },
+  "assets": [
+    {
+      "file": "assets/cup-celadon-01.jpg",
+      "srcFormat": "PNG",
+      "srcName": "cup-celadon-01.png"
+    },
+    {
+      "file": "assets/gaiwan-porcelain-01.jpg",
+      "srcFormat": "PNG",
+      "srcName": "gaiwan-porcelain-01.png"
+    },
+    {
+      "file": "assets/kettle-iron-01.jpg",
+      "srcFormat": "PNG",
+      "srcName": "kettle-iron-01.png"
+    },
+    {
+      "file": "assets/pot-zisha-01.jpg",
+      "srcFormat": "PNG",
+      "srcName": "pot-zisha-01.png"
+    },
+    {
+      "file": "assets/tea-tools-bamboo-01.jpg",
+      "srcFormat": "PNG",
+      "srcName": "tea-tools-bamboo-01.png"
+    }
+  ],
+  "warnings": []
+}

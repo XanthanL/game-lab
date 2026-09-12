@@ -1,0 +1,8 @@
+---
+interface Props {
+  chars?: string;
+  small?: boolean;
+}
+const { chars = '簪三', small = false } = Astro.props;
+---
+<span class:list={['seal', { 'seal-sm': small }]} aria-hidden="true"><span class="seal-chars">{chars}</span></span>

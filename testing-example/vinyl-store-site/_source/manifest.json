@@ -1,0 +1,13 @@
+{
+  "source": "库存.csv",
+  "files": {
+    "库存.csv": {
+      "type": "sheet",
+      "sheets": 1,
+      "rows": 41,
+      "assets": 0
+    }
+  },
+  "assets": [],
+  "warnings": []
+}

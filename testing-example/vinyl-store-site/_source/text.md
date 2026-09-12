@@ -1,0 +1,45 @@
+
+## 来源: 库存.csv
+### 库存.csv
+
+| 编号 | 艺人 | 专辑 | 年份 | 格式 | 品相 | 价格 | 状态 | 备注 |
+| V-001 | Beatles | Abbey Road | 1969 | 12寸LP | 九成 | 180 | 在架 |  |
+| V-002 | David Bowie | Ziggy Stardust | 1972 | 12寸LP | 八成 | 150 | 已售 |  |
+| V-003 | Queen | A Night at the Opera | 1975 | 12寸LP | 九成 | 120 | 在架 | 日版 |
+| V-004 | Radiohead | OK Computer | 1997 | 12寸LP | 近全新 | 220 | 在架 | 复刻版 |
+| V-005 | 崔健 | 新长征路上的摇滚 | 1989 | 12寸LP | 八成 | 300 | 在架 | 中图版 |
+| V-006 | 黑豹 | 黑豹 | 1991 | 12寸LP | 七成 | 150 | 已售 |  |
+| V-007 | 唐朝 | 唐朝 | 1992 | 12寸LP | 七成 |  | 在架 | 价格待标 |
+| V-008 | Miles Davis | Kind of Blue | 1959 | 12寸LP | 八成 | 200 | 在架 | mono版 |
+| V-009 | John Coltrane | A Love Supreme | 1965 | 12寸LP | 九成 | 180 | 在架 |  |
+| V-010 | Bill Evans | Sunday at the Village Vanguard | 1961 | 12寸LP | 八成 | 160 | 在架 |  |
+| V-011 | Nirvana | Nevermind | 1991 | 12寸LP | 八成 | 110 | 已售 |  |
+| V-012 | Pixies | Doolittle | 1989 | 12寸LP | 七成 | 90 | 在架 |  |
+| V-013 | The Cure | Disintegration | 1989 | 12寸LP | 八成 | 130 | 在架 |  |
+| V-014 | Joy Division | Unknown Pleasures | 1979 | 12寸LP | 八成 | 140 | 在架 |  |
+| V-015 | New Order | Power Corruption and Lies | 1983 | 12寸LP | 七成 | 110 | 在架 |  |
+| V-016 | 张蔷 | 别再问我什么是迪斯科 | 1985 | 12寸LP | 九成 | 180 | 在架 | 复刻 |
+| V-017 | 罗大佑 | 之乎者也 | 1982 | 12寸LP | 八成 | 260 | 在架 | 台版 |
+| V-018 | 邓丽君 | 淡淡幽情 | 1983 | 12寸LP | 九成 | 240 | 在架 | 台版 |
+| V-019 | 王菲 | 浮躁 | 1996 | 12寸LP | 九成 | 280 | 在架 | 港版 |
+| V-020 | 陈百强 | 偏偏喜欢你 | 1983 | 12寸LP | 七成 | 120 | 已售 |  |
+| V-021 | 张学友 | 吻别 | 1993 | 12寸LP | 八成 | 90 | 在架 |  |
+| V-022 | Pink Floyd | The Dark Side of the Moon | 1973 | 12寸LP | 七成 | 130 | 在架 | 美版再版 |
+| V-023 | Led Zeppelin | Untitled (IV) | 1971 | 12寸LP | 八成 | 150 | 在架 |  |
+| V-024 | The Rolling Stones | Let It Bleed | 1969 | 12寸LP | 七成 | 140 | 在架 |  |
+| V-025 | Stevie Wonder | Songs in the Key of Life | 1976 | 12寸LP 双张 | 八成 | 180 | 在架 |  |
+| V-026 | Michael Jackson | Thriller | 1982 | 12寸LP | 八成 | 100 | 已售 |  |
+| V-027 | Prince | Purple Rain | 1984 | 12寸LP | 八成 | 110 | 在架 |  |
+| V-028 | Madonna | Like a Prayer | 1989 | 7寸单曲 | 七成 | 40 | 在架 |  |
+| V-029 | The Smiths | The Queen Is Dead | 1986 | 12寸LP | 八成 | 150 | 在架 |  |
+| V-030 | Talking Heads | Remain in Light | 1980 | 12寸LP | 七成 | 120 | 在架 |  |
+| V-031 | 坂本龙一 | Merry Christmas Mr. Lawrence OST | 1983 | 12寸LP | 九成 | 320 | 在架 | 日版, 带侧标 |
+| V-032 | 久石让 | 风之谷 OST | 1984 | 12寸LP | 八成 | 260 | 在架 | 日版 |
+| V-033 | 山下达郎 | For You | 1982 | 12寸LP | 九成 | 280 | 在架 | 日版 |
+| V-034 | 竹内玛利亚 | Variety | 1984 | 12寸LP | 八成 | 240 | 在架 | 日版 |
+| V-035 | Daft Punk | Discovery | 2001 | 12寸LP 双张 | 近全新 | 240 | 在架 |  |
+| V-036 | Amy Winehouse | Back to Black | 2006 | 12寸LP | 八成 | 130 | 在架 |  |
+| V-037 | Adele | 21 | 2011 | 12寸LP | 九成 | 110 | 已预留 | 客人周四来取 |
+| V-038 | 陈绮贞 | 吉他手 | 2002 | 12寸LP | 九成 | 200 | 在架 | 台版 |
+| V-039 | 伍佰 | 爱情的尽头 | 1996 | 12寸LP | 八成 | 160 | 在架 |  |
+| V-040 | 五月天 | 第一张创作专辑 | 1999 | 12寸LP | 七成 | 120 | 在架 |  |

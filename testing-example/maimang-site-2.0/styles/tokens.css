@@ -1,0 +1,97 @@
+/* ============================================================
+   麦芒手作 2.0 · tokens.css — 唯一真源
+   锚点：market-stall（commerce 族 / editorial-hero / 密度 balanced）
+   底色档 tint ｜ 变体轴 d 张扬 ｜ 字体对 pair 0（Zilla Slab × Karla）
+   生成：emit_tokens.py --anchor market-stall --surface tint --variant d
+   可读副本：design-system/MASTER.md（两者必须逐值一致）
+   ============================================================ */
+:root {
+  /* ── 颜色（签名 · 底色档 tint · 色相 130°/彩度 2/色温 +0.6 → oklch 推导）── */
+  --bg:         #F8EADF;
+  --bg-soft:    #FBDCC3;
+  --fg:         #231D18;
+  --muted:      #706964;
+  --line:       rgba(0, 0, 0, 0.12);
+  --accent:     #4E6F23;
+  --accent-ink: #567336;
+  --accent-soft: rgba(78, 111, 35, 0.10);
+
+  /* ── 反同质化指纹（同批次内唯一）── */
+  --surface:    "tint";
+  --variant:    "d";
+
+  /* ── 字体（具名搭配 · fonts.json 锚点 market-stall 主选）──
+     R4 显式 CJK 回退：把 --font-cjk 并入 display/body 栈尾，
+     避免通用 serif/sans 抢先接住汉字；首族仍为具名字体（F6 达标） */
+  --font-display: "Zilla Slab", "Roboto Slab", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", serif;
+  --font-body:    "Karla", "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono:    "Roboto Mono", ui-monospace, Consolas, monospace;
+  --font-cjk:     "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display-name: "Zilla Slab";
+  --font-body-name:    "Karla";
+  --weight-display: 700;
+  --weight-body:    400;
+
+  /* ── 字阶（公比 1.37，基准 18px，6 级封顶；变体 d）── */
+  --fs-xs:      13px;
+  --fs-base:    18px;
+  --fs-lg:      25px;
+  --fs-xl:      34px;
+  --fs-2xl:     46px;
+  --fs-display: 87px;
+
+  /* ── 行高（无单位；字号越大越紧）── */
+  --lh-xs:      1.7;
+  --lh-base:    1.65;
+  --lh-lg:      1.43;
+  --lh-xl:      1.31;
+  --lh-2xl:     1.17;
+  --lh-display: 1.03;
+
+  /* ── 字距（display 微负：中文标题 ≥32px 带 0~-0.02em，见 MASTER 覆盖记录）── */
+  --trk-display: -0.015em;
+  --trk-heading: 0em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;
+
+  /* ── 间距（基数 16px = 8px × 变体 d 的 dunit 2.0）── */
+  --space-1: 16px;
+  --space-2: 32px;
+  --space-3: 48px;
+  --space-4: 64px;
+  --space-5: 96px;
+  --space-6: 128px;
+  --space-7: 192px;
+  --space-8: 256px;
+
+  /* ── 形状（变体 d：radius 8 + drad 8）── */
+  --radius-sm: 8px;
+  --radius:    16px;
+  --radius-lg: 24px;
+  --shadow:    none;
+
+  /* ── 版心 ── */
+  --measure:     1120px;
+  --prose-width: 60ch;
+  --gutter:      16px;
+
+  /* ── 中轴（覆盖记录见 MASTER.md：用户硬要求标语居中）── */
+  --axis: center-axis;
+
+  /* ── 动效（性格 drift）── */
+  --dur-fast:   300ms;
+  --dur-normal: 600ms;
+  --ease:       cubic-bezier(0.16, 0.84, 0.24, 1);
+
+  /* ── 锚点特化（无本地 spec，允许的特化项）── */
+  --card: #FFFFFF;   /* 货摊卡片白：tint 底上承载产品卡与照片位 */
+}
+
+/* ============================================================
+   never（完整清单见 design-system/MASTER.md，逐条可检查）：
+   精致奢感取向；SKU 筛选层；居中正文；折叠合规信息；
+   疾病/保健功能宣称；极限词（最/第一/必备）；编造评价与销量；
+   第二个高饱和色；emoji 图标；transition:all；渐变/发光/模糊；
+   中文正文 justify/italic/正字距；区块自定 max-width；
+   氛围图替代产品图；@import 加载字体
+   ============================================================ */

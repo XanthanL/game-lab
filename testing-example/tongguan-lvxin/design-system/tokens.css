@@ -1,0 +1,92 @@
+/* ============================================================
+   铜管与滤芯 · 祖安呼吸安全站 — 设计系统唯一真源
+   锚点: concrete-brutalist（industrial 族）· 布局: utility-board · 中轴: left-rail
+   生成: emit_tokens.py --anchor concrete-brutalist --surface stone --variant a
+   可读副本: design-system/MASTER.md（两份逐值一致，改动必须同步）
+   ============================================================ */
+:root {
+  /* ── 颜色（底色档 stone · 强调色按需求文档§3 品牌主色特化，WCAG 已解）── */
+  --bg:        #D5DFEA;              /* stone 底 · oklch(0.900 0.018 250) 混凝土冷灰 */
+  --bg-soft:   #C8D5E4;
+  --fg:        #1A1F24;              /* 对 --bg 12.3:1 */
+  --muted:     #5D6269;              /* 对 --bg 4.6:1（正文下限 4.5） */
+  --line:      rgba(0,0,0,.12);
+  --line-strong: #1A1F24;            /* 特化：2px 硬边框分区（粗野派，替代阴影） */
+  --accent:    #8A3E1C;              /* 铜锈 · 对 --bg 5.6:1 ≥3 ✓（需求文档§3 主色） */
+  --accent-ink:#1E4A73;              /* 滤芯蓝 · 链接/正文强调 6.8:1 ≥4.5 ✓ */
+  --accent-soft: rgba(138,62,28,.10);
+  --ok:        #285440;              /* 废土绿 · 状态标签 6.4:1（需求文档§3 主色） */
+  --warn:      #FFCE00;              /* 警告黄 · 仅作底/条纹；其上文字恒用 --fg 11.1:1 */
+  --hazard-bg: #14181C;              /* 警示框底（危险品清单） */
+  --hazard-fg: #FFCE00;              /* 对 --hazard-bg 12.0:1 */
+
+  /* ── 反同质化指纹（同批次内唯一）── */
+  --surface:   "stone";
+  --variant:   "a";
+
+  /* ── 字体（fonts.json 锚点 concrete-brutalist 搭配 · loading: self）── */
+  --font-display: "Archivo Black", "Arial Black", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body:    "Space Grotesk", "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, Consolas, monospace;
+  --font-cjk:     "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display-name: "Archivo Black";
+  --font-body-name:    "Space Grotesk";
+  --weight-display: 400;   /* 特化：Archivo Black 原生单字重，声明 700 会触发仿粗体 */
+  --weight-body:    400;
+
+  /* ── 字阶（公比 1.333，基准 16px，6 级封顶）── */
+  --fs-xs: 12px;
+  --fs-base: 16px;
+  --fs-lg: 21px;
+  --fs-xl: 28px;
+  --fs-2xl: 38px;
+  --fs-display: 67px;
+
+  /* ── 行高（签名原值；中文长段落另设 --lh-prose，见下）── */
+  --lh-xs: 1.55;
+  --lh-base: 1.5;
+  --lh-lg: 1.28;
+  --lh-xl: 1.16;
+  --lh-2xl: 1.08;
+  --lh-display: 1.02;
+  --lh-prose: 1.75;      /* 特化：中文为主长段落行高带 1.7–1.95（typography.md §2）；
+                            台账行/短句仍用 1.5 保持扫读节奏 */
+
+  /* ── 字距 ── */
+  --trk-display: -0.02em;
+  --trk-heading: -0.01em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;
+
+  /* ── 间距（基数 8px，全部为它的整数倍）── */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+  --space-7: 96px;
+  --space-8: 128px;
+
+  /* ── 形状（粗野派：零圆角零阴影，靠实线分区）── */
+  --radius-sm: 0px;
+  --radius:    0px;
+  --radius-lg: 0px;
+  --shadow: none;
+
+  /* ── 版心 ── */
+  --measure: 1080px;
+  --prose-width: 62ch;
+  --gutter: 16px;
+
+  /* ── 台账行（签名 5：固定行高，6 × 8px 栅格）── */
+  --row-h: 48px;
+
+  /* ── 中轴 ── */
+  --axis: left-rail;
+
+  /* ── 动效（性格：snap）── */
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+  --ease: cubic-bezier(.2,0,.2,1);
+}

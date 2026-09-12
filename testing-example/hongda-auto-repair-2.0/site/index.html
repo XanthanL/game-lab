@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>宏达汽修｜价目表与电话预约</title>
+<meta name="description" content="宏达汽修价目表与电话预约。周一至周六 8:30–18:30，周日休息。幸福路 12 号（工商银行对面），院内可停车。">
+<meta name="theme-color" content="#E1DED4">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="board-bar">
+  <div class="wrap bar-flex">
+    <h1 class="brand">宏达汽修</h1>
+    <p class="live mono" id="live" role="status"><span class="dot" aria-hidden="true">●</span> 查看营业状态…</p>
+  </div>
+</header>
+
+<main>
+
+  <section aria-labelledby="t-price">
+    <div class="wrap">
+      <h2 id="t-price">价目表</h2>
+      <p class="upd mono" id="upd" hidden>更新于 <span id="upd-text"></span></p>
+      <ul class="ledger" id="price-list">
+        <li class="head" aria-hidden="true">
+          <span class="rail-cell">分类</span>
+          <span class="item">项目</span>
+          <span class="price-h">价格</span>
+        </li>
+        <noscript>
+          <li>
+            <span class="rail-cell"></span>
+            <div class="item">请开启 JavaScript 查看价目表；或直接来电 139-XXXX-XXXX（王师傅）</div>
+            <span class="price"></span>
+          </li>
+        </noscript>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-hours">
+    <div class="wrap">
+      <h2 id="t-hours">营业时间</h2>
+      <ul class="hours" id="hours-list"></ul>
+      <p class="today" id="today"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-call">
+    <div class="wrap">
+      <h2 id="t-call">电话预约</h2>
+      <p><a class="phone-big" id="phone-big" href="#">139-XXXX-XXXX</a><span class="tbd" id="tbd-phone" hidden>待填</span></p>
+      <p class="call-sub" id="call-sub"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-addr">
+    <div class="wrap">
+      <h2 id="t-addr">到店</h2>
+      <p class="addr"><span id="addr-text">幸福路 12 号（工商银行对面）</span><span class="tbd" id="tbd-addr" hidden>待填</span></p>
+      <p class="addr-note" id="parking"></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p id="foot-name"></p>
+    <p class="mono" id="foot-hours"></p>
+  </div>
+</footer>
+
+<div class="cta-bar">
+  <div class="wrap">
+    <a class="cta" id="cta-call" href="#">
+      <span>电话预约</span>
+      <span class="num" id="cta-num"></span>
+    </a>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

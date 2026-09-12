@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import WorkCard from '../../components/WorkCard.astro';
+import Seal from '../../components/Seal.astro';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { works } from '../../data/works.json';
+import { strings } from '../../lib/i18n';
+
+const images = import.meta.glob<{ default: ImageMetadata }>('../../assets/works/*.jpg', { eager: true });
+const lang = 'zh' as const;
+const s = strings(lang);
+const hero = works[0];
+const heroMeta = images[`../../assets/works/${hero.img}`]?.default;
+---
+<Base lang={lang} title={s.home.title} description={s.home.description}>
+  <section class="hero wrap">
+    <div class="ink-sign" aria-hidden="true">
+      <span class="ink-sign-text">簪三制壶</span>
+      <Seal chars="簪三" />
+    </div>
+    <p class="kicker">{s.home.kicker}</p>
+    <h1 class="hero-title">{s.home.heroTitle}</h1>
+    <p class="hero-sub">{s.home.heroSub}</p>
+    <p class="hero-cta">
+      <a href="#works">{s.home.ctaWorks} ↓</a>
+      <a href="/zh/about/">{s.home.ctaAbout} →</a>
+    </p>
+    <div class="hero-seal-slot"><Seal chars="簪三" /></div>
+    <figure class="hero-fig">
+      {heroMeta && <Image src={heroMeta} alt={hero.alt.zh} widths={[640, 1280]} sizes="(max-width: 720px) 100vw, 640px" format="webp" loading="eager" fetchpriority="high" />}
+      <figcaption>{s.home.heroCaption}</figcaption>
+    </figure>
+  </section>
+
+  <section class="section wrap" id="works">
+    <header class="sec-head fade">
+      <h2 class="sec-title">{s.home.worksHeading}</h2>
+      <p class="sec-intro muted">{s.home.worksIntro}</p>
+    </header>
+    <ul class="work-grid">
+      {works.map((w) => <WorkCard work={w} lang={lang} />)}
+      <li class="work-slot"><p>{s.home.moreSlot}</p></li>
+    </ul>
+  </section>
+</Base>

@@ -1,0 +1,11 @@
+{
+  "name": "tutuhuahua-site-2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "涂涂画画 · 儿童美术教室官网 v2(静奢·纸白,纯静态单页)",
+  "scripts": {
+    "build": "python tools/build.py",
+    "verify": "python \"C:/Users/www27/.zcode/skills/website-style-router/scripts/verify_assets.py\" assets/art js/works-data.js index.html",
+    "serve": "python -m http.server 8081"
+  }
+}

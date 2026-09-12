@@ -1,0 +1,26 @@
+{
+  "source": "E:\\Code\\mine-skills\\website-style-router\\testing\\fixtures\\T07-menu.pdf",
+  "files": {
+    "T07-menu.pdf": {
+      "type": "pdf",
+      "pages": 2,
+      "images": 2,
+      "assets": 2
+    }
+  },
+  "assets": [
+    {
+      "file": "assets/p01_00.jpg",
+      "page": 1,
+      "srcFormat": "JPEG"
+    },
+    {
+      "file": "assets/p02_00.jpg",
+      "page": 2,
+      "srcFormat": "JPEG"
+    }
+  ],
+  "warnings": [
+    "PDF 文字层几乎为空 —— 疑似扫描件。本机无 tesseract/OCR，请提供文字内容，或改用可搜索/可导出的 PDF。"
+  ]
+}

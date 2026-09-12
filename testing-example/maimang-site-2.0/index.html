@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<title>麦芒手作 · 梦境工坊｜全宇宙最好吃的软欧包（我们只统计了地球）</title>
+<meta name="description" content="麦芒手作是藏在一条会拐弯的巷子深处的梦境工坊：无糖无油软欧包、宇治抹茶吐司、原味贝果、黑麦列巴。日落之前（约 16:00）截单，次日由骑着风的信使送出。加微信 mai_mang_2023 备注「面包」下单。本页为虚构创作。">
+<!-- 微信分享卡片：封面图 og-cover.jpg 已在 assets/；托管到域名后分享卡片生效 -->
+<meta property="og:title" content="麦芒手作 · 梦境工坊｜全宇宙最好吃的软欧包">
+<meta property="og:description" content="在梦里吃过一次，醒来就开了这家店。日落之前（约 16:00）截单；加微信 mai_mang_2023 备注「面包」。本页为虚构创作。"><meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="assets/og-cover.jpg">
+<link rel="preload" href="assets/fonts/zilla-slab-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/karla-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/roboto-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  @font-face{
+    font-family:'Zilla Slab';font-style:normal;font-weight:700;font-display:swap;
+    src:url('assets/fonts/zilla-slab-700.woff2') format('woff2');
+  }
+  @font-face{
+    font-family:'Karla';font-style:normal;font-weight:400;font-display:swap;
+    src:url('assets/fonts/karla-400.woff2') format('woff2');
+  }
+  @font-face{
+    font-family:'Roboto Mono';font-style:normal;font-weight:400;font-display:swap;
+    src:url('assets/fonts/roboto-mono-400.woff2') format('woff2');
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    line-height: var(--lh-base);
+    font-weight: var(--weight-body);
+    color: var(--fg);
+    background: var(--bg);
+  }
+  .wrap { max-width: var(--measure); margin-inline: auto; padding-inline: var(--gutter); }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── hero：center-axis（宣言居中）；视觉签名① 超大标题压过首屏 ── */
+  .hero { text-align: center; padding-top: var(--space-5); }
+  .hero .eyebrow {
+    font-size: var(--fs-xs); line-height: var(--lh-xs);
+    letter-spacing: var(--trk-label);
+    color: var(--accent-ink);
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: var(--fs-display);
+    line-height: var(--lh-display);
+    font-weight: var(--weight-display);
+    letter-spacing: var(--trk-display);   /* 视觉签名④ 大标题负字距 */
+    margin-top: var(--space-3);
+  }
+  .hero .sub {
+    font-size: var(--fs-lg); line-height: var(--lh-lg);
+    color: var(--fg);
+    margin-top: var(--space-2);
+    max-width: var(--prose-width); margin-inline: auto;
+  }
+  .hero .paren {
+    font-size: var(--fs-base); line-height: var(--lh-base);
+    color: var(--muted);
+    margin-top: var(--space-1);
+  }
+  .afterword {
+    margin-top: var(--space-2);
+    font-size: var(--fs-lg); line-height: var(--lh-lg);
+    color: var(--muted);
+    max-width: var(--prose-width);
+  }
+  .price-row {
+    margin-top: var(--space-3);
+    display: flex; justify-content: center; align-items: baseline; gap: var(--space-1);
+    flex-wrap: wrap;
+  }
+  .price-row .p-name { font-size: var(--fs-lg); line-height: var(--lh-lg); }
+  .price-row .price {
+    font-family: var(--font-display); font-weight: var(--weight-display);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-2xl); line-height: var(--lh-2xl);
+    color: var(--accent);
+  }
+  .price-row .price small {
+    font-family: var(--font-body); font-weight: var(--weight-body);
+    font-size: var(--fs-base); color: var(--muted);
+  }
+  /* 视觉签名③ 全页唯一按钮 */
+  .cta {
+    display: inline-block; margin-top: var(--space-3);
+    font-family: var(--font-display); font-size: var(--fs-base); font-weight: var(--weight-display);
+    color: #FFFFFF; background: var(--accent);
+    border: 0; border-radius: var(--radius);
+    padding: var(--space-1) var(--space-3);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .cta:hover { background: #3E5A1C; }
+  .cta:active { transform: translateY(2px); }
+  .wechat-hint { margin-top: var(--space-1); font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); }
+  .hero-shot { margin-top: var(--space-4); }
+  .hero-shot img {
+    display: block; width: 100%; height: auto; max-width: 320px; margin-inline: auto;
+    aspect-ratio: 1 / 1; object-fit: cover; object-position: center 62%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+  }
+  .hero-shot figcaption {
+    margin-top: var(--space-1);
+    font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted);
+    text-align: center; /* 图注与图同轴 */
+  }
+
+  /* ── 区块：正文一律左对齐；视觉签名② 章节编号超大装饰 ── */
+  section { padding-top: var(--space-5); }
+  h2 {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl); line-height: var(--lh-xl);
+    font-weight: var(--weight-display);
+    margin-bottom: var(--space-2);
+    display: flex; align-items: baseline; gap: var(--space-1);
+  }
+  h2 .no {
+    font-family: var(--font-display); font-weight: var(--weight-display);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-2xl); line-height: var(--lh-2xl);
+    color: var(--accent);
+  }
+  .prose { max-width: var(--prose-width); }
+  .prose p + p { margin-top: var(--space-1); }
+  .idea {
+    margin-top: var(--space-2);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    padding: var(--space-1) 0 var(--space-1) var(--space-2);
+    font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: var(--weight-display);
+  }
+
+  .story-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-2); align-items: start; }
+  .portrait { margin: 0 auto; width: min(260px, 72%); text-align: center; }
+  .portrait img {
+    display: block; width: 100%; height: auto;
+    aspect-ratio: 4 / 5; object-fit: cover; object-position: center 30%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+  }
+  .portrait figcaption {
+    margin-top: var(--space-1);
+    font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted);
+  }
+  .studio { margin-top: var(--space-2); }
+  .studio img {
+    display: block; width: 100%; height: auto;
+    aspect-ratio: 16 / 9; object-fit: cover; object-position: center 45%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+  }
+  .studio figcaption {
+    margin-top: var(--space-1);
+    font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted);
+  }
+
+  /* 热卖产品：货摊卡片（白卡 + 大圆角），移动端单列 / ≥720px 两列 */
+  .products { display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
+  .product {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+    display: flex; gap: var(--space-1);
+  }
+  .product .photo-img {
+    flex: 0 0 112px; width: 112px; height: 112px;
+    object-fit: cover;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+  }
+  .product h3 {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg); line-height: var(--lh-lg);
+    font-weight: var(--weight-display);
+  }
+  .product .tag {
+    display: block; width: fit-content; margin-top: var(--space-1);
+    font-size: var(--fs-xs); line-height: var(--lh-xs);
+    color: var(--accent-ink); background: var(--accent-soft);
+    border-radius: var(--radius-sm);
+    padding: 1px 8px;
+  }
+  .product .price {
+    font-family: var(--font-display); font-weight: var(--weight-display);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-lg); line-height: var(--lh-lg);
+    color: var(--accent);
+    margin-top: var(--space-1);
+  }
+  .product .price small { font-family: var(--font-body); font-weight: var(--weight-body); font-size: var(--fs-xs); color: var(--muted); }
+  .product p { font-size: var(--fs-base); line-height: var(--lh-base); color: var(--fg); margin-top: var(--space-1); max-width: var(--prose-width); text-wrap: balance; }
+
+  .quote { border-top: 1px solid var(--line); padding: var(--space-2) 0; }
+  .quote:first-of-type { border-top: 0; }
+  .quote blockquote {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg); line-height: var(--lh-lg);
+    max-width: var(--prose-width);
+  }
+  .quote cite { display: block; margin-top: var(--space-1); font-style: normal; font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); }
+  .review-slot { margin-top: var(--space-2); border-top: 1px dashed var(--line); padding: var(--space-2) 0; color: var(--muted); font-size: var(--fs-xs); line-height: var(--lh-xs); }
+
+  /* 下单与发货：bg-soft 通栏；信使暗号 = 次要文字链接（签名③） */
+  .order { background: var(--bg-soft); margin-top: var(--space-5); padding-bottom: var(--space-5); }
+  .wx-line { margin: var(--space-2) 0; }
+  .wx-link {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xl); line-height: var(--lh-xl);
+    color: var(--accent-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+    text-decoration-thickness: from-font;
+    cursor: pointer;
+    background: none; border: 0; padding: 0;
+  }
+  .wx-link:hover { color: var(--accent); }
+  .wx-hint { margin-left: var(--space-1); font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); }
+  .order ol { list-style: none; counter-reset: step; max-width: var(--prose-width); }
+  .order ol li { counter-increment: step; padding: var(--space-1) 0; border-top: 1px solid var(--line); display: flex; gap: var(--space-1); }
+  .order ol li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--font-display); font-weight: var(--weight-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--accent); flex: 0 0 auto;
+  }
+
+  .comp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-base); }
+  .comp-table th, .comp-table td {
+    text-align: left; vertical-align: top;
+    border-top: 1px solid var(--line);
+    padding: var(--space-1) 0;
+    font-weight: var(--weight-body);
+  }
+  .comp-table th { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); width: 7.5em; padding-right: var(--space-1); }
+  .comp-table td { font-size: var(--fs-base); line-height: var(--lh-base); }
+  .comp-note { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted); margin-bottom: var(--space-2); max-width: var(--prose-width); }
+
+  footer {
+    margin-top: var(--space-5);
+    border-top: 1px solid var(--line);
+    padding: var(--space-2) 0 var(--space-4);
+    font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--muted);
+  }
+
+  #toast {
+    position: fixed; left: 50%; bottom: var(--space-3); transform: translateX(-50%) translateY(8px);
+    background: var(--fg); color: var(--bg);
+    font-size: var(--fs-xs); line-height: var(--lh-xs);
+    border-radius: var(--radius);
+    padding: var(--space-1) var(--space-1);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur-normal) var(--ease), transform var(--dur-normal) var(--ease);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── 移动端（基准减档；大标语以 375px 单行无孤字为限）── */
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .hero h1 { font-size: 32px; }
+    h2 { font-size: 26px; }
+    h2 .no { font-size: 30px; }
+    .price-row .price { font-size: 34px; }
+    .wx-link { font-size: 26px; }
+    .idea { font-size: 20px; }
+    .wx-hint { display: block; margin: var(--space-1) 0 0; }
+    .product .photo-img { flex-basis: 96px; width: 96px; height: 96px; }
+    section { padding-top: var(--space-4); }
+    .hero { padding-top: var(--space-4); }
+  }
+  @media (min-width: 720px) {
+    .products { grid-template-columns: 1fr 1fr; }
+    .story-grid { grid-template-columns: 1fr 280px; }
+    .portrait { width: 100%; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <p class="eyebrow">麦芒手作 · 梦境工坊 · 麦田那一侧</p>
+  <h1>全宇宙最好吃的软欧包</h1>
+  <p class="paren">（我们只统计了地球）</p>
+  <p class="sub">在梦里吃过一次，醒来就开了这家店。</p>
+  <p class="price-row"><span class="p-name">全麦软欧包</span><span class="price">¥28<small> / 袋</small></span></p>
+  <button class="cta" type="button" data-copy>推开梦境的门</button>
+  <p class="wechat-hint">信使暗号 <strong class="mono">mai_mang_2023</strong>（备注「面包」）</p>
+  <figure class="hero-shot">
+    <img src="assets/hero.jpg" alt="全麦软欧包与麦穗" width="1301" height="1600">
+  </figure>
+</header>
+
+<main>
+  <section class="wrap" id="story">
+    <h2><span class="no">01</span>我们是谁</h2>
+    <div class="story-grid">
+      <div>
+        <div class="prose">
+          <p>麦芒手作成立于 2023 年，藏在一条会拐弯的巷子深处，是一间家庭烘焙工作室。主理人阿慧在梦里的连锁烘焙品牌做了 6 年面包师，醒来后来到这里，在自己家里做面包，全城由骑着风的信使配送。</p>
+        </div>
+        <p class="idea">无糖无油，全家老小都能吃。</p>
+      </div>
+      <figure class="portrait">
+        <img src="assets/portrait.jpg" alt="主理人阿慧在揉面" loading="lazy" width="755" height="904">
+        <figcaption>主理人阿慧</figcaption>
+      </figure>
+    </div>
+    <figure class="studio">
+      <img src="assets/studio.jpg" alt="工作台上的面团与器具" loading="lazy" width="1536" height="1413">
+      <figcaption>工作室日常</figcaption>
+    </figure>
+  </section>
+
+  <section class="wrap" id="products">
+    <h2><span class="no">02</span>热卖产品</h2>
+    <div class="products">
+      <article class="product">
+        <img class="photo-img" src="assets/product-1.jpg" alt="全麦软欧包切面" loading="lazy" width="1536" height="1413">
+        <div>
+          <h3>全麦软欧包</h3>
+          <span class="tag">无糖无油</span>
+          <p class="price">¥28 <small>/ 袋</small></p>
+          <p>把一整片麦田揉了进去，外壳敲起来会响。</p>
+        </div>
+      </article>
+      <article class="product">
+        <img class="photo-img" src="assets/product-2.jpg" alt="抹茶奶酥吐司" loading="lazy" width="1536" height="1413">
+        <div>
+          <h3>抹茶奶酥吐司</h3>
+          <span class="tag">宇治抹茶</span>
+          <p class="price">¥38 <small>/ 条</small></p>
+          <p>奶酥在切面里卷成一小团不肯散开的星云。</p>
+        </div>
+      </article>
+      <article class="product">
+        <img class="photo-img" src="assets/product-3.jpg" alt="原味贝果" loading="lazy" width="1536" height="1413">
+        <div>
+          <h3>原味贝果</h3>
+          <span class="tag">6 个装</span>
+          <p class="price">¥45 <small>/ 6 个装</small></p>
+          <p>六个连成一枚可以吃的戒指。</p>
+        </div>
+      </article>
+      <article class="product">
+        <img class="photo-img" src="assets/product-4.jpg" alt="黑麦列巴" loading="lazy" width="1536" height="1413">
+        <div>
+          <h3>黑麦列巴</h3>
+          <span class="tag">传统配方</span>
+          <p class="price">¥42 <small>/ 条</small></p>
+          <p>用夜色烤成的味道，切片时会掉出星星。</p>
+        </div>
+      </article>
+    </div>
+    <p class="afterword">警告：可能导致你对普通面包失去兴趣。</p>
+  </section>
+
+  <section class="wrap" id="reviews">
+    <h2><span class="no">03</span>顾客说</h2>
+    <div class="quote">
+      <blockquote>“咬下去的时候，听见面包在轻轻唱歌。”</blockquote>
+      <cite>—— 住在云上的客人</cite>
+    </div>
+    <div class="quote">
+      <blockquote>“第二天早上醒来，发现枕头变成了一片麦田。”</blockquote>
+      <cite>—— 不愿透露姓名的梦游者</cite>
+    </div>
+    <div class="quote">
+      <blockquote>“买给加班的自己，吃到最后一口突然不困了（也可能是心理作用）。”</blockquote>
+      <cite>—— 周三下午三点</cite>
+    </div>
+    <div class="quote">
+      <blockquote>“外卖小哥敲门的那一下，比闹钟好听。”</blockquote>
+    </div>
+  </section>
+
+  <section class="order" id="order">
+    <div class="wrap">
+      <h2><span class="no">04</span>下单与发货</h2>
+      <p class="wx-line">
+        <button class="wx-link" type="button" data-copy>mai_mang_2023</button>
+        <span class="wx-hint">← 点击复制暗号，备注「面包」</span>
+      </p>
+      <ol>
+        <li>沿着香气找到我们：加微信，备注「面包」，告诉阿慧要什么</li>
+        <li>截单时间：日落之前（约 16:00）</li>
+        <li>发货：次日启程，由骑着风的信使送出</li>
+        <li>包邮：满 88 元，月光免运费；时效 48 小时内送达，途中请勿摇晃——会醒</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="wrap" id="compliance">
+    <h2>食品信息</h2>
+    <p class="comp-note">
+      本页为虚构创作（梦境工坊企划），请勿当真；但「致敏物质」一行是真的，过敏体质请认真看。
+    </p>
+    <table class="comp-table">
+      <tbody>
+        <tr><th>品名</th><td>全麦软欧包 / 抹茶奶酥吐司 / 原味贝果 / 黑麦列巴</td></tr>
+        <tr><th>配料表</th><td>小麦粉、水、酵母、海盐、凌晨四点的笃定、昨夜没做完的梦（约 3 克）、揉面时哼跑调的歌、晒过太阳的围裙味道、失败过的那 27 炉、一小勺魔法（按加入量递减）</td></tr>
+        <tr><th>净含量</th><td>280g／袋（约等于两个好梦的重量）</td></tr>
+        <tr><th>保质期</th><td>梦境中永不过期｜现实中请于 3 日内吃完</td></tr>
+        <tr><th>贮存条件</th><td>常温避光；或藏进枕头底下，第二天早上会更好吃</td></tr>
+        <tr><th>致敏物质</th><td>含麸质谷物、乳制品、蛋类；另含微量魔法，可能引起不切实际的快乐</td></tr>
+        <tr><th>产地</th><td>麦田那一侧 · 一条会拐弯的巷子里（导航到不了，跟着香气可以）</td></tr>
+        <tr><th>许可证号</th><td>麦芒·梦境工坊 No.MM-2023-∞（虚构编号）</td></tr>
+        <tr><th>发货与冷链</th><td>日落之前（约 16:00）截单，次日由骑着风的信使送出；满 88 元月光免运费，48 小时内送达——途中请勿摇晃，会醒</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer>
+    <div class="wrap">
+      麦芒手作 · 梦境工坊 · 成立于 2023 年 · 麦田那一侧（本页为虚构创作）
+    </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  var WECHAT_ID = 'mai_mang_2023';
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2000);
+  }
+  function copyId() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(WECHAT_ID).then(function () {
+        toast('暗号已复制，去微信找阿慧吧');
+      }, function () { fallbackCopy(); });
+    } else { fallbackCopy(); }
+  }
+  function fallbackCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = WECHAT_ID;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('暗号已复制，去微信找阿慧吧'); }
+    catch (e) { toast('请手动复制：' + WECHAT_ID); }
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll('[data-copy]').forEach(function (el) {
+    el.addEventListener('click', copyId);
+  });
+</script>
+</body>
+</html>

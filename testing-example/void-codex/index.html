@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>虚空典籍 — 24 小时文学艺术书店 · 朗读会 · 皮尔特沃夫</title>
+  <meta name="description" content="虚空典籍：开在皮尔特沃夫海克斯大道的深夜书店。文学与艺术书 24 小时亮灯，偶尔办小型朗读会。地址、营业时间与最近的活动都在这里。" />
+  <meta name="theme-color" content="#0C1014" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="虚空典籍 — 24 小时文学艺术书店" />
+  <meta property="og:description" content="文学与艺术书全天候亮灯，偶尔为一首诗通宵。最近的活动与到店方式。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230C1014'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23C06BFF' font-family='serif'%3E虚%3C/text%3E%3C/svg%3E" />
+
+  <!-- 字体：西文自托管 preload；中文衬线 CDN（失败回退系统宋体） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/sora-latin.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/inter-latin.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/jetbrainsmono-latin.woff2" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="data/events.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="#top" aria-label="虚空典籍 · 回到顶部">
+        <span class="brand-cn">虚空典籍</span>
+        <span class="brand-en">VOID CODEX</span>
+      </a>
+      <nav class="site-nav" aria-label="页面导航">
+        <a class="nav-link" data-target="events" href="#events">活动</a>
+        <a class="nav-link" data-target="about" href="#about">书店</a>
+        <a class="nav-link" data-target="visit" href="#visit">到店</a>
+        <span class="status" role="status"><span class="status-dot" aria-hidden="true"></span><span>24H 营业中</span></span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero：center-axis，店名居中 -->
+    <section class="hero" aria-label="虚空典籍">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <p class="hero-eyebrow">Piltover · Progress District</p>
+      <h1 class="hero-name" aria-label="虚空典籍">
+        <span class="hero-char" aria-hidden="true">虚</span><span class="hero-char" aria-hidden="true">空</span><span class="hero-char" aria-hidden="true">典</span><span class="hero-char" aria-hidden="true">籍</span>
+      </h1>
+      <p class="hero-claim">24 小时亮灯的<strong>文学与艺术书店</strong>——偶尔，为一首诗通宵。</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#events">看最近的活动</a>
+        <a class="btn btn-ghost" href="#visit">怎么找到我们</a>
+      </div>
+      <a class="hero-scroll" href="#events" aria-label="向下滚动查看活动">SCROLL</a>
+    </section>
+
+    <!-- 最近活动：编号台账，数据驱动 -->
+    <section id="events" aria-labelledby="events-title">
+      <div class="container">
+        <div class="reveal">
+          <p class="eyebrow">Latest Signals</p>
+          <h2 class="section-title" id="events-title">最近的活动</h2>
+          <p class="events-note">朗读会与小型沙龙都在店里发生。带「示例」徽标的条目是占位数据，替换 data/events.js 即可发布真实活动。</p>
+        </div>
+        <div class="event-list" id="event-list">
+          <noscript><p style="padding: 24px 0; color: #767C83;">活动列表需要启用 JavaScript 查看（数据文件：data/events.js）。</p></noscript>
+        </div>
+      </div>
+    </section>
+
+    <!-- 书店 -->
+    <section id="about" aria-labelledby="about-title">
+      <div class="container">
+        <p class="eyebrow reveal">The Shelf</p>
+        <div class="about-split">
+          <div class="about-prose">
+            <h2 class="section-title reveal" id="about-title">书店</h2>
+            <p class="lead reveal">虚空典籍藏在探险家协会公寓的十二层。我们卖文学和艺术书——小说、诗、画册、艺术理论，以及装帧好看的一切。选书标准只有一条：值得在深夜读下去。</p>
+            <p class="reveal" style="--d: 80ms">偶尔办小型朗读会。规模不大，十几个人，一杯热饮，轮流读出声。活动信息就列在上面，加场或改期会第一时间更新。</p>
+            <p class="reveal" style="--d: 140ms">白天它是书店，夜晚它是灯塔。海克斯大道的灯永远亮着，随时上来翻两页。</p>
+          </div>
+          <p class="vertical-quote reveal" style="--d: 200ms" aria-hidden="true">「所有伟大的书，都在等一个迟到的人。」</p>
+        </div>
+        <div class="feature-grid">
+          <article class="glass-card reveal">
+            <span class="card-index">01</span>
+            <h3 class="card-title">选书 · 文学 × 艺术</h3>
+            <p class="card-text">从皮尔特沃夫的进步精神到佐恩的地下诗集，书架按「心情」排，不按「字母」排。</p>
+          </article>
+          <article class="glass-card reveal" style="--d: 80ms">
+            <span class="card-index">02</span>
+            <h3 class="card-title">朗读会 · 每月几次</h3>
+            <p class="card-text">十几把椅子，轮流出声。不需要读得多好，只需要读出声。</p>
+          </article>
+          <article class="glass-card reveal" style="--d: 160ms">
+            <span class="card-index">03</span>
+            <h3 class="card-title">深夜 · 24 小时</h3>
+            <p class="card-text">全城的图书馆熄灯之后，这里替夜行的读者守夜。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 到店：信息不折叠 -->
+    <section id="visit" aria-labelledby="visit-title">
+      <div class="container">
+        <p class="eyebrow reveal">Find Us</p>
+        <h2 class="section-title reveal" id="visit-title">到店</h2>
+        <div class="visit-grid">
+          <article class="glass-card reveal">
+            <span class="card-index">地址</span>
+            <h3 class="card-title">探险家协会公寓 1204 室</h3>
+            <p class="card-text">
+              <span class="visit-line"><span class="visit-num">12</span> 层 <span class="visit-num">1204</span> 室</span>
+              <span class="visit-line">海克斯大道 <span class="visit-num">77</span> 号 · 进步区</span>
+              <span class="visit-line">瓦罗兰大陆 · 皮尔特沃夫自治领</span>
+            </p>
+          </article>
+          <article class="glass-card reveal" style="--d: 80ms">
+            <span class="card-index">营业</span>
+            <h3 class="card-title">24 小时不间断营业</h3>
+            <p class="card-text">全年无休。凌晨到店请轻声——有人在书里睡着，别吵醒他们。</p>
+          </article>
+          <article class="glass-card reveal" style="--d: 160ms">
+            <span class="card-index">联络</span>
+            <h3 class="card-title">符文交通联系</h3>
+            <p class="card-text">按店里传统，留言写好书名投进门口的符文邮筒即可。更多联络方式整理中。</p>
+          </article>
+        </div>
+        <p class="visit-tip reveal"><span class="k">TIP</span>从进步之门站出来，沿海克斯大道向灯笼最亮的那一头走，看到十二层的灯就到了。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p><span class="footer-brand">虚空典籍</span> · VOID CODEX</p>
+      <p class="footer-meta">海克斯大道 77 号 1204 · © 2026</p>
+      <p class="footer-meta">活动数据维护于 data/events.js</p>
+    </div>
+  </footer>
+</body>
+</html>

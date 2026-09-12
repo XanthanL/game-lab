@@ -1,0 +1,89 @@
+/* ============================================================
+   宏达汽修 2.0 · 设计 token（唯一真源；design-system/MASTER.md 为可读副本）
+   锚点：data-dense-app ｜ 布局：utility-board ｜ 中轴：left-rail
+   底色档：stone ｜ 变体轴：a（原值）｜ 字体对：pair 0（锚点专属）
+   由 scripts/emit_tokens.py --anchor data-dense-app --surface stone --variant a --pair 0 --lang zh 生成
+   ============================================================ */
+:root {
+  /* ── 颜色（底色档 stone · 色相 255° / 彩度档 1 / 色温 +0.0）── */
+  --bg:        #E1DED4;   /* surface=stone · oklch(0.900 0.014 90) */
+  --bg-soft:   #D8D3C6;
+  --fg:        #201E19;   /* 对 --bg 对比度 12.4:1 */
+  --muted:     #64625A;   /* 对 --bg 对比度 4.6:1（仅用于 --bg 上的次要文字） */
+  --line:      rgba(0,0,0,.22);   /* 生成值 .12 按 white 底校准，stone（L0.9）底上不可辨，按发丝线可见度加深一档 */
+  --accent:    #3164A3;   /* 强调 / 装饰；大字下限 3:1 = 4.5:1 */
+  --accent-ink:#396398;   /* 可做正文链接，对比度 4.6:1 */
+  --accent-soft: rgba(49,100,163,.10);
+  --danger:    #B3261E;   /* 仅用于 [待填] 占位标记；对 --bg 11.7:1 */
+
+  /* ── 反同质化指纹（同批次内锚点与 display 字体必须唯一）── */
+  --surface:   "stone";
+  --variant:   "a";
+
+  /* ── 字体（具名搭配 · 来源：锚点 data-dense-app · pair 0）── */
+  --font-display: "Barlow Condensed", "Roboto Condensed", sans-serif;
+  --font-body:    "IBM Plex Sans", "Inter", "PingFang SC", sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-cjk:     "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display-name: "Barlow Condensed";
+  --font-body-name:    "IBM Plex Sans";
+  /* 派生栈（R4：中西混排时西文归拉丁字体、中文归 CJK 栈；由上面生成的 token 组合而来，非手填值） */
+  --font-display-mixed: "Barlow Condensed", "Roboto Condensed", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body-mixed:    "IBM Plex Sans", "Inter", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --weight-display: 600;
+  --weight-body:    400;
+
+  /* ── 字阶（公比 1.167，基准 14px，6 级封顶）── */
+  --fs-xs: 12px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 19px;
+  --fs-2xl: 22px;
+  --fs-display: 30px;
+
+  /* ── 行高（字号越大越紧）── */
+  --lh-xs: 1.5;
+  --lh-base: 1.45;
+  --lh-lg: 1.23;
+  --lh-xl: 1.14;
+  --lh-2xl: 1.08;
+  --lh-display: 1.02;
+
+  /* ── 字距（中文正文 0）── */
+  --trk-display: 0.0em;
+  --trk-heading: 0.0em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;
+
+  /* ── 间距（基数 4px）── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── 形状（rad=2 近直角）── */
+  --radius-sm: 2px;
+  --radius:    2px;
+  --radius-lg: 4px;
+  --shadow: none;
+
+  /* ── 版心与行 ── */
+  --measure: 1280px;
+  --prose-width: 80ch;
+  --gutter: 16px;
+  --row-h: 44px;      /* 台账行最小高（4 栅格 ×11，触控目标） */
+  --rail-w: 64px;     /* 视觉签名⑦：左侧标签栏窄列（4 栅格 ×16） */
+  --price-w: 88px;    /* 价格列固定宽（跨行对齐竖线所必需；4 栅格 ×22） */
+
+  /* ── 中轴 ── */
+  --axis: left-rail;
+
+  /* ── 动效（性格：snap）── */
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+  --ease: cubic-bezier(.2,0,.2,1);
+}

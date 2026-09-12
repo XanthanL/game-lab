@@ -1,0 +1,23 @@
+---
+import Seal from './Seal.astro';
+import { strings, siteEmail, type Lang } from '../lib/i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const s = strings(lang);
+---
+<footer class="site-foot">
+  <div class="wrap">
+    <p class="foot-brand">簪三制壶 <Seal small /></p>
+    <p class="foot-inq">
+      {s.footer.inquiries} —
+      {siteEmail
+        ? <a href={`mailto:${siteEmail}`}>{siteEmail}</a>
+        : <span class="pending">{s.footer.pending}</span>}
+    </p>
+    <p class="foot-tag muted">{s.footer.tagline}</p>
+    <p class="foot-fine">© 2026 Zansan Teapots · 簪三制壶</p>
+  </div>
+</footer>

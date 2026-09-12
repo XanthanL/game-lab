@@ -1,0 +1,38 @@
+/* 自托管字体（loading=self · plain-html 栈）
+   Marcellus / Karla / IBM Plex Mono：latin 子集（fontsource，OFL）
+   霞鹜文楷：按页面用字 168 字子集（LXGW WenKai v1.520，OFL）—— 全量 24MB 不可上线 */
+@font-face {
+  font-family: "Marcellus";
+  src: url("marcellus-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Karla";
+  src: url("karla-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Karla";
+  src: url("karla-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("plex-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "LXGW WenKai";
+  src: url("lxgw-wenkai-subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

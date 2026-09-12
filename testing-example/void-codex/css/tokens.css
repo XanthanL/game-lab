@@ -1,0 +1,97 @@
+/* ============================================================
+   虚空典籍 · 设计 token（全站唯一真源）
+   骨架：emit_tokens.py --anchor glass-tech 确定性生成
+   特化项均带 [特化] 标注与依据；可读副本见 docs/design-system/MASTER.md
+   ============================================================ */
+:root {
+  /* ── 颜色（签名：色相 250° / 彩度档 2 / 色温 -0.5）── */
+  --bg:          #0C1014;
+  --bg-soft:     #181C21;
+  --fg:          #E9EDF2;              /* 对 --bg 16.3:1 */
+  --muted:       #767C83;              /* 对 --bg 4.6:1（正文下限 4.5） */
+  --line:        rgba(255,255,255,.16);
+  --accent:      #73B0EE;              /* 链接 / 交互强调，大字下限 3:1 = 8.3:1 */
+  --accent-ink:  #167FD4;              /* 正文链接，4.6:1 */
+  --accent-soft: rgba(115,176,238,.10);
+
+  /* ── [特化] 霓虹层 ──
+     依据：参考站 :root 实测（#b026ff / #ff006e / #00d4ff）+ 用户 G2 点名保留暗夜霓虹。
+     渐变端点较原值提亮以保大字 3:1；原值只进发光与粒子。
+     用途限定：标题渐变 / 发光描边 / 粒子 / 微标签；正文文字一律用上方确定性 token。 */
+  --neon-purple: #C06BFF;
+  --neon-pink:   #FF5C9D;
+  --neon-cyan:   #56E1FF;
+  --grad-display: linear-gradient(94deg, var(--neon-purple) 0%, var(--neon-pink) 55%, var(--neon-cyan) 118%);
+  --glow-purple:  0 0 28px rgba(176,38,255,.32);
+  --glow-pink:    0 0 28px rgba(255,0,110,.22);
+  --glass-bg:     rgba(255,255,255,.045);
+  --glass-line:   rgba(255,255,255,.12);
+
+  /* ── 字体（骨架搭配：锚点 glass-tech · fonts.json）── */
+  --font-display: "Sora", "Inter", sans-serif;
+  --font-body:    "Inter", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; /* [特化] CJK 栈显式化（Windows 回退明确） */
+  --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-cjk:     "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* [特化] 中文衬线 display —— 依据：用户 G2「标题要有文学气质，去科幻感」。
+     CDN 引入 Noto Serif SC（unicode-range 分片子集），失败回退系统宋体，不塌样。 */
+  --font-display-cjk: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-display-name: "Sora";
+  --font-body-name:    "Inter";
+  --weight-display: 600;
+  --weight-body:    400;
+
+  /* ── 字阶（公比 1.25 / 基准 15px / 6 级封顶）── */
+  --fs-xs:      12px;
+  --fs-base:    15px;
+  --fs-lg:      19px;
+  --fs-xl:      23px;
+  --fs-2xl:     29px;
+  --fs-display: 46px;
+  /* [特化] hero 超显示级：不是第 7 个字阶层，是 display 档的倍率放大（46 × 2.956 ≈ 136）。
+     依据：editorial-hero 签名①「超大标题压过首屏」；375px 下 60px × 4 字 ≈ 240px，无孤字断行 */
+  --size-hero:  clamp(60px, 14vw, calc(var(--fs-display) * 2.956));
+
+  /* ── 行高（签名确定值；大字号收紧）── */
+  --lh-xs:      1.65;
+  --lh-base:    1.6;
+  --lh-lg:      1.38;
+  --lh-xl:      1.26;
+  --lh-2xl:     1.12;
+  --lh-display: 1.02;
+
+  /* ── 字距（中文正文 0；标签仅用于西文/数字）── */
+  --trk-display: -0.01em;   /* [特化] ≥32px 中文标题轻微收紧（骨架 0） */
+  --trk-heading: -0.005em;
+  --trk-body:    0;
+  --trk-label:   0.08em;    /* 只用于全大写西文眉标 / 等宽数字标签 */
+
+  /* ── 间距（基数 4px，纵向节奏只取整数倍）── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── 形状 ── */
+  --radius-sm: 8px;
+  --radius:    16px;
+  --radius-lg: 24px;
+  --shadow:    none;        /* 分区靠 --line，不用投影 */
+
+  /* ── 版心 ── */
+  --measure:     1120px;    /* 全站唯一主容器宽，禁止区块自定 max-width */
+  --prose-width: 68ch;
+  --gutter:      16px;
+
+  /* ── 中轴 ── */
+  --axis: center-axis;     /* hero/店名居中；正文、列表、地址一律左对齐 */
+
+  /* ── 动效（性格：snap）── */
+  --dur-fast:   120ms;
+  --dur-normal: 200ms;
+  --dur-slow:   600ms;     /* [特化] 入场/滚动显现用 */
+  --ease:       cubic-bezier(.2, 0, .2, 1);
+}

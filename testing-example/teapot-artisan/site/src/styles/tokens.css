@@ -1,0 +1,82 @@
+/* ============================================================
+   簪三制壶 · ink-wash 锚点 token —— 唯一真源
+   由 scripts/emit_tokens.py 骨架 + 两处有据锚点特化组成。
+   ============================================================ */
+:root {
+  /* ── 颜色（来源：锚点 ink-wash 签名 · 色相 40° / 彩度档 0 / 色温 +0.2）── */
+  --bg:        #FBFAF7;   /* oklch(0.985 0.004 90) 宣纸 */
+  --bg-soft:   #F4F2EE;
+  --fg:        #201E18;   /* 墨 · 对 --bg 16.0:1 */
+  --muted:     #76736B;   /* 淡墨 · 对 --bg 4.6:1（正文下限 4.5） */
+  --line:      rgba(0,0,0,.12);
+  --accent:    #7F594B;   /* 赭褐 · 大字下限 3:1 = 5.9:1 */
+  --accent-ink:#8F6B5E;   /* 可作正文链接 · 4.6:1 */
+  --accent-soft: rgba(127,89,75,.10);
+  /* 锚点特化①：印泥朱砂。签名 oneLiner「黑白为主一点朱」的图形落地。
+     仅用于：印章图形、[待填] 占位标记。全站唯一饱和色（I3 第二强调色）。 */
+  --seal:      #AE3B26;   /* 对 --bg 5.9:1 */
+  --seal-soft: rgba(174,59,38,.08);
+
+  /* ── 字体（具名搭配 · 来源：fonts.json 锚点 ink-wash）── */
+  --font-display: "Ma Shan Zheng", "STKaiti", serif;
+  --font-body:    "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --font-mono:    "Fragment Mono", ui-monospace, Consolas, monospace;
+  /* 锚点特化②（加载层）：增补 Windows 楷体回退；LXGW WenKai 简体不在 Google Fonts，不联网加载 */
+  --font-cjk:     "LXGW WenKai", "Kaiti SC", "STKaiti", "KaiTi", serif;
+  --font-display-name: "Ma Shan Zheng";   /* 反同质化比对：全库唯一 */
+  --font-body-name:    "Noto Serif SC";
+  /* 搭配理由：马善政毛笔体只在标题上用（书法体不可作正文），正文回到思源宋——留白与笔触的对比。 */
+  --weight-display: 400;   /* 特化：马善政仅有 400 字重，600 会得到伪粗；签名 wts 集合 400,600 不变 */
+  --weight-body:    400;   /* 600 仅用于正文强调/微标签（Noto Serif SC SemiBold） */
+
+  /* ── 字阶（公比 1.414，基准 17px，6 级封顶）── */
+  --fs-xs: 12px;
+  --fs-base: 17px;
+  --fs-lg: 24px;
+  --fs-xl: 34px;
+  --fs-2xl: 48px;
+  --fs-display: 68px;
+
+  /* ── 行高（字号越大越紧；CJK 主站整体上浮）── */
+  --lh-xs: 1.95;
+  --lh-base: 1.95;
+  --lh-lg: 1.52;
+  --lh-xl: 1.42;
+  --lh-2xl: 1.32;
+  --lh-display: 1.22;
+
+  /* ── 字距（I7 例外：东方留白流派疏朗大字微正字距，有意为之 ≤0.04em）── */
+  --trk-display: 0.03em;
+  --trk-heading: 0.015em;
+  --trk-body:    0em;
+  --trk-label:   0.08em;
+
+  /* ── 间距（基数 12px，全部为整数倍）── */
+  --space-1: 12px;
+  --space-2: 24px;
+  --space-3: 36px;
+  --space-4: 48px;
+  --space-5: 72px;
+  --space-6: 96px;
+  --space-7: 144px;
+  --space-8: 192px;
+
+  /* ── 形状 ── */
+  --radius-sm: 2px;
+  --radius:    2px;
+  --radius-lg: 4px;
+  --shadow: none;   /* 以 --line 分区替代阴影 */
+
+  /* ── 版心 ── */
+  --measure: 960px;
+  --prose-width: 50ch;
+  --gutter: 16px;
+
+  /* ── 中轴 ── */
+  --axis: center-axis;   /* hero/主图/封面居中；正文左对齐 */
+
+  /* ── 动效（性格：drift）── */
+  --dur-fast: 300ms;
+  --dur-normal: 600ms;
+  --ease: cubic-bezier(.16,.84,.24,1);
+}
