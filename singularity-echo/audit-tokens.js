@@ -84,7 +84,7 @@ const ALLOW_RGB = new Set(['0,0,0', '10,17,26', '120,140,160', '120,160,210', '1
    它们的值本来就会被整体替换（阶段 B 已换过一版），不该每次改都来动本脚本。
    直接从代码里解析这三张表，把其中出现的 hex / rgb 三元组自动加入白名单。 */
 const DYN_HEX = new Set(), DYN_RGB = new Set();
-for (const name of ['HULL_TINT', 'TRAIL_RAMP', 'BOSS_STYLE', 'HULL_GEO', 'ENEMY_DEFS']) {
+for (const name of ['HULL_TINT', 'TRAIL_RAMP', 'BOSS_STYLE', 'HULL_GEO', 'ENEMY_DEFS', 'CB_PAL']) {
   const m = js.match(new RegExp('const ' + name + '=\\{[\\s\\S]*?\\n\\};'));
   if (!m) { console.log('    (提示：未找到 ' + name + ' 表，动态放行跳过)'); continue; }
   for (const h of m[0].matchAll(/#[0-9a-fA-F]{3,8}\b/g)) DYN_HEX.add(h[0].toLowerCase());

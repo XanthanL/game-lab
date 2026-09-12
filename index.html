@@ -41,13 +41,11 @@
       t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }
     d.setAttribute("data-theme", t);
-    /* 风格：首页每次进入 / 刷新都**随机**换一套展示（49 套等概率，清单与
-       assets/i18n.js 的 GROUPS 同步维护）。随机结果写回 gl-style，
-       从首页点进子页时是同一套、不会跳变；在皮肤条上手动选仍然有效，
-       会一直用到下一次进首页。 */
+    /* 风格：默认电光蓝（hermes）；若用户之前在皮肤条手动选过并写回 gl-style，则沿用。
+       从首页点进子页时是同一套、不会跳变；在皮肤条上手动选仍然有效。 */
     var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui"];
-    var st = OK[Math.floor(Math.random() * OK.length)];
-    try { localStorage.setItem("gl-style", st); } catch (e) {}
+    var st = localStorage.getItem("gl-style");
+    if (!st || OK.indexOf(st) === -1) st = "hermes";
     d.setAttribute("data-style", st);
   } catch (e) {}
 })();
@@ -73,6 +71,9 @@
        data-en="7 web games, 11 pixel stage plays, plus a handful of self-built sites and tools. Fully static — no install required." data-page-node-id="8UywuezZ8WKykF6vp2NGXV">7 款网页游戏、11 部像素舞台剧，以及若干自建站点与工具。全部静态部署，无需安装。</p>
     <!-- 风格切换：七档平铺（按钮由 assets/i18n.js 注入） -->
     <div class="skin-bar" id="skinBar" role="group" aria-label="风格切换"></div>
+    <button type="button" id="skinRandom" class="skin-random" aria-label="随机切换风格 / Random skin">
+      <span data-zh="随机切换风格" data-en="Random skin">随机切换风格</span>
+    </button>
     <nav class="toc" aria-label="目录" data-page-node-id="reoduuCZslQA6vO3WAp5a6">
       <a class="glass" href="./games.html" data-page-node-id="XMK7TGUP37bMnLsCzFKRDk"><span data-zh="游戏" data-en="Games" data-page-node-id="VSgb6l7I9uwiXAODhIXAE0">游戏</span> <em data-page-node-id="oH16Ztl7DgBoJbXLTfgGRK">07</em></a>
       <a class="glass" href="./lab.html" data-page-node-id="QBy4AKwOIjmnJkFHhcHOAh"><span data-zh="实验" data-en="Experiments" data-page-node-id="sU5qJjIDHGdXf4pT2b4csQ">实验</span> <em data-page-node-id="bqKJCmXLfwj6rIimgx0rtK">02</em></a>

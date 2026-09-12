@@ -85,6 +85,7 @@
   /* ── 状态 ────────────────────────────────────────────────────── */
   --c-danger:#c0402b;      --c-danger-rgb:192 64 43;    /* 朱砂 —— 唯一高饱和 */
   --c-danger-hi:#e07a62;
+  --c-foe:#ffb08a;        --c-foe-rgb:255 176 138;   /* 5.3 敌方弹丸 —— 敌我辨色的第一现场 */
   --c-danger-glow-rgb:168 60 40;                        /* 濒死红晕 */
   --c-flash-a-rgb:200 70 50;                            /* 受击闪光内 */
   --c-flash-b-rgb:150 45 32;                            /* 受击闪光外 */
@@ -118,6 +119,13 @@
   --z-atmos:0;                                   /* 扫描线 / 红晕 / 慢动作 */
   --z-hud:10;                                    /* 分数 / 条 / 能力格 */
   --z-float:20; --z-banner:20; --z-touch:21;     /* 横幅 / 飘字 / 触屏控件 */
+  /* 5.5 安全区：`viewport-fit=cover` 下刘海 / Home 条会压住贴边 UI。
+     ⚠️ env() 只在 :root 里读一次，其余一律 calc(原值 + var(--safe-*)) ——
+        每个用点各写一遍 env() 的结果必然是「改一处漏三处」。 */
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
   --z-overlay-fx:30; --z-flash:30; --z-aim:31; --z-overlay:32;  /* 状态叠层 · 准星 · 全屏覆盖 */
   --z-panel:40;  --z-detail:40; --z-detail-hi:41;/* 面板 / 详情浮层 */
   --z-screen:50; --z-boot:50;                    /* 菜单 / 结算 / 机库 / 启动 */
@@ -145,6 +153,7 @@
   --dur-4:230ms;                            /* 卡牌悬停、小面板 */
   --dur-5:330ms;                            /* 面板进出、菜单切换 */
   --dur-6:440ms;                            /* 全屏覆盖层、结算登场 */
+  --ambient-rm:0s;                        /* 5.3 减弱动态：把循环动画时长归零 */
   --ambient-1:1.1s;                         /* 环境：呼吸 / 脉冲 */
   --ambient-2:1.6s;                         /* 环境：慢速闪烁 */
   --stagger:40ms;                           /* 列表交错延迟步长（animation-delay） */
@@ -174,7 +183,7 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:var(--z-hud)}
-.hud-tl{position:absolute;top:16px;left:18px}
+.hud-tl{position:absolute;top:calc(16px + var(--safe-t));left:calc(18px + var(--safe-l))}
 .bar{width:min(220px,34vw);height:10px;background:rgb(var(--c-white-rgb) / .06);
   border:1px solid rgb(var(--c-cyan-rgb) / .28);transform:skewX(-16deg);overflow:hidden}
 .bar i{display:block;height:100%;transition:width var(--dur-2) var(--ease-ui)}
@@ -229,13 +238,13 @@ canvas.fx{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-
 #lv{font-size:var(--fs-2);letter-spacing:.14em;color:var(--c-amber)}
 .bar.xp{height:6px;border-color:rgb(var(--c-amber-rgb) / .3)}
 #xpbar{background:linear-gradient(90deg,var(--c-xp-a),var(--c-xp-b))}
-.hud-tc{position:absolute;top:12px;left:50%;transform:translateX(-50%);text-align:center}
+.hud-tc{position:absolute;top:calc(12px + var(--safe-t));left:50%;transform:translateX(-50%);text-align:center}
 #bossname{font-size:var(--fs-hud);letter-spacing:.36em;margin-right:-.36em;color:var(--c-boss-name);margin-bottom:7px}
 #bossbar{width:min(260px,40vw);height:6px;margin:0 auto;background:rgb(var(--c-white-rgb) / .06);
   border:1px solid rgb(var(--c-danger-rgb) / .4)}
 #bossbar i{display:block;height:100%;background:linear-gradient(90deg,var(--c-boss-a),var(--c-boss-b))}
 /* 右上信息栈：积分 → 波次 → 最佳 → 计时 → 剩余，字体随视口自适应 */
-.hud-tr{position:absolute;top:12px;right:64px;text-align:right;
+.hud-tr{position:absolute;top:calc(12px + var(--safe-t));right:calc(64px + var(--safe-r));text-align:right;
   display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 #score{font-size:var(--fs-num);letter-spacing:.12em;margin-right:-.12em;
   color:var(--c-ink-hi);text-shadow:0 0 12px rgb(var(--c-cyan-rgb) / .4);line-height:1.15;
@@ -428,6 +437,46 @@ body.playing{cursor:none}
 .volrow input[type=range]::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:var(--c-cyan);cursor:pointer}
 .volval{min-width:42px;text-align:right;color:var(--c-amber);font-variant-numeric:tabular-nums}
 .setnote{font-size:var(--fs-2);color:var(--c-ink-2);letter-spacing:.06em;line-height:1.7;margin-top:10px}
+/* 5.3 设置面板补完：分段选择（画质 / 色盲）+ 开关（特效 / 动态） */
+.optrow{display:flex;align-items:center;gap:14px;margin:16px 0;font-size:var(--fs-3);letter-spacing:.1em}
+.optrow .optlab{min-width:64px;flex:none;color:var(--c-steel);font-size:var(--fs-2);letter-spacing:.16em}
+.optrow .seg{flex:1;display:flex;gap:6px;flex-wrap:wrap}
+.segb{flex:1;min-width:0;padding:7px 2px;text-align:center;cursor:pointer;
+  border:1px solid var(--c-line);background:transparent;color:var(--c-ink-2);
+  font-family:inherit;font-size:var(--fs-2);letter-spacing:.1em;
+  transition:border-color var(--dur-2) var(--ease-ui),color var(--dur-2) var(--ease-ui),background var(--dur-2) var(--ease-ui)}
+.segb:hover{border-color:var(--c-ink-2);background:rgb(var(--c-white-rgb) / .04)}
+.segb.on{border-color:var(--c-cyan);color:var(--c-cyan);background:rgb(var(--c-cyan-rgb) / .1)}
+.toggrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 4px}
+.tog{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7px 12px;cursor:pointer;border:1px solid var(--c-line);color:var(--c-ink-2);
+  background:transparent;
+  font-family:inherit;font-size:var(--fs-2);letter-spacing:.1em;text-align:left;
+  transition:border-color var(--dur-2) var(--ease-ui),color var(--dur-2) var(--ease-ui)}
+.tog:hover{border-color:var(--c-ink-2)}
+.tog i{flex:none;position:relative;width:26px;height:12px;border:1px solid var(--c-line);
+  transition:border-color var(--dur-2) var(--ease-ui),background var(--dur-2) var(--ease-ui)}
+.tog i::after{content:'';position:absolute;top:1px;left:1px;width:10px;height:8px;background:var(--c-ink-3);
+  transition:transform var(--dur-2) var(--ease-ui),background var(--dur-2) var(--ease-ui)}
+.tog.on{border-color:rgb(var(--c-cyan-rgb) / .5);color:var(--c-ink)}
+.tog.on i{border-color:var(--c-cyan);background:rgb(var(--c-cyan-rgb) / .16)}
+.tog.on i::after{transform:translateX(12px);background:var(--c-cyan)}
+@media(max-width:560px){.toggrid{grid-template-columns:1fr}}
+/* 减弱动态：循环动画时长归零 + 面板取消入场位移（颜色过渡保留，不算动态） */
+html[data-rm]{--ambient-1:var(--ambient-rm);--ambient-2:var(--ambient-rm)}
+html[data-rm] .overlay{animation:none}
+/* 5.1 键位槽：沿用 volrow 的三段式（标签 / 弹性区 / 读数），读数换成可点的键帽 */
+.keyrow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:var(--fs-2);letter-spacing:.1em}
+.keyrow .klabel{flex:1;color:var(--c-ink-2)}
+.keyslot{min-width:88px;padding:5px 9px;text-align:center;cursor:pointer;
+  font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-2);letter-spacing:.08em;
+  color:var(--c-ink-hi);background:rgb(var(--c-white-rgb) / .05);
+  border:1px solid var(--c-line);border-radius:4px;
+  transition:border-color var(--dur-2) var(--ease-ui),color var(--dur-2) var(--ease-ui)}
+.keyslot:hover{border-color:var(--c-cyan);color:var(--c-cyan-hi-2)}
+.keyslot.none{color:var(--c-ink-2)}
+/* 等待按键：朱砂描边提示"现在按下的键会被吃掉" —— 不搞闪烁动画，静止更稳 */
+.keyslot.wait{border-color:var(--c-amber);color:var(--c-amber)}
 
 /* ---------- level-up cards ---------- */
 .cards-in{text-align:center;margin:auto;padding:20px 0}
@@ -443,6 +492,11 @@ body.playing{cursor:none}
   transition:opacity var(--dur-3)}
 .card:hover{transform:translateY(-7px);border-color:var(--c-cyan);box-shadow:0 10px 30px rgb(var(--c-cyan-rgb) / .16)}
 .card:hover::before{opacity:1}
+/* 5.2 手柄选择：与 hover 同一套"抬起 + 描边"语汇，但用琥珀色区分来源 ——
+   手柄没有指针，选中项必须是场上唯一的焦点。 */
+.card.padsel{transform:translateY(-7px);border-color:var(--c-amber);
+  box-shadow:0 0 0 1px rgb(var(--c-amber-rgb) / .45),0 10px 30px rgb(var(--c-amber-rgb) / .18)}
+.card.padsel::before{opacity:1}
 .card .g{font-size:var(--fs-title);color:var(--c-cyan);text-shadow:0 0 14px rgb(var(--c-cyan-rgb) / .6)}
 .card h3{font-size:var(--fs-4);font-weight:600;letter-spacing:.1em;margin-top:12px;color:var(--c-ink-hi)}
 .card .hullcv{display:block;margin:0 auto;width:150px;height:92px}
@@ -583,7 +637,9 @@ body.playing{cursor:none}
 #over .statline.dust b{color:var(--c-amber)}   /* 压过 #over .statline b 的 --c-stat-hi */
 .statline.dust .hint{color:var(--c-ink-2);letter-spacing:.1em}
 /* ---------- logbook：四边形 / 直角数据表风格（不用圆角） ---------- */
-#logbook .panel{border-radius:0;padding:34px 30px 26px;max-width:min(94vw,680px);
+/* width 必须显式给：.panel 只设了 max-width，flex 项按 max-content 定宽（实测 552px），
+   星图放不下 4 列。给到 720px 后图框净宽 ≈658，正好装下 654 宽的 4 列画布（≈1:1）。 */
+#logbook .panel{border-radius:0;padding:34px 30px 26px;width:min(94vw,720px);max-width:100%;
   border:1px solid rgb(var(--c-cyan-rgb) / .3);position:relative}
 #logbook .panel::before,#logbook .panel::after{ /* 对角 L 形角标，强化方形轮廓 */
   content:'';position:absolute;width:15px;height:15px;border:1px solid rgb(var(--c-cyan-rgb) / .55)}
@@ -652,9 +708,11 @@ body.playing{cursor:none}
    本版只定版式与交互：视窗 + 平移画布 + SVG 连线层 + 节点层。
    节点坐标写死在 ACH 数据里（不做自动布局），画布尺寸由数据推算。
    未解锁 = 暗轮廓，已解锁 = 亮起 + 连线通电。 */
+/* 纵向版式需要纵向空间：46vh/300px 装不下「根 + 4 行 + 汇总」，
+   抬高到 64vh/580px 后桌面 4 列整棵树刚好一屏放下。 */
 #logbook .lb-tree{position:relative;border:1px solid var(--c-line);
   background:rgb(var(--c-cyan-rgb) / .025);overflow:hidden;
-  height:min(46vh,300px);min-height:210px;touch-action:none}
+  height:min(64vh,580px);min-height:260px;touch-action:none}
 #logbook .lb-tree-hint{position:absolute;right:8px;bottom:6px;z-index:var(--z-local-3);
   font-size:var(--fs-1);letter-spacing:.14em;color:var(--c-ink-3);pointer-events:none}
 /* 画布层必须撑满视窗：内部全是绝对定位元素（SVG + 节点层），
@@ -663,10 +721,18 @@ body.playing{cursor:none}
   transform-origin:0 0;cursor:grab;
   transition:transform var(--dur-2) var(--ease-ui)}
 #logbook .lb-tree-wrap.drag{cursor:grabbing;transition:none}
-/* 画布最小尺寸 = 数据推算的 ACH_W/ACH_H，保证节点不会被视窗裁掉；
-   缩放/平移由 wrap 的 transform 承担，视窗 overflow:hidden 之外不显示。 */
-#logbook .lb-tree-nodes{position:absolute;left:0;top:0;width:1008px;height:688px}
-#logbook .lb-tree-links{position:absolute;left:0;top:0;width:1008px;height:688px;overflow:visible;pointer-events:none}
+/* 画布尺寸不再写死：列数随视窗在 4 / 2 之间切换，画布宽高由 layoutAch / layoutMeta
+   算完后直接写进 style —— 写死就会在 2 列模式下截掉右半棵树。 */
+#logbook .lb-tree-nodes{position:absolute;left:0;top:0}
+#logbook .lb-tree-links{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+/* 缩放控件：钉在图框右上角 —— 放在 .lb-tree 内、.lb-tree-wrap 外，
+   这样它不跟着画布一起平移/缩放（放进 wrap 里会随缩放变大变小）。 */
+#logbook .lb-zoom{position:absolute;right:8px;top:8px;z-index:var(--z-local-3);display:flex;gap:4px}
+#logbook .lb-zoom button{width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  padding:0;border:1px solid rgb(var(--c-cyan-rgb) / .38);background:rgb(var(--c-panel-rgb) / .8);
+  color:var(--c-cyan-hi);font-size:var(--fs-3);line-height:1;cursor:pointer;
+  transition:border-color var(--dur-2) var(--ease-ui),color var(--dur-2) var(--ease-ui)}
+#logbook .lb-zoom button:hover{border-color:rgb(var(--c-cyan-rgb) / .85);color:var(--c-ink-hi)}
 #logbook .lb-tree-links line{stroke-width:1}
 #logbook .lbnode{position:absolute;width:150px;border:1px solid var(--c-line);
   background:var(--c-panel);padding:7px 9px;text-align:left;line-height:1.35}
@@ -689,11 +755,9 @@ body.playing{cursor:none}
    done 态用满格黄铜；partial 用钢蓝（结构色，与"已通电的线"同语言）。 */
 #logbook .lbnode u{position:absolute;left:0;bottom:0;height:2px;background:var(--c-line);
   display:block;text-decoration:none}
-/* 局外解锁树（3.5）：与成就树同结构（坐标手写 / req 前置 / SVG 连线 + 绝对定位节点），
+/* 局外解锁树（3.5）：与成就树同结构（req 前置 / SVG 连线 + 绝对定位节点），
    区别是节点可点击 —— 花星尘解锁永久起始增益。
-   画布尺寸用 .meta 覆写（解锁树 672×642 比成就树 1008×688 小一圈）。 */
-#logbook .lb-tree.meta .lb-tree-nodes{width:672px;height:642px}
-#logbook .lb-tree.meta .lb-tree-links{width:672px;height:642px}
+   画布尺寸同由 layoutMeta 写入，不再用 .meta 覆写固定值。 */
 #logbook .m-dust{font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-2);letter-spacing:.2em;
   color:var(--c-amber);margin:0 0 10px}
 /* 三态沿用成就树语汇：暗轮廓(locked) < 青边可点(ready) < 金边已解锁(done/unlocked) */
@@ -825,15 +889,26 @@ body.playing{cursor:none}
   background:rgb(var(--c-cyan-rgb) / .05);z-index:var(--z-touch);pointer-events:none;transform:translate(-50%,-50%)}
 #joyknob{position:absolute;left:50%;top:50%;width:46px;height:46px;border-radius:50%;
   background:rgb(var(--c-cyan-rgb) / .28);border:1px solid rgb(var(--c-cyan-rgb) / .7);transform:translate(-50%,-50%)}
-#firebtn{position:fixed;right:28px;bottom:34px;width:96px;height:96px;border-radius:50%;
+#firebtn{position:fixed;right:calc(28px + var(--safe-r));bottom:calc(34px + var(--safe-b));width:96px;height:96px;border-radius:50%;
   border:1px solid rgb(var(--c-cyan-rgb) / .4);background:rgb(var(--c-cyan-rgb) / .06);z-index:var(--z-touch);pointer-events:none;
   display:flex;align-items:center;justify-content:center;font-size:var(--fs-2);letter-spacing:.24em;color:rgb(var(--c-ink-rgb) / .7)}
 #firebtn.hot{background:rgb(var(--c-cyan-rgb) / .2)}
+/* 5.5 竖屏提示：只在 触屏 + 竖屏 + 对局中 露一次，点一下永久忽略（存 nova-orient）。
+   故意不做「几秒后自动消失」—— 那要引入一个说不清的时长常量，
+   而「玩家自己点掉」既没有时长问题，也保证他真的看见了。 */
+#orhint{position:fixed;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);
+  z-index:var(--z-banner);display:flex;align-items:center;gap:9px;cursor:pointer;
+  padding:9px 15px;border:1px solid rgb(var(--c-cyan-rgb) / .32);
+  background:rgb(var(--c-void-rgb) / .8);color:rgb(var(--c-ink-rgb) / .8);
+  font-size:var(--fs-3);letter-spacing:.1em;white-space:nowrap;
+  opacity:0;transition:opacity var(--dur-2) var(--ease-ui)}
+#orhint.on{opacity:1}
+#orhint .dot{width:5px;height:5px;border-radius:50%;background:var(--c-amber);flex:0 0 auto}
 
 @media (max-width:640px){
-  .hud-tr{right:58px;gap:2px}
+  .hud-tr{right:calc(58px + var(--safe-r));gap:2px}
   /* 窄屏下左上 HUD 纵向堆叠变高，巨像名与血条整体下移避让（清过血条/护盾/经验条/能力格整列） */
-  .hud-tc{top:104px}
+  .hud-tc{top:calc(104px + var(--safe-t))}
   .panel{padding:28px 22px}
   /* 主标题已是汉字，窄屏无需再收缩 */
   .statgrid{grid-template-columns:repeat(2,1fr)}
@@ -1024,6 +1099,7 @@ body.playing{cursor:none}
 <!-- touch controls -->
 <div id="joybase" hidden data-page-node-id="nehejEsQNO2xDYhrjAe919"><div id="joyknob" data-page-node-id="AN9A5R8Mv0qnCJC5WHfMQD"></div></div>
 <div id="firebtn" hidden data-page-node-id="kOVApTHQylI6VRfwthzr0C">FIRE</div>
+<div id="orhint" hidden><span class="dot"></span><span data-i18n="or_hint">横屏体验更佳 · 点击忽略</span></div>
 
 <!-- logbook / stats -->
 <div id="logbook" class="overlay" hidden data-page-node-id="5MFmfcKXaXDCrZfCXBY0Ly">
@@ -1057,7 +1133,12 @@ body.playing{cursor:none}
     <!-- 成就树容器（Phase 3.4 填数据；本版先把版式与交互定死） -->
     <div class="sec-head" data-i18n="lb_sec6" data-node-id="lbsec6"><i></i><span>成就星图</span><em>ACHIEVEMENTS</em></div>
     <div class="lb-tree" id="lbTree">
-      <div class="lb-tree-hint" id="lbTreeHint" data-i18n="lb_tree_hint">拖拽浏览 · 滚轮缩放区域</div>
+      <div class="lb-tree-hint" id="lbTreeHint" data-i18n="lb_tree_hint">拖拽浏览 · 滚轮 / 双指缩放</div>
+      <div class="lb-zoom" data-page-node-id="4p3bZoomAchBar001">
+        <button type="button" data-zoom="-" title="缩小" data-page-node-id="4p3bZoomAchMinus01">−</button>
+        <button type="button" data-zoom="+" title="放大" data-page-node-id="4p3bZoomAchPlus001">+</button>
+        <button type="button" data-zoom="fit" title="适配" data-page-node-id="4p3bZoomAchFit0001">⤢</button>
+      </div>
       <div class="lb-tree-wrap" id="lbTreeWrap">
         <svg class="lb-tree-links" id="lbTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="lb-tree-nodes" id="lbTreeNodes"></div>
@@ -1067,7 +1148,12 @@ body.playing{cursor:none}
     <div class="sec-head" data-i18n="lb_sec7" data-node-id="lbsec7"><i></i><span>解锁星图</span><em>UNLOCKS</em></div>
     <div class="m-dust mono" id="mDust" data-node-id="__M_DUST__"></div>
     <div class="lb-tree meta" id="mTree" data-node-id="__M_TREE__">
-      <div class="lb-tree-hint" id="mTreeHint" data-i18n="lb_tree_hint2">点击节点解锁 · 拖拽浏览</div>
+      <div class="lb-tree-hint" id="mTreeHint" data-i18n="lb_tree_hint2">点击节点解锁 · 拖拽 / 双指缩放</div>
+      <div class="lb-zoom" data-page-node-id="4p3bZoomMetaBar001">
+        <button type="button" data-zoom="-" title="缩小" data-page-node-id="4p3bZoomMetaMinus01">−</button>
+        <button type="button" data-zoom="+" title="放大" data-page-node-id="4p3bZoomMetaPlus001">+</button>
+        <button type="button" data-zoom="fit" title="适配" data-page-node-id="4p3bZoomMetaFit0001">⤢</button>
+      </div>
       <div class="lb-tree-wrap" id="mTreeWrap" data-node-id="__M_WRAP__">
         <svg class="lb-tree-links" id="mTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="lb-tree-nodes" id="mTreeNodes" data-node-id="__M_NODES__"></div>
@@ -1083,7 +1169,7 @@ body.playing{cursor:none}
 <!-- settings -->
 <div id="settings" class="overlay" hidden data-page-node-id="lMXlsBqcvo4T85kKriDGaU">
   <div class="panel" data-page-node-id="vxHuP3g8xpKLuju9exO4Xe">
-    <h2 data-page-node-id="0xTynyKrodH6FienE1tLlW">SETTINGS<span data-i18n="st_sub" data-page-node-id="MqmGHVEMSRsY0IrXePAQR3">音频设置</span></h2>
+    <h2 data-page-node-id="0xTynyKrodH6FienE1tLlW">SETTINGS<span data-i18n="st_sub" data-page-node-id="MqmGHVEMSRsY0IrXePAQR3">显示 / 音频 / 无障碍</span></h2>
     <div class="volrow" data-page-node-id="J7ay4wyePxK5JcntyVV8V9">
       <label data-page-node-id="uAJ8VLzPtz0IzjAPuqbeJK">BGM</label>
       <input id="bgmVol" type="range" min="0" max="100" value="18" data-page-node-id="wfdaVw4u84stAIwLOcxO5y">
@@ -1095,6 +1181,32 @@ body.playing{cursor:none}
       <span id="sfxVal" class="volval mono" data-page-node-id="HAjWL8O9Gn5q9o0vktU47B">50%</span>
     </div>
     <div class="setnote" data-i18n="st_note" data-page-node-id="OnUDUno2sGaFFO1NdeZHym">BGM 会随场景自动切换：菜单 / 巡航 / 战斗 / 巨像 / 无尽 / 结算。<br data-page-node-id="nQ6gtBS1x1OawuT3mBn9PC">首次播放需一次点击或按键解锁浏览器音频。</div>
+    <!-- 5.3 显示与性能：画质档 + 特效开关 -->
+    <div class="sec-head" data-i18n="st_fx"><i></i><span>显示与性能</span><em>DISPLAY</em></div>
+    <div class="optrow">
+      <span class="optlab" data-i18n="st_q_lab">画质</span>
+      <div class="seg" id="optQuality"></div>
+    </div>
+    <div class="toggrid" id="optFx"></div>
+    <div class="setnote" data-i18n="st_q_hint">「自动」会在持续掉帧时逐级降级：先关星云层，再降画布分辨率；手动档则锁死不再自动降。</div>
+    <!-- 5.3 无障碍：色盲模式 + 减弱动态 -->
+    <div class="sec-head" data-i18n="st_ac"><i></i><span>无障碍</span><em>ACCESS</em></div>
+    <div class="optrow">
+      <span class="optlab" data-i18n="st_cb_lab">色盲</span>
+      <div class="seg" id="optCb"></div>
+    </div>
+    <div class="setnote" data-i18n="st_cb_hint">只重映射承载信息的颜色（危险 / 奖励 / 敌我弹 / 血盾），结构灰与铅白一律不动。</div>
+    <div class="optrow">
+      <button type="button" class="tog" id="optRm" data-opt="motion" data-tog="1"><span data-i18n="st_rm">减弱动态</span><i></i></button>
+    </div>
+    <div class="setnote" data-i18n="st_rm_hint">关掉屏幕震动、镜头冲击与循环动画；开启后「屏幕震动」开关随之失效。</div>
+    <!-- 5.1 键位重绑定：槽位由 renderKeyList() 按 KEYMAP 绘制 -->
+    <div class="sec-head" data-i18n="st_keys" data-page-node-id="ks0"><i></i><span>键位</span><em>KEYMAP</em></div>
+    <div id="keyList" data-page-node-id="ks1"></div>
+    <div class="setnote" data-i18n="st_keys_hint" data-page-node-id="ks2">点击按键槽后按下新键 —— 按 ESC 取消。复用已被占用的键，会把它从原动作上清空。</div>
+    <div class="row-btns" data-page-node-id="ks3">
+      <button id="btnKeyReset" class="btn ghost" data-i18n="st_reset" data-page-node-id="ks4">恢复默认</button>
+    </div>
     <div class="row-btns" data-page-node-id="PV4xy2XQY05FrT24a8fVQZ">
       <button id="btnLangP" class="btn ghost langbtn" data-i18n="m_lang">🌐 EN ▸ ENGLISH</button>
       <button id="btnSetBack" class="btn" data-i18n="st_back" data-page-node-id="WmSFRLXFL7L8JWaQEmlqcx">返回</button>
@@ -1136,17 +1248,79 @@ const irand=(a,b)=>Math.floor(a+srand01()*(b-a+1));
    启动时读一次，缓存为 'r,g,b' 字符串；需要透明度就用 RGBA(k,a) 拼。
    绘制代码里不允许再出现字面色值（纯黑 / 纯白除外，它们无彩色、不构成风格漂移）。
    换风格 = 改 index.html 顶部 :root 的值，本层与绘制代码都不动。 */
-const PAL=(()=>{
+const NAMES=['void','panel','white','black','ink','steel','cyan','cyan-hi','cyan-hi-2',
+  'aim','aim-fire','aim-danger','cd','spot','card-edge','syn','syn-2','line',
+  'danger','amber','amber-hi','violet','shadow','overlay-a','overlay-b','foe'];
+/* 5.3 色盲模式会换掉语义色 —— PAL 不能是启动时的一次性快照，必须可重读 */
+function readPal(){
   const cs=getComputedStyle(document.documentElement),o={};
-  const NAMES=['void','panel','white','black','ink','steel','cyan','cyan-hi','cyan-hi-2',
-    'aim','aim-fire','aim-danger','cd','spot','card-edge','syn','syn-2','line',
-    'danger','amber','amber-hi','violet','shadow','overlay-a','overlay-b'];
   for(const k of NAMES){
     const v=cs.getPropertyValue('--c-'+k+'-rgb').trim().replace(/\s+/g,',');
     if(v)o[k]=v;
   }
   return o;
-})();
+}
+let PAL=readPal();
+
+/* ================= 5.3 色盲模式 =================
+   只重映射「承载信息」的颜色：危险 / 奖励 / 敌我弹 / 血盾。
+   结构灰（steel / ink / white / line）一律不动 —— 它们不承载信息，
+   动了只会让界面看着像换了个皮肤，却没解决任何辨色问题。
+
+   选色依据 Viénot CVD 模拟（见 CVD_M / simCVD）：把候选色过一遍对应矩阵，
+   要求「危险 vs 奖励」「敌弹 vs 我弹」「血条 vs 盾条」三对在模拟后的 sRGB 里
+   欧氏距离 ≥ 90；基础配色在同样判据下是 61 / 61（红绿与蓝黄都不过线）。
+   —— 与 HULL_TINT / TRAIL_RAMP 同类，属色板数据，audit-tokens R4 按表名动态放行。 */
+const CB_PAL={
+  /* 红绿色盲（protan / deutan）· 安全轴 蓝↔黄：危险压成朱橙，奖励提到纯黄，
+     我方保持天蓝，血 / 盾拉成亮蓝绿 vs 中蓝（Okabe-Ito 安全配色） */
+  rg:{'danger':'#d55e00','amber':'#f0e442','amber-hi':'#f7ee9a',
+      'cyan':'#56b4e9','cyan-hi':'#cfe8fb','cyan-hi-2':'#a8d8f0',
+      'violet':'#cc79a7','syn':'#8fd0e8','syn-2':'#7fc4de',
+      'hp-a':'#009e73','hp-b':'#a8ecd0','shield-a':'#00558f','shield-b':'#5aa8c8',
+      'foe':'#e8a33d'},
+  /* 蓝黄色盲（tritan）· 安全轴 红↔绿：危险提亮成鲜红，奖励改青绿，
+     我方走高亮度（蓝黄轴丢信息时亮度是唯一剩下的把手） */
+  by:{'danger':'#e0301e','amber':'#19b56a','amber-hi':'#7fe0a8',
+      'cyan':'#b9c9d6','cyan-hi':'#eaf4ff','cyan-hi-2':'#c8d8e6',
+      'violet':'#b06ec0','syn':'#a6c8e6','syn-2':'#92b0cc',
+      'hp-a':'#8fe6b5','hp-b':'#d6f7e4','shield-a':'#1b4f7a','shield-b':'#5fa8c8',
+      'foe':'#ff3b5c'}
+};
+const CB_KEYS=Object.keys(CB_PAL.rg);
+/* Viénot 线性矩阵（sRGB 空间近似 —— 用于选色与断言，不是临床级模拟器） */
+const CVD_M={prot:[[0.567,0.433,0],[0.558,0.442,0],[0,0.242,0.758]],
+             deut:[[0.625,0.375,0],[0.7,0.3,0],[0,0.3,0.7]],
+             trit:[[0.95,0.05,0],[0,0.433,0.567],[0,0.475,0.525]]};
+function simCVD(rgb,mode){
+  const m=CVD_M[mode];if(!m)return rgb.slice();
+  return [0,1,2].map(i=>Math.max(0,Math.min(255,
+    Math.round(m[i][0]*rgb[0]+m[i][1]*rgb[1]+m[i][2]*rgb[2]))));
+}
+function hexTriple(h){const v=parseInt(h.slice(1),16);
+  return ((v>>16)&255)+' '+((v>>8)&255)+' '+(v&255);}
+
+/* ================= 5.3 设置项 =================
+   单键 nova-opts 持久化：画质 1 项 + 特效 4 项 + 色盲 1 项 + 减弱动态 1 项。
+   逐项校验、坏值只回退那一项（沿用 5.1 键位表的兜底策略）。 */
+const OPTS_KEY='nova-opts';
+const OPT_Q=['auto','high','mid','low'];
+const OPT_CB=['off','rg','by'];
+const OPTS={quality:'auto',shake:1,nebula:1,glow:1,parts:1,motion:0,cb:'off'};
+const OPT_BOOL=['shake','nebula','glow','parts','motion'];
+function loadOpts(){
+  let s=null;try{s=JSON.parse(localStorage.getItem(OPTS_KEY)||'null');}catch(e){}
+  if(!s||typeof s!=='object')return false;
+  if(OPT_Q.indexOf(s.quality)>=0)OPTS.quality=s.quality;
+  if(OPT_CB.indexOf(s.cb)>=0)OPTS.cb=s.cb;
+  for(const k of OPT_BOOL)OPTS[k]=s[k]?1:0;
+  return true;
+}
+function saveOpts(){try{localStorage.setItem(OPTS_KEY,JSON.stringify(OPTS));}catch(e){}}
+/* 首次进入跟随系统的「减少动态」偏好；玩家一旦改过（键已存在）就不再覆盖 */
+if(!loadOpts()){
+  try{if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)OPTS.motion=1;}catch(e){}
+}
 /* 缺键时返回品红，一眼就能发现拼错的 token 名 */
 const RGBA=(k,a)=>`rgba(${PAL[k]||'255,0,255'},${a})`;
 
@@ -1196,14 +1370,30 @@ const I18N_EN={
  lb_sec1:'<i></i><span>LIFETIME</span><em>TOTALS</em>',lb_sec2:'<i></i><span>BESTIARY</span><em>ENEMIES</em>',
  lb_sec3:'<i></i><span>COLOSSI</span><em>BOSSES</em>',lb_sec4:'<i></i><span>AFFIXES</span><em>MUTATORS</em>',
  lb_sec5:'<i></i><span>HULLS</span><em>CODEX</em>',lb_sec6:'<i></i><span>ACHIEVEMENT MAP</span><em>STARMAP</em>',
- lb_tree_hint:'Drag to pan · scroll to browse',
+ lb_tree_hint:'Drag to pan · wheel / pinch to zoom',
+ lb_tree_hint2:'Tap a node to unlock · drag / pinch to zoom',
  v_wave:'WAVE',v_lvl:'LEVEL',v_kills:'KILLS',v_time:'TIME',
  o_wave:'WAVE',o_lvl:'LEVEL',o_kills:'KILLS',o_time:'SURVIVED',
  lb_back:'BACK ▸ ESC',
  s_sub:'Saves — drifts autosaved when you left mid-run',s_back:'BACK ▸ ESC',
- st_sub:'Audio',
+ st_sub:'Display / audio / access',
  st_note:'BGM switches with the scene: menu / cruise / combat / colossus / endless / results.<br>First playback needs one click or keypress to unlock browser audio.',
  st_back:'BACK',
+ /* 5.1 键位重绑定 */
+ st_keys:'<i></i><span>Controls</span><em>KEYMAP</em>',
+ st_keys_hint:'Click a slot then press the new key — ESC cancels. Re-using a key clears it from the action that held it.',
+ st_reset:'RESET TO DEFAULT',
+ /* 5.3 设置面板补完 */
+ st_fx:'<i></i><span>Display</span><em>DISPLAY</em>',
+ st_q_lab:'QUALITY',st_q_auto:'AUTO',st_q_high:'HIGH',st_q_mid:'MED',st_q_low:'LOW',
+ st_q_hint:'AUTO steps down on sustained frame drops: nebula layer first, then canvas resolution. A manual tier is locked and never auto-degrades.',
+ st_fx_shake:'Screen shake',st_fx_nebula:'Nebula',st_fx_glow:'Glow / glitch',st_fx_parts:'Particles',
+ st_ac:'<i></i><span>Accessibility</span><em>ACCESS</em>',
+ st_cb_lab:'COLOUR BLIND',st_cb_off:'OFF',st_cb_rg:'RED-GREEN',st_cb_by:'BLUE-YELLOW',
+ st_cb_hint:'Remaps only the colours that carry information (danger / reward / foe vs friendly fire / hull vs shield). Structural greys stay put.',
+ st_rm:'Reduce motion',
+ st_rm_hint:'Kills screen shake, camera kick and looping animations. While it is on, the screen-shake toggle is overridden.',
+ or_hint:'Landscape plays better — tap to dismiss',
  hud_mute:'Sound — M',hud_pause:'Pause — P',
 };
 
@@ -1234,7 +1424,10 @@ const LV_EN={
  deathtrail:['+8% speed, -10% rate — the wake burns enemies and dissolves their bullets; the faster you go, the longer it grows','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','+8% speed, -10% rate — longer, hotter wake','MAX: +12% speed, -10% rate — the neon wake detonates sideways as it fades'],
  nova:['Shockwave every 7s: damages and knocks back nearby foes','Shockwave cooldown -1s','Bigger radius & damage','Cooldown another -1s','Radius & damage up again','MAX: golden oscillation — far bigger, and it erases enemy bullets'],
  blink:['Every 14s: auto-blinks out of shield-breaking hits — the hit is voided, +0.8s invuln','Blink cooldown -2s','Longer blink, +0.2s invuln','Cooldown another -2s','2s engine overdrive after blinking','MAX: golden annihilation burst at the exit point, sharp CD cut'],
- mine:['Every 6s drop a mag-mine: pulls enemies in, area blast (max 2 active)','Blast damage & radius up','Drops more often','More damage, max 3 active','Wider magnet pull','MAX: golden storm — far bigger blast, erases bullets (max 4)'],
+ mine:['Drop a mag mine astern every 6s: pulls foes in, detonates for area damage (max 2 on field)','Bigger blast radius & damage','Drops more often','More damage, up to 3 on field','Wider pull radius','MAX: gilded storm — far bigger blast that also erases enemy bullets (max 4)'],
+ spray:['+2 extra pellets per volley in a fan, each at 62% damage','+3 extra pellets','Pellet damage up to 72%','+4 extra pellets','Pellet damage up to 82%','MAX: +6 pellets at 100% damage, tighter fan — a golden wall of lead'],
+ split:['On first hit the bullet bursts into 2 shards (45% damage)','Bursts into 3 shards','Shard damage up to 58%','Bursts into 4 shards','Shard damage up to 70%','MAX: bursts into 8 shards at 85% — golden secondary kill'],
+ caliber:['Bullet radius +1.0, speed +8%, range +10%','Bullet radius +1.0, speed +8%, range +10%','Bullet radius +1.0, speed +8%, range +10%','Bullet radius +1.0, speed +8%, range +10%','Bullet radius +1.0, speed +8%, range +10%','MAX: +2.5 more radius, +25% speed, +35% range — gilded heavy slug'],
  repair:['Repair 45% hull instantly'],
 };
 const SYN_EN={
@@ -1259,7 +1452,11 @@ const SYN_EN={
  bounce_blast:['Bouncing Charge','Bounces +1, splash damage +30% — even corners are minefields'],
  minefield_arc:['Minefield Arc','Arc chains +1 — mag-mines herd them together, just for you'],
  rear_pierce:['Piercing Stern','Stern gun power +15%, shots pierce 1 more — pursuers get pierced too'],
- stasis_mine:['Stasis Minefield','Stasis radius +60 — the enemies you hold down walk right into the mines'],
+ stasis_mine:['Stasis Minefield','Stasis radius +60 — foes held in place step right into the mines'],
+ fan_guided:['Guided Barrage','Guidance search +100, pellet damage +8% — every fan finds its own target'],
+ fan_barrel:['Broadside Fan','+1 extra pellet, +6% fire rate — more barrels, a denser fan'],
+ shard_pierce:['Piercing Fission','+1 shard, pierce +1 — it keeps going and bursting all the way'],
+ shard_blast:['Shrapnel Blast','Shard damage +8%, blast radius & splash +15% — the shards carry powder'],
 };
 const SQUADS_EN={
  swarm:['Swarm','dense small units'],gunline:['Gunline','ranged fire suppression'],
@@ -1314,10 +1511,15 @@ function setLang(l){
   if(l===LANG)return;
   LANG=l;try{localStorage.setItem('nova-lang',l);}catch(e){}
   applyI18n();
+  /* HUD 里的波次读数带强化层后缀，是缓存写入的 —— 不清缓存换语言后仍是旧文案 */
+  if(typeof HUDC!=='undefined'){HUDC.wv=null;HUDC.el=null;}
   refreshMenuMeta();               // 菜单 chips 立即换语言
   if(G.mode==='saves')renderSaves();
   if(!el.cards.hidden){renderCards();deckify(el.cardrow);} // 升级面板开着：换语言重绘 + 重排手牌
   repaintBuildChips();                     // 暂停/结算面板开着：模块条换语言重绘 + 重新判定堆叠
+  renderKeyList();syncKeyHints();renderOpts();          // 5.1：键位表的动作名与 HUD 提示都是绘制时写死的
+  /* 航行日志开着：两张星图的节点文案是绘制时写死的，不重绘就停在旧语言（4.3b 补） */
+  if(el.logbook&&!el.logbook.hidden){drawLogbook();fitAch();fitMeta();}
   sfx.ui();
 }
 /* 已打开的 暂停 / 坠毁 / 通关 面板里重绘模块条 + 结算文案（语言切换后调用） */
@@ -1369,23 +1571,56 @@ const el={
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
   overDust:$('overDust'),vicDust:$('vicDust'),
   flash:$('flash'),scan:$('scan'),danger:$('danger'),slowfx:$('slowfx'),aim:$('aim'),
-  joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),
+  joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),orhint:$('orhint'),
   btnReroll:$('btnReroll'),
   saves:$('saves'),saveList:$('saveList'),
   settings:$('settings'),bgmVol:$('bgmVol'),sfxVol:$('sfxVol'),bgmVal:$('bgmVal'),sfxVal:$('sfxVal'),
   btnSettings:$('btnSettings'),btnSettingsP:$('btnSettingsP'),btnSetBack:$('btnSetBack'),
+  keyList:$('keyList'),btnKeyReset:$('btnKeyReset'),   // 5.1 键位重绑定
 };
 
 /* ============================== canvas ============================== */
 const WORLD={w:2600,h:1700};
 let VW=0,VH=0,DPR=1,VIGN=null,qTier=0;
+/* ---- 5.4 质量预算表 ----
+   以前「降级」只砍 DPR 和星云，粒子/残骸/残影等硬上限全是常量 ——
+   于是掉帧降档后负载并没真的下去，看门狗会一路降到 2 档还救不回来。
+   七项**必须三档严格单调递减**（phase5-4-check 会断言），否则就是白改。
+   texts = 伤害飘字（原 DMG_MAX），fmax = 通用飘字（原先无上限）。
+   stars = 星场四层的开关掩码 [尘0.06, 0.2, 0.45, 近0.9]。
+   ⚠️ 抽的是**中间两层**而不是从近端砍：最近层是视差纵深的来源，砍掉整个画面就"贴"了；
+      最远的尘层撑住"深空不空"，砍掉背景会露底。中间两层少几颗星最不容易被察觉。 */
+const QB=[
+  {parts:560,debris:120,ghosts:8, bolts:24,texts:26,fmax:48,shards:16,stars:'1111'}, // 0 high
+  {parts:320,debris:64, ghosts:5, bolts:14,texts:18,fmax:30,shards:11,stars:'1101'}, // 1 mid
+  {parts:150,debris:32, ghosts:3, bolts:8, texts:12,fmax:18,shards:7, stars:'1001'}  // 2 low
+];
+let QB_NOW=QB[0];
+/* 缓存成标量：pushStreak 这类在最热路径上，多一次属性链查找不值当 */
+let QPM=QB[0].parts,QDM=QB[0].debris,QGM=QB[0].ghosts,QBM=QB[0].bolts,
+    QTM=QB[0].texts,QFM=QB[0].fmax,QSM=QB[0].shards,QST=QB[0].stars;
+/* 降档必须**立刻**砍存量：粒子寿命不到 1 秒，等它自然消亡等于降档后
+   还要扛一秒旧负载，而这一秒正是玩家在骂的那一秒。 */
+function trimFx(){
+  if(typeof G==='undefined'||!G||!G.parts)return;   // 初始化期 applyOpts 会先于 G 就绪
+  const cut=(a,n)=>{if(a.length>n)a.splice(0,a.length-n);};
+  cut(G.parts,QPM);cut(G.debris,QDM);cut(G.ghosts,QGM);
+  cut(G.bolts,QBM);cut(G.texts,QTM+QFM);cut(G.shards,QSM);
+}
+function qbSync(){
+  QB_NOW=QB[qTier]||QB[0];
+  QPM=QB_NOW.parts;QDM=QB_NOW.debris;QGM=QB_NOW.ghosts;QBM=QB_NOW.bolts;
+  QTM=QB_NOW.texts;QFM=QB_NOW.fmax;QSM=QB_NOW.shards;QST=QB_NOW.stars;
+  trimFx();
+}
 const cam={x:WORLD.w/2,y:WORLD.h/2,zoom:1,kick:0,ox:0,oy:0};
 /* 全屏后处理状态：bloom 泛光脉冲（0~1）、glitch 色差强度（0~1）。
    两者都只在 >0 时才进入后处理分支，静止时零开销。 */
 const PP={bloom:0,glitch:0};
-function camKick(v){cam.kick=clamp(cam.kick+v,-0.030,0.048);}
-function ppBloom(v){if(v>PP.bloom)PP.bloom=v;}
-function ppGlitch(v){if(v>PP.glitch)PP.glitch=v;}
+function camKick(v){if(OPTS.motion)return;cam.kick=clamp(cam.kick+v,-0.030,0.048);}
+/* 5.3 辉光 / 故障 开关：off 时源头就不累积，免得一打开全炸出来 */
+function ppBloom(v){if(!OPTS.glow)return;if(v>PP.bloom)PP.bloom=v;}
+function ppGlitch(v){if(!OPTS.glow)return;if(v>PP.glitch)PP.glitch=v;}
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,qTier>=2?1:2);
   VW=window.innerWidth;VH=window.innerHeight;
@@ -1406,7 +1641,7 @@ const HUES={blue:'150,190,230',amber:'236,208,138',orange:'255,120,70',cyan:'111
 /* ---------- fluid core ---------- */
 const FC={SIM:64,DYE:384,DENS:0.8,VEL:0.25,PRESS:0.8,ITER:12,CURL:26,RAD:0.22,
   coarse:('ontouchstart' in window)||navigator.maxTouchPoints>0};
-let gl=null,ext=null,fOk=false;
+let gl=null,ext=null,fOk=false,fCap=false;
 let dye=null,velocity=null,divergence=null,curl=null,pressure=null;
 function supportRTF(g,i,f,t){
   const texture=g.createTexture();
@@ -1720,16 +1955,17 @@ function fSplat(sx,sy,dx,dy,rgb,intensity){
   gl.uniform3f(P_splat.u.color,r/255*k,g/255*k,b/255*k);
   blit(dye.write);dye.swap();
 }
-try{fOk=initGL();if(fOk){fResize();initFBOs();}}catch(e){fOk=false;}
+try{fOk=initGL();if(fOk){fResize();initFBOs();}fCap=fOk;}catch(e){fOk=false;fCap=false;}
 /* GPU 驱动重置 / 显存吃紧时 WebGL 上下文可能丢失：部分驱动会把丢失的层呈现为
    白幕盖住整页 —— 立即下线流体层（游戏本体不受影响），绝不让它挂着变白 */
 fxc.addEventListener('webglcontextlost',e=>{
   e.preventDefault();
-  if(fOk){fOk=false;fxc.style.display='none';showFatal('WebGL fluid context lost — nebula layer disabled');}
+  if(fOk){fOk=false;fCap=false;fxc.style.display='none';showFatal('WebGL fluid context lost — nebula layer disabled');}
 },false);
 
 /* ---------- proton particles ---------- */
 const hasP=typeof window.Proton==='function';
+let pOn=true;   /* 5.3 粒子开关 */
 // particle layer is soft blobs — cap its resolution well below device DPR
 const PDPR=()=>Math.min(DPR,1.15);
 let proton=null;
@@ -1787,10 +2023,14 @@ function smokeEmitter(x,y,power,sprite){
 let ambientT=0;
 const api={
   ok:()=>fOk||hasP,
-  dropFluid(){
-    if(!fOk)return;
-    fOk=false;fxc.style.display='none';
+  dropFluid(){api.setFluid(false);},
+  /* 5.3 画质 / 特效开关要能来回切 —— dropFluid 是单向的，这里补一条可逆的 */
+  setFluid(on){
+    if(!fCap)return;
+    fOk=!!on;fxc.style.display=on?'':'none';
   },
+  hasFluid:()=>fOk,fluidCap:()=>fCap,
+  setParts(on){pOn=!!on;pxc.style.display=on?'':'none';},
   boom(wx,wy,power,hue,big){
     const sx=wx-cam.x+VW/2,sy=wy-cam.y+VH/2;
     if(fOk){
@@ -1800,7 +2040,7 @@ const api={
         fSplat(sx,sy,Math.cos(a)*f,Math.sin(a)*f,HUES[hue]||HUES.blue,(big?0.5:0.3)+0.12*power);
       }
     }
-    if(hasP&&sx>-140&&sx<VW+140&&sy>-140&&sy<VH+140){
+    if(hasP&&pOn&&sx>-140&&sx<VW+140&&sy>-140&&sy<VH+140){
       sparkEmitter(sx,sy,power,hue==='orange'?'ff8c5a':(hue==='amber'?'ffd75e':'6fe7ff'));
       smokeEmitter(sx,sy,power,hue==='orange'?SPR.orange:(hue==='amber'?SPR.amber:(hue==='cyan'?SPR.cyan:SPR.gray)));
     }
@@ -1818,7 +2058,7 @@ const api={
   frame(dt,mode){
     if(mode==='pause')return;
     if(fOk&&gl&&gl.isContextLost()){ // 事件之外兜底：上下文已丢就主动摘层，防白幕常驻
-      fOk=false;fxc.style.display='none';showFatal('WebGL fluid context lost (poll) — nebula layer disabled');
+      fOk=false;fCap=false;fxc.style.display='none';showFatal('WebGL fluid context lost (poll) — nebula layer disabled');
     }
     splatsThisFrame=0;
     if(fOk){
@@ -1835,7 +2075,7 @@ const api={
       fStep(Math.min(dt,0.0166));
       fRender();
     }
-    if(hasP){
+    if(hasP&&pOn){
       for(let i=shots.length-1;i>=0;i--){
         if(G.t>shots[i].die){proton.removeEmitter(shots[i].e);shots.splice(i,1);}
       }
@@ -2240,6 +2480,9 @@ const G={
   shake:0,slowT:0,deathT:0,pending:0,winT:0,endless:false,hitstop:0,
   achQueue:null,achCool:0,achPrimed:false,noMod:false,flawless:false,grav:null,
   rarPity:0, // 连续未出 rare+ 卡的升级次数（伪随机补偿，见 rollChoices）
+  /* 无尽轮换袋（4.5）：8 选 1 无记忆随机的连续重复率是 11.6%（200 局里 148 局中招），
+     改成「一轮一洗牌」的袋抽。两个袋子互相独立 —— 共用会让精英巨像把 Boss 袋抽空。 */
+  bossBag:null,champBag:null,bossLast:null,champLast:null,
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
@@ -2257,7 +2500,8 @@ function saveRun(){
   if(!P||(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='pause'&&G.mode!=='levelup'))return;
   flushStats(); // 暂停/退出/关闭页面时同步提交局外统计，避免末段数据丢失
   const s={v:1,id:G.runId,st:G.runStart,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
-    hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build};
+    hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build,
+    bb:G.bossBag,cb:G.champBag,bl:G.bossLast,cl:G.champLast};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
 }
 /* ---------------- 多存档：开新游戏时旧档自动归档保留 ----------------
@@ -2308,13 +2552,16 @@ function resumeRun(){
   if(P.level>=30&&P.xpNext>XP_CAP)P.xpNext=XP_CAP; // 30 级后固定经验需求（兼容旧存档）
   P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
   G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
+  /* 4.5：轮换袋必须还原 —— 否则续档时袋子是空的，重新洗牌又可能连续重复 */
+  G.bossBag=(s.bb&&s.bb.length)?s.bb.slice():null;G.champBag=(s.cb&&s.cb.length)?s.cb.slice():null;
+  G.bossLast=s.bl||null;G.champLast=s.cl||null;
   G.runId=s.id;G.runStart=s.st||s.id; // 续用该漂移的原 id / 开始时刻，自动保存与归档清理才能对上号
   G.statK=G.kills;G.statRT=G.runT;G.statSc=G.score;G.statOn=true; // 恢复后重设已计入水位，避免重复计数
   cam.x=P.x;cam.y=P.y;clampCam();
   G.mode='play';
   el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
   el.hulls.hidden=true;el.victory.hidden=true;
-  el.hud.hidden=false;el.firebtn.hidden=!isTouch;
+  el.hud.hidden=false;el.firebtn.hidden=!isTouch;orientHint();
   buildWave(s.w||1);
   banner('DRIFT RESUMED',T('缓存进度已接续 —— WAVE ','Saved drift resumed — WAVE ')+(s.w||1));
   guideStart(); // 续档继续跑完没做完的引导步骤
@@ -2323,7 +2570,8 @@ function resumeRun(){
 window.addEventListener('pagehide',saveRun);
 
 const Wv={n:0,qA:[],qE:[],tA:0,tE:0,between:0,cleared:false,boss:false,bossKind:null,
-  timeT:0,timeMax:0,overflow:0,early:false,champ:null,squad:null,sector:0};
+  timeT:0,timeMax:0,overflow:0,early:false,champ:null,squad:null,sector:0,
+  tier:0};   // 4.5 无尽强化层（0 = 尚未进入强化区）
 
 /* ===================== 星区进程：30 波 / 3 个星区 =====================
    每 10 波为一个星区（SECTOR），每 5 波一场巨像战（BOSS），
@@ -2343,6 +2591,46 @@ const BOSS_NAME={rock:'MOTHER ROCK',twin:'TWIN ROCKS',eye:'VOID EYE',hydra:'HYDR
   warden:'ORBITAL WARDEN',nemesis:'NEMESIS',monolith:'MONOLITH',collapse:'COLLAPSE CORE'};
 const BOSS_ZH={rock:'母岩',twin:'双子母岩',eye:'虚空之眼',hydra:'九首巨兽',warden:'环带狱卒',
   nemesis:'终焉回响',monolith:'静默方碑',collapse:'坍缩之核'};
+/* ============================== 无尽强化层（4.5） ==============================
+   30 波通关后进入无尽，但 31–40 波只有 4.2 设计好的两场剧本 Boss（35 / 40），
+   此后每 5 波随机抽一个巨像 —— 强度却只有「线性 +0.09/波」的血量增长，
+   而玩家伤害是乘性堆叠的：无尽越打越无聊，既没有新东西也不再构成威胁。
+   → 第 41 波起每 5 波叠一层**强化层**：血 / 伤 / 速 / 密度按层**指数**递增。
+   ⚠️ 起点特意定在 41 而不是 31 —— 35 / 40 两场剧本 Boss 的血量是 4.2 调过的
+      （monolith ×1.9 / collapse ×2.2），再叠层等于推翻那次调参。 */
+const ETIER_FROM=41;      // 第 41 波起开始叠层（31–40 保持 4.2 的原生强度）
+const ETIER_EVERY=5;      // 每 5 波一层，与 Boss 波同频（41–45 = 第 1 层）
+const ETIER_HP=1.14;      // 每层：敌人与巨像血量 ×（指数，不是线性）
+const ETIER_DMG=1.08;     // 每层：敌人伤害 ×
+const ETIER_SPD=1.03;     // 每层：敌人速度 ×
+const ETIER_SPD_CAP=1.5;  // 速度总上限 —— 再快就不是难度而是没法走位了
+const ETIER_EXTRA=1,ETIER_EXTRA_CAP=10; // 每层额外敌人数 / 额外量上限
+/* 当前波次的强化层数（0 = 尚未进入强化区） */
+function eTier(n){const w=(n===undefined?Wv.n:n);
+  return w<ETIER_FROM?0:Math.floor((w-ETIER_FROM)/ETIER_EVERY)+1;}
+function eTierHp(t){return Math.pow(ETIER_HP,t===undefined?eTier():t);}
+function eTierDmg(t){return Math.pow(ETIER_DMG,t===undefined?eTier():t);}
+function eTierSpd(t){return Math.min(ETIER_SPD_CAP,Math.pow(ETIER_SPD,t===undefined?eTier():t));}
+function eTierExtra(t){return Math.min((t===undefined?eTier():t)*ETIER_EXTRA,ETIER_EXTRA_CAP);}
+/* 波次横幅的强化层后缀；0 层时不出现，避免污染前 40 波的文案 */
+function tierTxt(t){const k=t===undefined?eTier():t;return k?(' · '+T('强化层 ','AMP ')+k):'';}
+/* 无尽巨像轮换：一轮洗一次牌，走完再重洗 —— 一轮内不重复，
+   跨轮衔接处若首项撞上上一只，就与第二位交换（否则重洗的瞬间仍会连续重复）。 */
+function bagPick(kind){
+  const isBoss=kind==='boss';
+  const bag=isBoss?'bossBag':'champBag',last=isBoss?'bossLast':'champLast';
+  if(!G[bag]||!G[bag].length){
+    G[bag]=shuffle(Object.keys(BOSS_MV));
+    if(G[bag].length>1&&G[last]&&G[bag][0]===G[last]){
+      const t=G[bag][0];G[bag][0]=G[bag][1];G[bag][1]=t;}
+  }
+  /* 兜底：正常流程里袋内不可能残留 last（它是刚被 shift 走的），
+     但续档 / 调试改写袋子后这条不变量可能被破坏 —— 抽之前再挡一道。 */
+  else if(G[bag].length>1&&G[last]&&G[bag][0]===G[last]){
+    const t=G[bag][0];G[bag][0]=G[bag][1];G[bag][1]=t;
+  }
+  const k=G[bag].shift();G[last]=k;return k;
+}
 /* 巨像机动参数：pull=追击加速度，cap=速度上限（进入狂暴阶段后 ×1.45 / ×1.35） */
 const BOSS_MV={rock:{pull:14,cap:60},twin:{pull:26,cap:95},eye:{pull:9,cap:38},
   hydra:{pull:11,cap:52},warden:{pull:10,cap:44},nemesis:{pull:13,cap:58},
@@ -2428,6 +2716,12 @@ function newPlayer(){return{
   shieldTmp:0,shieldTmpMax:0,invPick:0,
   level:1,xp:0,xpNext:12,fireCd:0,
   dmg:1,fireRate:3.6,bspd:640,barrels:1,pierce:0,ricochet:0,tight:false,loadMax:false,
+  /* 4.4 新武器行为：spray 散射（额外扇形弹数 / 扇形张角 / 弹丸伤害系数）·
+     split 裂变（命中炸出的弹片数 / 弹片伤害系数）· bulletR 弹丸半径 · rangeMul 射程倍率。
+     ⚠️ 射程走独立的 rangeMul 而不是直接乘 P.rangeLife —— 制导弹药（guided）的 apply 是
+     **绝对值赋值**（P.rangeLife=1.15*1.2 …），谁后跑谁覆盖，乘在 rangeLife 上会静默失效。 */
+  spray:0,sprayArc:0.34,sprayMul:1,split:0,splitMul:1,bulletR:3,rangeMul:1,
+  sprayMax:false,splitMax:false,caliberMax:false,
   rangeLife:1.15, // 子弹飞行时长（射程）基础值；制导弹药会在此之上叠加提升，满级时覆盖为全图
   splashR:0,splashDmg:0,fragMax:false,homing:0,homeR:560,crit:0.05,critMul:3,magnet:150,ram:0,ramMax:false,
   regen:0,leech:0,tesla:0,teslaT:0,teslaCd:2.2,teslaMax:false,
@@ -2463,6 +2757,11 @@ function mkDrone(){return {a:rand(TAU),cd:rand(0.5),tr:[],flash:0,fa:0};}
    P.splashR / P.splashDmg 初始都是 0，只有跑过 frag.apply 之后才有值，
    直接写 P.splashR*=1.25 在零基上等于乘 0 —— 静默失效，和空 apply 是同一类坑。*/
 const FRAG_LV=[[52,0.55],[64,0.7],[78,0.85],[92,1.0],[108,1.2],[150,1.8]];
+/* 散射（4.4）等级表：[额外弹数, 弹丸伤害系数, 扇形张角(弧度)] —— 与 FRAG_LV 同理抽成常量：
+   协同里要按「一级值」播种，且续档是按 k=1..n 逐级重放的，写成增量累加会随重放次数发散。 */
+const SPRAY_LV=[[2,0.62,0.34],[3,0.62,0.34],[3,0.72,0.32],[4,0.72,0.30],[4,0.82,0.28],[6,1.00,0.24]];
+/* 裂变（4.4）等级表：[弹片数, 弹片伤害系数] */
+const SPLIT_LV=[[2,0.45],[3,0.45],[3,0.58],[4,0.58],[4,0.70],[8,0.85]];
 const RARITY_W={common:1.00,rare:0.45,epic:0.18};
 const RARITY_ZH={common:'基础',rare:'进阶',epic:'核心'};
 const RARITY_EN={common:'COMMON',rare:'RARE',epic:'EPIC'};
@@ -2671,6 +2970,28 @@ const MODULES=[
         '布设更频繁','伤害再提升，场上至多 3 枚','磁引范围扩大',
         'MAX：金色磁暴 —— 爆炸范围大增并湮灭波及的敌方子弹（至多 4 枚）'],
     apply:n=>{P.mine=n;if(n===6)P.mineMax=true;}},
+  /* ---------- 4.4 新武器行为：三个真正改变「弹丸本身」的模块 ----------
+     散射 spray  ·  ability / rare  —— 用弹丸数量换单发威力，把「命中」变成「覆盖」
+     裂变 split  ·  ability / epic  —— 把一次命中拆成一圈二次杀伤，奖励密集敌群
+     口径 caliber·  stat   / rare  —— 武器维度里唯一缺的纯数值卡（此前 16 能力 / 10 数值） */
+  {id:'spray',zh:'散射喷嘴',en:'Scatter Nozzle',g:'⋔',rarity:'rare',max:6,type:'ability',
+    lv:['每次齐射额外喷出 2 发扇形弹，弹丸伤害 62%','额外 3 发扇形弹','扇形弹伤害提升到 72%',
+        '额外 4 发扇形弹','扇形弹伤害提升到 82%',
+        'MAX：额外 6 发、伤害 100%、扇形收束 —— 金色的弹幕墙'],
+    apply:n=>{const T=SPRAY_LV[n-1];P.spray=T[0];P.sprayMul=T[1];P.sprayArc=T[2];
+      if(n===6)P.sprayMax=true;}},
+  {id:'split',zh:'裂变弹芯',en:'Fission Core',g:'⁂',rarity:'epic',max:6,type:'ability',
+    lv:['子弹首次命中时炸成 2 枚弹片（伤害 45%）','炸成 3 枚弹片','弹片伤害提升到 58%',
+        '炸成 4 枚弹片','弹片伤害提升到 70%',
+        'MAX：炸成 8 枚、伤害 85% —— 金色的二次杀伤'],
+    apply:n=>{const T=SPLIT_LV[n-1];P.split=T[0];P.splitMul=T[1];if(n===6)P.splitMax=true;}},
+  {id:'caliber',zh:'口径校准',en:'Bore Calibration',g:'◎',rarity:'rare',max:6,type:'stat',
+    lv:['弹丸半径 +1.0、弹速 +8%、射程 +10%','弹丸半径 +1.0、弹速 +8%、射程 +10%',
+        '弹丸半径 +1.0、弹速 +8%、射程 +10%','弹丸半径 +1.0、弹速 +8%、射程 +10%',
+        '弹丸半径 +1.0、弹速 +8%、射程 +10%',
+        'MAX：半径再 +2.5、弹速 +25%、射程 +35% —— 金色重弹'],
+    apply:n=>{if(n<6){P.bulletR+=1.0;P.bspd*=1.08;P.rangeMul*=1.10;}
+      else{P.bulletR+=2.5;P.bspd*=1.25;P.rangeMul*=1.35;P.caliberMax=true;}}},
 ];
 const MOD_BY_ID={};for(const m of MODULES)MOD_BY_ID[m.id]=m;
 /* 模块类型归一化：未显式标注 type 的模块一律视为数值型 —— ESC/机库/分级计数都依赖此字段 */
@@ -2745,6 +3066,18 @@ const SYN=[
    apply:()=>{P.backPow+=0.15;P.pierce+=1;}},
   {id:'stasis_mine',a:'stasis',b:'mine',zh:'停滞雷区',d:'静止场范围 +60 —— 被拖住的敌人正好踩进雷区',
    apply:()=>{P.stasisR+=60;}},
+  /* ---------- 4.4：三张新卡立刻各配两条协同，不留孤儿卡 ---------- */
+  {id:'fan_guided',a:'spray',b:'guided',zh:'导引弹幕',d:'制导搜索范围 +100、扇形弹伤害 +8% —— 每一片扇面都会自己找目标',
+   apply:()=>{P.homeR+=100;P.sprayMul=(P.sprayMul||SPRAY_LV[0][1])+0.08;}},
+  {id:'fan_barrel',a:'spray',b:'twin',zh:'排枪扇面',d:'额外扇形弹 +1、射速 +6% —— 枪管越多，扇面越密',
+   apply:()=>{P.spray=(P.spray||SPRAY_LV[0][0])+1;P.fireRate*=1.06;}},
+  {id:'shard_pierce',a:'split',b:'pierce',zh:'贯穿裂变',d:'弹片 +1、子弹多穿透 1 个 —— 一路穿过去，沿途都在裂',
+   apply:()=>{P.split=(P.split||SPLIT_LV[0][0])+1;P.pierce+=1;}},
+  {id:'shard_blast',a:'split',b:'frag',zh:'碎裂爆轰',d:'弹片伤害 +8%，爆炸范围与溅射伤害 +15% —— 碎片里还裹着火药',
+   apply:()=>{P.splitMul=(P.splitMul||SPLIT_LV[0][1])+0.08;splashBoost(1.15,1.15);}},
+  /* ⚠️ 口径 caliber 是**数值型**，按「协同只在能力型 × 能力型之间」的规则不能挂协同
+     （NOVA.syn.badDeps 会把 a/b 里出现数值型的条目直接判坏）—— 它作为唯一的武器数值卡，
+     定位就是纯数值成长，与 hull / thruster / warhead 等其余 10 张数值卡一致，不参与联动。 */
 ];
 function synActive(s){return P&&(G.build[s.a]|0)>=1&&(G.build[s.b]|0)>=1;}
 /* 结算新达成的协同，返回本次新增的协同列表 */
@@ -2803,13 +3136,12 @@ function rollChoices(){
   if(statCapped){ // 数值型已满 6 种：剔除未曾拥有的数值型
     pool=pool.filter(m=>m.type==='ability'||ownedStats.has(m.id));
   }
-  // 统计已投资的能力型模块数，作为加权强度
-  let abilityCount=0;
-  for(const m of MODULES){
-    const n=G.build[m.id]||0;
-    if(m.type==='ability'&&n>0)abilityCount+=n;
-  }
-  const abilityBoost=1+abilityCount*0.22;   // 每选一个能力型，能力型权重 +22%
+  /* 能力型加权（4.4 修正）：旧版按能力型的**总等级**累加，一局后期会发散到 8 倍以上
+     （300 局模拟实测 8.26）—— 而它对能力池内部是**统一乘数**，根本改变不了池内排序，
+     唯一作用是把「数值池空了、用能力型补第三个位置」的概率推到接近 1，等于一个没有
+     设计含义的隐藏偏向。改为按「已持有的能力型**种类数**」，并天然夹在 1.9 以内：
+     语义是"越走能力流，越容易继续抽到能力"，且不会随等级无限放大。 */
+  const abilityBoost=1+Math.min(ownedAbilities.size,ABILITY_CAP)*0.15;
   // 稀有度保底（伪随机补偿）：连续 dry 次升级都没出 rare+ → 提升 rare+ 权重；
   // 达到硬上限（PITY_HARD）则强制塞一张。避免一局全白卡、也避免"堆 common 最稳"的刷乐。
   const dry=G.rarPity|0;
@@ -2831,11 +3163,17 @@ function rollChoices(){
   const abPool=pool.filter(m=>m.type==='ability');
   const stPool=pool.filter(m=>m.type!=='ability');
   const candRare=pool.filter(m=>rarityOf(m)!=='common'); // 硬保底候选（取样前全量快照）
-  // 保底：先从能力池取 min(2, 可用能力数) 张
-  while(chosen.length<Math.min(2,abPool.length))chosen.push(wsample(abPool));
-  // 其余从数值池补；数值池不够再用剩余能力型补
-  while(chosen.length<3&&stPool.length)chosen.push(wsample(stPool));
-  while(chosen.length<3&&abPool.length)chosen.push(wsample(abPool));
+  /* 三张牌的位置分配（4.4 修正）：旧版恒为「2 能力 + 1 数值」。实测 300 局 40 级 ——
+     能力型第 **12.2** 次升级就摸到 6 种上限，数值型要 **24.2** 次，且有 26/300 局到 40 级
+     都没摸满数值上限；两种类都封顶之后，池里只剩"给已有模块升等级"，2:1 已经没有任何依据，
+     纯属惯性。改为：能力型封顶后翻转成「1 能力 + 2 数值」，让落后的那一类追上来。 */
+  const abSlots=capped?1:2, stSlots=3-abSlots;
+  let abTaken=0,stTaken=0;
+  while(abTaken<abSlots&&abPool.length){const m=wsample(abPool);if(!m)break;chosen.push(m);abTaken++;}
+  while(stTaken<stSlots&&stPool.length){const m=wsample(stPool);if(!m)break;chosen.push(m);stTaken++;}
+  // 某一类池子空了（全满级 / 被 cap 剔除）就用另一类把三张补满
+  while(chosen.length<3&&abPool.length){const m=wsample(abPool);if(!m)break;chosen.push(m);}
+  while(chosen.length<3&&stPool.length){const m=wsample(stPool);if(!m)break;chosen.push(m);}
   while(chosen.length<3)chosen.push(REPAIR);
   /* 稀有度保底结算：本次 offer 含 rare+ → 清零 dry；否则 dry+1。
      dry 触及硬上限且仍有 rare+ 可选，则把一张 common 换成 rare+（优先换可升级的）。
@@ -3020,6 +3358,7 @@ function openHulls(){
   });
   el.hulls.hidden=false;
   deckify(el.hullrow); // 手机端：手牌模式布局
+  padSel=0;padSelPaint(el.hullrow);   // 5.2：手柄选择复位
   sfx.ui();
 }
 function pickHull(i){
@@ -3132,9 +3471,247 @@ function deckify(row){
 deckMq.addEventListener('change',()=>{deckify(el.cardrow);deckify(el.hullrow);});
 
 /* ============================== input ============================== */
+/* ---------- 5.1 键位表 ----------
+   每个动作两个槽位（主键 / 副键），玩家可在设置面板改绑，存 `nova-keys`。
+   两个槽位是刻意的：方向键与 WASD 并存是既有默认，砍掉任一组都会招骂。
+   ⚠️ 不要把「关闭面板」这类全局键做成动作 —— ESC 在日志 / 机库 / 设置里各有各的语义，
+     硬塞进同一张表会把上下文判断挤没。表里只放有明确游戏语义的动作。 */
+const KEY_DEFS=[
+  {id:'left',   zh:'左转',     en:'Turn left',  def:['KeyA','ArrowLeft']},
+  {id:'right',  zh:'右转',     en:'Turn right', def:['KeyD','ArrowRight']},
+  {id:'thrust', zh:'推进',     en:'Thrust',     def:['KeyW','ArrowUp']},
+  {id:'brake',  zh:'减速 / 后退',en:'Brake',    def:['KeyS','ArrowDown']},
+  {id:'fire',   zh:'开火',     en:'Fire',       def:['Space',null]},
+  {id:'pause',  zh:'暂停',     en:'Pause',      def:['KeyP','Escape']},
+  {id:'settings',zh:'设置',    en:'Settings',   def:['KeyO',null]},
+  {id:'mute',   zh:'静音',     en:'Mute',       def:['KeyM',null]},
+  {id:'reroll', zh:'换牌',     en:'Reroll',     def:['KeyR',null]},
+  {id:'restart',zh:'重开',     en:'Restart',    def:['KeyR',null]},
+  {id:'endless',zh:'进入无尽', en:'Endless',    def:['KeyE',null]},
+  {id:'quit',   zh:'退出到主菜单',en:'Quit to menu',def:['KeyQ',null]},
+];
+const KEY_STORE='nova-keys';
+let KEYMAP=Object.create(null);
+/* 槽位正在等待按键：{act, slot} —— 非 null 时 keydown 一律不派发游戏逻辑 */
+let keyWait=null;
+function keySlots(act){return KEYMAP[act]||(KEYMAP[act]=[null,null]);}
+function loadKeys(){
+  KEYMAP=Object.create(null);
+  for(const d of KEY_DEFS)KEYMAP[d.id]=d.def.slice();
+  try{const s=JSON.parse(localStorage.getItem(KEY_STORE)||'null');
+    /* 逐动作逐槽位校验：存档被改坏 / 旧版本少一个动作都不该让整张表失效 */
+    if(s)for(const d of KEY_DEFS){const a=s[d.id];
+      if(Array.isArray(a))KEYMAP[d.id]=[typeof a[0]==='string'?a[0]:null,
+                                        typeof a[1]==='string'?a[1]:null];}
+  }catch(e){}
+}
+function saveKeys(){try{localStorage.setItem(KEY_STORE,JSON.stringify(KEYMAP));}catch(e){}}
+/* 动作当前是否被按住（两个槽位任一） */
+function keyDown(act){const a=KEYMAP[act];
+  return !!(a&&((a[0]&&keys[a[0]])||(a[1]&&keys[a[1]])));}
+/* 这个物理键码是否命中该动作 */
+function isAct(act,code){const a=KEYMAP[act];return !!(a&&(a[0]===code||a[1]===code));}
+/* 改绑。撞车时把旧动作上的那一位清空，而不是拒绝 —— 玩家点第二个槽位时
+   「先撞后清」比「弹窗报错」顺手得多。返回 {ok, cleared} 供 UI 提示。 */
+function rebind(act,slot,code){
+  const d=KEY_DEFS.find(x=>x.id===act);
+  if(!d||slot<0||slot>1)return {ok:false,reason:'args'};
+  let cleared=null;
+  if(code)for(const o of KEY_DEFS){          // 同一动作内两槽位互斥
+    const a=keySlots(o.id);
+    for(let s=0;s<2;s++)if(!(o.id===act&&s===slot)&&a[s]===code){a[s]=null;cleared=o.id;}
+  }
+  keySlots(act)[slot]=code||null;
+  saveKeys();
+  return {ok:true,cleared};
+}
+function resetKeys(){
+  for(const d of KEY_DEFS)KEYMAP[d.id]=d.def.slice();
+  saveKeys();
+}
+/* ---------- 5.2 手柄 ----------
+   只有一支手柄参与：取第一支 connected 的。多手柄分不出谁在玩，
+   而本作是单人漂移 —— 抢最后一支不如抢第一支稳定。
+   ⚠️ 左摇杆是模拟量，转向必须按比例给（kd 直接吃 -1~1），
+     不能退化成"推到底才算" —— 那样手柄玩家永远转不过键盘玩家。 */
+const PAD_DZ=0.22;     // 死区：手柄静置漂移普遍在 0.1~0.2，压太低会自己走
+const PAD_TRIG=0.45;   // 扳机视为按下的阈值
+const PAD_EDGE=0.55;   // 菜单里"拨一下"的阈值（比死区高，防误触）
+const PAD_REP1=0.42, PAD_REP2=0.16; // 长按连发：首次延迟 / 之后间隔
+const PAD={
+  on:false,ax:0,ay:0,fire:false,brake:false,
+  now:0,prev:0,press:0,   // 按键位掩码：当前 / 上一帧 / 本帧刚按下
+  sdir:0,snext:0,         // 摇杆左右的连发状态
+  name:'',seen:false,
+};
+let PAD_TEST=null;       // 测试注入的假手柄（无头环境没有真手柄）
+let padSel=0;            // 手柄在卡牌 / 机库里的选择下标
+function padFake(ax,ay,mask){
+  const b=[];
+  for(let i=0;i<16;i++)b.push({pressed:!!(mask&(1<<i)),value:(mask&(1<<i))?1:0});
+  return {id:'TEST PAD',axes:[ax||0,ay||0],buttons:b};
+}
+function padFirst(){
+  if(!navigator.getGamepads)return null;
+  const gs=navigator.getGamepads();
+  for(let i=0;i<gs.length;i++){const g=gs[i];if(g&&g.connected)return g;}
+  return null;
+}
+function padClear(){
+  PAD.on=false;PAD.ax=0;PAD.ay=0;PAD.fire=false;PAD.brake=false;
+  PAD.press=PAD.now&~PAD.prev;PAD.prev=PAD.now;PAD.now=0;
+  PAD.sdir=0;PAD.snext=0;
+}
+function padScan(){
+  const g=PAD_TEST||padFirst();
+  if(!g){padClear();return;}
+  /* 摇杆：死区外做线性重映射，否则越过死区的瞬间速度会跳一下 */
+  const dz=v=>{const s=v<0?-1:1,a=Math.abs(v);return a<PAD_DZ?0:s*(a-PAD_DZ)/(1-PAD_DZ);};
+  let x=dz((g.axes&&g.axes[0])||0),y=dz((g.axes&&g.axes[1])||0);
+  /* 径向归一化：斜推到角落时物理上到不了 (1,1)，不修正则斜向永远比正交慢 */
+  const m=Math.hypot(x,y);
+  if(m>1){x/=m;y/=m;}
+  PAD.ax=x;PAD.ay=y;
+  const btn=i=>{const b=g.buttons&&g.buttons[i];if(!b)return false;
+    return typeof b==='number'?b>PAD_TRIG:!!(b.pressed||b.value>PAD_TRIG);};
+  let now=0;
+  for(let i=0;i<16;i++)if(btn(i))now|=(1<<i);
+  PAD.now=now;
+  PAD.press=now&~PAD.prev;PAD.prev=now;
+  PAD.fire=btn(0)||btn(7)||btn(5);   // A 键 / RT / RB —— 三个都给开火，随玩家握法
+  PAD.brake=btn(6)||btn(4);          // LT / LB
+  PAD.sdir=PAD.ax>PAD_EDGE?1:(PAD.ax<-PAD_EDGE?-1:0);
+  if(!PAD.sdir)PAD.snext=0;
+  PAD.name=g.id||'';
+  if(!PAD.on){                        // 刚连上：报一次，让玩家知道摇杆已经接管
+    PAD.on=true;
+    if(!PAD.seen){PAD.seen=true;
+      banner('CONTROLLER',T('手柄已连接 —— 左摇杆转向与推进 · A / RT 开火 · START 暂停',
+        'Controller connected — left stick steers & thrusts · A / RT fires · START pauses'));}
+  }
+  if(Math.abs(PAD.ax)>0.05)aimMode='key'; // 摇杆转向与 A/D 同语义：接管"键盘朝向"模式
+}
+/* 摇杆连发：返回本帧是否应触发一次"拨动"（首次即响，长按后加速连发） */
+function padRepeat(dt){
+  if(!PAD.sdir){PAD.snext=0;return 0;}
+  if(PAD.snext===0){PAD.snext=G.t+PAD_REP1;return PAD.sdir;}
+  if(G.t>=PAD.snext){PAD.snext=G.t+PAD_REP2;return PAD.sdir;}
+  return 0;
+}
+/* 手柄在菜单里点"返回" —— 与 ESC 的语义逐条对齐，不要另立一套 */
+function padBack(){
+  if(!el.settings.hidden){closeSettings();return true;}
+  if(G.mode==='logbook'||G.mode==='saves'){toMenu();return true;}
+  if(G.mode==='hulls'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return true;}
+  if(G.mode==='pause'){resumeGame();return true;}
+  return false;
+}
+/* 当前可见面板里可聚焦的按钮（用于十字键 / 摇杆上下移动焦点） */
+function padTargets(){
+  const out=[];
+  for(const root of [el.menu,el.hulls,el.pause,el.over,el.victory,el.settings,el.saves,el.logbook]){
+    if(!root||root.hidden)continue;
+    for(const b of root.querySelectorAll('button')){
+      if(b.hidden||b.disabled)continue;
+      const r=b.getBoundingClientRect();
+      if(r.width<2||r.height<2)continue;
+      out.push(b);
+    }
+  }
+  return out;
+}
+/* 卡牌 / 机库里的手柄选择：写一个 .padsel 类，不动 DOM 结构 */
+function padSelPaint(row){
+  if(!row)return;
+  const kids=[...row.children];
+  kids.forEach((c,i)=>c.classList.toggle('padsel',i===padSel&&PAD.on));
+}
+/* 每帧派发手柄的 UI 动作。dt 用于摇杆连发计时。 */
+function padUI(dt){
+  if(!PAD.on)return;
+  const pr=PAD.press;
+  if(pr)AU.ensure();
+  const hit=i=>(pr&(1<<i))!==0;
+  // START=暂停 / 继续，BACK(Select)=设置 —— 这两个在任何面板都优先
+  if(hit(9)){
+    if(G.mode==='play'||G.mode==='inter')pauseGame();
+    else if(G.mode==='pause')resumeGame();
+    return;
+  }
+  if(hit(8)){
+    if(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='levelup'&&G.mode!=='dying')openSettings();
+    return;
+  }
+  if(G.mode==='levelup'){
+    const mv=(hit(14)?-1:0)+(hit(15)?1:0)+padRepeat(dt);
+    if(mv){padSel=clamp(padSel+mv,0,G.choices.length-1);padSelPaint(el.cardrow);sfx.ui();}
+    if(hit(0)){pickCard(padSel);return;}          // A 确认
+    if(hit(2)){rerollCards();return;}             // X 换牌
+    if(hit(1))padBack();                          // B 返回
+    return;
+  }
+  if(G.mode==='hulls'){
+    const mv=(hit(14)?-1:0)+(hit(15)?1:0)+padRepeat(dt);
+    if(mv){padSel=clamp(padSel+mv,0,HULLS.length-1);padSelPaint(el.hullrow);sfx.ui();}
+    if(hit(0)){pickHull(padSel);return;}
+    if(hit(1))padBack();
+    return;
+  }
+  // 其余面板：通用按钮导航（十字键移动焦点，A 点击，B 返回）
+  /* ⚠️ B 的判定必须排在"有没有可聚焦按钮"之前 —— 航行日志这类面板可能一个按钮都不在
+     列表里，被空列表挡掉的话返回键就失灵了（5.2 实测：日志里按 B 回不去主菜单）。 */
+  if(hit(1)){padBack();return;}
+  const list=padTargets();
+  if(!list.length)return;
+  const cur=list.indexOf(document.activeElement);
+  const mv=(hit(13)||hit(15)?1:0)-(hit(12)||hit(14)?1:0)+padRepeat(dt);
+  if(mv){
+    const i=cur<0?(mv>0?0:list.length-1):(cur+mv+list.length)%list.length;
+    list[i].focus();sfx.ui();
+  }
+  if(hit(0)){
+    const a=document.activeElement;
+    if(a&&typeof a.click==='function')a.click();else list[0].click();
+  }
+}
+/* 键码 → 显示名：KeyW→W、ArrowUp→↑、Space→SPACE、Digit1→1 */
+function keyLabel(code){
+  if(!code)return null;
+  if(code==='Space')return 'SPACE';
+  if(code==='Escape')return 'ESC';
+  const ar={ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
+  if(ar[code])return ar[code];
+  if(/^Key[A-Z]$/.test(code))return code.slice(3);
+  if(/^Digit[0-9]$/.test(code))return code.slice(5);
+  if(/^Numpad/.test(code))return 'NUM'+code.slice(6);
+  return code.toUpperCase();
+}
 const keys=Object.create(null);
 const mouse={sx:0,sy:0,down:false,lastMove:-99};
-const joy={id:null,ox:0,oy:0,dx:0,dy:0,on:false};
+/* ---- 5.5 虚拟摇杆参数 ----
+   ⚠️ 改前是 P.angle += clamp(angDiff, ±10*dt)：一条**恒定**的斜率，
+      实测推 3px 和推 46px 在 0.5s 内都转满 90°，且 1px 就开始转 ——
+      也就是杆只是个「方向开关」。5.2 明确要求手柄「模拟量不退化成开关」，
+      移动端却漏了同一条，这里补齐。 */
+const JOY_R=46,             // 杆最大位移 px（与 #joyknob 直径对齐，别只改一边）
+      JOY_DZ=0.18,          // 死区（占 JOY_R）：手指静止时的抖动不该让船自转
+      JOY_TURN_MIN=0.45,    // 死区边缘的转向倍率（相对 P.turn）—— 微调要慢
+      JOY_TURN_MAX=2.2,     // 满舵倍率：4.4 rad/s × 2.2 ≈ 旧的 10 rad/s，手感不变
+      JOY_BRK=0.62,         // 下拉超过此比例算刹车（对齐 5.2 手柄 ay>0.5）
+      JOY_THR=0.12,         // 推进阈值：刚出死区就点火太敏感
+      JOY_FOLLOW=2.2;       // 手指超出 2.2R 才重锚底盘（见 touchmove）
+const joy={id:null,ox:0,oy:0,dx:0,dy:0,on:false,mag:0,nx:0,ny:0};
+/* 死区 → 重映射 → 归一化，与 5.2 padScan 同一套做法：
+   两种模拟量输入（手柄 / 触屏）的语义必须一致，否则玩家换个设备手要重新学。 */
+function joyRead(){
+  if(!joy.on){joy.mag=0;joy.nx=0;joy.ny=0;return;}
+  const m=Math.hypot(joy.dx,joy.dy);
+  if(m<=0){joy.mag=0;joy.nx=0;joy.ny=0;return;}
+  const n=Math.min(m,JOY_R)/JOY_R;
+  if(n<JOY_DZ){joy.mag=0;joy.nx=0;joy.ny=0;return;}
+  joy.mag=Math.min(1,(n-JOY_DZ)/(1-JOY_DZ));
+  joy.nx=joy.dx/m*joy.mag;joy.ny=joy.dy/m*joy.mag;
+}
 let aimMode='key'; // 最近一次输入决定朝向控制方式：'key' 用 A/D 转向，'mouse' 朝鼠标瞄准
 let fireOn=false,isTouch=false;
 
@@ -3146,6 +3723,22 @@ function setTouch(v){
   guideRefresh(); // 引导文案分键鼠 / 触屏两套，切换输入方式要立刻换过来
 }
 function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying';}
+/* ---- 5.5 竖屏提示 ----
+   ⚠️ 不能从 resize() 里调：resize() 在脚本求值时就跑了一次，那时 G 还在 TDZ，
+      连 typeof G 都会抛。所以单独挂 resize / orientationchange 监听。 */
+const OR_KEY='nova-orient';
+let orHidden=false;try{orHidden=localStorage.getItem(OR_KEY)==='1';}catch(e){}
+function orientHint(){
+  const h=el&&el.orhint;if(!h)return;
+  const show=isTouch&&innerWidth<=innerHeight&&!orHidden&&inRun();
+  if(show&&h.hidden){h.hidden=false;requestAnimationFrame(()=>h.classList.add('on'));}
+  else if(!show&&!h.hidden){h.classList.remove('on');h.hidden=true;}
+}
+el.orhint.addEventListener('click',()=>{
+  orHidden=true;try{localStorage.setItem(OR_KEY,'1');}catch(e){}orientHint();
+});
+window.addEventListener('resize',orientHint);
+window.addEventListener('orientationchange',()=>{resize();orientHint();});
 // 判断触点是否落在 FIRE 按钮上（含少量容差），按钮外一律归为方向/推力
 function isFireBtn(x,y){
   if(el.firebtn.hidden)return false;
@@ -3156,31 +3749,46 @@ function isFireBtn(x,y){
 window.addEventListener('keydown',e=>{
   const inInput=e.target&&e.target.tagName==='INPUT'; // 滑条聚焦时保留方向键原生行为
   if(!inInput&&['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
-  keys[e.code]=true;
-  AU.ensure(); // 任意按键均可解锁浏览器音频（BGM 自动播放策略）
-  if(G.mode==='play'&&!inInput&&(e.code==='KeyA'||e.code==='KeyD'||e.code==='ArrowLeft'||e.code==='ArrowRight'))aimMode='key';
-  if(!el.settings.hidden){ // 设置面板打开时：ESC / O 关闭，其余按键不穿透
-    if(e.code==='Escape'||e.code==='KeyO')closeSettings();
+  /* 5.1 改绑捕获：等待期间整个键盘只服务"抓一个键"，不派发任何游戏逻辑。
+     ⚠️ 必须放在 keys[]=true 与所有游戏分支之前 —— 否则按下的瞬间会同时触发动作。 */
+  if(keyWait){
+    const w=keyWait;keyWait=null;
+    if(e.code!=='Escape'){
+      const r=rebind(w.act,w.slot,e.code);
+      if(r.ok&&r.cleared){
+        const o=KEY_DEFS.find(x=>x.id===r.cleared);
+        banner('KEYMAP',T('「'+keyLabel(e.code)+'」已从「'+(LANG==='en'?o.en:o.zh)+'」上移除',
+          '"'+keyLabel(e.code)+'" released from "'+o.en+'"'));
+      }
+    }
+    renderKeyList();
     return;
   }
-  if(e.code==='KeyO'){
+  keys[e.code]=true;
+  AU.ensure(); // 任意按键均可解锁浏览器音频（BGM 自动播放策略）
+  if(G.mode==='play'&&!inInput&&(isAct('left',e.code)||isAct('right',e.code)))aimMode='key';
+  if(!el.settings.hidden){ // 设置面板打开时：ESC / 设置键关闭，其余按键不穿透
+    if(e.code==='Escape'||isAct('settings',e.code))closeSettings();
+    return;
+  }
+  if(isAct('settings',e.code)){
     if(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='levelup'&&G.mode!=='dying')openSettings();
     return;
   }
-  if(e.code==='KeyM'){toggleMute();return;}
-  if(G.mode==='menu'&&(e.code==='Enter'||e.code==='Space')){openHulls();return;}
+  if(isAct('mute',e.code)){toggleMute();return;}
+  if(G.mode==='menu'&&(e.code==='Enter'||isAct('fire',e.code))){openHulls();return;}
   if(G.mode==='menu'&&e.code==='KeyC'){resumeRun();return;}
   if(G.mode==='menu'&&e.code==='KeyL'){openLogbook();return;}
   if((G.mode==='logbook'||G.mode==='saves')&&e.code==='Escape'){toMenu();return;}
   if(G.mode==='hulls'&&/^Digit[1-7]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
   if(G.mode==='hulls'&&e.code==='Escape'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return;}
-  if(G.mode==='victory'&&(e.code==='KeyE'||e.code==='Enter')){continueEndless();return;}
-  if(G.mode==='over'&&(e.code==='KeyR'||e.code==='Enter')){startGame();return;}
+  if(G.mode==='victory'&&(isAct('endless',e.code)||e.code==='Enter')){continueEndless();return;}
+  if(G.mode==='over'&&(isAct('restart',e.code)||e.code==='Enter')){startGame();return;}
   if(G.mode==='levelup'&&/^Digit[1-3]$/.test(e.code)){pickCard(+e.code.slice(5)-1);return;}
-  if(G.mode==='levelup'&&e.code==='KeyR'){rerollCards();return;}
-  if(G.mode==='pause'&&e.code==='KeyR'){startGame();return;}
-  if(G.mode==='pause'&&e.code==='KeyQ'){saveRun();toMenu();return;}
-  if((e.code==='Escape'||e.code==='KeyP')){
+  if(G.mode==='levelup'&&isAct('reroll',e.code)){rerollCards();return;}
+  if(G.mode==='pause'&&isAct('restart',e.code)){startGame();return;}
+  if(G.mode==='pause'&&isAct('quit',e.code)){saveRun();toMenu();return;}
+  if(isAct('pause',e.code)){
     if(G.mode==='play'||G.mode==='inter')pauseGame();
     else if(G.mode==='pause')resumeGame();
   }
@@ -3266,6 +3874,7 @@ window.addEventListener('touchstart',e=>{
     if(isFireBtn(t.clientX,t.clientY)){fireOn=!fireOn;el.firebtn.classList.toggle('hot',fireOn);}
     else if(joy.id===null){
       joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.dx=0;joy.dy=0;joy.on=true;
+      joyRead();
       el.joybase.hidden=false;el.joybase.style.left=joy.ox+'px';el.joybase.style.top=joy.oy+'px';
     }
   }
@@ -3274,21 +3883,32 @@ window.addEventListener('touchmove',e=>{
   for(const t of e.changedTouches){
     if(t.identifier===joy.id){
       let dx=t.clientX-joy.ox,dy=t.clientY-joy.oy;
-      const m=Math.hypot(dx,dy);
-      if(m>46){dx*=46/m;dy*=46/m;}
+      let m=Math.hypot(dx,dy);
+      /* 手指拖出 2.2R：把底盘挪到「手指 − R」处再钳一次。
+         这样杆仍停在满舵边缘、朝向**连续**，不会像「底盘瞬移到手指下」那样
+         让 dx/dy 归零、船突然停转。小幅操作时不重锚，杆正常贴边。 */
+      if(m>JOY_R*JOY_FOLLOW){
+        joy.ox=t.clientX-dx/m*JOY_R;joy.oy=t.clientY-dy/m*JOY_R;
+        el.joybase.style.left=joy.ox+'px';el.joybase.style.top=joy.oy+'px';
+        dx=t.clientX-joy.ox;dy=t.clientY-joy.oy;m=Math.hypot(dx,dy);
+      }
+      if(m>JOY_R){dx*=JOY_R/m;dy*=JOY_R/m;}
       joy.dx=dx;joy.dy=dy;
       el.joyknob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+      joyRead();
     }
   }
 },{passive:true});
 function endTouch(e){
   for(const t of e.changedTouches){
-    if(t.identifier===joy.id){joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;el.joybase.hidden=true;}
+    if(t.identifier===joy.id){joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;}
   }
 }
 window.addEventListener('touchend',endTouch);
 window.addEventListener('touchcancel',endTouch);
-window.addEventListener('pointerdown',()=>AU.ensure(),{once:false});
+/* ⚠️ 必须用 pointerType==='mouse' 判断：触屏会产生合成的 mouse 事件，
+   只靠 mousedown 会让触屏笔记本在两种模式间反复横跳。 */
+window.addEventListener('pointerdown',e=>{AU.ensure();if(e.pointerType==='mouse')setTouch(false);},{passive:true});
 
 /* ============================== fx helpers ============================== */
 /* swap-remove：O(1) 删除，不保序。用末位元素覆盖待删位再 pop，避免 splice 的 O(n) 元素搬移。
@@ -3308,14 +3928,15 @@ function hitstop(t){
   if(t>G.hitstop)G.hitstop=t;
 }
 
-function shake(n){G.shake=Math.min(G.shake+n,26);}
+/* 5.3 震屏开关 + 减弱动态：两条都能掐掉（震动是前庭不适的第一来源） */
+function shake(n){if(!OPTS.shake||OPTS.motion)return;G.shake=Math.min(G.shake+n,26);}
 
 /* ---- 碎片/残骸：死亡时飞散的旋转多边形（纯视觉，不改伤害与平衡） ----
    顶点半径在生成时预计算存进 d.pts，绘制期只做三角函数，不再逐帧随机。 */
-const DEBRIS_MAX=120;
+/* 5.4 残骸上限改用 QDM（随档位收缩，见 canvas 段 QB 表） */
 function shatter(x,y,n,spd,c,size){
   if(REDUCED)return;
-  if(G.debris.length+n>DEBRIS_MAX)n=DEBRIS_MAX-G.debris.length;
+  if(G.debris.length+n>QDM)n=QDM-G.debris.length;
   for(let i=0;i<n;i++){
     const a=rand(TAU),s=rand(spd*0.3,spd),nv=3+((Math.random()*3)|0);
     const pts=[];
@@ -3371,10 +3992,12 @@ const GUIDE_KEY='nova-guide';
 /* 每步两行：主文案按平台切换（桌面 zh/en ↔ 触屏 zhT/enT），
    补充行 zhK/enK 给主文案没说到的细节，两行内容不重复。 */
 const GUIDE_STEPS=[
-  {id:'move', zh:'推动战机 —— <b>WASD</b> 或方向键 转向与加速', en:'Fly — <b>WASD</b> or ARROWS to turn &amp; thrust',
+  /* 5.1：{MOVE} / {FIRE} 是按键占位符，渲染时换成 KEYMAP 里的真实键 ——
+     默认绑定下 {MOVE} 仍渲染成 WASD，与改动前一模一样。 */
+  {id:'move', zh:'推动战机 —— <b>{MOVE}</b> 或方向键 转向与加速', en:'Fly — <b>{MOVE}</b> or ARROWS to turn &amp; thrust',
    zhT:'拖动屏幕任意处推进，战机自动朝拖拽方向转向', enT:'Drag anywhere to steer &amp; thrust',
    zhK:'机首会朝你瞄准的方向转过去', enK:'The nose swings toward where you aim'},
-  {id:'fire', zh:'开火 —— 按住 <b>鼠标左键</b> 或 <b>空格</b>', en:'Fire — hold <b>LMB</b> or <b>SPACE</b>',
+  {id:'fire', zh:'开火 —— 按住 <b>鼠标左键</b> 或 <b>{FIRE}</b>', en:'Fire — hold <b>LMB</b> or <b>{FIRE}</b>',
    zhT:'点右下 <b>FIRE</b> 开始持续开火，再点一次停火', enT:'Tap <b>FIRE</b> to toggle shooting; tap again to stop',
    zhK:'子弹朝你瞄准的方向飞，按住不放就是持续射击', enK:'Shots fly toward wherever you aim — hold to keep firing'},
   {id:'collect', zh:'击毁的敌人碎成发光核心，靠近会自动回收', en:'Kills break into glowing cores that home in on you',
@@ -3424,10 +4047,24 @@ function guideStop(){
   clearTimeout(guideHideT);
   guideHideT=setTimeout(()=>{el.guide.hidden=true;},360);
 }
+/* 5.1：把引导文案里的 {MOVE} / {FIRE} 换成当前键位。
+   ⚠️ 默认绑定下 {MOVE} 必须仍渲染成 "WASD" —— 那是玩家认了三年的说法，
+   换成 "A / W / D" 属于自作聪明。改绑过才降级成逐个键名。 */
+function guideFill(s){
+  const lab=id=>{const a=keySlots(id),o=[];
+    for(const c of a){const l=keyLabel(c);if(l&&o.indexOf(l)<0)o.push(l);}
+    return o.join(' / ')||'—';};
+  const mv=[keyLabel(keySlots('left')[0]),keyLabel(keySlots('thrust')[0]),
+            keyLabel(keySlots('right')[0])].filter(Boolean);
+  const def=mv[0]==='A'&&mv[1]==='W'&&mv[2]==='D';
+  return T(isTouch?s.zhT:s.zh,isTouch?s.enT:s.en)
+    .replace('{MOVE}',def?'WASD':(mv.join(' / ')||'—'))
+    .replace('{FIRE}',lab('fire'));
+}
 function guideShow(s,i){
   G.guideIdx=i;                   // 必须回写：否则 tick 判定「步骤变了」→ 每帧重播入场过渡
   el.guideTag.textContent=T('操作指引 ','GUIDE ')+(i+1)+' / '+GUIDE_STEPS.length;
-  el.guideTxt.innerHTML=T(isTouch?s.zhT:s.zh,isTouch?s.enT:s.en); // 主文案：桌面 / 触屏两套按键
+  el.guideTxt.innerHTML=guideFill(s); // 主文案：桌面 / 触屏两套按键，键名取当前 KEYMAP
   el.guideKey.innerHTML=T(s.zhK||'',s.enK||'');                  // 补充行：主文案没说的细节
   el.guide.hidden=false;
   el.guide.classList.remove('on');
@@ -3487,25 +4124,25 @@ function glow(rgb,x,y,size,alpha){
    绘制时按类型分三遍批处理，效果等同"分池"，但重置点只有一处 G.parts，改动面最小。
    回收统一 swap-remove（O(1)，不保序），因为发光/拖尾粒子不依赖绘制顺序。
    入口数量钳制替代原 O(n) 的 splice(0,len-420) 头部截断。 */
-const PART_MAX=560;
+/* 5.4 粒子上限改用 QPM（随档位收缩，见 canvas 段 QB 表） */
 const PK_STREAK=0,PK_RING=1,PK_GLOW=2;
 function pushStreak(x,y,vx,vy,life,c,w){
-  if(G.parts.length>=PART_MAX)return;
+  if(G.parts.length>=QPM)return;
   G.parts.push({k:PK_STREAK,x,y,vx,vy,t:0,max:life,c,w:w||2});
 }
 function pushGlow(x,y,vx,vy,life,c,size,g){
-  if(G.parts.length>=PART_MAX)return;
+  if(G.parts.length>=QPM)return;
   G.parts.push({k:PK_GLOW,x,y,vx,vy,t:0,max:life,c,gs:size,g:g===undefined?0.85:g});
 }
 function burst(x,y,n,spd,life,c,w){
-  if(G.parts.length+n>PART_MAX)n=PART_MAX-G.parts.length;
+  if(G.parts.length+n>QPM)n=QPM-G.parts.length;
   for(let i=0;i<n;i++){
     const a=rand(TAU),s=rand(spd*0.25,spd);
     G.parts.push({k:PK_STREAK,x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,max:rand(life*0.5,life),c,w:w||2});
   }
 }
 function glowBurst(x,y,n,spd,life,c,size,g){
-  if(G.parts.length+n>PART_MAX)n=PART_MAX-G.parts.length;
+  if(G.parts.length+n>QPM)n=QPM-G.parts.length;
   for(let i=0;i<n;i++){
     const a=rand(TAU),s=rand(spd*0.15,spd);
     G.parts.push({k:PK_GLOW,x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,
@@ -3513,12 +4150,18 @@ function glowBurst(x,y,n,spd,life,c,size,g){
   }
 }
 function ring(x,y,r,c){
-  if(G.parts.length>=PART_MAX)return;
+  if(G.parts.length>=QPM)return;
   G.parts.push({k:PK_RING,x,y,vx:0,vy:0,t:0,max:0.35,c,rr:r});
 }
 /* 通用飘字。o 可带 {fs, life, rise, pop, ital, halo, key} —— 不传则用原默认值。
    字段全可选，所以老的 ftext(x,y,txt,c) 调用保持原样有效。 */
 function ftext(x,y,txt,c,o){
+  /* 5.4 通用飘字原先无上限：一波拾取 + 升级提示能顶出几十条。
+     给 QFM 条额度，且让位给伤害数字（挤掉最旧的通用条）。 */
+  if(G.texts.length>=QTM+QFM){
+    for(let i=0;i<G.texts.length;i++){if(!G.texts[i].kind){G.texts.splice(i,1);break;}}
+    if(G.texts.length>=QTM+QFM)return;
+  }
   G.texts.push({x,y,txt,c,t:0.9,life:0.9,fs:12,rise:28,hit:0,...(o||{})});
 }
 
@@ -3536,7 +4179,7 @@ const DMG_ST={
   weak:   {c:PAL.cyan,       fs:12.5, rise:30, life:0.85, ital:true},
   absorb: {c:PAL.steel,      fs:10.5, rise:18, life:0.7, halo:true},
 };
-const DMG_MAX=26; // 同屏伤害飘字上限，超出时优先挤掉最旧的普通条，暴击永不丢
+/* 5.4 伤害飘字上限改用 QTM（原常量 DMG_MAX=26 即高档值），见 canvas 段 QB 表 */
 const _fontCache=new Map();
 function monoFont(fs,ital){
   const k=(ital?'i':'n')+fs;let v=_fontCache.get(k);
@@ -3562,7 +4205,7 @@ function dmgText(x,y,val,kind,key){
       }
     }
   }
-  if(G.texts.length>=DMG_MAX){
+  if(G.texts.length>=QTM){
     let worst=-1;
     for(let i=0;i<G.texts.length;i++){
       const t=G.texts[i];
@@ -3614,7 +4257,7 @@ function spawnAst(size,x,y,kind,champ){
   const boss=size===4&&!champ;
   const col=size===4&&!!champ; // 精英巨像：体型与血量弱一档，不锁波次进度
   if(x===undefined){const p=edgePoint();x=p.x;y=p.y;}
-  const hpMul=1+0.07*(Math.max(Wv.n,1)-1);
+  const hpMul=(1+0.07*(Math.max(Wv.n,1)-1))*eTierHp();  // 4.5：× 强化层血量系数
   let hp=AST_HP[size]*hpMul;
   let elite=false;
   if(!boss&&!col&&Wv.n>=3&&Math.random()<0.08){elite=true;hp*=1.8;}
@@ -3793,13 +4436,15 @@ const HORIZON_DPS=26;   // 事件视界每秒灼烧
 
 const EN_FALLBACK={r:12,hp:3,spd:200,dmg:15,sc:40,xp:4};
 function spawnEnemy(type,x,y){
-  const m=1+0.09*(Wv.n-1),n=Wv.n;
+  /* 4.5：基础线性成长 × 强化层指数成长（0 层时 eTierXxx() 全为 1，与旧版一致） */
+  const m=(1+0.09*(Wv.n-1))*eTierHp(),n=Wv.n;
+  const dm=eTierDmg(),sm=eTierSpd();
   const d=ENEMY_DEFS[type]||EN_FALLBACK;
   const e={type,x,y,vx:0,vy:0,flash:0,age:0,st:0,state:'',ang:angTo(x,y,P.x,P.y),sd:Math.random()<0.5?1:-1,trailTick:0};
   e.r=d.r;
   e.hp=(typeof d.hp==='function'?d.hp(n):d.hp)*m;
-  e.dmg=(typeof d.dmg==='function'?d.dmg(n):d.dmg);
-  if(d.spd!==undefined)e.spd=(typeof d.spd==='function'?d.spd(n):d.spd);
+  e.dmg=(typeof d.dmg==='function'?d.dmg(n):d.dmg)*dm;
+  if(d.spd!==undefined)e.spd=(typeof d.spd==='function'?d.spd(n):d.spd)*sm;
   if(d.init)d.init(e,n,m);
   applyAffix(e);
   e.maxHp=e.hp;
@@ -3821,6 +4466,7 @@ function dropXp(x,y,v){
   const sv=v/n,c=shardColor(sv);
   for(let i=0;i<n;i++){
     const a=rand(TAU),s=rand(30,130);
+    if(G.shards.length>=QSM)G.shards.shift();
     G.shards.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,v:sv,c,t:0});
   }
 }
@@ -3830,10 +4476,15 @@ function buildWave(n){
   Wv.n=n;Wv.qA.length=0;Wv.qE.length=0;Wv.cleared=false;
   // 前 30 波按固定剧本；进入无尽模式后每 5 波随机抽一个巨像，第 3 波穿插精英巨像
   const endless=n>WIN_WAVE;
-  // 剧本 Boss 优先（含无尽专属的 35/40），否则无尽每 5 波随机抽一个
-  const bossKind=BOSS_AT[n]||(endless&&n%5===0?pick(Object.keys(BOSS_MV)):null);
+  /* 剧本 Boss 优先（含无尽专属的 35/40）—— 4.2 的规矩，别让无尽分支吃掉它们。
+     其余走 bagPick 轮换袋，不再用 pick() 无记忆随机。 */
+  const bossKind=BOSS_AT[n]||(endless&&n%5===0?bagPick('boss'):null);
   Wv.boss=!!bossKind;Wv.bossKind=bossKind;
-  Wv.champ=Wv.boss?null:(CHAMP_AT[n]||(endless&&n%5===3?pick(Object.keys(BOSS_MV)):null));
+  /* 剧本 Boss 也要写回「上一只」记忆，否则 40 波坍缩核 → 45 波首抽仍可能撞同一只 */
+  if(bossKind)G.bossLast=bossKind;
+  Wv.champ=Wv.boss?null:(CHAMP_AT[n]||(endless&&n%5===3?bagPick('champ'):null));
+  if(Wv.champ)G.champLast=Wv.champ;
+  Wv.tier=eTier(n);   // 本波强化层（0 = 未进入强化区）
   Wv.overflow=0;
   // 发育期（第一场巨像战到来前）：纯清剿制，无超时推进，玩家从容成长
   Wv.early=n<5;
@@ -3854,18 +4505,22 @@ function buildWave(n){
     const bz=BOSS_ZH[bossKind]||'母岩';
     /* 巨像登场：色差撕裂 + 满泛光 + 推镜，让 boss 波"落地"有重量 */
     camKick(0.042);ppBloom(1);ppGlitch(1);
-    if(bossKind==='twin')banner('TWIN ROCKS',T('双子母岩接近 —— 两只都要击碎，碎其一则另一狂暴','Twin Rocks approach — shatter both; breaking one enrages the other'));
-    else if(bossKind==='eye')banner('VOID EYE',T('虚空之眼已睁开 —— 提防它的凝视与螺旋弹幕','The Void Eye is open — beware its gaze and spiral barrage'));
-    else if(bossKind==='hydra')banner('HYDRA PRIME',T('九首巨兽苏醒 —— 三颗核心共享生命网络','Hydra Prime awakens — three cores share one life-web'));
-    else if(bossKind==='warden')banner('ORBITAL WARDEN',T('环带狱卒降临 —— 先击穿三重护盾环的缺口','Orbital Warden descends — breach a gap in the triple shield rings first'));
-    else if(bossKind==='nemesis')banner('NEMESIS',T('终焉回响 —— 它会模仿你的一切','Nemesis Echo — it mirrors everything you do'));
-    else if(bossKind==='monolith')banner('MONOLITH',T('静默方碑升起 —— 干扰场开合有节律，等它熄灭再输出','The Monolith rises — its jamming field breathes; unload when it goes dark'));
-    else if(bossKind==='collapse')banner('COLLAPSE CORE',T('坍缩之核成型 —— 引力会把你拽向中心，别停在视界里','A Collapse Core forms — gravity drags you toward the center; do not linger in the horizon'));
-    else banner('MOTHER ROCK',T(bz+'接近 —— 击碎它',(BOSS_NAME[bossKind]||'MOTHER ROCK')+' approaches — shatter it'));
+    /* 4.5：收进变量后统一 banner —— 强化层后缀要挂在所有分支上，
+       逐条 banner() 各写一遍必然漏（banner 是替换式、不排队，补一条会覆盖上一条）。 */
+    let bt='MOTHER ROCK',bs=T(bz+'接近 —— 击碎它',(BOSS_NAME[bossKind]||'MOTHER ROCK')+' approaches — shatter it');
+    if(bossKind==='twin'){bt='TWIN ROCKS';bs=T('双子母岩接近 —— 两只都要击碎，碎其一则另一狂暴','Twin Rocks approach — shatter both; breaking one enrages the other');}
+    else if(bossKind==='eye'){bt='VOID EYE';bs=T('虚空之眼已睁开 —— 提防它的凝视与螺旋弹幕','The Void Eye is open — beware its gaze and spiral barrage');}
+    else if(bossKind==='hydra'){bt='HYDRA PRIME';bs=T('九首巨兽苏醒 —— 三颗核心共享生命网络','Hydra Prime awakens — three cores share one life-web');}
+    else if(bossKind==='warden'){bt='ORBITAL WARDEN';bs=T('环带狱卒降临 —— 先击穿三重护盾环的缺口','Orbital Warden descends — breach a gap in the triple shield rings first');}
+    else if(bossKind==='nemesis'){bt='NEMESIS';bs=T('终焉回响 —— 它会模仿你的一切','Nemesis Echo — it mirrors everything you do');}
+    else if(bossKind==='monolith'){bt='MONOLITH';bs=T('静默方碑升起 —— 干扰场开合有节律，等它熄灭再输出','The Monolith rises — its jamming field breathes; unload when it goes dark');}
+    else if(bossKind==='collapse'){bt='COLLAPSE CORE';bs=T('坍缩之核成型 —— 引力会把你拽向中心，别停在视界里','A Collapse Core forms — gravity drags you toward the center; do not linger in the horizon');}
+    banner(bt,bs+tierTxt(Wv.tier));
   }else{
     const pool=enUnlocked(n);
     const wish=(sq.w||[]).filter(t=>pool.indexOf(t)>=0);
-    const total=Math.min(38,Math.round((7+n*1.35)*(sq.s||1)));
+    /* 4.5：每层强化多刷 ETIER_EXTRA 只敌人（封顶 +10）。t=0 时与旧版完全一致。 */
+    const total=Math.min(38+eTierExtra(Wv.tier),Math.round((7+n*1.35)*(sq.s||1))+eTierExtra(Wv.tier));
     const mainN=wish.length?Math.round(total*0.62):0;
     // 主题主力 + 谱系混编，保证每波风味不同又不会单调
     for(let i=0;i<mainN;i++)Wv.qE.push(pick(wish));
@@ -3881,9 +4536,9 @@ function buildWave(n){
     const szen=SQUADS_EN[sq.id]||[];
     const sub=(Wv.champ?T('精英巨像压阵 · ','Champion colossus leads · '):'')+
       T(sq.zh,szen[0]||sq.zh)+T('编队',' formation')+' — '+T(sq.desc,szen[1]||sq.desc);
-    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,T('进入'+sec.zh+' —— 敌型谱系扩充','Entering the '+sec.en+' — new enemy types join the pool'),0.5);
-    else if(Wv.early)banner('WAVE '+n,T('肃清区域内全部目标后推进 — ','Clear all hostiles to advance — ')+sub);
-    else banner('WAVE '+n,sub);
+    if(newSec)banner('SECTOR '+sec.n+' // '+sec.en,T('进入'+sec.zh+' —— 敌型谱系扩充','Entering the '+sec.en+' — new enemy types join the pool')+tierTxt(Wv.tier),0.5);
+    else if(Wv.early)banner('WAVE '+n,T('肃清区域内全部目标后推进 — ','Clear all hostiles to advance — ')+sub+tierTxt(Wv.tier));
+    else banner('WAVE '+n,sub+tierTxt(Wv.tier));
   }
   if(!Wv.boss)shuffle(Wv.qA);
   if(Wv.champ)Wv.qA.unshift('champ'); // 精英巨像排在队首，作为本波的开局压力
@@ -3978,7 +4633,7 @@ function updatePickups(dt){
       /* 磁吸拖尾：沿来路留一串余辉。没有它，"被吸过来"读起来只是位置突变；
          有了它，玩家能看出是什么东西正朝自己飞，而不是凭空出现在身上。 */
       u.tr=(u.tr||0)-dt;
-      if(u.tr<=0&&G.parts.length<PART_MAX){
+      if(u.tr<=0&&G.parts.length<QPM){
         u.tr=0.05;
         const td=PU[u.type]||PU.heal;
         G.parts.push({k:PK_GLOW,x:u.x,y:u.y,vx:rand(-18,18),vy:rand(-18,18),
@@ -4424,15 +5079,31 @@ function drawBulletVis(b,a,v){
 function fireGun(){
   const n=P.barrels;
   const vis=bulletVis(); // 本轮齐射的弹体视觉（随构筑实时变化）
+  const sp=P.split>0?1:0;   // 裂变标记：每颗子弹只裂一次（4.4）
+  const life=P.rangeLife*P.rangeMul;
   for(let i=0;i<n;i++){
     const off=(i-(n-1)/2)*(n>1?(P.tight?0.08:0.11):0);
     const a=P.angle+off+rand(-0.016,0.016);
     G.bullets.push({
       x:P.x+Math.cos(P.angle)*18,y:P.y+Math.sin(P.angle)*18,
       vx:Math.cos(a)*P.bspd+P.vx*0.3,vy:Math.sin(a)*P.bspd+P.vy*0.3,
-      r:3,dmg:P.dmg*P.heatMul,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      r:P.bulletR,dmg:P.dmg*P.heatMul,life:life,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
       splashR:P.splashR,splashDmg:P.splashDmg,crit:P.crit,critMul:P.critMul,
-      hit:new Set(),src:'p',vis,
+      hit:new Set(),src:'p',sp,vis,
+    });
+  }
+  /* 散射（4.4）：额外扇形弹 —— 数量换威力，扇形张角随等级收束（满级最窄，弹幕成墙）。
+     弹丸半径略小（0.85×）以区别于主弹，制造「主弹 + 散弹」两种弹幕的层次。 */
+  for(let k=0;k<P.spray;k++){
+    const t=P.spray>1?(k/(P.spray-1)-0.5):0;
+    const a=P.angle+t*P.sprayArc+rand(-0.02,0.02);
+    G.bullets.push({
+      x:P.x+Math.cos(P.angle)*16,y:P.y+Math.sin(P.angle)*16,
+      vx:Math.cos(a)*P.bspd*0.95+P.vx*0.3,vy:Math.sin(a)*P.bspd*0.95+P.vy*0.3,
+      r:P.bulletR*0.85,dmg:P.dmg*P.heatMul*P.sprayMul,life:life,
+      pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      splashR:P.splashR,splashDmg:P.splashDmg*P.sprayMul,crit:P.crit,critMul:P.critMul,
+      hit:new Set(),src:'p',sp,vis,
     });
   }
   for(let k=0;k<P.backshot;k++){
@@ -4440,9 +5111,9 @@ function fireGun(){
     G.bullets.push({
       x:P.x-Math.cos(P.angle)*14,y:P.y-Math.sin(P.angle)*14,
       vx:Math.cos(a)*P.bspd*0.9+P.vx*0.3,vy:Math.sin(a)*P.bspd*0.9+P.vy*0.3,
-      r:2.6,dmg:P.dmg*P.backPow*P.heatMul,life:P.rangeLife,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
+      r:P.bulletR*0.87,dmg:P.dmg*P.backPow*P.heatMul,life:life,pierce:P.pierce,ric:P.ricochet,homing:P.homing,
       splashR:P.splashR,splashDmg:P.splashDmg,crit:P.crit,critMul:P.critMul,
-      hit:new Set(),src:'p',back:P.backMax||undefined,vis,
+      hit:new Set(),src:'p',back:P.backMax||undefined,sp,vis,
     });
   }
   burst(P.x+Math.cos(P.angle)*20,P.y+Math.sin(P.angle)*20,2,120,0.15,P.loadMax?'236,208,138':vis.c,1.6);
@@ -4515,6 +5186,7 @@ function teslaZap(){
     }
     if(!best)break;
     targets.push(best);
+    if(G.bolts.length>=QBM)G.bolts.shift();   // 5.4 电弧原先无上限，链式闪电一次能推十几条
     G.bolts.push({x1:from.x,y1:from.y,x2:best.x,y2:best.y,t:0.22,max:0.22,
       gold:P.teslaMax||undefined,jit:boltJit()});
     if(best.size!==undefined)hurtAst(best,dmg,best.x,best.y,false);
@@ -4601,7 +5273,7 @@ function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作�
     const f=i/3;
     G.ghosts.push({x:ox+dx*f,y:oy+dy*f,ang:P.angle,t:0,max:0.34+0.1*f,gold:gold});
   }
-  if(G.ghosts.length>8)G.ghosts.splice(0,G.ghosts.length-8); // 连折时裁掉最旧的，硬上限 8
+  if(G.ghosts.length>QGM)G.ghosts.splice(0,G.ghosts.length-QGM); // 连折时裁掉最旧的，上限随档位
   if(G.syn.blink_ram){ // 折跃冲撞：相位状态下的你是一发炮弹
     const rd=ramDmg();
     for(const e of G.enemies.slice()){
@@ -4616,6 +5288,7 @@ function tryBlink(dmg,sx,sy){ // 受击瞬间折跃：成功则该次伤害作�
   }
   if(G.syn.blink_arc){ // 闪现电弧：沿折跃轨迹放电
     const dm=P.dmg*(1.0+0.5*P.tesla);
+    if(G.bolts.length>=QBM)G.bolts.shift();
     G.bolts.push({x1:ox,y1:oy,x2:nx,y2:ny,t:0.25,max:0.25,
       gold:P.teslaMax||undefined,jit:boltJit()});
     for(const e of G.enemies.slice()){
@@ -4678,10 +5351,16 @@ function detonateMine(m,k){
 function updatePlayer(dt){
   const hullId=(G.lastHull&&G.lastHull.id)||'peregrine';
   const tl=hullTail(hullId); // 船尾到中点的距离：尾流/喷焰从此处起喷
-  const kd=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
-  if(joy.on&&(joy.dx||joy.dy)){
+  let joyBrake=0;            // 5.5 触屏下拉刹车：本帧有效，帧末清零
+  /* 5.1 走 KEYMAP；5.2 叠加左摇杆的模拟量 —— 手柄转向必须按比例，不能退化成推到底 */
+  const kd=clamp(((keyDown('right')?1:0)-(keyDown('left')?1:0))+PAD.ax,-1,1);
+  joyRead();
+  if(joy.mag>0){
+    /* 杆指向哪就朝哪转，但**转多快取决于推多远**：满舵 ≈ 旧手感，
+       轻推只有 0.45 倍 → 微调精细。这就是「模拟量」与「开关」的区别。 */
     const want=Math.atan2(joy.dy,joy.dx);
-    P.angle+=clamp(angDiff(P.angle,want),-10*dt,10*dt);
+    const rate=P.turn*(JOY_TURN_MIN+(JOY_TURN_MAX-JOY_TURN_MIN)*joy.mag);
+    P.angle+=clamp(angDiff(P.angle,want),-rate*dt,rate*dt);
   }else if(aimMode==='key'){
     // 键盘转向优先：仅当按住 A/D（含方向键）时才旋转，未按键则保持当前朝向，绝不自行漂移
     if(kd)P.angle+=kd*P.turn*dt;
@@ -4693,8 +5372,10 @@ function updatePlayer(dt){
   }
 
   let thrust=0;
-  if(keys.KeyW||keys.ArrowUp)thrust=1;
-  if(joy.on&&Math.hypot(joy.dx,joy.dy)>10)thrust=1;
+  if(keyDown('thrust')||PAD.ay<-0.35)thrust=1;   // 5.1 KEYMAP / 5.2 摇杆上推 = 推进
+  /* 5.5 触屏：下拉到 JOY_BRK 以下是**刹车**而不是「也在推进」——
+     改前 up 和 down 都 thrust=1，手机上根本没有减速手段。 */
+  if(joy.mag>0){ if(joy.ny>JOY_BRK)joyBrake=1; else if(joy.mag>JOY_THR)thrust=1; }
   P.thrusting=thrust>0;
   {
     const tint=HULL_TINT[hullId]||HULL_TINT.peregrine;
@@ -4714,9 +5395,10 @@ function updatePlayer(dt){
     P.vx+=Math.cos(P.angle)*acc*dt;
     P.vy+=Math.sin(P.angle)*acc*dt;
   }
-  if(keys.KeyS||keys.ArrowDown){
+  if(keyDown('brake')||PAD.brake||PAD.ay>0.5||joyBrake){   // 5.1 / 5.2 / 5.5 触屏下拉
     const k=Math.exp(-2.6*dt);P.vx*=k;P.vy*=k;
   }
+  joyBrake=0;
   /* Phase 4.2 坍缩之核：引力 / 斥力（终速 ≈ g/2.1，与阻尼同帧生效） */
   G.grav=null;
   for(const a of G.asteroids){
@@ -4794,7 +5476,7 @@ function updatePlayer(dt){
     }
   }
   P.blinkT=Math.max(0,P.blinkT-dt);
-  const wantFire=mouse.down||keys.Space||fireOn;
+  const wantFire=mouse.down||keyDown('fire')||fireOn||PAD.fire;   // 5.1 KEYMAP / 5.2 A·RT·RB
   /* 熔炉过热（Phase 4.3）：开火蓄热 / 停火散热 / 见顶锁膛 —— heatMul 每帧刷新，
      供 fireGun 直接乘进弹丸伤害（非熔炉船体 heatOn=false，heatMul 恒为 1） */
   let canFire=wantFire;
@@ -5601,6 +6283,25 @@ function updateBullets(dt){
         /* 暴击标识由 dmgText 承担，见上 */
         if(b.pierce>0)b.pierce--;
         else dead=true;
+        /* 裂变（4.4）：弹丸**首次命中**即炸出一圈弹片 —— 每颗子弹只裂一次（sp 用完置 0），
+           所以高穿透构筑是「一路穿过去，沿途各炸一次」，而不是越打越多。
+           ⚠️ 弹片 sp 恒为 0，不做二次分裂：8 枚弹片再各裂 8 枚，高射速下弹幕数会炸到数百。
+           ⚠️ 这里在倒序遍历 G.bullets 的循环里 push —— 新弹片落在数组末尾（下标 ≥ 初始长度），
+           本帧不会被再遍历一次，安全。 */
+        if(b.sp>0&&P.split>0){
+          b.sp=0;
+          const frags=P.split,dmgF=b.dmg*P.splitMul,spd=P.bspd*0.75;
+          for(let f=0;f<frags;f++){
+            const a=(f/frags)*TAU+rand(-0.18,0.18);
+            G.bullets.push({x:b.x,y:b.y,
+              vx:Math.cos(a)*spd+P.vx*0.2,vy:Math.sin(a)*spd+P.vy*0.2,
+              r:Math.max(1.6,b.r*0.7),dmg:dmgF,life:0.5*P.rangeMul,
+              pierce:0,ric:0,homing:b.homing,
+              splashR:b.splashR*0.6,splashDmg:b.splashDmg*P.splitMul,
+              crit:b.crit,critMul:b.critMul,hit:new Set(),src:'p',sp:0,shard:1,vis:b.vis});
+          }
+          burst(b.x,b.y,3,110,0.2,P.splitMax?'236,208,138':'255,220,150',1.4);
+        }
       }
     }
     if(dead)swapDel(G.bullets,i);
@@ -5817,6 +6518,7 @@ function renderCards(){
   });
   el.btnReroll.disabled=!!G.rerolled;
   el.btnReroll.textContent=G.rerolled?T('已刷新','REROLLED'):T('↻ 刷新选项 · R','↻ REROLL · R');
+  padSel=0;padSelPaint(el.cardrow);   // 5.2：每次重绘把手柄选择复位到第一张
 }
 /* 刷新本次升级的三张卡（每次升级限一次） */
 function rerollCards(){
@@ -5903,6 +6605,7 @@ function startGame(hull){
   G.dailyMode=false;G.noRepair=false;
   G.dmgOut=0;G.dmgIn=0;G.peakThreat=0; // 本局关键统计归零
   G.noMod=true;G.flawless=true; // 技巧支水位：装配模块 / 受任何伤害即作废
+  G.bossBag=null;G.champBag=null;G.bossLast=null;G.champLast=null; // 4.5 轮换袋
   G.rarPity=0; // 稀有度保底计数：新一局清零
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
@@ -5914,7 +6617,7 @@ function startGame(hull){
   el.menu.hidden=true;el.over.hidden=true;el.pause.hidden=true;el.cards.hidden=true;
   el.hulls.hidden=true;el.victory.hidden=true;
   el.hud.hidden=false;
-  el.firebtn.hidden=!isTouch;
+  el.firebtn.hidden=!isTouch;orientHint();
   buildWave(1);
   guideStart(); // 首局分步引导（全部步骤已达成时自动沉默）
   sfx.ui();
@@ -6274,11 +6977,16 @@ function setStat(id,v){const e=$(id);if(e)e.textContent=v;}
    ③ 数据源复用 `STAT_KEY` 累计统计，**不需要新的存储键**；
    ④ 视觉只吃 Phase 0 的 token（钢蓝=结构 · 铅白=读数 · 黄铜=已达成）。
    坐标单位是画布像素（与 CSS 无关），平移/缩放在整层上做 transform。 */
-/* 节点坐标写死在数据里 —— 版式是设计出来的，不是算出来的。
-   布局：左起「初次漂移」为总根，向右分三支（击坠 / 波次 / 时长），
-   汇总节点在最右上，用 dependsOn 聚合而不是直接拉线（避免交叉线糊成一团）。
-   画布 560×340，节点 150×52；列间距 170（150 节点 + 20 空隙），行间距 88。 */
-const ACH_W=1008,ACH_H=688,ACH_NODE_W=150,ACH_NODE_H=52;
+/* 4.3b 起：节点**不再**写死坐标，只声明语义槽位 br（第几支）/ dp（第几层），
+   由 treeLayout 按当前列数算出 x/y 与画布尺寸 —— 版式仍是设计出来的（支线分组与
+   层级顺序由 br/dp 定死），但「横向塞不下就压扁」这件事交给了列数与缩放，不再压字。
+   版式：根 `seed` 居中置顶 → 四条支线**自上而下**逐层展开 → 汇总 `all` 居中置底。
+   节点 150×52；列间距 168（150 + 18 空隙），行间距 104（52 + 52 空隙）。 */
+const ACH_NODE_W=150,ACH_NODE_H=52;
+/* 画布尺寸由 layoutAch 按列数算出（初值仅作首帧兜底，防止 layout 之前被读到 0） */
+let ACH_W=672,ACH_H=572,ACH_LC=4;   // ACH_LC = 最近一次布局实际用的列数（调试钩子用）
+const ACH_COL=168,ACH_ROW=104;    // 列 / 行间距：节点 150×52 → 横留 18、纵留 52
+const ACH_BRANCH=4,ACH_DEPTH=4;   // 4 条支线 · 每条 4 个节点
 /* 四条支线 + 一个汇总节点，坐标全部手写（版式是设计出来的，不是算出来的）：
      列间距 168（节点 150 + 18 空隙）· 行间距 74（节点 52 + 22 空隙）
      支线自上而下：击坠（y=12）· 波次（y=160）· 时长（y=456）· 技巧（y=604）
@@ -6287,56 +6995,56 @@ const ACH_W=1008,ACH_H=688,ACH_NODE_W=150,ACH_NODE_H=52;
    时长 10 分 → 5 小时，技巧支跨"船体 / 无模块 / 无伤"三种玩法，避免全挤在一条数值轴上。 */
 const ACH=[
   /* ---------- 根 ---------- */
-  {id:'seed',  x:8,   y:308, zh:'初次漂移', en:'First Drift',
+  {id:'seed',  anchor:'top', zh:'初次漂移', en:'First Drift',
    d:'完成一场出击', de:'Finish a run', goal:()=>1, get:s=>s.g||0},
 
   /* ---------- 击坠支 ---------- */
-  {id:'k100',  x:176, y:12,  zh:'破百', en:'Century',
+  {id:'k100',  br:0,dp:0, zh:'破百', en:'Century',
    d:'累计击坠 100', de:'100 lifetime kills', goal:()=>100, get:s=>s.k||0, req:'seed'},
-  {id:'k500',  x:344, y:12,  zh:'猎手', en:'Hunter',
+  {id:'k500',  br:0,dp:1, zh:'猎手', en:'Hunter',
    d:'累计击坠 500', de:'500 lifetime kills', goal:()=>500, get:s=>s.k||0, req:'k100'},
-  {id:'k1500', x:512, y:12,  zh:'蜂群之主', en:'Swarm Lord',
+  {id:'k1500', br:0,dp:2, zh:'蜂群之主', en:'Swarm Lord',
    d:'累计击坠 1500', de:'1500 lifetime kills', goal:()=>SWARM_KILLS, get:s=>s.k||0, req:'k500'},
-  {id:'k4000', x:680, y:12,  zh:'星域清道夫', en:'Sector Sweeper',
+  {id:'k4000', br:0,dp:3, zh:'星域清道夫', en:'Sector Sweeper',
    d:'累计击坠 4000', de:'4000 lifetime kills', goal:()=>4000, get:s=>s.k||0, req:'k1500'},
 
   /* ---------- 波次支 ---------- */
-  {id:'w5',    x:176, y:160, zh:'离开港湾', en:'Beyond the Dock',
+  {id:'w5',    br:1,dp:0, zh:'离开港湾', en:'Beyond the Dock',
    d:'挺进第 5 波', de:'Reach wave 5', goal:()=>5, get:s=>s.w||0, req:'seed'},
-  {id:'w15',   x:344, y:160, zh:'穿越中子星云', en:'Into the Nebula',
+  {id:'w15',   br:1,dp:1, zh:'穿越中子星云', en:'Into the Nebula',
    d:'挺进第 15 波', de:'Reach wave 15', goal:()=>15, get:s=>s.w||0, req:'w5'},
-  {id:'w30',   x:512, y:160, zh:'肃清星域', en:'Sector Cleared',
+  {id:'w30',   br:1,dp:2, zh:'肃清星域', en:'Sector Cleared',
    d:'通关第 30 波', de:'Clear wave 30', goal:()=>WIN_WAVE, get:s=>s.w||0, req:'w15'},
-  {id:'wend',  x:680, y:160, zh:'星域之外', en:'Past the Sector',
+  {id:'wend',  br:1,dp:3, zh:'星域之外', en:'Past the Sector',
    d:'无尽漂移挺进第 35 波', de:'Reach wave 35 in endless', goal:()=>WIN_WAVE+5,
    get:s=>s.w||0, req:'w30'},
 
   /* ---------- 时长支 ---------- */
-  {id:'t600',  x:176, y:456, zh:'十分钟', en:'Ten Minutes',
+  {id:'t600',  br:2,dp:0, zh:'十分钟', en:'Ten Minutes',
    d:'累计漂移 10 分钟', de:'10 minutes of lifetime drift', goal:()=>600, get:s=>s.t||0, req:'seed'},
-  {id:'t3600', x:344, y:456, zh:'万秒漂移', en:'Long Drift',
+  {id:'t3600', br:2,dp:1, zh:'万秒漂移', en:'Long Drift',
    d:'累计漂移 1 小时', de:'1 hour of lifetime drift', goal:()=>3600, get:s=>s.t||0, req:'t600'},
-  {id:'t7200', x:512, y:456, zh:'双时之航', en:'Two Hour Voyage',
+  {id:'t7200', br:2,dp:2, zh:'双时之航', en:'Two Hour Voyage',
    d:'累计漂移 2 小时', de:'2 hours of lifetime drift', goal:()=>7200, get:s=>s.t||0, req:'t3600'},
-  {id:'t5h',   x:680, y:456, zh:'恒星长眠', en:'Stellar Slumber',
+  {id:'t5h',   br:2,dp:3, zh:'恒星长眠', en:'Stellar Slumber',
    d:'累计漂移 5 小时', de:'5 hours of lifetime drift', goal:()=>18000, get:s=>s.t||0, req:'t7200'},
 
   /* ---------- 技巧支（跨玩法，不靠堆数值） ---------- */
-  {id:'hull3', x:176, y:604, zh:'三舰齐发', en:'Three Hulls',
+  {id:'hull3', br:3,dp:0, zh:'三舰齐发', en:'Three Hulls',
    d:'用 3 种不同船体各完成一次出击', de:'Fly 3 different hulls', goal:()=>3,
    get:s=>s.hulls?s.hulls.length:0, req:'seed'},
-  {id:'hull6', x:344, y:604, zh:'全舰制霸', en:'Full Roster',
+  {id:'hull6', br:3,dp:1, zh:'全舰制霸', en:'Full Roster',
    d:'用全部 7 种船体各完成一次出击', de:'Fly all 7 hulls', goal:()=>7,
    get:s=>s.hulls?s.hulls.length:0, req:'hull3'},
-  {id:'nomod', x:512, y:604, zh:'裸装穿越', en:'Bare Hull',
+  {id:'nomod', br:3,dp:2, zh:'裸装穿越', en:'Bare Hull',
    d:'不装配任何模块挺进第 3 波', de:'Reach wave 3 with no modules',
    goal:()=>3, get:s=>s.nomod||0, req:'seed'},
-  {id:'flaw',  x:680, y:604, zh:'毫发无伤', en:'Untouched',
+  {id:'flaw',  br:3,dp:3, zh:'毫发无伤', en:'Untouched',
    d:'全程未受伤害挺进第 10 波', de:'Reach wave 10 without taking damage',
    goal:()=>10, get:s=>s.flaw||0, req:'w5'},
 
   /* ---------- 汇总 ---------- */
-  {id:'all',   x:848, y:308, zh:'奇点观测者', en:'Singularity Watcher',
+  {id:'all',   anchor:'bottom', zh:'奇点观测者', en:'Singularity Watcher',
    d:'集齐其余全部成就', de:'All other achievements',
    dependsOn:['k4000','wend','t5h','hull6','nomod','flaw'], goal:()=>0, get:()=>0},
 ];
@@ -6391,9 +7099,89 @@ function achProgress(a,s){
 }
 /* 一次性算出全树状态表 —— drawAch 与测试钩子共用（避免两处逻辑漂移） */
 function achProgressAll(s){const st={};for(const a of ACH)st[a.id]=achProgress(a,s);return st;}
+/* ---------------- 星图版式：根在顶 · 支线成列 · 深度向下 ----------------
+   ⚠️ x/y 不再手写：支线横向排开（br）、支线内部自上而下串联（dp）。
+      字段名刻意避开 b / d —— **节点本来就有一个 `d` 表示中文描述**（`de` 是英文），
+      用 d 当深度会被后面那条 `d:'…'` 覆盖成字符串，y 直接算成 NaN、所有节点叠在左上角。
+      根节点 anchor:'top' 居中置顶、汇总节点 anchor:'bottom' 居中置底。
+      列数随视窗在 4 / 2 之间切换 —— 窄屏收成 2 列后才不会把文字压到 0.5 倍以下，
+      纵向多出来的高度交给滚动（纵向排布本来就适合往下读）。
+      ⚠️ 每次 draw / fit 都要先跑 layout：列数变了但没重排，画布尺寸与节点位置会不一致。 */
+function achCols(){const w=el.lbTree?el.lbTree.clientWidth:0;return w>=560?4:2;}
+function metaCols(){const w=el.mTree?el.mTree.clientWidth:0;return w>=560?4:2;}
+function treeLayout(list,cols,branch,depth,layout){
+  const c=Math.max(1,Math.min(branch,cols));
+  const blocks=Math.ceil(branch/c),headH=ACH_ROW;
+  const bodyW=c*ACH_COL-(ACH_COL-ACH_NODE_W);
+  const slots=[];
+  for(const a of list){
+    if(a.anchor==='top'){a.x=Math.round((bodyW-ACH_NODE_W)/2);a.y=0;continue;}
+    if(a.anchor==='bottom'){a.x=Math.round((bodyW-ACH_NODE_W)/2);
+      a.y=headH+blocks*depth*ACH_ROW;continue;}
+    a.x=(a.br%c)*ACH_COL;
+    a.y=headH+((Math.floor(a.br/c)*depth)+a.dp)*ACH_ROW;
+    slots.push(a);
+  }
+  const w=bodyW;
+  const h=layout==='ach'
+    ? headH+blocks*depth*ACH_ROW+ACH_NODE_H      // 有置底汇总节点
+    : headH+(blocks*depth-1)*ACH_ROW+ACH_NODE_H; // 末行即底
+  return {cols:c,w,h};
+}
+function layoutAch(cols){const g=treeLayout(ACH,cols||achCols(),ACH_BRANCH,ACH_DEPTH,'ach');
+  ACH_W=g.w;ACH_H=g.h;ACH_LC=g.cols;return g;}
+function layoutMeta(cols){const g=treeLayout(META,cols||metaCols(),META_BRANCH,META_DEPTH,'meta');
+  META_W=g.w;META_H=g.h;META_LC=g.cols;return g;}
+/* 首帧兜底：任何钩子在 layout 之前读 x/y 也要有值（NOVA.logbook.achNodes 会被断言先调）。
+   ⚠️ 只能在这里跑 layoutAch —— META 是后面才声明的 const，此处调 layoutMeta 会撞 TDZ
+   （整个 IIFE 直接抛错、window.NOVA 都没挂上，表现为页面白屏）。META 的兜底放在数组末尾。 */
+layoutAch(4);
+
+/* ---------------- 星图视窗：平移 + 缩放（两张树共用一套） ----------------
+   ⚠️ 三条缩放入口（滚轮 / 双指 / 按钮）必须都走 zoomAt —— 它负责把「指针下那一点」
+      钉在原位；各自直接改 scale 会让内容往左上角跑，表现为"一放大就找不到刚才看的节点"。 */
+const ZOOM_MIN=0.4,ZOOM_MAX=2.5,ZOOM_STEP=1.18;
+function tfOf(w){return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
+function applyTf(w){if(!w)return;const t=tfOf(w);
+  w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+/* 平移夹取：内容比视窗大 → 夹在「恰好贴边」内；比视窗小 → 居中。
+   不夹的话一拖就把树推出视窗，而且再也拖不回来（没有参照物）。 */
+function clampPan(w){
+  const box=w.parentElement;if(!box)return;
+  const bw=box.clientWidth,bh=box.clientHeight;
+  const t=tfOf(w),cw=+(w.dataset.cw||0),ch=+(w.dataset.ch||0);
+  if(!cw||!ch)return;
+  const cwS=cw*t.s,chS=ch*t.s;
+  w.dataset.tx=Math.round(cwS>bw?clamp(t.x,bw-cwS,0):(bw-cwS)/2);
+  w.dataset.ty=Math.round(chS>bh?clamp(t.y,bh-chS,0):(bh-chS)/2);
+}
+function zoomAt(w,next,cx,cy){
+  const box=w.parentElement;if(!box)return;
+  const t=tfOf(w),s=clamp(next,ZOOM_MIN,ZOOM_MAX);
+  if(Math.abs(s-t.s)<1e-4)return;
+  const r=box.getBoundingClientRect();
+  const px=(cx==null?r.left+r.width/2:cx)-r.left;
+  const py=(cy==null?r.top+r.height/2:cy)-r.top;
+  const gx=(px-t.x)/t.s,gy=(py-t.y)/t.s;   // 锚点在内容坐标系里的位置
+  w.dataset.tx=px-gx*s;w.dataset.ty=py-gy*s;w.dataset.sc=s.toFixed(4);
+  clampPan(w);applyTf(w);
+}
+/* 进入时的默认视点：按**宽度**铺满即可 —— 纵向放不下就滚动，
+   不再为了「塞进 300px 高的小框」把整棵树压到 0.45 倍（那是文字不可读的根因）。 */
+function fitTree(w,cw,ch){
+  const box=w.parentElement;if(!box)return null;
+  const bw=box.clientWidth,bh=box.clientHeight;
+  if(!bw||!bh||!cw||!ch)return null;
+  const s=clamp(bw/cw,ZOOM_MIN,1);
+  w.dataset.cw=Math.round(cw);w.dataset.ch=Math.round(ch);
+  w.dataset.sc=s.toFixed(4);w.dataset.tx=0;w.dataset.ty=0;
+  clampPan(w);applyTf(w);
+  return {scale:+s.toFixed(4),content:Math.round(cw)+'x'+Math.round(ch),view:bw+'x'+bh};
+}
 function drawAch(s){
   const nodes=el.lbTreeNodes,links=el.lbTreeLinks;
   if(!nodes||!links)return null;
+  layoutAch();nodes.style.width=ACH_W+'px';nodes.style.height=ACH_H+'px';
   const st=achProgressAll(s);
   for(const a of ACH)if(st[a.id].done)achMark(a.id);
   const doneN=ACH.filter(a=>st[a.id].done).length;
@@ -6401,6 +7189,7 @@ function drawAch(s){
   // 不要用视窗尺寸，否则节点与连线会错位（视窗只是画布的一个可平移窗口）。
   links.setAttribute('viewBox','0 0 '+ACH_W+' '+ACH_H);
   links.setAttribute('width',ACH_W);links.setAttribute('height',ACH_H);
+  const cx=n=>n.x+ACH_NODE_W/2; // 纵向版式：连线走「父底边中点 → 子顶边中点」
   // 两种边：req = 前置依赖（实线语义）；dependsOn = 汇总聚合（点线，表示"集齐"而非"解锁"）。
   const edges=[];
   for(const a of ACH){
@@ -6410,7 +7199,7 @@ function drawAch(s){
   links.innerHTML=edges.map(e=>{
     const p=ACH.find(k=>k.id===e.from),a=ACH.find(k=>k.id===e.to);
     if(!p||!a)return '';
-    const x1=p.x+ACH_NODE_W,y1=p.y+ACH_NODE_H/2,x2=a.x,y2=a.y+ACH_NODE_H/2;
+    const x1=cx(p),y1=p.y+ACH_NODE_H,x2=cx(a),y2=a.y;
     const on=st[e.from].done&&st[e.to].done;
     return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
       stroke="${on?RGBA('amber',.5):RGBA('line',st[e.from].done?.38:.2)}"
@@ -6435,82 +7224,71 @@ function drawAch(s){
   }).join('');
   return {total:ACH.length,done:doneN};
 }
-/* 首次打开时把整张星图缩放进视窗 —— 视窗（桌面约 425px）小于画布（560px），
-   不缩放的话最右一列必然在框外，玩家看到的是"被裁掉一半的树"。
-   缩放只在进入时算一次（依视窗尺寸），之后由玩家拖拽/平移自由浏览。 */
 function fitAch(){
-  const tree=el.lbTree,wrap=el.lbTreeWrap;
-  if(!tree||!wrap)return null;
-  const bw=tree.clientWidth,bh=tree.clientHeight;
-  if(!bw||!bh)return null;
-  // 内容包围盒：节点右下缘的最大值，留 10px 余量
-  let maxX=0,maxY=0;
-  for(const a of ACH){maxX=Math.max(maxX,a.x+ACH_NODE_W);maxY=Math.max(maxY,a.y+ACH_NODE_H);}
-  maxX+=10;maxY+=10;
-  // 视窗比画布小得多（桌面约 425×300 vs 画布 1008×688），必须缩放到能看全整棵树。
-  // 但缩得太小节点文字就不可读了 —— 下限 0.34 保证 b/i 两行小字仍能辨认，
-  // 超出的部分交给拖拽浏览。
-  const s=Math.max(0.34,Math.min(1,bw/maxX,bh/maxY));
-  wrap.dataset.sc=s;
-  applyAchTf();
-  return {scale:+s.toFixed(4),content:maxX+'x'+maxY,view:bw+'x'+bh};
+  const g=layoutAch(),wrap=el.lbTreeWrap;
+  if(!wrap)return null;
+  const r=fitTree(wrap,ACH_W,ACH_H);
+  if(r)r.cols=g.cols;
+  return r;
 }
 /* 平移与缩放是两个独立的 transform 分量，不能互相覆盖：
    fitAch 写 scale、拖拽写 translate，各自只改自己那一段。
    状态存在 wrap 的 dataset 上（避免反复解析 transform 字符串）。 */
-function achTf(){const w=el.lbTreeWrap;return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
-function applyAchTf(){const w=el.lbTreeWrap;if(!w)return;const t=achTf();
-  w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+function achTf(){return tfOf(el.lbTreeWrap);}
+function applyAchTf(){const w=el.lbTreeWrap;if(!w)return;clampPan(w);applyTf(w);}
 /* ============================== 局外解锁树（Phase 3.5） ==============================
    星尘（Stardust）= 本作唯一的局外货币，由每局结算按「分数 / 击坠」产出，
    消耗在解锁树上换取**永久起始增益**。设计意图：连败也有进展感 ——
    即使一局打得很糟也能攒到几颗星尘，长期玩下去总能点开下一个节点。
 
-   与成就树（ACH）同构：坐标手写 / req 前置 / 三态视觉 / SVG 连线 + 绝对定位节点。
+   与成就树（ACH）同构：br/dp 语义槽位（4.3b 起不再手写坐标）/ req 前置 / 三态视觉 /
+   SVG 连线 + 绝对定位节点，且共用同一套平移缩放引擎。
    区别：成就树是「达成 → 记录」，解锁树是「花星尘 → 永久生效」。
    存储单键 nova-meta = {dust:N, unlocked:[id,...]}；旧档无此键走默认值兜底。 */
 const META_KEY='nova-meta';
-const META_W=672,META_H=642;      // 画布：节点 150×52（与成就树同规格），列间距 168
+let META_W=672,META_H=364,META_LC=4; // 画布尺寸由 layoutMeta 按列数算出；META_LC = 最近一次实际列数
+const META_BRANCH=4,META_DEPTH=3; // 4 条支线 · 每条 3 个节点（与成就树共用 ACH_COL/ACH_ROW）
 const META=[
   /* 根：免费且默认已解锁（局外成长的起点） */
-  {id:'mroot',x:8,y:302,zh:'星尘核心',en:'DUST CORE',
+  {id:'mroot',anchor:'top', zh:'星尘核心',en:'DUST CORE',
    d:'局外成长的起点',de:'Where meta progress begins',cost:0,req:null,
    apply:()=>{}},
 
   /* ---------- 生存支 y=20 —— 更耐打 ---------- */
-  {id:'hp1',x:176,y:20,zh:'装甲强化 I',en:'PLATING I',d:'起始结构 +15',de:'+15 starting hull',
+  {id:'hp1',br:0,dp:0, zh:'装甲强化 I',en:'PLATING I',d:'起始结构 +15',de:'+15 starting hull',
    cost:10,req:'mroot',apply:()=>{P.maxHp+=15;P.hp+=15;}},
-  {id:'hp2',x:344,y:20,zh:'装甲强化 II',en:'PLATING II',d:'起始结构再 +25',de:'+25 more hull',
+  {id:'hp2',br:0,dp:1, zh:'装甲强化 II',en:'PLATING II',d:'起始结构再 +25',de:'+25 more hull',
    cost:22,req:'hp1',apply:()=>{P.maxHp+=25;P.hp+=25;}},
-  {id:'sh1',x:512,y:20,zh:'预备护盾',en:'READY SHIELD',d:'起始护盾 +20 并充满',de:'+20 starting shield',
+  {id:'sh1',br:0,dp:2, zh:'预备护盾',en:'READY SHIELD',d:'起始护盾 +20 并充满',de:'+20 starting shield',
    cost:40,req:'hp2',apply:()=>{P.shieldMax+=20;P.shield+=20;}},
 
   /* ---------- 火力支 y=180 —— 更疼 ---------- */
-  {id:'dmg1',x:176,y:180,zh:'弹头校准',en:'WARHEAD CAL',d:'伤害 +8%',de:'+8% damage',
+  {id:'dmg1',br:1,dp:0, zh:'弹头校准',en:'WARHEAD CAL',d:'伤害 +8%',de:'+8% damage',
    cost:12,req:'mroot',apply:()=>{P.dmg*=1.08;}},
-  {id:'rate1',x:344,y:180,zh:'弹链润滑',en:'BELT LUBE',d:'射速 +6%',de:'+6% fire rate',
+  {id:'rate1',br:1,dp:1, zh:'弹链润滑',en:'BELT LUBE',d:'射速 +6%',de:'+6% fire rate',
    cost:24,req:'dmg1',apply:()=>{P.fireRate*=1.06;}},
-  {id:'crit1',x:512,y:180,zh:'瞄准辅助',en:'AIM ASSIST',d:'暴击率 +5%',de:'+5% crit chance',
+  {id:'crit1',br:1,dp:2, zh:'瞄准辅助',en:'AIM ASSIST',d:'暴击率 +5%',de:'+5% crit chance',
    cost:45,req:'rate1',apply:()=>{P.crit+=0.05;}},
 
   /* ---------- 机动支 y=420 —— 更灵活 ---------- */
-  {id:'spd1',x:176,y:420,zh:'推进调校',en:'THRUSTER TUNE',d:'极速 +6%',de:'+6% top speed',
+  {id:'spd1',br:2,dp:0, zh:'推进调校',en:'THRUSTER TUNE',d:'极速 +6%',de:'+6% top speed',
    cost:10,req:'mroot',apply:()=>{P.maxSpeed*=1.06;}},
-  {id:'mag1',x:344,y:420,zh:'磁场扩展',en:'MAGNET ARRAY',d:'拾取范围 +30%',de:'+30% pickup range',
+  {id:'mag1',br:2,dp:1, zh:'磁场扩展',en:'MAGNET ARRAY',d:'拾取范围 +30%',de:'+30% pickup range',
    cost:20,req:'spd1',apply:()=>{P.magnet*=1.3;}},
-  {id:'turn1',x:512,y:420,zh:'陀螺稳定',en:'GYRO STABILIZER',d:'转向 +10%',de:'+10% turn rate',
+  {id:'turn1',br:2,dp:2, zh:'陀螺稳定',en:'GYRO STABILIZER',d:'转向 +10%',de:'+10% turn rate',
    cost:38,req:'mag1',apply:()=>{P.turn*=1.1;}},
 
   /* ---------- 战术支 y=580 —— 更好的开局 ---------- */
-  {id:'lv1',x:176,y:580,zh:'开局预热',en:'PRE-HEATED',d:'起始等级 2',de:'Start at level 2',
+  {id:'lv1',br:3,dp:0, zh:'开局预热',en:'PRE-HEATED',d:'起始等级 2',de:'Start at level 2',
    cost:18,req:'mroot',apply:()=>{P.level=2;}},
-  {id:'xp1',x:344,y:580,zh:'经验亲和',en:'XP AFFINITY',d:'升级所需经验 -10%',de:'-10% XP to level',
+  {id:'xp1',br:3,dp:1, zh:'经验亲和',en:'XP AFFINITY',d:'升级所需经验 -10%',de:'-10% XP to level',
    cost:32,req:'lv1',apply:()=>{P.xpNext*=0.9;}},
   /* 只给效果、不登记进 G.build：避免占用 ABILITY_CAP 的 6 个能力位、
      也不会误伤「裸装穿越」成就（G.noMod）的判定。 */
-  {id:'premod',x:512,y:580,zh:'预装模块',en:'PRE-FITTED',d:'开局自带穿甲弹 LV1',de:'Start with Piercing Shot LV1',
+  {id:'premod',br:3,dp:2, zh:'预装模块',en:'PRE-FITTED',d:'开局自带穿甲弹 LV1',de:'Start with Piercing Shot LV1',
    cost:55,req:'xp1',apply:()=>{MOD_BY_ID.pierce.apply(1);}},
 ];
+layoutMeta(4); // 首帧兜底（META 声明完成的第一个位置）
 function metaLoad(){
   try{const d=JSON.parse(localStorage.getItem(META_KEY)||'null');
     if(d&&typeof d==='object')return {dust:d.dust|0,unlocked:Array.isArray(d.unlocked)?d.unlocked.slice():[]};
@@ -6559,6 +7337,7 @@ function applyMetaBonuses(){
 function drawMeta(){
   const nodes=el.mTreeNodes,links=el.mTreeLinks;
   if(!nodes||!links)return null;
+  layoutMeta();nodes.style.width=META_W+'px';nodes.style.height=META_H+'px';
   const st=metaState();
   if(el.mDust)el.mDust.textContent=T('星尘 · ','STARDUST · ')+fmt(st.dust);
   // 连线层：SVG 用画布坐标系（META_W × META_H），与节点层像素 1:1（同成就树）
@@ -6570,7 +7349,7 @@ function drawMeta(){
     const p=META.find(k=>k.id===e.from),a=META.find(k=>k.id===e.to);
     if(!p||!a)return '';
     const on=st.nodes[e.from].unlocked&&st.nodes[e.to].unlocked;
-    return `<line x1="${p.x+150}" y1="${p.y+26}" x2="${a.x}" y2="${a.y+26}"
+    return `<line x1="${p.x+ACH_NODE_W/2}" y1="${p.y+ACH_NODE_H}" x2="${a.x+ACH_NODE_W/2}" y2="${a.y}"
       stroke="${on?RGBA('amber',.5):RGBA('line',st.nodes[e.from].unlocked?.42:.2)}"
       stroke-dasharray="${on?'':'3 5'}"/>`;
   }).join('');
@@ -6585,23 +7364,15 @@ function drawMeta(){
   }).join('');
   return {total:META.length,unlocked:st.unlocked.length,dust:st.dust};
 }
-/* 进入时把整棵树缩放进视窗（同 fitAch：下限 0.34 保文字可读） */
 function fitMeta(){
-  const tree=el.mTree,wrap=el.mTreeWrap;
-  if(!tree||!wrap)return null;
-  const bw=tree.clientWidth,bh=tree.clientHeight;
-  if(!bw||!bh)return null;
-  let maxX=0,maxY=0;
-  for(const m of META){maxX=Math.max(maxX,m.x+150);maxY=Math.max(maxY,m.y+52);}
-  maxX+=10;maxY+=10;
-  const s=Math.max(0.34,Math.min(1,bw/maxX,bh/maxY));
-  wrap.dataset.sc=s;
-  applyMetaTf();
-  return {scale:+s.toFixed(4),content:maxX+'x'+maxY,view:bw+'x'+bh};
+  const g=layoutMeta(),wrap=el.mTreeWrap;
+  if(!wrap)return null;
+  const r=fitTree(wrap,META_W,META_H);
+  if(r)r.cols=g.cols;
+  return r;
 }
-function metaTf(){const w=el.mTreeWrap;return {x:+(w?.dataset.tx||0),y:+(w?.dataset.ty||0),s:+(w?.dataset.sc||1)};}
-function applyMetaTf(){const w=el.mTreeWrap;if(!w)return;const t=metaTf();
-  w.style.transform=`translate(${t.x}px,${t.y}px) scale(${t.s})`;}
+function metaTf(){return tfOf(el.mTreeWrap);}
+function applyMetaTf(){const w=el.mTreeWrap;if(!w)return;clampPan(w);applyTf(w);}
 /* 点击解锁：成功扣星尘 + 重绘；失败（星尘不足 / 前置未解锁 / 已解锁）只出 UI 音 */
 if(el.mTreeNodes)el.mTreeNodes.addEventListener('click',e=>{
   const n=e.target.closest('.lbnode[data-meta]');
@@ -6615,29 +7386,80 @@ if(el.mTreeNodes)el.mTreeNodes.addEventListener('click',e=>{
       T(`消耗 ${r.cost} 星尘 —— 剩余 ${r.dust}`,`Spent ${r.cost} dust — ${r.dust} left`));
   }else sfx.ui();
 });
-/* 拖拽平移：只在 logbook 打开时激活，指针移动直接写 transform（合成器属性，不读布局） */
+/* ---------------- 拖拽 / 滚轮 / 双指 / 按钮（两张星图共用） ----------------
+   ⚠️ 缩放按钮放在 .lb-tree 内、.lb-tree-wrap 外：放进 wrap 会跟着画布一起缩放平移。
+   ⚠️ pointerdown 里必须排除 .lbnode 与 .lb-zoom —— 否则拖节点、点按钮都会被当成平移
+      （解锁树是点击解锁的，被吃掉就点不动了）。 */
+const treePtrs=new Map();
 (function(){
-  let sx=0,sy=0,ox=0,oy=0,dragging=false;
+  let dragW=null,sx=0,sy=0,ox=0,oy=0,pinch=null;
   document.addEventListener('pointerdown',e=>{
-    if(G.mode!=='logbook'||!e.target.closest('#lbTreeWrap'))return;
-    if(e.target.closest('.lbnode'))return;
-    const w=el.lbTreeWrap;if(!w)return;
-    dragging=true;sx=e.clientX;sy=e.clientY;
-    const t=achTf();ox=t.x;oy=t.y;
+    if(G.mode!=='logbook')return;
+    const w=e.target.closest('.lb-tree-wrap');
+    if(!w)return;
+    if(e.target.closest('.lbnode')||e.target.closest('.lb-zoom'))return;
+    treePtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(treePtrs.size===2){ // 双指：接管为捏合缩放，取消单指拖拽
+      dragW=null;
+      const [a,b]=[...treePtrs.values()];
+      pinch={w,d:Math.hypot(a.x-b.x,a.y-b.y),s:tfOf(w).s,cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};
+      return;
+    }
+    dragW=w;sx=e.clientX;sy=e.clientY;
+    const t=tfOf(w);ox=t.x;oy=t.y;
     w.classList.add('drag');
   });
   document.addEventListener('pointermove',e=>{
-    if(!dragging||G.mode!=='logbook')return;
-    const w=el.lbTreeWrap;if(!w)return;
-    w.dataset.tx=ox+e.clientX-sx;w.dataset.ty=oy+e.clientY-sy;
-    applyAchTf();
+    if(G.mode!=='logbook')return;
+    if(treePtrs.has(e.pointerId))treePtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&treePtrs.size>=2){
+      const [a,b]=[...treePtrs.values()];
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(pinch.d>4)zoomAt(pinch.w,pinch.s*(d/pinch.d),pinch.cx,pinch.cy);
+      return;
+    }
+    if(!dragW)return;
+    dragW.dataset.tx=ox+e.clientX-sx;dragW.dataset.ty=oy+e.clientY-sy;
+    clampPan(dragW);applyTf(dragW);
   });
-  const stop=()=>{if(!dragging)return;dragging=false;const w=el.lbTreeWrap;if(w)w.classList.remove('drag');};
+  const stop=e=>{
+    treePtrs.delete(e.pointerId);
+    if(treePtrs.size<2)pinch=null;
+    if(!treePtrs.size&&dragW){dragW.classList.remove('drag');dragW=null;}
+  };
   document.addEventListener('pointerup',stop);
   document.addEventListener('pointercancel',stop);
+  for(const box of [el.lbTree,el.mTree]){
+    if(!box)continue;
+    box.addEventListener('wheel',e=>{
+      if(G.mode!=='logbook')return;
+      const w=box.querySelector('.lb-tree-wrap');if(!w)return;
+      e.preventDefault(); // 图框内滚轮 = 缩放；页面滚动请用图框外的区域
+      zoomAt(w,tfOf(w).s*(e.deltaY<0?ZOOM_STEP:1/ZOOM_STEP),e.clientX,e.clientY);
+    },{passive:false});
+  }
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('.lb-zoom button');if(!btn)return;
+    const box=btn.closest('.lb-tree');if(!box)return;
+    const w=box.querySelector('.lb-tree-wrap');if(!w)return;
+    const k=btn.dataset.zoom,t=tfOf(w);
+    if(k==='fit'){w.dataset.tx=0;w.dataset.ty=0;box.id==='lbTree'?fitAch():fitMeta();return;}
+    zoomAt(w,t.s*(k==='+'?ZOOM_STEP:1/ZOOM_STEP));
+  });
 })();
+/* 视窗尺寸变化会改变列数（4 ↔ 2）—— 只重排不重绘的话，节点位置变了、
+   但 DOM 还停在旧坐标上，表现为"连线与节点错位"。 */
+let treeRzT=0;
+addEventListener('resize',()=>{
+  if(G.mode!=='logbook')return;
+  clearTimeout(treeRzT);
+  treeRzT=setTimeout(()=>{drawAch(loadStats());drawMeta();fitAch();fitMeta();},160);
+});
 /* 回到初始视点：平移清零、缩放回到自动适配值（重新量一次视窗） */
-function resetAchPan(){const w=el.lbTreeWrap;if(!w)return;w.dataset.tx=0;w.dataset.ty=0;fitAch();}
+function resetAchPan(){
+  for(const w of [el.lbTreeWrap,el.mTreeWrap]){if(!w)continue;w.dataset.tx=0;w.dataset.ty=0;}
+  fitAch();fitMeta();
+}
 function drawLogbook(){
   const s=loadStats();
   setStat('lbKills',fmt(s.k));
@@ -6762,12 +7584,112 @@ function syncVolUI(){
   el.bgmVal.textContent=Math.round(AU.bgmVol*100)+'%';
   el.sfxVal.textContent=Math.round(AU.sfxVol*100)+'%';
 }
+/* ---------- 5.1 键位重绑定 UI ----------
+   槽位渲染成可点按钮：点一下进入"等待按键"，下一次 keydown 由上面的捕获分支吃掉。
+   ⚠️ 每次改绑都要整表重绘 —— 撞车清空的那个动作可能在列表任意一行。 */
+function renderKeyList(){
+  if(!el.keyList)return;
+  el.keyList.innerHTML='';
+  for(const d of KEY_DEFS){
+    const row=document.createElement('div');
+    row.className='keyrow';row.dataset.act=d.id;
+    const lab=document.createElement('div');
+    lab.className='klabel';lab.textContent=LANG==='en'?d.en:d.zh;
+    row.appendChild(lab);
+    for(let s=0;s<2;s++){
+      const b=document.createElement('button');
+      b.type='button';b.className='keyslot';b.dataset.slot=s;
+      const code=keySlots(d.id)[s],lb=keyLabel(code);
+      const waiting=keyWait&&keyWait.act===d.id&&keyWait.slot===s;
+      if(waiting){b.classList.add('wait');b.textContent=T('按下按键…','PRESS A KEY');}
+      else{b.textContent=lb||T('未设置','UNASSIGNED');if(!lb)b.classList.add('none');}
+      b.addEventListener('click',()=>{
+        // 再点一次同一个槽位 = 取消等待
+        keyWait=(keyWait&&keyWait.act===d.id&&keyWait.slot===s)?null:{act:d.id,slot:s};
+        sfx.ui();renderKeyList();
+      });
+      row.appendChild(b);
+    }
+    el.keyList.appendChild(row);
+  }
+}
+/* HUD 两个小按钮的 title 提示跟着键位走，改绑后不再指向旧键 */
+function syncKeyHints(){
+  const first=id=>keyLabel(keySlots(id)[0])||keyLabel(keySlots(id)[1])||'—';
+  const m=$('btnMute'),p=$('btnPause');
+  if(m)m.title=T('音效 '+first('mute'),'Sound — '+first('mute'));
+  if(p)p.title=T('暂停 '+first('pause'),'Pause — '+first('pause'));
+}
+/* ================= 5.3 设置项：落盘与生效 =================
+   quality  manual 档会锁死 qTier —— Q_AUTO 一关，qualityWatch 不再自动降级。
+   cb       只覆盖本表涉及的 token（CB_KEYS），:root 的基础定义不改动，
+            切回「关」时逐条 removeProperty 还原，而不是硬写一遍旧值。 */
+let Q_AUTO=true;
+function applyQuality(){
+  Q_AUTO=OPTS.quality==='auto';
+  const want=OPTS.quality==='high'?0:(OPTS.quality==='mid'?1:(OPTS.quality==='low'?2:qTier));
+  if(want!==qTier){qTier=want;qbSync();resize();}   /* resize 按 qTier 决定 DPR，必须先改后重算 */
+  FX.setFluid(qTier<1&&!!OPTS.nebula);
+}
+function applyFx(){
+  FX.setFluid(qTier<1&&!!OPTS.nebula);     /* 中 / 低画质强制关星云，开关说了也不算 */
+  FX.setParts(!!OPTS.parts);
+}
+function applyMotion(){
+  const r=document.documentElement;
+  if(OPTS.motion){r.setAttribute('data-rm','');G.shake=0;cam.kick=0;}
+  else r.removeAttribute('data-rm');
+}
+function applyCb(){
+  const m=OPTS.cb,rs=document.documentElement.style;
+  for(const k of CB_KEYS){rs.removeProperty('--c-'+k);rs.removeProperty('--c-'+k+'-rgb');}
+  if(m!=='off'&&CB_PAL[m])for(const k in CB_PAL[m]){
+    rs.setProperty('--c-'+k,CB_PAL[m][k]);
+    rs.setProperty('--c-'+k+'-rgb',hexTriple(CB_PAL[m][k]));
+  }
+  PAL=readPal();   /* PAL 是画布侧的调色板快照，换 token 必须重读，否则改了个寂寞 */
+}
+function applyOpts(){applyQuality();applyFx();applyMotion();applyCb();}
+
+/* ---- 5.3 设置面板 UI ---- */
+const OPT_Q_TXT=[['自动','高','中','低'],['AUTO','HIGH','MED','LOW']];
+const OPT_CB_TXT=[['关','红绿','蓝黄'],['OFF','RED-GRN','BLU-YEL']];
+const OPT_FX=[
+  {id:'shake', zh:'屏幕震动',  en:'Screen shake'},
+  {id:'nebula',zh:'星云背景',  en:'Nebula'},
+  {id:'glow',  zh:'辉光 / 故障',en:'Glow / glitch'},
+  {id:'parts', zh:'粒子',     en:'Particles'},
+];
+function renderOpts(){
+  const L=LANG==='en'?1:0;
+  const q=$('optQuality'),cb=$('optCb'),fx=$('optFx'),rm=$('optRm');
+  if(q)q.innerHTML=OPT_Q.map((v,i)=>'<button class="segb'+(OPTS.quality===v?' on':'')
+    +'" data-opt="quality" data-val="'+v+'">'+OPT_Q_TXT[L][i]+'</button>').join('');
+  if(cb)cb.innerHTML=OPT_CB.map((v,i)=>'<button class="segb'+(OPTS.cb===v?' on':'')
+    +'" data-opt="cb" data-val="'+v+'">'+OPT_CB_TXT[L][i]+'</button>').join('');
+  if(fx)fx.innerHTML=OPT_FX.map(o=>'<button class="tog'+(OPTS[o.id]?' on':'')
+    +'" data-opt="'+o.id+'" data-tog="1"><span>'+(L?o.en:o.zh)+'</span><i></i></button>').join('');
+  if(rm){rm.classList.toggle('on',!!OPTS.motion);
+    const sp=rm.querySelector('span');if(sp)sp.textContent=L?'Reduce motion':'减弱动态';}
+}
+/* 事件委托：这些按钮会随语言整片重绘，逐个绑监听必漏 */
+function optClick(e){
+  const b=e.target&&e.target.closest?e.target.closest('[data-opt]'):null;
+  if(!b)return;
+  const k=b.dataset.opt;
+  if(b.dataset.tog)OPTS[k]=OPTS[k]?0:1;
+  else if(b.dataset.val)OPTS[k]=b.dataset.val;
+  else return;
+  applyOpts();saveOpts();renderOpts();sfx.ui();
+}
+
 function openSettings(){
   syncVolUI();
+  keyWait=null;renderKeyList();renderOpts();
   el.settings.hidden=false;
   sfx.ui();
 }
-function closeSettings(){el.settings.hidden=true;}
+function closeSettings(){el.settings.hidden=true;keyWait=null;}
 $('btnSettings').addEventListener('click',openSettings);
 $('btnSettingsP').addEventListener('click',openSettings);
 $('btnSetBack').addEventListener('click',closeSettings);
@@ -6780,6 +7702,13 @@ el.sfxVol.addEventListener('input',()=>{ // SFX 音量：实时生效并持久�
   el.sfxVal.textContent=el.sfxVol.value+'%';
 });
 el.sfxVol.addEventListener('change',()=>sfx.ui()); // 松手播放试听音
+/* 5.3 设置项：事件委托挂在面板上（按钮会随语言重绘） */
+$('settings').addEventListener('click',optClick);
+/* 5.1 恢复默认键位 */
+$('btnKeyReset').addEventListener('click',()=>{
+  resetKeys();keyWait=null;renderKeyList();syncKeyHints();sfx.ui();
+  banner('KEYMAP',T('已恢复默认键位','Controls reset to default'));
+});
 document.addEventListener('visibilitychange',()=>{BGM.onVisibility(document.hidden);if(document.hidden)flushStats();});
 // 关闭/切走页面（移动端常直接杀后台）时补提交最后一次统计，避免末段击坠与时长丢失
 window.addEventListener('pagehide',()=>{flushStats();});
@@ -6817,7 +7746,9 @@ function updateWorld(dt){
 function drawStars(){
   /* 景深视差：近景层（f 大）随镜头移动得多，远景层（f 小）动得少 ——
      用移动幅度的差异反向呈现远近感。纯位置视差，不做任何缩放/闪烁。 */
-  for(const{c,f}of STAR_TILES){
+  for(let i=0;i<STAR_TILES.length;i++){
+    if(QST[i]!=='1')continue;   // 5.4 低档抽掉中间两层视差星
+    const{c,f}=STAR_TILES[i];
     const bx=mod(-cam.x*f,1400),by=mod(-cam.y*f,900);
     ctx.globalAlpha=0.82+0.18*Math.sin(G.t*1.3+f*9);
     for(let ox=bx-1400;ox<VW;ox+=1400)
@@ -7877,10 +8808,10 @@ function draw(){
       ctx.globalCompositeOperation='source-over';
     }
   }
-  for(const b of G.ebullets){
-    ctx.fillStyle='rgba(255,120,70,0.3)';
+  for(const b of G.ebullets){ /* 5.3 走 --c-foe token：色盲模式要能改到敌我辨色 */
+    ctx.fillStyle=RGBA('foe',0.3);
     ctx.beginPath();ctx.arc(b.x,b.y,b.r+3,0,TAU);ctx.fill();
-    ctx.fillStyle='#ffb08a';
+    ctx.fillStyle=RGBA('foe',1);
     ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();
   }
   for(const b of G.bullets){
@@ -8018,7 +8949,10 @@ function draw(){
      三者都走 drawImage 自叠 + lighter；全为 0 时整段跳过，静止时零开销。
      注意必须切回 identity 变换：drawImage(cv,dx,dy) 用的是 canvas 设备像素尺寸。 */
   const slowGhost=(G.slowT>0&&!REDUCED)?0.9:0;
-  if(qTier<2&&(PP.glitch>0.02||slowGhost>0||PP.bloom>0.01)){
+  /* 5.4 后处理分级：glitch 是受击可读性的核心（撞一下知道疼），留到 2 档才关；
+     bloom 是纯装饰的全屏放大自叠（最贵的一笔），1 档就掐掉。 */
+  const ppBloomOn=qTier<1;
+  if(qTier<2&&(PP.glitch>0.02||slowGhost>0||(ppBloomOn&&PP.bloom>0.01))){
     ctx.setTransform(1,0,0,1,0,0);
     ctx.globalCompositeOperation='lighter';
     if(PP.glitch>0.02){
@@ -8032,7 +8966,7 @@ function draw(){
       ctx.drawImage(cv,o,0);
       ctx.drawImage(cv,-o,0);
     }
-    if(PP.bloom>0.01){
+    if(ppBloomOn&&PP.bloom>0.01){
       const sc=1+0.022*PP.bloom;
       ctx.globalAlpha=0.2*PP.bloom;
       ctx.drawImage(cv,(1-sc)*cv.width/2,(1-sc)*cv.height/2,cv.width*sc,cv.height*sc);
@@ -8096,7 +9030,7 @@ function updateHUD(){
     if(HUDC.hlk!==lk){HUDC.hlk=lk;el.heatrow.classList.toggle('lock',lk);}
   }
   const bName=BOSS_NAME[Wv.bossKind]||'MOTHER ROCK';
-  s='WAVE '+Wv.n;
+  s='WAVE '+Wv.n+tierTxt(Wv.tier);   // 4.5：无尽强化层读数（0 层无后缀）
   if(HUDC.wv!==s){HUDC.wv=s;el.wave.textContent=s;}
   // 剩余目标数：boss 波让位给巨像名，其余时候实时反映本波还剩多少要清
   if(Wv.boss){
@@ -8238,23 +9172,26 @@ let last=performance.now();
 /* adaptive quality: sustained <~45fps sheds the nebula layer, then the extra canvas resolution */
 let qWin=0,qSum=0,qStrike=0;
 function qualityWatch(dt){
-  if(qTier>=2||G.mode==='pause'||G.mode==='levelup')return;
+  if(!Q_AUTO||qTier>=2||G.mode==='pause'||G.mode==='levelup')return;
   qSum+=dt;qWin++;
   if(qSum<1.5)return;
   const avg=qSum/qWin;qSum=0;qWin=0;
   if(avg<=0.0222){qStrike=0;return;}
   if(++qStrike<2)return;
-  qStrike=0;qTier++;
+  qStrike=0;qTier++;qbSync();   /* 看门狗降档：1 档只 DropFluid 不 resize，所以 qbSync 得单独调 */
   if(qTier===1)FX.dropFluid();
   else resize();
 }
+let BENCH_HOLD=false;   /* 5.4 性能探针：冻结主循环，让 draw() 由探针独占调用 */
 function frame(now){
   requestAnimationFrame(frame);
+  if(BENCH_HOLD)return;
   let raw=(now-last)/1000;last=now;
   const wallDt=Math.min(raw,0.5);
   raw=Math.min(raw,0.05);
   const realDt=raw;
   G.t+=raw;
+  padScan();padUI(raw);   // 5.2 手柄：先采样再派发（UI 走边沿，玩法走电平）
   G.shake*=Math.exp(-6*raw);
   updateCam(realDt);updatePost(realDt);updateGrade();updateMood();updateAim();
   if(G.achCool>0)G.achCool=Math.max(0,G.achCool-raw);
@@ -8343,6 +9280,12 @@ async function boot(){
 boot();
 
 /* small test hook (console) */
+/* 5.4 性能探针：各特效数组长度（数量型开销的直接读数） */
+function perfCounts(){return {parts:G.parts.length,debris:G.debris.length,
+  ghosts:G.ghosts.length,bolts:G.bolts.length,texts:G.texts.length,dt:G.deathTrail.length,
+  shards:G.shards.length,enemies:G.enemies.length,asts:G.asteroids.length,
+  bullets:G.bullets.length,ebullets:G.ebullets.length,pickups:G.pickups.length};}
+
 window.NOVA={
   debug:code=>eval(code), // 在游戏作用域内执行任意表达式（控制台调试用）
   get mode(){return G.mode;},
@@ -8462,6 +9405,19 @@ window.NOVA={
     preview:(k,g,w,t)=>drawAch({k:k||0,g:g||0,w:w||0,t:t||0}),
     fit:()=>fitAch(),
     tf:()=>achTf(),
+    /* 纵向版式 + 视窗（4.3b）：cols 当前列数 / canvas 画布尺寸 / zoom 程序化缩放 / pan 平移 */
+    layout:cols=>layoutAch(cols),
+    /* cols 取「最近一次布局实际用的列数」而不是实时量 —— 面板未打开时 clientWidth=0，
+       实时量会报 2 列、和已算好的 4 列画布对不上，看着像 bug。 */
+    canvas:()=>({w:ACH_W,h:ACH_H,cols:ACH_LC,live:achCols()}),
+    zoom:(k,cx,cy)=>{const w=el.lbTreeWrap;if(!w)return null;
+      if(k!=='fit'){const t=tfOf(w);
+        zoomAt(w,typeof k==='number'?k:t.s*(k==='+'?ZOOM_STEP:1/ZOOM_STEP),cx,cy);}
+      else {w.dataset.tx=0;w.dataset.ty=0;fitAch();}
+      return achTf();},
+    pan:(dx,dy)=>{const w=el.lbTreeWrap;if(!w)return null;const t=tfOf(w);
+      w.dataset.tx=t.x+dx;w.dataset.ty=t.y+dy;clampPan(w);applyTf(w);return achTf();},
+    zoomRange:()=>({min:ZOOM_MIN,max:ZOOM_MAX,step:ZOOM_STEP}),
   },
   /* 卡牌稀有度测试钩子（Phase 3.1）：roll 采样分布 / 保底 / 卡面类目 */
   cards:{
@@ -8525,9 +9481,12 @@ window.NOVA={
     /* 核心断言：调用某条协同的 apply()，看 P 上到底有几个字段真的变了 */
     effect:id=>{
       const s=SYN.find(x=>x.id===id); if(!s||!P)return null;
+      /* ⚠️ 新增协同若只改这里没列的字段，audit 会报 changed=0（假「空协同」）——
+         4.4 补入散射 / 裂变 / 口径三组字段。改武器系统时记得同步这张表。 */
       const K=['dmg','fireRate','pierce','ricochet','barrels','splashR','splashDmg','homing','homeR',
         'tesla','teslaCd','stasisR','stasisPow','dronePow','droneCd','ram','shieldMax','shield',
-        'backshot','backPow','lanceCd','deathBonus','maxSpeed','crit','rangeLife','bspd'];
+        'backshot','backPow','lanceCd','deathBonus','maxSpeed','crit','rangeLife','bspd',
+        'spray','sprayArc','sprayMul','split','splitMul','bulletR','rangeMul'];
       const before={}; for(const k of K)before[k]=P[k];
       s.apply();
       const diff={}; for(const k of K)if(P[k]!==before[k])diff[k]=[before[k],P[k]];
@@ -8622,7 +9581,153 @@ window.NOVA={
   },
   chase:()=>P?{n:G.enemies.filter(e=>e.type==='tadpole').length,
     ds:G.enemies.filter(e=>e.type==='tadpole').map(e=>Math.round(Math.hypot(e.x-P.x,e.y-P.y)))}:null,
-  perf:()=>({tier:qTier,dpr:+DPR.toFixed(2),cw:cv.width,pxc:$('fxProton').width,fluid:getComputedStyle($('fxFluid')).display}),
+  perf:()=>({tier:qTier,dpr:+DPR.toFixed(2),cw:cv.width,pxc:$('fxProton').width,
+    fluid:getComputedStyle($('fxFluid')).display,budget:QB_NOW,stars:QST}),
+  /* ---- 5.4 性能探针 ----
+     「降档」到底省了多少，以前只能靠体感。这里给三件量具：
+     counts 各数组长度 / stress 真跑世界更新堆出重场景 / drawMs 单测绘制均帧耗时。
+     判据不是绝对值（机器不同），而是**同一场景下降档前后的比值**。
+     注意 stress 不绘制、drawMs 不更新 —— 两者分开才能量到绘制侧的纯开销。 */
+  bench:{
+    counts:()=>perfCounts(),
+    table:()=>QB,                       // 三档预算原表（断言单调性用）
+    trim:()=>{trimFx();return perfCounts();},   // 手动执行「砍到当前档位上限」
+    /* 压力场景：用**真实生成器**把各数组顶到目标量并每帧补齐。
+       为什么不用「真打一会儿」：那样量到的是随机的某一瞬，两次跑不可比。
+       量的是「绘制 N 个 X 要多久」，所以必须把 N 钉死。
+       ⚠️ 补齐用有界的 for 而不是 while —— burst() 撞上 PART_MAX 会把 n 削到 0，
+          while 会直接死循环。 */
+    stress:(w,f,t)=>{
+      const T=t||{};
+      startGame(HULLS[0]);G.mode='play';
+      buildWave(w||60);
+      P.hp=1e9;P.maxHp=1e9;P.invuln=1e9;P.shield=0;
+      const R=Math.max(220,Math.min(VW,VH)*0.42);
+      for(let k=0;k<28;k++)
+        spawnEnemy(EN_LIST[k%EN_LIST.length],P.x+Math.cos(k/28*6.2832)*R,P.y+Math.sin(k/28*6.2832)*R);
+      fireOn=true;
+      const TP=T.parts||420,TD=T.debris||90,TG=T.ghosts||16,TB=T.bolts||18,TT=T.texts||26;
+      const peak={parts:0,debris:0,ghosts:0,bolts:0,texts:0,dt:0,shards:0};
+      for(let i=0;i<(f||150);i++){
+        updateWorld(1/60);
+        const rx=()=>P.x+rand(-420,420),ry=()=>P.y+rand(-420,420);
+        for(let g=0;g<8&&G.parts.length<TP;g++)burst(rx(),ry(),10,180,0.9,'255,150,90',2);
+        for(let g=0;g<8&&G.debris.length<TD;g++)shatter(rx(),ry(),6,150,'160,180,210',7);
+        /* 年龄必须错开：同批创建 = 同时过期，稳态会在「满」和「空」之间跳，
+           测到的数取决于抽样落在哪一帧 —— 这是压力场景最容易造的假数据。 */
+        for(let g=0;g<8&&G.ghosts.length<TG;g++)
+          G.ghosts.push({x:rx(),y:ry(),ang:rand(TAU),t:rand(0,0.3),max:0.4,gold:false});
+        for(let g=0;g<8&&G.bolts.length<TB;g++)
+          G.bolts.push({x1:rx(),y1:ry(),x2:rx(),y2:ry(),t:rand(0.04,0.22),max:0.22,
+            jit:null,gold:false});
+        for(let g=0;g<8&&G.texts.length<TT;g++)
+          ftext(rx(),ry(),'1234','236,208,138',{kind:'dmg'});
+        const c=perfCounts();
+        for(const k in peak)if(c[k]>peak[k])peak[k]=c[k];
+      }
+      fireOn=false;
+      return {peak,now:perfCounts(),target:{parts:TP,debris:TD,ghosts:TG,bolts:TB,texts:TT}};
+    },
+    /* 测前补齐：drawMs 不跑世界更新，所以三档量到的是**同一份**场景 */
+    fill:(t)=>{
+      const T=t||{},rx=()=>P.x+rand(-420,420),ry=()=>P.y+rand(-420,420);
+      const TP=T.parts||420,TD=T.debris||90,TG=T.ghosts||16,TB=T.bolts||18,TT=T.texts||26;
+      for(let g=0;g<40&&G.parts.length<TP;g++)burst(rx(),ry(),10,180,0.9,'255,150,90',2);
+      for(let g=0;g<40&&G.debris.length<TD;g++)shatter(rx(),ry(),6,150,'160,180,210',7);
+      for(let g=0;g<40&&G.ghosts.length<TG;g++)
+        G.ghosts.push({x:rx(),y:ry(),ang:rand(TAU),t:rand(0,0.3),max:0.4,gold:false});
+      for(let g=0;g<40&&G.bolts.length<TB;g++)
+        G.bolts.push({x1:rx(),y1:ry(),x2:rx(),y2:ry(),t:rand(0.04,0.22),max:0.22,
+          jit:null,gold:false});
+      for(let g=0;g<40&&G.texts.length<TT;g++)
+        ftext(rx(),ry(),'1234','236,208,138',{kind:'dmg'});
+      return perfCounts();
+    },
+    hold:(v)=>{BENCH_HOLD=!!v;return BENCH_HOLD;},
+    /* 绘制**调用计数**：headless 是软件渲染，墙钟被放大十几倍且抖 ±20%，
+       单帧 1~6ms 的差异根本量不出来。调用次数是确定性的，同一场景两次跑完全一致，
+       于是「降档到底少干了多少活」可以断言，不用猜。
+       ⚠️ 包裹的是 CanvasRenderingContext2D.prototype，会连流体/粒子层一起计；
+          所以必须在 BENCH_HOLD 下用（主循环冻住，只有我们手动调的 draw() 在跑）。
+       ⚠️ 用完必须还原：原型被污染后每一帧都在计数，退出去就再也测不准了。 */
+    ops:(n)=>{
+      const P=CanvasRenderingContext2D.prototype,
+        KS=['fill','stroke','fillRect','strokeRect','clearRect','drawImage','fillText','strokeText',
+            'arc','ellipse','rect','beginPath','closePath','moveTo','lineTo','quadraticCurveTo',
+            'bezierCurveTo','save','restore','translate','rotate','scale','setTransform','clip',
+            'createLinearGradient','createRadialGradient','putImageData'],
+        src={},cnt={};
+      for(const k of KS){src[k]=P[k];cnt[k]=0;P[k]=function(){cnt[k]++;return src[k].apply(this,arguments);};}
+      const N=n||20,t0=performance.now();
+      for(let i=0;i<N;i++)draw();
+      const ms=+((performance.now()-t0)/N).toFixed(3);
+      for(const k of KS)P[k]=src[k];
+      let tot=0;const by={};
+      for(const k of KS){const v=cnt[k]/N;if(v>=0.5){by[k]=Math.round(v);tot+=v;}}
+      return {total:Math.round(tot),ms,by};
+    },
+    drawMs:(n)=>{
+      const N=n||60,t0=performance.now();
+      for(let i=0;i<N;i++)draw();
+      return +((performance.now()-t0)/N).toFixed(3);
+    },
+  },
+  /* ---- 5.5 触屏钩子 ----
+     set(dx,dy) 直接喂杆量：断言要能「推 3px 和推 46px 转得不一样快」，
+     靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
+  touch:{
+    const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
+                BRK:JOY_BRK,THR:JOY_THR,FOLLOW:JOY_FOLLOW}),
+    state:()=>({on:joy.on,dx:+joy.dx.toFixed(2),dy:+joy.dy.toFixed(2),
+                mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)}),
+    set:(dx,dy)=>{joy.on=true;joy.dx=dx;joy.dy=dy;joyRead();
+      return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
+    clear:()=>{joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();},
+    read:()=>{joyRead();return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
+    isTouch:()=>isTouch,
+    setTouch:v=>{setTouch(!!v);return isTouch;},
+    fire:()=>fireOn,
+    /* 竖屏提示：hidden/on/ignored + 当前是否横屏 */
+    orient:()=>({hidden:el.orhint.hidden,on:el.orhint.classList.contains('on'),
+                 ignored:orHidden,land:innerWidth>innerHeight,touch:isTouch,run:inRun()}),
+    sync:()=>{orientHint();return 1;},
+    resetHint:()=>{orHidden=false;try{localStorage.removeItem(OR_KEY);}catch(e){}orientHint();},
+    /* 安全区：读浏览器实际解析出的 env() 值（headless 下全为 0，只能验变量链路通不通） */
+    safe:()=>{const cs=getComputedStyle(document.documentElement);
+      return {t:cs.getPropertyValue('--safe-t').trim(),r:cs.getPropertyValue('--safe-r').trim(),
+              b:cs.getPropertyValue('--safe-b').trim(),l:cs.getPropertyValue('--safe-l').trim()};},
+    btnRect:()=>{const r=el.firebtn.getBoundingClientRect();
+      return {right:Math.round(innerWidth-r.right),bottom:Math.round(innerHeight-r.bottom),
+              w:Math.round(r.width),h:Math.round(r.height)};},
+  },
+  /* ---- 5.5 触屏钩子 ----
+     set(dx,dy) 直接喂杆量：断言要能「推 3px 和推 46px 转得不一样快」，
+     靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
+  touch:{
+    const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
+                BRK:JOY_BRK,THR:JOY_THR,FOLLOW:JOY_FOLLOW}),
+    state:()=>({on:joy.on,dx:+joy.dx.toFixed(2),dy:+joy.dy.toFixed(2),
+                mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)}),
+    set:(dx,dy)=>{joy.on=true;joy.dx=dx;joy.dy=dy;joyRead();
+      return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
+    clear:()=>{joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();},
+    read:()=>{joyRead();return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
+    isTouch:()=>isTouch,
+    setTouch:v=>{setTouch(!!v);return isTouch;},
+    fire:()=>fireOn,
+    /* 竖屏提示：hidden/on/ignored + 当前是否横屏 */
+    orient:()=>({hidden:el.orhint.hidden,on:el.orhint.classList.contains('on'),
+                 ignored:orHidden,land:innerWidth>innerHeight,touch:isTouch,run:inRun()}),
+    sync:()=>{orientHint();return 1;},
+    resetHint:()=>{orHidden=false;try{localStorage.removeItem(OR_KEY);}catch(e){}orientHint();},
+    /* 安全区：读浏览器实际解析出的 env() 值（headless 下全为 0，只能验变量链路通不通） */
+    safe:()=>{const cs=getComputedStyle(document.documentElement);
+      return {t:cs.getPropertyValue('--safe-t').trim(),r:cs.getPropertyValue('--safe-r').trim(),
+              b:cs.getPropertyValue('--safe-b').trim(),l:cs.getPropertyValue('--safe-l').trim()};},
+    btnRect:()=>{const r=el.firebtn.getBoundingClientRect();
+      return {right:Math.round(innerWidth-r.right),bottom:Math.round(innerHeight-r.bottom),
+              w:Math.round(r.width),h:Math.round(r.height)};},
+  },
   stats:()=>({score:G.score,kills:G.kills,level:P?P.level:0,wave:Wv.n,mode:G.mode}),
   hints:()=>edgeHints(),
   time:()=>G.runT,
@@ -8632,6 +9737,7 @@ window.NOVA={
   hasSave:()=>!!loadSave(),
   saveData:()=>loadSave(),
   /* 数据规模总览（3.3 回归用） */
+  /* 5.4 各特效数组的即时长度 —— 降档预算要覆盖的就是这些 */
   counts:()=>({mods:MODULES.length,syn:SYN.length,enemies:EN_LIST.length,
               bosses:Object.keys(BOSS_AT).length,hulls:HULLS.length,
               affix:Object.keys(AFFIX).length,ach:ACH.length}),
@@ -8665,8 +9771,9 @@ window.NOVA={
   },
   /* 局外解锁树（3.5）—— 测试钩子 */
   meta:{
-    tree:()=>META.map(m=>({id:m.id,x:m.x,y:m.y,cost:m.cost,req:m.req||null,
-      zh:m.zh,en:m.en,d:m.d})),
+    /* 4.3b：一并吐出纵向槽位（br 支 / dp 层 / anchor 置顶置底），断言才能按支分组而不是按行 */
+    tree:()=>META.map(m=>({id:m.id,x:m.x,y:m.y,br:m.br,dp:m.dp,anchor:m.anchor||null,
+      cost:m.cost,req:m.req||null,zh:m.zh,en:m.en,d:m.d})),
     load:()=>metaLoad(),
     save:d=>metaSave(d),
     has:id=>metaHas(id),
@@ -8681,6 +9788,133 @@ window.NOVA={
     grant:n=>{const d=metaLoad();d.dust+=n;metaSave(d);return d.dust;},
     draw:()=>drawMeta(),
     fit:()=>fitMeta(),
+    tf:()=>metaTf(),
+    layout:cols=>layoutMeta(cols),
+    canvas:()=>({w:META_W,h:META_H,cols:META_LC,live:metaCols()}),
+    zoom:(k,cx,cy)=>{const w=el.mTreeWrap;if(!w)return null;
+      if(k!=='fit'){const t=tfOf(w);
+        zoomAt(w,typeof k==='number'?k:t.s*(k==='+'?ZOOM_STEP:1/ZOOM_STEP),cx,cy);}
+      else {w.dataset.tx=0;w.dataset.ty=0;fitMeta();}
+      return metaTf();},
+    pan:(dx,dy)=>{const w=el.mTreeWrap;if(!w)return null;const t=tfOf(w);
+      w.dataset.tx=t.x+dx;w.dataset.ty=t.y+dy;clampPan(w);applyTf(w);return metaTf();},
+  },
+  /* 武器行为（4.4）—— 测试钩子 */
+  weapon:{
+    fields:()=>({spray:P.spray,sprayArc:+P.sprayArc.toFixed(4),sprayMul:+P.sprayMul.toFixed(4),
+      split:P.split,splitMul:+P.splitMul.toFixed(4),bulletR:+P.bulletR.toFixed(3),
+      rangeMul:+P.rangeMul.toFixed(4),barrels:P.barrels,bspd:Math.round(P.bspd),
+      dmg:+P.dmg.toFixed(4),rangeLife:+P.rangeLife.toFixed(4)}),
+    /* 打一轮齐射，返回本次新增弹丸的快照（半径 / 伤害 / 射程 / 裂变标记 / 发射角） */
+    fire:()=>{const n0=G.bullets.length;fireGun();
+      return G.bullets.slice(n0).map(b=>({r:+b.r.toFixed(3),dmg:+b.dmg.toFixed(4),
+        life:+b.life.toFixed(4),sp:b.sp|0,shard:b.shard|0,
+        a:+Math.atan2(b.vy,b.vx).toFixed(4)}));},
+    /* 场上弹丸按 src/shard 分类计数，用于断言「弹片不再二次分裂」 */
+    bullets:()=>{let main=0,shard=0,withSp=0;
+      for(const b of G.bullets){if(b.shard)shard++;else main++;if(b.sp>0)withSp++;}
+      return {main,shard,withSp,total:G.bullets.length};},
+    clear:()=>{G.bullets.length=0;return 0;},
+  },
+  /* 无尽模式（4.5）—— 测试钩子 */
+  endless:{
+    tier:n=>eTier(n),
+    consts:()=>({from:ETIER_FROM,every:ETIER_EVERY,hp:ETIER_HP,dmg:ETIER_DMG,
+      spd:ETIER_SPD,spdCap:ETIER_SPD_CAP,extra:ETIER_EXTRA,extraCap:ETIER_EXTRA_CAP,
+      kinds:Object.keys(BOSS_MV).length}),
+    bags:()=>({boss:G.bossBag?G.bossBag.slice():null,champ:G.champBag?G.champBag.slice():null,
+      last:G.bossLast,champLast:G.champLast,tier:Wv.tier}),
+    resetBags:()=>{G.bossBag=null;G.champBag=null;G.bossLast=null;G.champLast=null;return true;},
+    /* 模拟 from→to 的 Boss 序列（不写盘，跑完还原袋子） */
+    seq:(from,to)=>{const kinds=[],champs=[];
+      const keep={bb:G.bossBag,cb:G.champBag,bl:G.bossLast,cl:G.champLast};
+      G.bossBag=null;G.champBag=null;G.bossLast=null;G.champLast=null;
+      for(let n=from;n<=to;n++){
+        if(n%5===0)kinds.push(BOSS_AT[n]||bagPick('boss'));
+        else if(n%5===3)champs.push(bagPick('champ'));
+      }
+      G.bossBag=keep.bb;G.champBag=keep.cb;G.bossLast=keep.bl;G.champLast=keep.cl;
+      return kinds;},
+    /* 某波的强化层倍率（血 / 伤 / 速 / 额外敌人） */
+    muls:n=>{const t=eTier(n===undefined?Wv.n:n);
+      return {tier:t,hp:+eTierHp(t).toFixed(4),dmg:+eTierDmg(t).toFixed(4),
+        spd:+eTierSpd(t).toFixed(4),extra:eTierExtra(t)};},
+    /* 真正跑一次 buildWave（会消耗袋子），返回本波概要 */
+    build:n=>{buildWave(n);
+      return {n:Wv.n,boss:Wv.boss,kind:Wv.bossKind,champ:Wv.champ,tier:Wv.tier,
+        qE:Wv.qE.length,qA:Wv.qA.length};},
+  },
+  /* 键位表（5.1）—— 测试钩子 */
+  keys:{
+    defs:()=>KEY_DEFS.map(d=>({id:d.id,zh:d.zh,en:d.en,def:d.def.slice()})),
+    map:()=>{const o={};for(const d of KEY_DEFS)o[d.id]=keySlots(d.id).slice();return o;},
+    label:c=>keyLabel(c),
+    /* 直接改绑（绕过 UI 等待态），用于断言撞车清空与持久化 */
+    set:(act,slot,code)=>{const r=rebind(act,slot,code);renderKeyList();syncKeyHints();return r;},
+    reset:()=>{resetKeys();renderKeyList();syncKeyHints();return NOVA.keys.map();},
+    /* 模拟按住 / 松开某个物理键码，读回动作是否真的响应了新绑定 */
+    press:(code,down)=>{keys[code]=!!down;return true;},
+    down:act=>keyDown(act),
+    wait:()=>keyWait?{act:keyWait.act,slot:keyWait.slot}:null,
+    /* 打开设置面板 + 点某个槽位进入等待态，供 UI 链路断言 */
+    ui:()=>{openSettings();return {hidden:el.settings.hidden,rows:el.keyList.querySelectorAll('.keyrow').length};},
+    click:(act,slot)=>{const b=el.keyList.querySelector('.keyrow[data-act="'+act+'"] .keyslot[data-slot="'+slot+'"]');
+      if(!b)return false;b.click();return true;},
+    slotText:(act,slot)=>{const b=el.keyList.querySelector('.keyrow[data-act="'+act+'"] .keyslot[data-slot="'+slot+'"]');
+      return b?{text:b.textContent,cls:b.className}:null;},
+    hints:()=>({mute:$('btnMute').title,pause:$('btnPause').title}),
+    store:()=>{try{return JSON.parse(localStorage.getItem(KEY_STORE)||'null');}catch(e){return null;}},
+  },
+  /* 手柄（5.2）—— 测试钩子。无头环境没有真手柄，一律走 PAD_TEST 注入。 */
+  pad:{
+    const:()=>({dz:PAD_DZ,trig:PAD_TRIG,edge:PAD_EDGE,rep1:PAD_REP1,rep2:PAD_REP2}),
+    state:()=>({on:PAD.on,ax:+PAD.ax.toFixed(4),ay:+PAD.ay.toFixed(4),
+      fire:PAD.fire,brake:PAD.brake,now:PAD.now,press:PAD.press,sdir:PAD.sdir,name:PAD.name,sel:padSel}),
+    /* 注入一支假手柄并保持：axes=[x,y]，mask 是 16 位按键掩码 */
+    hold:(ax,ay,mask)=>{PAD_TEST=padFake(ax||0,ay||0,mask||0);padScan();return NOVA.pad.state();},
+    /* 注入后立刻松开：返回这一帧的 press 边沿掩码（UI 断言用这个） */
+    tap:(ax,ay,mask)=>{PAD_TEST=padFake(ax||0,ay||0,mask||0);padScan();
+      const press=PAD.press;
+      PAD_TEST=padFake(ax||0,ay||0,0);padScan();
+      return press;},
+    scan:()=>{padScan();return NOVA.pad.state();},
+    /* 用指定 press 掩码跑一次 UI 派发（padScan 会清掉 press，所以断言要能自己塞） */
+    ui:(dt,press)=>{if(press!==undefined)PAD.press=press|0;padUI(dt||1/60);
+      return {mode:G.mode,sel:padSel,active:document.activeElement?document.activeElement.id||document.activeElement.tagName:null};},
+    /* 跑一帧玩法：返回推进 / 转向的实测结果 */
+    step:()=>{if(!P)startGame(HULLS[0]);G.mode='play';
+      const a0=P.angle;updatePlayer(1/60);
+      return {turn:+(P.angle-a0).toFixed(5),thrust:P.thrusting};},
+    fireStep:()=>{if(!P)startGame(HULLS[0]);G.mode='play';NOVA.weapon.clear();
+      for(let i=0;i<40;i++)updatePlayer(1/60);
+      return G.bullets.length;},
+    sel:()=>{const r=el.cardrow&&!el.cards.hidden?el.cardrow:el.hullrow;
+      return [...(r?r.children:[])].map(c=>c.classList.contains('padsel'));},
+    targets:()=>padTargets().map(b=>b.id||b.className),
+    clear:()=>{PAD_TEST=null;padScan();return NOVA.pad.state();},
+  },
+  /* 设置项（5.3）—— 测试钩子 */
+  opts:{
+    defs:()=>({q:OPT_Q.slice(),cb:OPT_CB.slice(),bool:OPT_BOOL.slice()}),
+    get:()=>Object.assign({},OPTS),
+    set:(k,v)=>{OPTS[k]=v;applyOpts();saveOpts();return OPTS[k];},
+    apply:()=>{applyOpts();return Object.assign({},OPTS);},
+    reset:()=>{OPTS.quality='auto';OPTS.cb='off';
+      for(const k of OPT_BOOL)OPTS[k]=k==='motion'?0:1;
+      applyOpts();saveOpts();renderOpts();return Object.assign({},OPTS);},
+    /* 调色板读数：cssVar 取 hex（CSS 侧），cssRgb 取分量（JS / PAL 侧） */
+    cssVar:k=>getComputedStyle(document.documentElement).getPropertyValue('--c-'+k).trim(),
+    cssRgb:k=>getComputedStyle(document.documentElement).getPropertyValue('--c-'+k+'-rgb').trim(),
+    palette:()=>Object.assign({},PAL),
+    cbKeys:()=>CB_KEYS.slice(),
+    cbTable:()=>JSON.parse(JSON.stringify(CB_PAL)),
+    /* Viénot CVD 模拟：给断言用，量「换完色到底分不分得开」 */
+    sim:(rgb,mode)=>simCVD(rgb,mode),
+    tier:()=>qTier,auto:()=>Q_AUTO,dpr:()=>+DPR.toFixed(2),
+    fluid:()=>FX.hasFluid(),fluidCap:()=>FX.fluidCap(),rm:()=>document.documentElement.hasAttribute('data-rm'),
+    ui:()=>{renderOpts();return 1;},
+    click:sel=>{const b=document.querySelector(sel);if(b)b.click();return !!b;},
+    store:()=>{try{return localStorage.getItem(OPTS_KEY);}catch(e){return null;}},
   },
   /* 敌型表（4.1）—— 测试钩子 */
   enemy:{
@@ -8731,6 +9965,10 @@ window.NOVA={
 $('btnLang').addEventListener('click',()=>setLang(LANG==='en'?'zh':'en'));
 $('btnLangP').addEventListener('click',()=>setLang(LANG==='en'?'zh':'en'));
 applyI18n();
+/* 5.1：键位在 applyI18n 之后再装 —— syncKeyHints 会覆写 HUD 按钮的 title，
+   先装会被 data-i18n-t 那轮覆盖回「音效 M」。 */
+loadKeys();renderKeyList();syncKeyHints();
+renderOpts();applyOpts();
 })();
 </script>
 </body>

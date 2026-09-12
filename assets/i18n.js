@@ -170,7 +170,7 @@
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
   var skinBar = document.getElementById("skinBar");
-  function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "glass"; }
+  function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "hermes"; }
   function currentStyle() { return normStyle(root.getAttribute("data-style")); }
   /* 真正落地的那一步：写属性 + 存盘 + 跨组跳转 + 同步按钮态 */
   function commitStyle(s, persist) {
@@ -284,6 +284,18 @@
       if (tab) { jumpGroup(tab.getAttribute("data-group"), true); return; }
       var chip = e.target.closest(".skin-chip");
       if (chip) applyStyle(chip.getAttribute("data-style"), true);
+    });
+  }
+
+  /* 首页 hero 里的「随机切换风格」按钮：从全部皮肤里随机抽一套（排除当前这套），
+     走和手动点芯片完全相同的 applyStyle 流程（含过渡动画 + 写盘 + 同步按钮态）。 */
+  var rndBtn = document.getElementById("skinRandom");
+  if (rndBtn) {
+    rndBtn.addEventListener("click", function () {
+      var cur = currentStyle();
+      var pool = STYLES.filter(function (s) { return s !== cur; });
+      var next = pool[Math.floor(Math.random() * pool.length)];
+      applyStyle(next, true);
     });
   }
 

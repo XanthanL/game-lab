@@ -414,6 +414,31 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--ink-3); outline
   .skin-chip { padding: 8px 12px; font-size: 9.5px; letter-spacing: 0.04em; }
 }
 
+/* 首页 hero 里的「随机切换风格」按钮：wildcard 控件，外观复用皮肤变量，
+   用 --accent 描边 + 前导强调点，和常规风格芯片区分开（芯片是「选这套」，
+   这枚是「随便来一套」）。颜色带兜底，避免个别皮肤未定义 --accent 时塌掉。 */
+.skin-random {
+  display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+  margin: 2px 0 0; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+  color: var(--accent, #f5a524); border: 1px solid var(--accent, #f5a524);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-sm);
+  -webkit-tap-highlight-color: transparent;
+  transition: color .4s var(--ease), box-shadow .4s var(--ease),
+              transform .4s var(--ease), background .4s var(--ease), border-color .4s var(--ease);
+}
+.skin-random::before {
+  content: ''; flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent, #f5a524); box-shadow: 0 0 0 3px var(--spot-c);
+}
+.skin-random:hover, .skin-random:focus-visible { transform: translateY(-2px); box-shadow: var(--glass); }
+.skin-random:active { transform: translateY(0); }
+@media (max-width: 560px) {
+  .skin-random { padding: 8px 12px; font-size: 9.5px; letter-spacing: 0.04em; }
+}
+
 /* ============ 风格切换：胶囊下拉菜单（7 档）============
    原来是一枚四档分段滑钮；加到 7 档后 390px 顶栏放不下（每格不足 20px），
    改成下拉：胶囊按钮常显当前风格简称，点开是菜单，选中项前面亮一个圆点。
