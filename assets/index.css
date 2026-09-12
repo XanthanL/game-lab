@@ -1162,22 +1162,22 @@ footer { margin-top: clamp(48px, 8vh, 96px); border-top: 1px solid var(--line); 
 /* 三套「核」系（梦核 / 池核 / 怪核）+ 方块像素（MC）同样不需要玻璃装饰层 */
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
         [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
-        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .glass::after,
+        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .glass::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
         [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"],
-        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .card::after,
+        [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .card::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .row::after,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .row::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .card::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .card::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .toc a::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .toc a::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .hero::before,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .hero::before,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .hero::after,
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .hero::after,
 :root:is([data-style="dream"], [data-style="pool"], [data-style="weird"], [data-style="mc"],
-        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"]) .sec::before { display: none; }
+        [data-style="gtavc"], [data-style="gtasa"], [data-style="gta4"], [data-style="gta5"], [data-style="pipboy"], [data-style="construct"], [data-style="blueprint"], [data-style="fc"], [data-style="synthwave"], [data-style="glitch"], [data-style="clay"], [data-style="cyberpunk"], [data-style="rdr2"], [data-style="p5"], [data-style="aperture"], [data-style="halo"], [data-style="splatoon"], [data-style="pokemon"], [data-style="crt"], [data-style="gb"], [data-style="winamp"], [data-style="dos"], [data-style="mac7"], [data-style="bauhaus"], [data-style="deco"], [data-style="memphis"], [data-style="pop"], [data-style="swiss"], [data-style="vaporwave"], [data-style="washi"], [data-style="morandi"], [data-style="skate"], [data-style="decon"], [data-style="ink"], [data-style="futurism"], [data-style="hermes"], [data-style="diagonal"], [data-style="shanshui"], [data-style="borderlands"]) .sec::before { display: none; }
 
 /* 卡片：悬停 = 抬起（投影放大），按下 = 压进表面（转内凹） */
 :root[data-style="soft"] .card:hover,
@@ -8254,3 +8254,227 @@ body { transition: background-color 0.32s ease, color 0.32s ease, opacity 0.18s 
 :root[data-style="decon"] .hero,
 :root[data-style="ink"] .hero,
 :root[data-style="futurism"] .hero { overflow: visible; }
+
+/* ==================================================================
+   风格 PP：无主之地 · Borderlands（<html data-style="borderlands">）
+   Gearbox 的潘多拉星。整套只有一条语法：cel-shading（卡通渲染）——
+   先勾一圈粗黑描边，再平涂色块，明暗过渡交给网点而不是渐变。
+   所以这套皮肤里没有一处羽化、没有一处模糊：
+     · 3px 纯黑描边 + 不带 blur 的硬投影（6px 6px 0）
+     · 卡片整体歪 0.4°，像手绘分镜没贴正；hover 时「啪」一下贴平并抬起
+     · 标题走 Anton（和 BL 标志字同类的超粗窄体）+ 描边 + 偏移墨影
+     · 配色：沙土褐 / 铁锈橙 / 铱紫，点睛色是那抹「战利品黄」
+     · 首屏：潘多拉的太阳 + 网点天空 + 底部一道黄黑警示斜纹
+   暗色 = 潘多拉黄昏（主色调）；亮色 = 白昼沙漠。
+   描边统一用 --bl-ink（近黑），硬投影也用它 —— 换主题时只换填充不换线。
+================================================================== */
+:root[data-style="borderlands"], :root[data-style="borderlands"] * { color-scheme: dark; }
+:root[data-style="borderlands"] {
+  --serif: "Anton", "Oswald", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --sans: "Oswald", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "Oswald", ui-monospace, "PingFang SC", monospace;
+  --bg: #2b2018; --ink: #f8eeda; --ink-2: #cfb68d; --ink-3: #9a8060;
+  --line: rgba(248, 238, 218, 0.22); --line-2: rgba(248, 238, 218, 0.5);
+  --accent: #ffd23f;
+  --card-bg: #3d2e21; --glass-bg: #3d2e21;
+  --glass-border: rgba(248, 238, 218, 0.34); --glass-blur: none;
+  --glass: 3px 3px 0 var(--bl-ink); --glass-sm: 2px 2px 0 var(--bl-ink);
+  --glass-sheen: transparent;
+  --sec-img-o: 0;
+  --spot-c: rgba(255, 210, 63, 0.16); --ripple-c: rgba(255, 210, 63, 0.32);
+  --bl-ink: #0d0a07;        /* 描边 + 硬投影的墨色，两个主题共用 */
+  --bl-yellow: #ffd23f;     /* 战利品黄 */
+  --bl-rust: #e2621a;       /* 铁锈橙 */
+  --bl-erid: #b07cf0;       /* 铱紫（暗色下提亮，压得住深褐底） */
+  --bl-sky: #3a2a1e;
+  --bl-sun: rgba(255, 193, 84, 0.5);
+  --bl-dot: rgba(248, 238, 218, 0.16);
+}
+:root[data-style="borderlands"][data-theme="light"] { color-scheme: light;
+  --bg: #efe3c8; --ink: #1c1512; --ink-2: #57452f; --ink-3: #8a7355;
+  --line: rgba(28, 21, 18, 0.2); --line-2: rgba(28, 21, 18, 0.48);
+  --accent: #b8480f;
+  --card-bg: #fdf6e6; --glass-bg: #fdf6e6;
+  --glass-border: rgba(28, 21, 18, 0.34); --glass-blur: none;
+  --sec-img-o: 0;
+  --spot-c: rgba(28, 21, 18, 0.08); --ripple-c: rgba(184, 72, 15, 0.22);
+  --bl-yellow: #f7c81a; --bl-rust: #b8480f; --bl-erid: #6a2f96;
+  --bl-sky: #e5d0a4;
+  --bl-sun: rgba(255, 206, 108, 0.78);
+  --bl-dot: rgba(28, 21, 18, 0.13);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-style="borderlands"]:not([data-theme="dark"]) { color-scheme: light;
+    --bg: #efe3c8; --ink: #1c1512; --ink-2: #57452f; --ink-3: #8a7355;
+    --line: rgba(28, 21, 18, 0.2); --line-2: rgba(28, 21, 18, 0.48);
+    --accent: #b8480f;
+    --card-bg: #fdf6e6; --glass-bg: #fdf6e6;
+    --glass-border: rgba(28, 21, 18, 0.34); --glass-blur: none;
+    --sec-img-o: 0;
+    --spot-c: rgba(28, 21, 18, 0.08); --ripple-c: rgba(184, 72, 15, 0.22);
+    --bl-yellow: #f7c81a; --bl-rust: #b8480f; --bl-erid: #6a2f96;
+    --bl-sky: #e5d0a4;
+    --bl-sun: rgba(255, 206, 108, 0.78);
+    --bl-dot: rgba(28, 21, 18, 0.13);
+  }
+}
+
+/* —— 首屏：潘多拉的太阳 + 网点天空 + 黄黑警示斜纹 —— */
+:root[data-style="borderlands"] .hero { position: relative; overflow: visible; }
+:root[data-style="borderlands"] .hero::before {
+  content: ""; display: block; position: absolute; z-index: -1;
+  -webkit-mask-image: none; mask-image: none; border-radius: 10px;
+  inset: -40px calc(var(--pad) * -1) -20px;
+  opacity: 0.72; filter: none;
+  background-color: var(--bl-sky);
+  background-image:
+    repeating-linear-gradient(-45deg, var(--bl-yellow) 0 10px, var(--bl-ink) 10px 20px),
+    radial-gradient(var(--bl-dot) 1.1px, transparent 1.5px),
+    radial-gradient(40% 84% at 82% 54%, var(--bl-sun) 0%, rgba(0, 0, 0, 0) 66%);
+  background-size: 100% 8px, 9px 9px, auto;
+  background-position: 0 100%, 0 0, 0 0;
+  background-repeat: repeat-x, repeat, no-repeat;
+}
+/* halftone 网点单独一层，向右淡出：印刷感的来源，也是 cel-shading 里
+   「渐变」的替代品 —— 有疏密，没有模糊。 */
+:root[data-style="borderlands"] .hero::after {
+  content: ""; display: block; position: absolute; z-index: -1;
+  inset: -14% -22%; border-radius: 0; opacity: 1; filter: none; animation: none;
+  pointer-events: none;
+  background-image: radial-gradient(var(--bl-dot) 1.3px, transparent 1.7px);
+  background-size: 11px 11px;
+  -webkit-mask-image: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.4) 34%, transparent 62%);
+  mask-image: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.4) 34%, transparent 62%);
+}
+:root[data-style="borderlands"] .hero > * { position: relative; z-index: 1; }
+
+/* —— 字：Anton 超粗窄体 + 描边 + 偏移墨影 —— */
+:root[data-style="borderlands"] .hero-title {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase;
+  letter-spacing: 0.02em; line-height: 0.98; color: var(--bl-yellow);
+  -webkit-text-stroke: 3px var(--bl-ink);
+  paint-order: stroke fill;
+  text-shadow: 5px 5px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .eyebrow { color: var(--bl-rust); letter-spacing: 0.3em; }
+:root[data-style="borderlands"] .lede { color: var(--ink-2); }
+:root[data-style="borderlands"] .sec-head { border-bottom: 3px solid var(--bl-ink); }
+:root[data-style="borderlands"] .sec-head h2 {
+  font-family: var(--serif); font-weight: 400; text-transform: uppercase;
+  letter-spacing: 0.03em; color: var(--bl-yellow);
+  text-shadow: 3px 3px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .sec-head h2 .en { color: var(--bl-erid); letter-spacing: 0.26em; }
+:root[data-style="borderlands"] .sec-idx { color: var(--bl-rust); }
+:root[data-style="borderlands"] .sec-count { color: var(--ink-3); }
+
+/* —— 大块面：粗黑描边 + 硬投影 —— */
+:root[data-style="borderlands"] .card,
+:root[data-style="borderlands"] .glass,
+:root[data-style="borderlands"] .row {
+  border: 3px solid var(--bl-ink);
+  border-radius: 5px;
+  background: var(--card-bg);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 6px 6px 0 var(--bl-ink);
+}
+/* 歪一点点：手绘分镜没贴正的感觉。用独立的 rotate 属性而不是 transform，
+   这样不吃掉 .reveal 入场用的 transform，两者可以叠加。 */
+:root[data-style="borderlands"] .card {
+  rotate: -0.4deg;
+  transition: background .5s var(--ease), box-shadow .5s var(--ease),
+              transform .5s var(--ease), rotate .35s var(--ease);
+}
+:root[data-style="borderlands"] .card:nth-child(3n+2) { rotate: 0.5deg; }
+:root[data-style="borderlands"] .card:nth-child(3n+3) { rotate: -0.22deg; }
+:root[data-style="borderlands"] .card:hover,
+:root[data-style="borderlands"] .card:focus-visible {
+  rotate: 0deg; transform: translate(-3px, -3px);
+  box-shadow: 11px 11px 0 var(--bl-ink);
+  border-color: var(--bl-ink);
+}
+:root[data-style="borderlands"] .card:active {
+  transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .card-title { letter-spacing: 0.01em; }
+/* 战利品稀有度标签：黄底黑字黑边 */
+:root[data-style="borderlands"] .card-tag {
+  border-radius: 3px; border: 2px solid var(--bl-ink);
+  background: var(--bl-yellow); color: var(--bl-ink);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  font-weight: 600; letter-spacing: 0.1em;
+}
+:root[data-style="borderlands"] .card-num { color: var(--bl-erid); }
+:root[data-style="borderlands"] .card-go { color: var(--accent); }
+:root[data-style="borderlands"] .card-dir { color: var(--ink-3); }
+
+/* —— 小控件：描边减到 2px，投影减到 3px，保持同一套语法 —— */
+:root[data-style="borderlands"] .btn,
+:root[data-style="borderlands"] .toc a,
+:root[data-style="borderlands"] .skin-chip,
+:root[data-style="borderlands"] .skin-tab,
+:root[data-style="borderlands"] .skin-random,
+:root[data-style="borderlands"] .sub-search {
+  border: 2px solid var(--bl-ink);
+  border-radius: 4px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 3px 3px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .btn:hover,
+:root[data-style="borderlands"] .btn:focus-visible,
+:root[data-style="borderlands"] .toc a:hover,
+:root[data-style="borderlands"] .toc a:focus-visible,
+:root[data-style="borderlands"] .skin-chip:hover,
+:root[data-style="borderlands"] .skin-chip:focus-visible,
+:root[data-style="borderlands"] .skin-random:hover,
+:root[data-style="borderlands"] .skin-random:focus-visible {
+  transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .skin-tab:hover,
+:root[data-style="borderlands"] .skin-tab:focus-visible { background: var(--spot-c); }
+:root[data-style="borderlands"] .skin-chip[aria-pressed="true"] {
+  background: var(--bl-yellow); color: var(--bl-ink); border-color: var(--bl-ink);
+  box-shadow: 3px 3px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .skin-chip[aria-pressed="true"]::before {
+  background: var(--bl-ink); opacity: 1; box-shadow: none; border-radius: 0;
+}
+:root[data-style="borderlands"] .skin-tab[aria-selected="true"] {
+  background: var(--bl-rust); color: #fff8ec; border-color: var(--bl-ink);
+}
+:root[data-style="borderlands"] .skin-random { color: var(--accent); border-color: var(--bl-ink); }
+:root[data-style="borderlands"] .skin-random::before { background: var(--accent); box-shadow: none; }
+:root[data-style="borderlands"] .sub-search:focus,
+:root[data-style="borderlands"] .sub-search:focus-visible {
+  border-color: var(--bl-ink); box-shadow: 5px 5px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .sub-search::placeholder { color: var(--ink-3); }
+
+/* —— 顶栏下拉 / 品牌点 / 开关：同样勾线 —— */
+:root[data-style="borderlands"] .sm-panel {
+  background-color: var(--card-bg); border: 3px solid var(--bl-ink);
+  border-radius: 5px; box-shadow: 6px 6px 0 var(--bl-ink);
+}
+:root[data-style="borderlands"] .sm-item[aria-selected="true"] {
+  background: var(--bl-yellow); color: var(--bl-ink);
+}
+:root[data-style="borderlands"] .brand-dot,
+:root[data-style="borderlands"] .ls-knob,
+:root[data-style="borderlands"] .bs-bulb {
+  background: var(--bl-yellow); box-shadow: 0 0 0 2px var(--bl-ink);
+}
+:root[data-style="borderlands"] .foot-meta a { border-bottom: 2px solid var(--bl-ink); }
+:root[data-style="borderlands"] .foot-meta a:hover { color: var(--accent); border-color: var(--bl-ink); }
+:root[data-style="borderlands"] .empty { color: var(--ink-3); }
+:root[data-style="borderlands"] ::selection { background: var(--bl-yellow); color: var(--bl-ink); }
+
+/* —— 移动端：硬投影收窄，别在小屏上顶到相邻卡片 —— */
+@media (max-width: 620px) {
+  :root[data-style="borderlands"] .card,
+  :root[data-style="borderlands"] .glass,
+  :root[data-style="borderlands"] .row { box-shadow: 4px 4px 0 var(--bl-ink); }
+  :root[data-style="borderlands"] .card:hover,
+  :root[data-style="borderlands"] .card:focus-visible { box-shadow: 7px 7px 0 var(--bl-ink); }
+  :root[data-style="borderlands"] .hero::before { inset: -30px calc(var(--pad) * -1) -14px; }
+}

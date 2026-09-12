@@ -76,7 +76,7 @@
     });
   }
 
-  /* ---------- 风格：48 套皮肤，按来源分成 8 组 ---------- */
+  /* ---------- 风格：52 套皮肤，按来源分成 8 组 ---------- */
   var SKEY = "gl-style";
   var GKEY = "gl-style-group";   /* 记住上次翻的是哪一组 */
 
@@ -96,7 +96,7 @@
                "decon", "ink", "shanshui", "futurism", "diagonal"] },
     { id: "game", zh: "游戏界面", en: "Games",
       styles: ["mc", "gtavc", "gtasa", "gta4", "gta5", "pipboy", "cyberpunk",
-               "rdr2", "p5", "aperture", "halo", "splatoon", "skate"] },
+               "rdr2", "p5", "aperture", "halo", "splatoon", "skate", "borderlands"] },
     { id: "draft", zh: "图纸", en: "Draft",
       styles: ["blueprint"] },
     { id: "tech", zh: "科技品牌", en: "Tech",
@@ -166,7 +166,8 @@
     hermes: { short: { zh: "电光蓝", en: "ELEC" }, chip: { zh: "电光蓝", en: "Electric Blue" }, full: { zh: "电光蓝", en: "Electric Blue" } },
     klein: { short: { zh: "克莱因蓝", en: "KLEIN" }, chip: { zh: "克莱因蓝", en: "Klein Blue" }, full: { zh: "克莱因蓝", en: "Klein Blue" } },
     diagonal: { short: { zh: "对角", en: "DIAG" }, chip: { zh: "对角线计划", en: "Diagonal" }, full: { zh: "对角线计划 · Diagonal", en: "Diagonal Archive" } },
-    shanshui: { short: { zh: "山水", en: "INK" }, chip: { zh: "水墨山水", en: "Ink Landscape" }, full: { zh: "水墨山水 · 黑白", en: "Ink Landscape · Monochrome" } }
+    shanshui: { short: { zh: "山水", en: "INK" }, chip: { zh: "水墨山水", en: "Ink Landscape" }, full: { zh: "水墨山水 · 黑白", en: "Ink Landscape · Monochrome" } },
+    borderlands: { short: { zh: "无主", en: "BL" }, chip: { zh: "无主之地", en: "Borderlands" }, full: { zh: "无主之地 · Borderlands", en: "Borderlands · Pandora" } }
   };
   /* 首页 hero 里有 #skinBar → 七档平铺；没有（404 / persona 子页）→ 顶栏下拉兜底 */
   var skinBar = document.getElementById("skinBar");

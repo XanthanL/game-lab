@@ -43,7 +43,7 @@
     d.setAttribute("data-theme", t);
     /* 风格：默认电光蓝（hermes）；若用户之前在皮肤条手动选过并写回 gl-style，则沿用。
        从首页点进子页时是同一套、不会跳变；在皮肤条上手动选仍然有效。 */
-    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui"];
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui","borderlands"];
     var st = localStorage.getItem("gl-style");
     if (!st || OK.indexOf(st) === -1) st = "hermes";
     d.setAttribute("data-style", st);

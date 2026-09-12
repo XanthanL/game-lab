@@ -41,7 +41,7 @@
     d.setAttribute("data-theme", t);
     /* 风格：默认电光蓝（hermes），与首页保持一致 */
     var st = localStorage.getItem("gl-style");
-    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui"];
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui","borderlands"];
     d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "hermes");
     var lg = localStorage.getItem("gl-lang");
     if (lg === "en") d.setAttribute("data-lang", "en");
