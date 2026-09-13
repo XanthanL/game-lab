@@ -27,15 +27,20 @@
         <p class="ring__brand-line">孩子的画，值得一面白墙。</p>
       </div>
 
-      <ul class="ring__list mono" id="ring-list" aria-hidden="true"></ul>
-
       <div class="ring__meta ring__meta--left" aria-hidden="true">
         <span class="ring__no" id="ring-no">No.—</span>
         <span class="ring__title" id="ring-title">《—》</span>
       </div>
-      <div class="ring__meta ring__meta--right" aria-hidden="true">
-        <span class="ring__media" id="ring-media">—</span>
-        <span class="mono ring__sub" id="ring-sub"></span>
+
+      <!-- 右侧:当前卡的媒介/馆藏位次 + 全馆名录。两者同在一个纵向居中的
+           横排里并排摆放 —— 原先它们各自 absolute 到同一个 right/top:50%,
+           必然叠在一起(媒介名被名录压住)。 -->
+      <div class="ring__side" aria-hidden="true">
+        <div class="ring__meta ring__meta--right">
+          <span class="ring__media" id="ring-media">—</span>
+          <span class="mono ring__sub" id="ring-sub"></span>
+        </div>
+        <ul class="ring__list mono" id="ring-list"></ul>
       </div>
 
       <p class="ring__caption" aria-hidden="true">

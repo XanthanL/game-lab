@@ -99,7 +99,8 @@
     }
     return null;
   }
-  var COL = { bg: [1, 1, 1], paper: [0.1, 0.1, 0.1], accent: [1, 0.8, 0], hair: [0.8, 0.8, 0.8] };
+  var COL = { bg: [1, 1, 1], paper: [0.1, 0.1, 0.1], accent: [1, 0.8, 0],
+              hair: [0.8, 0.8, 0.8], inkOnPaper: [0.1, 0.1, 0.1] };
   function readColors() {
     var cs = getComputedStyle(document.documentElement);
     var bg   = parseColor(cs.getPropertyValue('--bg'))      || [1, 1, 1, 1];
@@ -127,6 +128,12 @@
     COL.accent = [acc[0], acc[1], acc[2]];
     COL.hair = [paper[0] * 0.38 + bg[0] * 0.62, paper[1] * 0.38 + bg[1] * 0.62,
                 paper[2] * 0.38 + bg[2] * 0.62];
+    /* 纸上的墨色（图集里画字用）：优先吃皮肤自己声明的品牌蓝 —— 电光蓝那套就是
+       #0000f2，白纸上写蓝字正是它的招牌。读不到再按纸的明暗反推。 */
+    var blue = parseColor(cs.getPropertyValue('--hm-blue'));
+    var lp = 0.2126 * paper[0] + 0.7152 * paper[1] + 0.0722 * paper[2];
+    if (blue && lp > 0.35) COL.inkOnPaper = [blue[0], blue[1], blue[2]];
+    else COL.inkOnPaper = lp > 0.5 ? [0.055, 0.055, 0.085] : [0.96, 0.96, 0.94];
   }
   readColors();
 
@@ -171,9 +178,14 @@
     'void main(){',
     '  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);',
     '  float d = 1e9;',
-    '  vec3  tintSum = vec3(0.0);',
-    '  vec2  locSum  = vec2(0.0);',
-    '  float wSum    = 0.0;',
+    '  vec3  tintSum  = vec3(0.0);',
+    '  vec2  uvSum    = vec2(0.0);',
+    '  float wSum     = 0.0;',
+    '  float wuSum    = 0.0;',
+    '  float wuBest   = -1.0;',
+    '  vec2  cellBest = vec2(0.0);',
+    '  vec2  sizeBest = vec2(1.0);',
+    '  float visBest  = 0.0;',
     '  for (int i = 0; i < MAXC; i++) {',
     '    if (i < uCount) {',
     '      vec4  c   = uCard[i];',
@@ -182,29 +194,30 @@
     '      float di = sdBox(p - c.xy, c.zw, min(c.z, c.w) * uCorner) + (1.0 - vis) * 6000.0;',
     '      float w  = exp(-max(di, 0.0) / (uK * 2.5 + 14.0));',
     '      tintSum += uTint[i] * w;',
-    '      locSum  += ((p - c.xy) / max(c.z, 1.0)) * w;',
     '      wSum    += w;',
+    /* 卡面内容的 UV 用一套「锐利」权重（衰减 9px）：只有几乎贴着这张卡的像素才参与。
+       若沿用上面那个软权重，两张卡的局部 UV 一平均就会指到图集里别人格子上，
+       卡面会串出隔壁站的内容。贴边那几像素的混合刚好给它一点被拉扯的错觉。 */
+    '      vec2  uvi = (p - c.xy) / max(c.zw, vec2(1.0)) * 0.5 + 0.5;',
+    '      float wu  = exp(-max(di, 0.0) / 9.0) * vis;',
+    '      uvSum += uvi * wu;',
+    '      wuSum += wu;',
+    '      if (wu > wuBest) { wuBest = wu; cellBest = uCell[i].xy; sizeBest = uCell[i].zw; visBest = vis; }',
     '      d = (d > 1e8) ? di : smin(d, di, uK);',
     '    }',
     '  }',
     '  float m    = 1.0 - sstep(-1.2, 1.2, d);',
     '  vec3  tint = tintSum / max(wSum, 1e-5);',
-    '  vec2  loc  = locSum  / max(wSum, 1e-5);',
     '  vec3 col = uBg;',
     '  vec3 paper = tint * (0.965 + 0.035 * (1.0 - clamp(p.y / uRes.y, 0.0, 1.0)));',
     '  col = mix(col, paper, m);',
-    /* 卡内的 2×2 标记（与 favicon 同款）。用的是融合后的局部坐标，
-       所以两张卡粘住时标记会被一起拉扯 —— 这正是 goo 该有的样子。 */
-    '  float s = 0.22, cs = 0.140;',
-    '  float d1 = sdBox(loc - vec2(-s, -s), vec2(cs), cs * 0.30);',
-    '  float d2 = sdBox(loc - vec2( s, -s), vec2(cs), cs * 0.30);',
-    '  float d3 = sdBox(loc - vec2(-s,  s), vec2(cs), cs * 0.30);',
-    '  float d4 = sdBox(loc - vec2( s,  s), vec2(cs), cs * 0.30);',
-    '  float dm = min(min(d1, d2), min(d3, d4));',
-    '  float mAll  = (1.0 - sstep(-0.03, 0.03, dm)) * m * uMark;',
-    '  float mAcid = (1.0 - sstep(-0.03, 0.03, d4)) * m * uMark;',
-    '  col = mix(col, uHair,   mAll);',
-    '  col = mix(col, uAccent, mAcid);',
+    /* 卡面内容：从图集里取站名 / 序号 / 元信息。
+       uv 先 clamp 回 [0,1]，保证再怎么融合也不会溢出去采到隔壁卡的格子。
+       visBest 当 mask 用 —— 只让正面那张和它两邻的内容真正显示，
+       否则两侧被透视压扁的卡里文字会挤成一团反而难看。 */
+    '  vec2 uvl = clamp(uvSum / max(wuSum, 1e-5), 0.0, 1.0);',
+    '  vec4 tex = texture2D(uAtlas, cellBest + uvl * sizeBest);',
+    '  col = mix(col, tex.rgb, tex.a * m * uHasTex * uMark * smoothstep(0.72, 0.92, visBest));',
     /* 正面那张：沿轮廓描一道酸黄，指明「点这张会打开」 */
     '  float dA = sdBox(p - uActive.xy, uActive.zw, min(uActive.z, uActive.w) * uCorner);',
     '  float rim = (1.0 - sstep(0.0, 2.4, abs(dA))) * m;',
@@ -243,14 +256,152 @@
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   var U = {};
-  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uActive',
-   'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark'].forEach(function (k) {
+  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uCell[0]', 'uActive',
+   'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark',
+   'uAtlas', 'uHasTex'].forEach(function (k) {
     U[k.replace('[0]', '')] = gl.getUniformLocation(prog, k);
   });
 
   var aCard = new Float32Array(MAXC * 4);
   var aTint = new Float32Array(MAXC * 3);
   var aVis  = new Float32Array(MAXC);
+  var aCell = new Float32Array(MAXC * 4);   /* 每张卡在图集里的格子 */
+
+  /* ================= 卡面内容图集 =================
+     着色器里画不了中文，也排不了一段会自动换行的标题。所以改用 Canvas 2D 把
+     每张卡的序号 / 站名 / 元信息画进一张图集，着色器按各自格子去采。
+     这样内容是真正「长」在卡面上的：跟着卡片一起转、缩放、被 goo 拉扯；
+     而底部的 DOM 叠加层只留一份可读、可选中的副本给无障碍和搜索。 */
+  var atlasTex = null, hasTex = 0;
+  var FONT_SERIF = 'Georgia, serif', FONT_MONO = 'monospace';
+
+  function readFonts() {
+    var cs = getComputedStyle(document.documentElement);
+    FONT_SERIF = (cs.getPropertyValue('--serif') || '').trim() || 'Georgia, serif';
+    FONT_MONO  = (cs.getPropertyValue('--mono')  || '').trim() || 'monospace';
+    /* canvas 字体栈需要尾部带一个平台能用的 CJK fallback：
+       headless Chrome 在 Windows 上往往没装 Songti SC / Noto Serif SC，
+       缺了这层站名里的中文就掉成方块。把系统中文字体直接补进去。 */
+    FONT_SERIF += ', "Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei", "Microsoft JhengHei", "WenQuanYi Micro Hei"';
+    FONT_MONO  += ', "Microsoft YaHei", "PingFang SC", "Heiti SC", "SimHei"';
+  }
+  function rgba(c, a) {
+    return 'rgba(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' +
+           Math.round(c[2] * 255) + ',' + a + ')';
+  }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  /* 按可用宽度断行；最多 maxLines 行，还有字没放下就把末行收成省略号 */
+  function wrapText(g, text, maxW, maxLines) {
+    var chars = String(text).split(''), out = [], line = '', i;
+    for (i = 0; i < chars.length; i++) {
+      var t = line + chars[i];
+      if (line && g.measureText(t).width > maxW) {
+        out.push(line); line = chars[i];
+        if (out.length >= maxLines) { line = ''; break; }
+      } else line = t;
+    }
+    if (line && out.length < maxLines) out.push(line);
+    if (i < chars.length && out.length) {                 /* 截断了 */
+      var last = out[out.length - 1];
+      while (last && g.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+      out[out.length - 1] = last + '…';
+    }
+    return out;
+  }
+
+  function drawCardFace(g, x, y, w, h, i) {
+    var it  = items[i];
+    var pad = Math.round(w * 0.105);
+    var iw  = w - pad * 2;
+    var ink = COL.inkOnPaper;
+
+    g.save();
+    g.translate(x, y);
+    g.textAlign = 'left';
+    g.textBaseline = 'top';
+
+    /* 序号 */
+    var f1 = Math.round(w * 0.058);
+    g.font = '600 ' + f1 + 'px ' + FONT_MONO;
+    g.fillStyle = rgba(ink, 0.5);
+    g.fillText(pad2(i + 1), pad, pad);
+
+    /* 序号下一条发丝线 */
+    var ry = pad + f1 + Math.round(h * 0.020);
+    g.fillStyle = rgba(ink, 0.22);
+    g.fillRect(pad, ry, iw, Math.max(1, Math.round(h * 0.0035)));
+
+    /* 站名：主视觉，最多两行；字号相对 cellW 偏小（投影后整张卡会缩到 ~0.7 倍） */
+    var f2 = Math.round(w * 0.090);
+    g.font = '700 ' + f2 + 'px ' + FONT_SERIF;
+    g.fillStyle = rgba(ink, 1);
+    var lines = wrapText(g, it.name, iw, 2);
+    var lh = Math.round(f2 * 1.18);
+    var ty = ry + Math.round(h * 0.046);
+    for (var k = 0; k < lines.length; k++) g.fillText(lines[k], pad, ty + k * lh);
+
+    /* 底部元信息 */
+    var f3 = Math.round(w * 0.046);
+    g.font = '500 ' + f3 + 'px ' + FONT_MONO;
+    g.fillStyle = rgba(ink, 0.48);
+    g.fillText(it.sub, pad, h - pad - f3 - Math.round(h * 0.004));
+
+    /* 右下角酸黄方块 —— favicon 那个 2×2 标记里的第四格 */
+    var sq = Math.round(w * 0.058);
+    g.fillStyle = rgba(COL.accent, 1);
+    g.fillRect(w - pad - sq, h - pad - sq, sq, sq);
+
+    g.restore();
+  }
+
+  function buildAtlas() {
+    var maxSide = Math.min(1792, gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048);
+    var cols = Math.max(1, Math.ceil(Math.sqrt(N)));
+    var rows = Math.max(1, Math.ceil(N / cols));
+    var ch = Math.min(Math.floor(maxSide / rows), Math.round(Math.floor(maxSide / cols) / P.aspect));
+    var cw = Math.round(ch * P.aspect);            /* 格子和卡片保持同一比例 */
+    if (cw < 8 || ch < 8) { hasTex = 0; return; }
+
+    var cv = document.createElement('canvas');
+    cv.width = cw * cols; cv.height = ch * rows;
+    if (cv.width > maxSide || cv.height > maxSide) { hasTex = 0; return; }
+
+    var g = cv.getContext('2d');
+    if (!g) { hasTex = 0; return; }
+    g.clearRect(0, 0, cv.width, cv.height);
+    for (var i = 0; i < N; i++) {
+      drawCardFace(g, (i % cols) * cw, ((i / cols) | 0) * ch, cw, ch, i);
+    }
+    /* 采样格子。上传时开了 UNPACK_FLIP_Y，v 是翻过来的 —— 行号要从底部数 */
+    for (var j = 0; j < N; j++) {
+      var c0 = j % cols, r0 = (j / cols) | 0;
+      aCell[j * 4]     = (c0 * cw) / cv.width;
+      aCell[j * 4 + 1] = 1 - (r0 + 1) * ch / cv.height;
+      aCell[j * 4 + 2] = cw / cv.width;
+      aCell[j * 4 + 3] = ch / cv.height;
+    }
+
+    if (!atlasTex) atlasTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, atlasTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    hasTex = 1;
+  }
+
+  /* 字体没就位会画成回退字形，所以 fonts.ready 之后再补画一次 */
+  function rebuildAtlas() {
+    readFonts();
+    buildAtlas();
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(function () { buildAtlas(); });
+    }
+  }
 
   /* ---------------- 几何 ---------------- */
   var phase = 0, vel = 0, targetPhase = null;
@@ -361,10 +512,14 @@
     window.__ringLang = document.documentElement.getAttribute('data-lang') || 'zh';
     items.forEach(function (it, i) { it.sub = subOf(sites[i]); });
     lastIdx = -1;
+    rebuildAtlas();                    /* 副标题跟着语言换，图集要重画 */
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
 
   /* 皮肤换了就重新取色 */
-  new MutationObserver(readColors).observe(document.documentElement, {
+  new MutationObserver(function () {
+    readColors();
+    rebuildAtlas();                    /* 纸色和墨色都换了，卡面得重画 */
+  }).observe(document.documentElement, {
     attributes: true, attributeFilter: ['data-style', 'data-theme']
   });
 
@@ -419,6 +574,16 @@
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { goTo((cur - 1 + N) % N); e.preventDefault(); }
     else if (e.key === 'Enter' || e.key === ' ') { window.location.href = items[cur].href; e.preventDefault(); }
   });
+
+  /* 顶部那个筛选框：轮播启用后没有网格可筛了，改成「跳到第一个匹配的站点」 */
+  window.__ringJump = function (q) {
+    q = String(q || '').trim().toLowerCase();
+    if (!q) return;
+    for (var i = 0; i < items.length; i++) {
+      var hay = (items[i].dir || '') + ' ' + (items[i].name || '');
+      if (hay.toLowerCase().indexOf(q) !== -1) { goTo(i); return; }
+    }
+  };
 
   /* ---------------- 主循环 ---------------- */
   var t0 = 0, running = false, onScreen = true;
@@ -476,6 +641,14 @@
     gl.uniform3f(U.uBg, COL.bg[0], COL.bg[1], COL.bg[2]);
     gl.uniform3f(U.uAccent, COL.accent[0], COL.accent[1], COL.accent[2]);
     gl.uniform3f(U.uHair, COL.hair[0], COL.hair[1], COL.hair[2]);
+    /* 卡面内容图集：绑到 0 号纹理单元 */
+    if (atlasTex) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, atlasTex);
+      gl.uniform1i(U.uAtlas, 0);
+    }
+    gl.uniform4fv(U.uCell, aCell);
+    gl.uniform1f(U.uHasTex, hasTex);
     /* 入场：融合半径从极大收到常态 —— 所有卡先是糊成一坨，再一张张撕开 */
     gl.uniform1f(U.uK, baseK * DPR * (1 + (1 - introT) * 16));
     gl.uniform1f(U.uCorner, P.corner);
@@ -493,7 +666,11 @@
     }, { rootMargin: '120px' }).observe(stage);
   }
 
-  sec.hidden = false;
+  rebuildAtlas();
+  /* 轮播接管：收起那列兜底链接，把舞台放出来 */
+  var listEl = document.getElementById('ringList');
+  if (listEl) listEl.hidden = true;
+  stage.hidden = false;
   running = true;
   requestAnimationFrame(frame);
 })();

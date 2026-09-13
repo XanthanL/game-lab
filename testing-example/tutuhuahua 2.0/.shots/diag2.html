@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>涂涂画画 · 儿童美术教室</title>
+  <meta name="description" content="涂涂画画是一间儿童美术教室。转动环廊，看孩子们的画。">
+  <meta name="theme-color" content="#F9F7EF">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F9F7EF'/%3E%3Crect x='7' y='7' width='18' height='18' fill='%23785E40'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/tokens.css?v=2">
+  <link rel="stylesheet" href="css/site.css?v=5">
+</head>
+<body data-diag-vals="{&quot;uGrid&quot;:[4,4],&quot;uCell&quot;:[0.2197265625,0.25],&quot;uResolution&quot;:[1494,718],&quot;uSize&quot;:[337.38230415298295,384.2293103448276],&quot;uRadius&quot;:38.423,&quot;uCount&quot;:14,&quot;uPos&quot;:[0,0,-149.6,655.5,-149.6,-655.5,-568.9,1181.2,-568.9,-1181.2,-1174.7,1473,-1174.7,-1473,-1847.1,1473,-1847.1,-1473,-2452.9,1181.2,-2452.9,-1181.2,-2872.1,655.5,-2872.1,-655.5,-3021.7,0],&quot;uScale&quot;:[1,1,1,0,1,1,1,1,1,1,1,13,1,1,1,2,1,1,1,12,1,1,1,3,1,1,1,11,1,1,1,4,1,1,1,10,1,1,1,5,1,1,1,9,1,1,1,6,1,1,1,8,1,1,1,7],&quot;uK&quot;:29.275,&quot;uTextured&quot;:1,&quot;uBlend&quot;:53.792}" data-diag-canvas="1494x718 css=1494x718" data-diag-win="1494x718 dpr=1">
+
+  <!-- 涂涂画画 · 环廊:整站即一座黏液环廊。参考 Viscose carousel,
+       原生 WebGL 移植,零依赖。
+       「涂涂画画」以片头字标开场(此刻画面无卡,绝无重叠),
+       字标自行淡出后,画作环才从种子展开;
+       拖拽 / 滚轮 / 方向键转环,点击正面卡看大图;
+       WebGL 不可用时给出文字指引。 -->
+  <section class="section--ring" id="ring" aria-label="作品环廊">
+    <div class="ring is-live" id="ring-stage" tabindex="0" role="region" aria-roledescription="轮播" aria-label="作品环廊:滚轮或左右拖动转动,回车看大图" data-ring-wait="run" data-ring-state="p1.00 l1.00 s1.00 sh1.00 atlas1.00 done"><canvas class="ring__canvas" width="1494" height="718"></canvas>
+
+      <div class="ring__brand is-in is-out" id="ring-brand">
+        <h1>涂涂画画</h1>
+        <p class="ring__brand-line">孩子的画，值得一面白墙。</p>
+      </div>
+
+      <ul class="ring__list mono" id="ring-list" aria-hidden="true"><li class="is-on">01 火箭与外星人</li><li class="">02 飞向太空</li><li class="">03 拖拉机与苹果树</li><li class="">04 全家福</li><li class="">05 落日帆船</li><li class="">06 彩虹雨</li><li class="">07 深海里的鲸</li><li class="">08 猫咪与毛线球</li><li class="">09 蝴蝶和笑脸花</li><li class="">10 爸爸妈妈和我</li><li class="">11 彩虹花园</li><li class="">12 一家人去散步</li><li class="">13 猫与金鱼</li><li class="">14 喷火龙与火山</li></ul>
+
+      <div class="ring__meta ring__meta--left" aria-hidden="true">
+        <span class="ring__no" id="ring-no">No.01</span>
+        <span class="ring__title" id="ring-title">《火箭与外星人》</span>
+      </div>
+      <div class="ring__meta ring__meta--right" aria-hidden="true">
+        <span class="ring__media" id="ring-media">油画棒</span>
+        <span class="mono ring__sub" id="ring-sub">馆藏 · 01/14</span>
+      </div>
+
+      <p class="ring__caption" aria-hidden="true">
+        <span class="ring__cap-title" id="ring-cap-title">《火箭与外星人》</span>
+        <span class="mono" id="ring-cap-meta">油画棒</span>
+      </p>
+
+      <div class="ring__loader mono" id="ring-loader" aria-hidden="true" style="display: none;">001</div>
+
+      <div class="ring__bar">
+        <button class="ring__nav" id="ring-prev" type="button" aria-label="上一件">←</button>
+        <span class="mono ring__hint" aria-hidden="true">滚轮或拖一拖 · 点击卡片看大图</span>
+        <button class="ring__nav" id="ring-next" type="button" aria-label="下一件">→</button>
+      </div>
+
+      <p class="ring__fallback mono" id="ring-fallback" hidden="">
+        这台浏览器转不动 3D 环廊,请换新版浏览器再看。
+      </p>
+      <noscript>
+        <p class="ring__fallback mono">请启用 JavaScript 转动环廊看馆藏作品。</p>
+      </noscript>
+    <div class="visually-hidden" aria-live="polite">第 1 件,《火箭与外星人》</div></div>
+  </section>
+
+  <!-- 灯箱 -->
+  <div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="作品查看">
+    <span class="mono lb__counter" id="lb-counter">1 / 1</span>
+    <button class="lb__close" id="lb-close" aria-label="关闭">×</button>
+    <figure class="lb__fig">
+      <img class="lb__img" id="lb-img" src="" alt="">
+      <figcaption class="lb__caption" id="lb-caption"></figcaption>
+    </figure>
+    <button class="lb__nav lb__nav--prev" id="lb-prev" aria-label="上一件">←</button>
+    <button class="lb__nav lb__nav--next" id="lb-next" aria-label="下一件">→</button>
+  </div>
+
+  <script src="_diag.js"></script>
+  <script src="js/works-data.js?v=2026-09-13c"></script>
+  <script src="js/gallery.js?v=5"></script>
+  <script src="js/ring-carousel.js?v=6"></script>
+
+
+</body></html>

@@ -1,46 +1,25 @@
 (function () {
-  var names = {}, dump = {};
-  var origGetUL = WebGLRenderingContext.prototype.getUniformLocation;
-  WebGLRenderingContext.prototype.getUniformLocation = function (p, n) {
-    var loc = origGetUL.call(this, p, n);
-    if (loc) { try { names[loc.__id = (loc.__id || (loc.__id = Math.random()))] = n; } catch (e) {} }
-    return loc;
-  };
-  function wrap(fn, key, n) {
-    var orig = WebGLRenderingContext.prototype[fn];
-    WebGLRenderingContext.prototype[fn] = function (loc) {
-      if (loc && names[loc.__id]) {
-        var a = arguments[arguments.length - 1];
-        if (a && a.length !== undefined) {
-          var arr = []; for (var i = 0; i < a.length; i++) arr.push(Math.round(a[i] * 1000) / 1000);
-          dump[names[loc.__id]] = arr.slice(0, n);
-        }
-      }
-      return orig.apply(this, arguments);
-    };
-  }
-  wrap('uniform2fv', 'uPos', 28);
-  wrap('uniform4fv', 'uScale', 56);
-  wrap('uniform1fv', 'uRot', 14);
-  var orig1f = WebGLRenderingContext.prototype.uniform1f;
-  WebGLRenderingContext.prototype.uniform1f = function (loc, v) {
-    if (loc && names[loc.__id]) {
-      var n = names[loc.__id];
-      if (n === 'uCount' || n === 'uLinkCount') dump[n] = v;
-    }
-    return orig1f.apply(this, arguments);
+  var errs = [];
+  window.addEventListener('error', function (e) {
+    errs.push('onerror: ' + (e.message || e.type));
+  }, true);
+  var ow = console.warn, oe = console.error;
+  console.warn = function () { errs.push('warn: ' + Array.prototype.join.call(arguments, ' ')); return ow.apply(console, arguments); };
+  console.error = function () { errs.push('error: ' + Array.prototype.join.call(arguments, ' ')); return oe.apply(console, arguments); };
+  var texFails = [];
+  var origTex = WebGLRenderingContext.prototype.texImage2D;
+  WebGLRenderingContext.prototype.texImage2D = function () {
+    try { return origTex.apply(this, arguments); }
+    catch (e) { texFails.push(String(e && e.name) + ':' + String(e && e.message).slice(0, 80)); throw e; }
   };
   (function flush() {
     if (document.body) {
-      var pos = dump.uPos || [], sc = dump.uScale || [];
-      var lines = [];
-      for (var i = 0; i < 14; i++) {
-        lines.push(i + ':' + pos[i * 2] + ',' + pos[i * 2 + 1] +
-          ' s=' + sc[i * 4] + '/' + sc[i * 4 + 1] + ' cell=' + sc[i * 4 + 3]);
-      }
-      document.body.setAttribute('data-diag-count', dump.uCount);
-      document.body.setAttribute('data-diag-rot', (dump.uRot || []).join(','));
-      document.body.setAttribute('data-diag-pos', lines.join(' | '));
+      var fb = document.getElementById('ring-fallback');
+      var st = document.getElementById('ring-stage');
+      document.body.setAttribute('data-diag-errs', errs.slice(0, 6).join(' || ') || '(none)');
+      document.body.setAttribute('data-diag-texfail', texFails.slice(0, 4).join(' || ') || '(none)');
+      document.body.setAttribute('data-diag-fb', fb ? (getComputedStyle(fb).display + ' hidden=' + fb.hasAttribute('hidden') + ' rect=' + JSON.stringify(fb.getBoundingClientRect().toJSON ? fb.getBoundingClientRect().toJSON() : {})) : 'none');
+      document.body.setAttribute('data-diag-off', st ? String(st.className) : 'none');
     }
     requestAnimationFrame(flush);
   })();

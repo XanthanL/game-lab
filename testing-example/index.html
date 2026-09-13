@@ -77,8 +77,8 @@
     </nav>
   </header>
 
-  <section class="ring-sec" id="ringSec" hidden>
-    <div class="ring-stage" id="ringStage" role="group" aria-label="样例站点环形浏览">
+  <section class="ring-sec" id="ringSec">
+    <div class="ring-stage" id="ringStage" role="group" aria-label="样例站点环形浏览" hidden>
       <canvas class="ring-canvas" id="ringCanvas" aria-hidden="true"></canvas>
       <div class="ring-front">
         <span class="ring-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -88,15 +88,10 @@
       <ol class="ring-col" id="ringCol"></ol>
       <p class="ring-hint" data-zh="拖动 · 方向键 · 点右侧编号" data-en="Drag · arrow keys · pick a number">拖动 · 方向键 · 点右侧编号</p>
     </div>
-  </section>
 
-  <section class="sec" id="samples">
-    <div class="sec-head reveal">
-      <span class="sec-idx">04</span>
-      <h2><span data-zh="样例站点" data-en="Samples">样例站点</span><span class="en">SAMPLES</span></h2>
-      <span class="sec-count"><em id="count-all">0</em> <span data-zh="套" data-en="sites">套</span></span>
-    </div>
-    <div class="grid" id="grid"></div>
+    <!-- 拿不到 WebGL、或用户要求减少动效时轮播整个不启用。此时退回这一列朴素链接
+         （不是卡片堆）。轮播启用成功后由 viscose.js 把它收起来。 -->
+    <ol class="ring-list" id="ringList"></ol>
   </section>
 
   <footer>
@@ -340,8 +335,9 @@
     }
   }
 
-  /* 每个子站点只给一个入口：标题链到它的首页，其余子页面不再摊成一片标签。 */
-  function cardHTML(s, i) {
+  /* 每个子站点只给一个入口。这里渲染的是无 WebGL / 减少动效时的兜底：
+     一列朴素链接，不是卡片堆；轮播接管后会被 viscose.js 收起来。 */
+  function itemHTML(s, i) {
     var ok = s.status === 'ok';
     var pages = ok && Array.isArray(s.pages) ? s.pages : [];
     var entry = pages[0] || null;
@@ -353,20 +349,16 @@
     if (pages.length > 1) bits.push(pages.length + ' <span data-zh="页" data-en="pages">页</span>');
 
     var inner =
-      '<span class="card-top">' +
-        '<span class="card-tag" data-zh="' + (ok ? '样例' : '进行中') + '" data-en="' + (ok ? 'SAMPLE' : 'WIP') + '">' + (ok ? '样例' : '进行中') + '</span>' +
-        '<span class="card-num">' + num + '</span>' +
-        '<span class="card-go">→</span>' +
-      '</span>' +
-      '<span class="card-main">' +
-        '<span class="card-title">' + esc(title) + '</span>' +
-        (bits.length ? '<span class="card-what">' + bits.join(' · ') + '</span>' : '') +
-      '</span>' +
-      '<span class="card-meta"><span class="card-dir">' + esc(s.dir) + '/</span></span>';
+      '<span class="rl-num">' + num + '</span>' +
+      '<span class="rl-main">' +
+        '<b>' + esc(title) + '</b>' +
+        '<span class="rl-sub">' + esc(s.dir) + '/' +
+          (bits.length ? ' · ' + bits.join(' · ') : '') + '</span>' +
+      '</span>';
 
     return entry
-      ? '<a class="card card-s3 reveal" href="' + esc(entry.path) + '">' + inner + '</a>'
-      : '<div class="card card-s3 reveal">' + inner + '</div>';
+      ? '<li><a class="rl-row" href="' + esc(entry.path) + '">' + inner + '</a></li>'
+      : '<li><span class="rl-row">' + inner + '</span></li>';
   }
 
   function render() {
@@ -375,10 +367,11 @@
       if (!q) return true;
       return (s.dir + ' ' + (s.name || '')).toLowerCase().indexOf(q) !== -1;
     });
-    $('#grid').innerHTML = list.length
-      ? list.map(cardHTML).join('')
-      : '<p class="empty">' + esc(q) + '</p>';
-    $('#count-all').textContent = state.sites.length;
+    $('#ringList').innerHTML = list.length
+      ? list.map(itemHTML).join('')
+      : '<li class="rl-empty">' + esc(q) + '</li>';
+    /* 轮播启用后搜索框改作「跳到第一个匹配的站点」 */
+    if (window.__ringJump) window.__ringJump(q);
   }
 
   /* placeholder 不吃 data-zh，只能自己跟着 <html data-lang> 换 */

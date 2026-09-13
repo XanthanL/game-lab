@@ -26,8 +26,39 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ring-stage.is-drag { cursor: grabbing; }
+.ring-stage[hidden] { display: none; }
 
 .ring-canvas { display: block; width: 100%; height: 100%; }
+
+/* ── 兜底：拿不到 WebGL / 用户要求减少动效时，退回这一列朴素链接 ──
+   刻意不做成卡片堆 —— 轮播已经是主视觉，兜底只要把站点列全、能点开就行。 */
+.ring-list {
+  margin: 0; padding: 0; list-style: none;
+  border-top: 1px solid var(--line);
+}
+.ring-list[hidden] { display: none; }
+.ring-list li { border-bottom: 1px solid var(--line); }
+.ring-list .rl-row {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 13px 6px; color: var(--ink); text-decoration: none;
+  transition: background .2s var(--ease);
+}
+a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
+.rl-num {
+  flex: none; width: 2.6em;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--ink-3);
+}
+.rl-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rl-main b { font-family: var(--serif); font-size: 17px; font-weight: 700; line-height: 1.3; }
+.rl-sub {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+  color: var(--ink-3); text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rl-empty {
+  padding: 22px 6px; color: var(--ink-3);
+  font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+}
 
 /* ── 正面那张卡的信息：环的下方正中空着，放这里不挡卡片 ── */
 .ring-front {

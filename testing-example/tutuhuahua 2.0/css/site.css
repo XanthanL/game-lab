@@ -137,13 +137,24 @@ img { display: block; max-width: 100%; }
 .ring.is-live .ring__list,
 .ring.is-live .ring__caption { pointer-events: none; }
 
-/* 右侧馆藏名录(纯指示,不接事件;垂直居中,件数多也不顶到顶栏) */
-.ring__list {
+/* 右侧一栏:媒介铭牌 + 全馆名录。
+   两者此前各自 absolute 到同一个 right/top:50%/translateY(-50%),
+   坐标完全重合 —— 名录(14 行)必然把媒介名压住。
+   现在由本容器统一负责定位,内部用横排 flex 分列,物理上不可能再叠。 */
+.ring__side {
   position: absolute;
   top: 50%;
   right: var(--gutter);
   transform: translateY(-50%);
   z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+/* 全馆名录(纯指示,不接事件;件数多也不顶到顶栏) */
+.ring__list {
   list-style: none;
   text-align: right;
   pointer-events: none;
