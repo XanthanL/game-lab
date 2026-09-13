@@ -41,8 +41,10 @@ CHROME_CANDIDATES = [
 SETTLE_FRAMES = 40
 
 # 「转圈中」:转圈起点之后再走多少帧才按快门。
-# opacity 区间方案(headless 下每帧真实耗时飘忽,经常错过窗口)不稳,
-# 改回固定帧数。MID=8 帧 ≈ 130ms 真实时间,字标正进入淡出中段
+# 注意:chrome --screenshot 命令行模式是在 **virtual-time-budget 用尽时**
+# 才拍图,不是我们的 done() 触发时。所以 mid 模式在命令行下无法截到
+# 真正的"中段"——需要走 CDP 才能精确控制截图时机。
+# 这里保留 MID_FRAMES 兜底,正式启用需要走 CDP。
 MID_FRAMES = 8
 
 
@@ -108,9 +110,6 @@ def hook(state):
     function done() {{
       var s = stage();
       s.setAttribute("data-shot", "ready");
-      // 调试:done 时把页面底色染红,看截图是不是真在 done 时拍的
-      document.documentElement.style.background = "#ff0000";
-      document.body && (document.body.style.background = "#ff0000");
       try {{ console.log("SHOT_BEAT", s.getAttribute("data-shot-beat")); }} catch (e) {{}}
     }}
     window.addEventListener("load", function () {{{body}
@@ -213,7 +212,7 @@ def main():
     ap.add_argument("--chrome", default=None)
     ap.add_argument("--width", type=int, default=1000, help="桌面视口宽")
     ap.add_argument("--height", type=int, default=640, help="桌面视口高")
-    ap.add_argument("--only", choices=["desktop", "mobile", "mid"], default=None)
+    ap.add_argument("--only", choices=["desktop", "mobile"], default=None)
     ap.add_argument("--budget", type=int, default=200000)
     ap.add_argument("--debug", action="store_true", help="mid 模式只 dump DOM 不截图")
     args = ap.parse_args()
@@ -222,21 +221,12 @@ def main():
     if not chrome:
         sys.exit("找不到 Chrome / Edge。用 --chrome 指定,或设 CHROME_PATH。")
 
-    # 「转圈中」是开场中段的一瞬,只有一张,且必须跑真实时间线(慢),
-    # 所以单独一个分支、默认只用较小的视口
+    # 「转圈中」模式:chrome --screenshot 命令行模式是在 budget 用尽时拍,
+    # 不是我们的 done() 触发时,所以无法精确截到入场动画中段。需要走
+    # CDP 才能精确控制截图时机 —— 这里先把这个分支拿掉,等真要截中段时
+    # 再单独写一个 cdp-shot.py
     if args.only == "mid":
-        print("  拍 转圈中(环已转起来、字标正在淡出)...", end="", flush=True)
-        if args.debug:
-            dom = shoot(chrome, "mid", args.width, args.height, args.budget, 900, debug=True)
-            # 抓 data-shot-beat,看出当时跑到哪一拍
-            import re as _re
-            m = _re.search(r'data-shot-beat="([^"]+)"', dom or "")
-            beat = m.group(1) if m else "无(说明 data-shot=\"ready\" 都没写出来)"
-            print(f" 拍到的节拍:{beat}")
-            return 0 if beat != "无(说明 data-shot=\"ready\" 都没写出来)" else 1
-        png = shoot(chrome, "mid", args.width, args.height, args.budget, 900)
-        print(f" {png.stat().st_size // 1024} KB" if png else " 没拍出来")
-        return 0 if png else 1
+        sys.exit("--only mid 暂时停用,需 CDP 方案")
 
     views = []
     if args.only != "mobile":
