@@ -19,13 +19,15 @@
 | Phase 5 平台打磨 | ✅ **完成** | **5.1 键位重绑定 + 5.2 手柄支持 + 5.3 设置面板补完 + 5.4 性能 + 5.5 移动端专项 + 5.6 分享卡片 / 排行榜 / 截图**（可改键；手柄全程可达；画质四档 / 四个特效开关 / 色盲两档 / 减弱动态；**特效预算随档位收缩，绘制调用 100%→85%→63%**；**虚拟摇杆改模拟量 + 死区 + 下拉刹车 + 拖远重锚**，安全区与横竖屏；**本机 Top10 排行榜 + 1200×630 成绩卡 + 局内截图**） |
 
 **当前代码健康度（已实测）**：JS 语法 OK · `audit-tokens.js` 全绿 · 无残留临时文件。
-| **Phase 6 长线留存与可分享性** | ✅ **完成** | **6.1 自定义种子与对局复现 + 6.2 难度档 + 6.3 自定义挑战 + 6.4 卡池工坊 + 6.5 幽灵回放**（随机源收口 + 键控重播种 + 6 位短码 + 菜单入口 / URL 直达；三档难度 巡航 / 标准 / 深渊；5 个 Modifier 蜂群/铁壁/疾风/荒芜/脆命 最多叠 3 个；**29 模块里可禁用最多 8 个**，过滤进 rollChoices；**每局按 10Hz 录飞行轨迹 + 影子同时间轴并排跑**，按难度/挑战/卡池指纹分组存最佳局、最多 6 组） |
+| **Phase 6 长线留存与可分享性** | ✅ **完成（6.1–6.6 全部落地 · Phase 6 收官）** | 6.1 种子 + URL 直达；6.2 三档难度；6.3 五个 Modifier 最多叠 3；6.4 29 模块禁 8；6.5 每局 10Hz 录飞行轨迹、影子同时间轴并排跑、按指纹分组存最佳最多 6 组；**6.6 把种子 + 难度 + 挑战 + 卡池 + 前 90s 轨迹压成 ~1.8K 短码塞进 `#g=`，别人点开同地图 + 一只你的影子陪着飞（不需要后端、不依赖微信）** |
 
-**下一步建议**：6.5 已收官；剩 6.x 候选 **平台适配层 PAL（微信小游戏移植的前置）/ 难度档再扩一档 / 分享链接带轨迹码**（最后这条是 6.1 与 6.5 的合并：把影子轨迹压成短码塞进 `wx.shareAppMessage`，别人点开就有一只影子陪着飞）。
+| **Phase 7 限时冲刺** | ✅ **完成（7.1 + 7.2）** | **7.1 冲刺赛 Time Attack**：3 分钟倒计时冲波次，固定 standard / 无 Modifier / 无禁用；倒计时只在 play·inter 衰减，归零即 `die()`；`taSettle()` 走独立结算（**不写 nova-best / 不 commitDaily / 不出星尘**），独立榜单 `nova-tattack` Top10。**7.2 闭环**：TA 开局自动落种子（`gcodeMine()` 首行判 `!G.seed`，菜单进 TA 不带种子 → **实测出不了码**，TA 的分享玩法整个是死的）+ 轨迹码按模式取值（普通局 5Hz×90s · **TA 4Hz×180s 覆盖整局**）+ `gcodeDec` 改读头部 hz（老码天然向后兼容）。**7.3 分享闭环**：码的头部加一个标志位（bit0 = 冲刺赛，`GCODE_VER` 升到 2、v1 老码照收），收端 `gcodeTake` 置 `G.taMode` —— 之前对方点开是**普通漂移**，「3 分钟跟我比」这个语境全丢（全新实例实测）。**7.4 模式边界**：`G.taMode` 补复位点（`toMenu` / `resumeRun`）—— 之前打完一局 TA 后它**永远为真，之后每一局普通漂移都被当成 3 分钟限时**（分数还不进 nova-best）；TA 局不再写续档存档（原先会冲掉玩家正在打的普通局存档）；机库如实标注「本局固定标准 / 无挑战 / 全卡池」且影子指纹按实际生效值取。让 6.5 影子 + 6.6 轨迹码从「锦上添花」变成核心机制 |
+
+**下一步建议**：7.1–7.4 已落地。剩候选 **平台适配层 PAL（微信小游戏移植的前置）/ 难度档再扩一档 / TA 再开一档时长**。PAL 越早做越便宜（现在 60+ 处 localStorage，见 ROADMAP「移植硬约束」表）。
 > ⚠️ **发行目标由作者定，不是我替他定。** 作者是**个人开发者、无商业预算**，
 > 首选 **微信小游戏（个人主体 · 免版号）**，不是 Steam（$100 上架费）。
 > 别再往文档里写任何付费商店的包装计划。
-`index.html` 现 **10875 行 / 606 KB**（含 4.1 四种新敌型 + 4.2 两尊新巨像 + 4.3 第七船体
+`index.html` 现 **11295 行 / 631 KB**（含 4.1 四种新敌型 + 4.2 两尊新巨像 + 4.3 第七船体
 「熔炉」+ 4.3b 两张星图的纵向版式与缩放引擎 + 4.4 三个新武器行为模块 + 4.5 无尽轮换袋 / 强化层
 + 5.1 键位表与设置面板的改绑 UI + 5.2 手柄轮询 / 死区映射 / 面板导航
 + 5.3 画质档 / 特效开关 / 色盲重映射 / 减弱动态
@@ -36,7 +38,12 @@
 + 6.2 `DIFFS` 系数表 / `diffNow()` / `addScore()` 单入口 / `?diff` 难度标 / 解锁门槛
 + 6.3 `RMODS` Modifier 表 / `modNow()` / `scoreMul()` / `applyRmods()` 船体上限倍率后置
 + 6.4 `POOL_KEY` / `poolLoad/Save` / `G.ban` 局内冻结 / `rollChoices` 池内过滤 / `#poolRow` 工坊条 29 个 chip
-+ 6.5 `GHOST_KEY` / `GHOST_DT0=0.1` 10Hz 采样 / `ghostPush` 抽稀 dt 翻倍游标同步折半 / `ghostAt` 最短弧角度插值 / `drawGhostRun` 钢蓝虚线影子 + 220 段航迹 + 终点标记 / `renderGhostRow` 机库状态行 + 清除键 / `OPTS.ghost` 实时开关 / `GHOST_SLOTS=6` LRU 淘汰）。
++ 6.5 `GHOST_KEY` / `GHOST_DT0=0.1` 10Hz 采样 / `ghostPush` 抽稀 dt 翻倍游标同步折半 / `ghostAt` 最短弧角度插值 / `drawGhostRun` 钢蓝虚线影子 + 220 段航迹 + 终点标记 / `renderGhostRow` 机库状态行 + 清除键 / `OPTS.ghost` 实时开关 / `GHOST_SLOTS=6` LRU 淘汰。
++ 6.6 `gcodeEnc/Dec` 差分 + zigzag varint（**3.01B/点已是该编码的最优下界**，由探针 probe66.js 实测） / `gcodeTake` 注入外来影子只在本局生效不写库 / `seedFromUrl` 扩展解析 `#g=` / 结算面板「LINK ▸ 轨迹链接」按钮 + 完整链接 textarea / `gcodeShare` 三层兜底（clipboard API → `execCommand` → **把链接摆出来让玩家手动复制**）。
++ 7.1 `TA_SEC=180` / `TA_KEY='nova-tattack'` / `TA_MAX=10` / `TA_BOARD` / `taBoardLoad|Save|Add|Clear` / `taTick` 倒计时（只在 play·inter 衰减）/ `taSettle` 独立结算（不写 nova-best · 不 commitDaily · 不出星尘）/ `taHudPaint` HUD 读数（≤10s 转朱砂）/ `boardRec` 增 `m:3` / `bdMode` 增「限时 TIME」/ 菜单 `TIME ▸ 限时冲刺` 按钮 / HUD `#tatime`。
++ 7.2 `GCODE_TA_HZ=4` / `GCODE_TA_SEC=180` / `GCODE_TA_MAX=720` / `GCODE_CAP` / `gcodeHz|Sec|Max()` 按模式取值 / `startGame` 加 TA 自动落种子分支 / `taSettle` 改 `setSeedLine(el.overSeed)` / `gcodeDec` 的 `dt` 改读头部 hz。
++ 7.3 `GCODE_VER=2`（头部第 2 字节为标志位，bit0 = 冲刺赛）/ `gcodeDec` 按 `b[0]` 分支兼容 v1 / `gcodeTake` 置 `G.taMode` / `seedFromUrl` 在 TA 码开局后补一条 `TIME ATTACK` 横幅 / 分享横幅区分 `SPRINT LINK` 与 `TRACK LINK`。
++ 7.4 `toMenu()` 与 `resumeRun()` 复位 `G.taMode` / `saveRun()` 加 `if(G.taMode)return;`（不写续档存档）/ `ghostFpMenu()` 在 TA 下返回 `standard|-|-` / 机库 `#taNotice` 说明行 + `.tafreeze` 三行变灰不可点。
 
 ---
 
@@ -106,7 +113,12 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 | `.workbuddy/shots/phase6-2-check.js` | **难度档 14 项**（三档系数表严格单调且标准档=1 / 敌人三围随档递增 / **同样 20 点伤害三档扣血不同** / 每波数量递增 / 得分系数 0.8·1·1.4 / **开局后改选择不改本局数值** / 解锁门槛 / 刷新后读回 / 机库三档可选且当前高亮 / **每日挑战固定标准档** / 记录·卡片·榜单带难度 / 中英 / 6.1 与 5.x 无回归 / 竖屏） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-3-check.js` | **自定义挑战 19 项**（5 个 Modifier 数据表与上限 3 / 蜂群 数量×1.45 单体血×0.8 / 铁壁 血×1.7 速×0.85 / 疾风 速×1.35 伤×1.15 / 荒芜 补给间隔最小采样 ×2.2 / 脆命 船体上限 ×0.5 / **组合相乘而非覆盖** / **得分加成累加不连乘** 与难度档相乘 / 最多选 3 / **开局后冻结本局** / 历史最佳波次解锁门槛 / localStorage 持久化 / **每日挑战强制清空** / 记录·榜单·卡片带标记 / 像素差证明卡片真的画了 / 机库 UI 选中与倍率文案 / 中英 / 6.1·6.2 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-4-check.js` | **卡池工坊 14 项**（29 个模块 · 最多禁用 8 · **禁用后 50 次采样 0 次出现** / 禁 8 个仍能凑齐 3 张不塌成 REPAIR / 选 10 个只留前 8 / **开局后冻结本局** / localStorage 持久化 / **每日挑战强制清空** / 记录·榜单·卡片带「工坊 xN」标记 / 像素差证明卡片真画了 / 机库 UI 选中 + 上限变色 + 顺序按 MODULES 定义序 / 中英 / 6.1·6.2·6.3 + 难度/挑战/工坊三套并存 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
-| `.workbuddy/shots/phase6-5-check.js` | **幽灵回放 17 项**（常量表 CAP 3600 · SLOTS 6 · MIN 40 · DT0 0.1 / 空开局机库 1 元素 / `runT 0→1.0` 录 11 点 · 首点精度正确 / 3700 点抽稀 dt 翻倍 gn≈1900 len=gn×3 / 插值中点=50 越末点 null / 角度走最短弧不穿 0 / 归档首存·低分不覆盖·高分覆盖 / 指纹分组互不覆盖 / 写满 7 组仍 6 组 LRU 淘汰最旧 / 开关实时 / 老存档无键仍默认开 / 刷新读回 / 机库 2 元素点清除→1 元素 / 中英文案 / 跑一段无 pageerror · 含越过终点分支 / 6.1·6.2·6.3·6.4 钩子不破 / 390px 不溢出） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase6-5-check.js` | **幽灵回放 18 项**（含 6.2/6.3/6.4 续档还原 fix） |
+| `.workbuddy/shots/phase6-6-check.js` | **轨迹码 14 项**（5Hz × 90s = 450 点 · 位置量化 4px · 朝向 256 级 / 差分+varint 编码极限 3.01B/点 / 全字段往返 + 精度误差 ≤2px 与 ≤1/256 圈 / 上限 450 点 / 无种子不产码 / `#g=` URL 直达带影子开局 / 坏码与截断码一律 null 不炸 / 结算面板 UI 给出完整链接 / 随机局不出轨迹链接按钮 / 中英文「来自链接」/ 6.1·6.5·5.6 钩子不破 / 390px 不撑破） |（常量表 CAP 3600 · SLOTS 6 · MIN 40 · DT0 0.1 / 空开局机库 1 元素 / `runT 0→1.0` 录 11 点 · 首点精度正确 / 3700 点抽稀 dt 翻倍 gn≈1900 len=gn×3 / 插值中点=50 越末点 null / 角度走最短弧不穿 0 / 归档首存·低分不覆盖·高分覆盖 / 指纹分组互不覆盖 / 写满 7 组仍 6 组 LRU 淘汰最旧 / 开关实时 / 老存档无键仍默认开 / 刷新读回 / 机库 2 元素点清除→1 元素 / 中英文案 / 跑一段无 pageerror · 含越过终点分支 / 6.1·6.2·6.3·6.4 钩子不破 / 390px 不溢出） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase7-check.js` | **冲刺赛 13 项**（常量 180s / Top10 / **开局冻结 standard·无 Modifier·无禁用** / 倒计时 play 减·levelup·dying 不动 / 归零自动 `die()` / **不写 nova-best** / 不 commitDaily / 榜单 wave 降序平局按剩余秒升序 / HUD 读数 ≤10s 变红 / 结算面板 TA 分支 / `boardRec.m=3` + `bdMode` TIME / 中英 / 6.x·5.x 钩子不破 / 390px 不撑破） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase7-2-check.js` | **冲刺赛闭环 12 项**（常量两档 / **TA 自动落种子** / 三连开种子互不相同 / 手填种子不被覆盖 / TA 码 720 点且比普通局长 / 解码 `dt` 跟随头部 / **老码头里 hz=20 仍按 5Hz 解（向后兼容）** / 结算显示种子 / 轨迹链接按钮已显示 / 解出轨迹跨满 180s / 随机局仍不出码 / 390px 不撑破） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase7-3-check.js` | **冲刺赛分享闭环 11 项**（`GCODE_VER=2` / TA 码带 ta 标志而普通码不带 / **乙方全新实例点开 → 真进 3 分钟冲刺**（倒计时 180 · 同地图 · 影子 720 点 dt=0.25 · HUD 显示 · standard 无挑战无禁用）/ 普通链接不会把人拽进 TA / **v1 老码照解且 ta=false** / ver 0·3·9 一律 null / 横幅区分 SPRINT·TRACK / 乙方开局 TIME ATTACK 交代 / 标志位只 +1 字节 / 6.6 往返与 6.5·6.1 钩子不破 / 390px 不撑破） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase7-4-check.js` | **冲刺赛模式边界 10 项**（回主菜单复位 / **打完 TA 后普通漂移不再是限时赛** / 普通局分数回到 nova-best / 续档一律普通 / **TA 局不写续档存档而普通局照写** / 机库三行冻结 + 说明行 / **机库影子指纹 == 开局实际指纹** / 中英 / TA 本身未被复位搞坏 / 390px 不撑破） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-1-check.js` | **种子 14 项**（短码往返含大小写·空格·非法码 / **编队确定性且不受战斗推流影响** / 选卡干净流·脏流都确定 / 精英·词缀·掉落确定 / 菜单→面板→机库→开局全流程 / 暂停与结算显示种子 / 随机局不显示 / 每日显示日期而非码 / **URL `?seed=` 直达** / 成绩卡有无种子两张图不同（像素级证明真画上去了） / 榜单记录与行文本带码 / 中英 / 5.1–5.6 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase5-6-check.js` | **分享 / 榜 / 截图 13 项**（排序与 Top10 截断 / 名次返回值含「挤不进返 0」/ **刷新后读回存档** / 清空 / 面板渲染与本局高亮 / 从菜单开·关不串面板 / **坠毁与通关各自进榜** / 卡片 1200×630 且**颜色跟随色盲 token** / 主画布截图有实际内容 / 中英 / 5.1·5.4·5.5 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase5-3-shots.js` | 留档截图：设置面板两节 / 对局色盲红绿档 / 对局色盲蓝黄档 / 竖屏 | 人工 |
@@ -1301,11 +1313,165 @@ chip 顺序按 `MODULES` 定义序（不是点击序）—— 玩家改了之后
 - `renderGhostRow()` —— 机库状态行 + `CLEAR` 按钮（按当前 `ghostFpMenu()` 找对应那一条）；
 - `OPTS.ghost` 实时开关 + `OPT_BOOL` 列表新增项；
 - **loadOpts 必须 `if(k in s)`**：老存档根本没有 `ghost` 这个键，无条件写 0 等于把新功能对老玩家默认关掉；
-- **存档校验下界 6 而非 9**：两条点的短轨迹合法，按 9 判会被静默丢掉，表现为"存了却读不回来"，同时 `g.n=Math.min(...)` 钳制越界。
+- **存档校验下界 6 而非 9**：两条点的短轨迹合法，按 9 判会被静默丢掉，表现为"存了却读不回来"，同时 `g.n=Math.min(...)` 钳制越界；
+- **续档「照播不录」**：`resumeRun()` 里影子按指纹取回继续播（`runT` 连续，位置自动对上），
+  但 `G.gpts` 保持 `null` —— 前面没录到的那一段补不回来，硬补会在下一局变成一段瞬移，
+  而且 `ghostSave()` 对 `!G.gpts` 直接 `return false`，半截轨迹不会顶掉完整那条。
 
-**验证**：`phase6-5-check.js` **17 项全过**，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase6-5-pre.html` · post `.workbuddy/backups/index_*_phase6-5-post.html`，截图 `.workbuddy/shots/phase6/6-5-s1…s4-*.png`。
+**顺手修掉的既有缺陷（6.2/6.3/6.4 的续档 bug）**：`saveRun()` 只存了 `b:G.build`，
+**没存 `G.diff / G.rmods / G.ban`**，`resumeRun()` 也不还原 —— 刷新续档后
+深渊档悄悄变标准档（`G.diff` 缺失 → `diffNow()` 回落到菜单当前选择，**局内改菜单就能改本局数值，
+「开局冻结」被绕过**）、Modifier 全失效（`modNow()` 全 1）、禁用池失效。
+修法：`saveRun` 补 `df/rm/bn` 三字段，`resumeRun` 补三行还原（旧档无这三键走默认兜底）。
+
+**验证**：`phase6-5-check.js` **18 项全过**（第 18 项即上面那条续档还原），`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase6-5-pre.html` · post `.workbuddy/backups/index_*_phase6-5-post.html`，截图 `.workbuddy/shots/phase6/6-5-s1…s4-*.png`。
+
+
+#### ✅ 6.6 轨迹码（Ghost Code）（已完成 2026-09-13）
+**定位**：6.1 让两个人跑同一张地图（种子里带了敌人编队与掉落），
+6.5 让一局留下自己的形状（影子录下你的飞行轨迹），
+**6.6 把两件事合成一个链接**：把「种子 + 难度 + 挑战 + 卡池 + 前 90 秒飞行轨迹」
+压成一段 ~1.8K 字符的短码，塞进分享链接的 hash。
+别人点开就是同一张地图 + 一只你的影子陪着飞，**不需要后端、不依赖微信**，
+只在 hash 里走一遍 —— 浏览器原生转发、邮件转发、QR 码转发都行。
+
+**长度是先量出来的，不是拍的**（探针 `probe66.js`）：差分 + zigzag varint
+后**恒为 3.01 字节/点**（与采样率无关），已经贴着该编码的最优下界 —— 再压只能减点数或减维度。
+所以定 **5Hz × 90s = 450 点 ≈ 1.35KB → base64url ≈ 1.8K 字符**，
+走 **URL hash**（`#g=...`，hash 不发给服务器、长度上限宽得多，
+且 6.1 的 `seedFromUrl` 本来就同时解析 search 与 hash）。
+
+**只在「有种子」的局生成轨迹码** —— 随机局地图不同，影子没有可比性（与 6.1「随机局不显示种子」同一条语义）。
+
+**格式**（base64url）：头定长 11B（ver / dtcs / diff / rmods bitmask / ban bitmask 4B / seed 4B / hull idx）+ varint（score / wave / n）+ 轨迹（每点 3 个 zigzag varint：dx, dy, dang，位置量化 4px，朝向 256 级/圈）。
+
+**模块**（6.6 约 200 行）：
+- `gcodeResample()` —— 把本机的 10Hz 轨迹按时间重采样到 5Hz，
+  复用 6.5 抽出的通用插值函数 `gpAt()`（不是再写一遍），与源步长无关；
+- `gcodeEnc()` / `gcodeDec()` —— 编码解码 + base64url，量化到 4px 后最大位置误差 ≤2px、
+  角度 ≤1/256 圈（实测），坏码 / 截断码 / 空串一律 `null` 不抛；
+- `gcodeMine()` —— 当前局能不能出码：无种子 / 点数不足 → 空串；
+- `gcodeUrl()` —— 拼 `#seed=XXXXXX&g=<码>` 完整链接；
+- `gcodeShare()` —— 优先剪贴板 API（**注意 `writeText` 返回 promise 拒收时
+  `try/catch` 抓不到、直接冒 pageerror，必须挂 `.then(成功, 失败)` 兜住**，
+  详见 §7 #167）→ 失败则 `execCommand` → 还失败就**把完整链接显示出来让玩家手动复制**，
+  这条兜底是核心：URL 摆出来玩家看得见自己分享的是什么；
+- `gcodeTake()` —— 收端注入 `G.pendingGhost` + `G.pendingSeed`，开局时优先于本机影子；
+- `seedFromUrl()` 扩展 `#g=` 解析 —— 有码就**直接开局**（与 `?seed=` 同一条流程）。
+
+**优先级**：链接里的影子 > 本机最佳影子。用完即清回落到本机最佳。
+**机库行**：外来影子带「来自链接」琥珀色标记，**不显示清除键** —— 清除动的是本机影子库，外来影子只在本局生效。
+
+**验证**：`phase6-6-check.js` **14 项全过**，全量回归 27 套零 FAIL 零 ERR，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase6-6-{pre,post}.html`，截图 `.workbuddy/shots/phase6/6-6-s1…s4-*.png`。
+
+#### ✅ 7.1 冲刺赛（Time Attack）（已完成 2026-09-13）
+**定位**：6.5 影子 + 6.6 轨迹码现在是"锦上添花" —— 有了限时赛，它们变成**核心机制**：
+分享一条链接就是「3 分钟里跟你的影子比谁冲得更远」。TA 是一条**独立于长期进度**的赛道，
+输了不心疼，赢了也只是 TA 榜单上的一个名字。
+
+**设计约束**（每条都是先定后写的）：
+- **固定 `diff=standard` · `rmods=[]` · `ban=[]`** —— TA 的本质是「3 分钟冲波次」，
+  带深渊档 / Modifier / 禁用池会让节奏失真，也让榜单失去可比性；
+- **不更新 nova-best / 不 commitDaily / 不出星尘** —— 三个面板与长期进度解耦；
+- **倒计时只在 `play` / `inter` 衰减**，pause / levelup / dying 都不动（与 `G.runT` 同语义）；
+- 死亡或时间到都走 `taSettle()`，**不**走 `showOver()` 那条流（避免 `G.best` 误写）。
+
+**模块**（约 90 行）：`TA_SEC=180` / `TA_KEY='nova-tattack'` / `TA_MAX=10` / `TA_BOARD`；
+`taBoardLoad|Save|Add|Clear`（排序 `(y.w-x.w)||((x.rt|0)-(y.rt|0))`：wave 降序、平局剩得越少越快到）；
+`taTick(dt)`；`taSettle()`；`taHudPaint()`（≤10s 加 `.warn` 转朱砂）。
+接入点：菜单 `TIME ▸ 限时冲刺`（`G.taMode=true;G.dailyMode=false`）· `startGame` 三行冻结 +
+`G.taT=TA_SEC` · `updateWorld` 里 `taTick(dt)` · `showOver` 首行分流 · `updateHUD` 末尾 `taHudPaint()`
+· 开机 `taBoardLoad()` · `boardRec` 增 `m:3` · `bdMode` 增「限时 / TIME」。
+
+**验证**：`phase7-check.js` **13 项全过**，全量回归 28 套零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。
+回退点 `.workbuddy/backups/index_*_phase7-{pre,post}.html`。
+
+#### ✅ 7.2 冲刺赛闭环（已完成 2026-09-13）
+**起因**：7.1 落地后我按「先量后改」跑了一遍探针 `probe72.js`，发现 TA 的核心玩法**是死的** ——
+`gcodeMine()` 首行就是 `if(!G.seed)return ''`，而菜单进 TA 不带种子，
+实测 `gcodeMine()` 返回空串。「分享一条链接跟你的影子比」这条 TA 一半的意义，根本出不来。
+
+**修法一 · TA 自动落种子**：`startGame()` 的 else 分支加一条 `else if(G.taMode)`，
+没手填种子就现起一个（`irand(1,SEED_MAX)`）。玩家仍可自己填种子跑同一张图 —— 只补默认值，不改已有行为。
+顺带把 `taSettle()` 里的 `el.overSeed.hidden=true` 换成 `setSeedLine(el.overSeed)`：
+TA 现在必有种子，按 6.1「有种子就显示」的规矩该露出来。
+
+**修法二 · 轨迹码按模式覆盖整局**（这才是真正要量的地方）：TA 整局 180s，
+而默认档只录前 90s —— 影子半路消失，等于后半程没有参照。探针实测（10Hz 真值对照，同一条三频规避航线）：
+
+| 方案 | 点数 | 链接长度 | 位置 p95 | 角度 p95 | 覆盖 |
+|---|---|---|---|---|---|
+| 5Hz×90s（原） | 450 | 1866 字 | 8.00 px | 12.9° | 90 s |
+| 2.5Hz×180s | 450 | 1972 字（+5.7%） | 15.57 px | 38.8° | 180 s |
+| 3.33Hz×180s | 600 | 2534 字（+36%） | 11.77 px | 26.2° | 180 s |
+| **4Hz×180s** | **720** | **2990 字（+60%）** | **8.94 px** | **21.5°** | **180 s** |
+| 5Hz×180s | 900 | 3706 字（+99%） | 8.32 px | 13.2° | 180 s |
+
+4Hz 之后精度几乎不再涨、长度却线性翻倍 —— **取 4Hz×180s**。
+2.5Hz 虽然只贵 5.7%，但角度 p95 38.8° 会让影子在急转时船头明显偏，不值。
+**只有 TA 走这一档**：普通漂移一局 5~15 分钟，前 90 秒陪跑足够，没必要让每一条分享链接都变长 60%。
+
+**修法三 · 解码读头部 hz**（顺手修掉一个 latent bug）：`gcodeDec` 原来写死 `dt:1/GCODE_HZ`，
+编码参数一旦「按模式取值」，TA 码（4Hz）就会被按 5Hz 播、速度快 25%。
+改成 `dt:1/hz`（头部本来就带这个字段）—— **老码头里存的是 100/5=20，照它解仍是 5Hz，
+向后兼容天然成立，连 `GCODE_VER` 都不用升**。
+
+**验证**：`phase7-2-check.js` **12 项全过**（第 7 项专门验老码兼容），全量回归 29 套零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。
+回退点 `.workbuddy/backups/index_*_phase7-2-{pre,post}.html`。
+
+#### ✅ 7.3 冲刺赛分享闭环（已完成 2026-09-13）
+**起因**：7.2 让 TA 终于能出轨迹码了，但我顺手问了一句「对方点开是什么」——
+探针 `probe73.js` 用**全新实例**一测：`G.taMode=false` / `G.taT=0`，
+**开的是普通漂移**。种子和影子都到位了，唯独「3 分钟跟我比」这个语境在收端整个丢了。
+和 §7 #171 是同一类：**新链路接进老功能时，忘了老功能还有别的入口语义**。
+
+**修法**：码的头部加一个标志字节（bit0 = 冲刺赛），`GCODE_VER` 从 1 升到 2。
+解码端按 `b[0]` 分支 —— v2 读标志字节，v1 没有这一字节、按普通局处理：
+
+```
+if(b.length<13||b[0]<1||b[0]>GCODE_VER)return null;   /* v1 老码照收 */
+let i=1;
+const flags=b[0]>=2?(b[i++]||0):0;   /* v2 起第 2 字节是标志位 */
+const ta=!!(flags&1);
+```
+
+**一个字节的代价**：链接长度 +1.4 字符（2975 → 2977），换回整个分享语义。
+**没有为了省这个字节去猜长度或复用 rmask 的空闲位** —— 版本号就是留给这种事的（§7 #175）。
+
+**收端链条**：`gcodeTake()` 里 `G.taMode=!!g.ta` → `startGame()` 里已有的
+`if(G.taMode)G.taT=TA_SEC;` 自动就位（7.1 那行不用改）→
+`seedFromUrl()` 补一条 `TIME ATTACK` 横幅，让点开链接的人知道自己要跑什么。
+分享横幅也区分开：`SPRINT LINK` / `TRACK LINK`。
+
+**验证**：`phase7-3-check.js` **11 项全过**，全量回归 30 套零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。
+回退点 `.workbuddy/backups/index_*_phase7-3-{pre,post}.html`。
+
+#### ✅ 7.4 冲刺赛模式边界（已完成 2026-09-13）
+**起因**：7.3 把分享链路打通之后，我回头查了一遍 `G.taMode` 的生命周期 ——
+`grep 'G\.taMode='` 只有**置真**（菜单按钮、7.3 收端、测试钩子），**没有任何复位点**。
+探针 `probe74.js` 一量，三个问题：
+
+**A · `G.taMode` 永不复位（严重）** —— 打完一局 TA 回主菜单后它仍是 `true`，
+之后**每一局普通漂移都被当成 3 分钟限时赛**：倒计时在跑、分数还不进 nova-best，玩家完全不知情。
+修法：复位点放在 **`toMenu()`**（回标题 = 退出冲刺，唯一符合直觉的时机）与 **`resumeRun()`**（续档一律普通漂移）。
+
+**B · TA 局冲掉普通局的续档存档** —— 实测一局普通局（WAVE 11）的存档会被下一局 TA 的自动存档整个冲掉（→ WAVE 2）。
+修法：`saveRun()` 里 `flushStats()` 之后加 `if(G.taMode)return;` ——
+**统计照常提交**（生涯数据不丢），只是不写续档。TA 是「3 分钟一局」的独立赛道，中途关页就没了，符合"输了不心疼"。
+
+**C · 机库界面说一套做一套** —— 界面照旧显示玩家存下的 `abyss · [swarm+brittle] · 禁[crit+magnet]`，
+实际生效的是 `standard · [] · []`；更隐蔽的是**影子指纹对不上**（机库取 `abyss|swarm+brittle|crit+magnet`，
+TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这局会遇到的。
+修法：`ghostFpMenu()` 在 TA 下返回 `standard|-|-`；机库三行加 `.tafreeze`（变灰 + `pointer-events:none`），
+并加一行说明「限时冲刺 · 3 分钟 —— 本局固定：标准难度 / 无挑战 / 全卡池」。
+
+**注意**：这三处**都不改 TA 本身的行为** —— TA 依旧 180s、standard、独立榜单（第 9 项断言专门守着这条）。
+
+**验证**：`phase7-4-check.js` **10 项全过**，全量回归 31 套回归零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。
+回退点 `.workbuddy/backups/index_*_phase7-4-{pre,post}.html`。
 
 ---
+
 
 
 ## 7. 已知坑清单（跨阶段，血泪）
@@ -1922,6 +2088,60 @@ chip 顺序按 `MODULES` 定义序（不是点击序）—— 玩家改了之后
 164. **`loadOpts` 必须判 `k in s`**（6.5）—— 老存档里根本没有新增开关的键（`ghost`），
     无条件 `OPTS[k]=s[k]?1:0` 会把新功能对老玩家默认关掉，等于白做。
     改法：`if(k in s)OPTS[k]=s[k]?1:0;`（已有键行为不变，新增键在缺失时保持默认）。
+167. **`navigator.clipboard.writeText` 必须挂 `.then(成功, 失败)`**（6.6）—— 它返回的 promise 在 file:// 与无用户手势场景必拒，`try/catch` 抓不到、直接冒成 pageerror。挂 `.then(()=>setHint(true), ()=>setHint(false))` 吃掉 —— **两参形式才是「成功和失败都跑」**。绝对不要把 `done=true` 设在 `navigator.clipboard.writeText(url)` 之后：它的同步执行成功 ≠ 异步的写入成功。
+166. **存档漏字段 = 续档静默降级**（6.5 修掉的 6.2/6.3/6.4 既有缺陷）—— `saveRun()`
+    只写了 `b:G.build`，没写 `G.diff / G.rmods / G.ban`。后果不是"少个功能"而是**悄悄换规则**：
+    `G.diff` 缺失 → `diffNow()` 回落到菜单当前选择 → **局内改菜单就能改本局数值**，
+    「开局后冻结」这条规矩被绕过；`G.rmods` 空 → `modNow()` 全 1；`G.ban` 空 → 禁用池失效。
+    **加任何"开局冻结"的局内配置时，saveRun / resumeRun 必须成对改**，只改 startGame 等于只做了一半。
+176. **「有置真就一定要有复位」**（7.4）—— `G.taMode` 只有三处置真（菜单按钮 / 收端 / 测试钩子），
+     **没有任何复位点**，于是打完一局 TA 之后它永远为真，之后每一局普通漂移都被当成限时赛。
+     这类"模式开关"写的时候想的是"怎么打开"，**"什么时候关"必须同时想清楚**，
+     并且用 `grep 'X='` 把所有赋值点列一遍确认成对。
+     复位时机要选符合玩家心智的那个：这里是「回主菜单 = 退出冲刺」+「续档 = 普通漂移」。
+177. **探针测错了对象，会得出反向结论**（7.4）—— 我第一版 probe74 用 `NOVA.ta.start()` 进 TA
+     再去验"TA 会不会覆盖普通局存档"，结果 `startGame()` 本身就 `archiveSave + clearSave`，
+     测出来的是 startGame 的行为；改成"开完局再单独置 `G.taMode=true`"才量到真东西。
+     **用高层钩子搭场景时，先确认这个钩子自己有没有副作用。**
+
+174. **探针自己也会踩「没复现真实路径」的坑**（7.3）—— 第一版 `probe73.js` 在同一个页面里
+     `NOVA.ta.start()` 之后再测"对方点开链接"，而 `G.taMode` 是**内存态**，
+     上一步留下的 `true` 让探针得出「模式位能传」的错误结论。
+     **验证"另一个人会怎样"必须用全新浏览器实例**（`file://` 下 localStorage 还跨 context 共享，
+     要连 context 一起换）。与上一条 #169 同源：**探针与测试钩子一样，必须复现真实路径**。
+175. **版本号该升就升**（7.3）—— 给已有二进制格式加字段时，我第一反应是复用 `rmask` 的空闲位
+     或者按总长度猜—— 都是在给自己埋雷（`RMODS` 涨到 8 个就当场炸）。
+     加一个字节 + `GCODE_VER` 1→2 + 解码端按版本分支，成本是一个字节，
+     换来的是「老链接永远能开」这件确定的事。**格式里专门留了版本字段，就是干这个用的。**
+
+171. **「分享不出来」的根因常常在入口，不在编码**（7.2）—— `gcodeMine()` 首行就是
+     `if(!G.seed)return ''`，而新加的 TA 入口不带种子，于是功能**静默失效**：
+     不报错、不崩溃、结算面板只是少一个按钮，肉眼根本看不出来。
+     **新增任何"可分享 / 可复现"的入口时，回头检查它是否满足既有功能的前置判据**
+     （种子 / 点数 / 模式位……），最好写成断言而不是靠眼睛看。
+172. **解码端不能写死编码端的常量**（7.2）—— `gcodeDec` 里 `dt:1/GCODE_HZ` 写死了，
+     而头部**本来就已经带了 hz 字段**。只要编码参数从"唯一常量"变成"按模式取值"，
+     写死就立刻错位（TA 的 4Hz 码被按 5Hz 播，速度快 25%）。
+     教训：**格式里已经有的字段，解码端必须读它** —— 向后兼容天然成立，连版本号都不用升。
+173. **覆盖率与精度要分开量**（7.2）—— 我一开始拿 5Hz×90s 的 p95 8.00px 和 4Hz×180s 的
+     8.94px 直接比，得出"4Hz 几乎没变差"—— 其实后者覆盖了 180s（含更多机动段），
+     比的是**不同区间**。**不同覆盖秒数的误差不可直接比**；
+     要同时摆出 覆盖秒数 / 位置误差 / 角度误差 / 链接长度 四维再下结论。
+
+168. **大段插入必须确认落点的作用域**（7.1）—— 我用"插在某函数之前"的方式加了整个 TA 模块，
+    锚点行选中了 `resumeRun()` 内部的一行，结果 `TA_SEC` / `taTick` 全成了 `resumeRun` 的局部变量，
+    外面一调就是 `ReferenceError`，症状是**一串测试同时报 not defined**。
+    **搬移要用行号 + 内容双断言**（先 `find` 起止行、再 `assert` 块内含 `const TA_SEC=180;` 等 5 个签名），
+    不要靠"我记得它插在那儿"。
+169. **测试钩子必须复现真实按钮路径**（7.1）—— `NOVA.ta.start()` 一开始只调 `startGame()`，
+    没先把 `G.taMode=true` 置上（菜单按钮是 `G.taMode=true;G.dailyMode=false;openHulls()`），
+    于是 12 项测试里 9 项拿到的都是"普通局"的数据，报错全是 `taT=0` / `mode=play` 这种
+    **看起来像游戏 bug、其实是钩子偷懒**的假阴性。钩子要复现玩家路径，不能只调一半。
+170. **「不写 nova-best」不是加个分流就完事**（7.1）—— `taSettle()` 绕开 `showOver()` 只是堵住了一条路，
+    `flushStats()` 里还有一行"最高分随进度实时刷新"（**与结算面板无关，局中每 2 秒就写一次**），
+    `showVictory()` 里还有一条。**三处都要按 `G.taMode` 隔离**；
+    HUD 的 `BEST max(best,score)` 读数同理，TA 局只报真实历史最高，别让冲刺分冒充历史纪录。
+
 165. **读档校验下界是 6 而非 9**（6.5）—— 6 是「两个采样点」的最小长度（`[x,y,ang,x,y,ang]`），
     测试里两条点的短轨迹是合法数据，按 9 判会被静默丢掉，表现为"存了却读不回来"。
     同时 `g.n=Math.min(g.n|0,Math.floor(g.pts.length/3))` 钳制越界 —— 手改 / 半截写入的脏数据
@@ -1957,7 +2177,12 @@ chip 顺序按 `MODULES` 定义序（不是点击序）—— 玩家改了之后
 
 | 日期 | 内容 |
 |---|---|
-| | 2026-09-12 | **Phase 6.5 幽灵回放完成**。按 10Hz 采样（`GHOST_DT0=0.1`）+ 扁平数组存轨迹，满了就地 2:1 抽稀 `dt` 翻倍 `G.gn` 折半（三个量同步动，少一个翻车），时长无上限；按「难度 + 挑战 + 卡池」指纹分组存本机最佳（最多 6 组 LRU），每日挑战另起一组。`ghostSave()` 同组配置下低分不覆盖高分；`ghostAt()` 线性插值 + 角度走最短弧避免 `±π` 跳变时整船翻面；`drawGhostRun()` 钢蓝虚线影子 + 220 段同步生长的航迹 + `ΔN` 距离读数（>90px 才显示）+ 越过终点 2.4s 淡出 `×` 标记；`renderGhostRow()` 机库状态行 + 清除键；`OPTS.ghost` 实时开关；**`loadOpts` 加 `if(k in s)` 判据**避免新开关对老玩家默认关；**读档校验下界 6 而非 9**避免两条点的合法短轨迹被拒。17 项断言全过（含 6.1·6.2·6.3·6.4 钩子回归），`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase6-5-pre.html` · post `index_*_phase6-5-post.html`，截图 `.workbuddy/shots/phase6/6-5-s1…s4-*.png` |
+| | 2026-09-13 | **Phase 7.4 冲刺赛模式边界完成**。查 `G.taMode` 生命周期时发现**只有置真、没有复位** —— 打完一局 TA 后它永远为真，之后每一局普通漂移都被当成 3 分钟限时赛（倒计时在跑、分数还不进 nova-best，玩家完全不知情）。顺带量出另外两个：TA 局的自动存档会冲掉玩家正在打的普通局存档（WAVE 11→2）；机库照旧显示 `abyss+蜂群+脆命` 而实际生效 `standard/无/无`，**影子指纹也对不上**（机库取 `abyss|swarm+brittle|crit+magnet`，实际 `standard|-|-`）。三处修法：① `toMenu()` 与 `resumeRun()` 复位（回标题 = 退出冲刺）；② `saveRun()` 在 `flushStats()` 之后 `if(G.taMode)return;`（统计照交，不写续档）；③ `ghostFpMenu()` 在 TA 下返回 `standard|-|-` + 机库三行 `.tafreeze` 变灰不可点 + `#taNotice` 说明行。**都不改 TA 本身的行为**（180s / standard / 独立榜单，第 9 项断言专门守着）。10 项断言全过，31 套回归零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。回退点 `index_*_phase7-4-{pre,post}.html`。**踩坑**：模式开关要成对想"怎么开 / 什么时候关"（§7 #176）· 探针用高层钩子搭场景前先确认钩子自身有无副作用（§7 #177） |
+| | 2026-09-13 | **Phase 7.3 冲刺赛分享闭环完成 → Phase 7 收官**。7.2 让 TA 能出码之后顺手问了一句「对方点开是什么」，探针（全新实例）实测 `G.taMode=false / G.taT=0` —— **开的是普通漂移**，种子和影子都到位、唯独「3 分钟跟我比」这个语境在收端整个丢了（与 §7 #171 同类：新链路接进老功能时忘了老入口的语义）。修法：头部加一个标志字节（bit0 = 冲刺赛），`GCODE_VER` 1→2，解码端按 `b[0]` 分支、**v1 老码照收且按普通局处理**；`gcodeTake` 置 `G.taMode`，7.1 那行 `if(G.taMode)G.taT=TA_SEC` 自动就位；`seedFromUrl` 补 `TIME ATTACK` 横幅交代，分享横幅区分 `SPRINT LINK` / `TRACK LINK`。**成本只有一个字节**（链接 2975→2977 字符）。11 项断言全过（含 v1 老码兼容与 ver 0·3·9 一律 null），30 套回归零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。回退点 `index_*_phase7-3-{pre,post}.html`。**踩坑**：探针自己在同页面里测收端被内存态污染，得出过错误结论（§7 #174）· 加字段就升版本号，别复用空闲位或猜长度（§7 #175） |
+| | 2026-09-13 | **Phase 7.2 冲刺赛闭环完成**。探针先量出一个**静默失效**：`gcodeMine()` 首行判 `!G.seed`，而菜单进 TA 不带种子 → 实测返回空串，TA「分享一条链接跟你的影子比」这条核心玩法根本出不来。三处修法：① `startGame` 加 `else if(G.taMode)` 自动落种子（手填仍优先），并把 `taSettle` 的种子行从「藏」改成 `setSeedLine` 显示；② 轨迹码按模式取值 —— 普通局 5Hz×90s 不变，**TA 4Hz×180s 覆盖整局**（探针实测拐点：2.5Hz 虽只贵 5.7% 但角度 p95 38.8° 太粗，5Hz 贵 99% 精度却几乎不涨）；③ `gcodeDec` 的 `dt` 改读头部 hz（原来写死 `1/GCODE_HZ`），顺手修掉 latent bug 且**老码头里存 20=5Hz，向后兼容天然成立、不用升 GCODE_VER**。12 项断言全过（含老码兼容专项），@@REG@@，`audit-tokens.js` 全绿。回退点 `index_*_phase7-2-{pre,post}.html`。**踩坑**：新入口要回头查既有功能的前置判据（§7 #171）· 解码端不能写死编码端常量（§7 #172）· 不同覆盖区间的误差不可直接比（§7 #173） |
+| | 2026-09-13 | **Phase 7.1 冲刺赛（Time Attack）完成**。3 分钟倒计时冲波次：菜单 `TIME ▸ 限时冲刺` → 开局冻结 `diff=standard`/`rmods=[]`/`ban=[]` 并 `G.taT=180`；`taTick(dt)` 只在 `play`/`inter` 衰减，归零即 `die()`（死亡或时间到都走 `taSettle()`，**不**走 `showOver`）。`taSettle()` 走独立榜单 `nova-tattack` Top10（wave 降序、平局按剩余秒升序），**不写 nova-best / 不 commitDaily / 不出星尘** —— 为此把 `flushStats()`、`showVictory()`、HUD `BEST` 读数三处 `G.best` 写入/显示都用 `G.taMode` 隔离掉（只有一处是"结算面板"，另外两处在局中每 2 秒就写一次，见 §7 #170）。`boardRec` 增 `m:3`、`bdMode` 增「限时 / TIME」。HUD `#tatime` ≤10s 转朱砂。13 项断言全过，%s，`audit-tokens.js` 全绿。回退点 `index_*_phase7-{pre,post}.html`。**踩坑**：大段插入落进了 `resumeRun()` 内部（§7 #168）· 测试钩子没复现按钮路径（§7 #169） |
+| | 2026-09-13 | **Phase 6.6 轨迹码完成 → Phase 6 收官**。把「种子 + 难度 + 挑战 + 卡池 + 前 90s 飞行轨迹」压成 base64url 短码（**3.01B/点已是差分+varint 的最优下界**，由探针 probe66.js 实测）塞进 `#g=`，别人点开同地图 + 一只你的影子陪着飞。**先量后改**：不是拍的，是跑探针拿到的下界。**只在有种子局生成** —— 随机局地图不同，影子没有可比性（与 6.1 同条规矩）。`gpAt()` 通用插值函数从 6.5 抽出复用，重采样与源步长无关。**优先级**：链接里的影子 > 本机最佳影子，用完即清回落到本机最佳。机库行「来自链接」琥珀标记，**不显示清除键**（外来影子只本局生效）。`gcodeShare()` 三层兜底：clipboard API → `execCommand` → **把完整链接摆出来让玩家手动复制** —— URL 摆出来玩家看得见自己分享的是什么，这条兜底是核心。`seedFromUrl()` 扩展 `#g=` 解析。14 项断言全过，27 套回归零 FAIL 零 ERR，`audit-tokens.js` 全绿。回退点 `index_*_phase6-6-{pre,post}.html`，截图 `phase6/6-6-s1…s4-*.png`。**踩坑**：`navigator.clipboard.writeText` 返回的 promise 拒收时 `try/catch` 抓不到、直接冒 pageerror（详见 §7 #167）|
+| 2026-09-12 | **Phase 6.5 幽灵回放完成**。按 10Hz 采样（`GHOST_DT0=0.1`）+ 扁平数组存轨迹，满了就地 2:1 抽稀 `dt` 翻倍 `G.gn` 折半（三个量同步动，少一个翻车），时长无上限；按「难度 + 挑战 + 卡池」指纹分组存本机最佳（最多 6 组 LRU），每日挑战另起一组。`ghostSave()` 同组配置下低分不覆盖高分；`ghostAt()` 线性插值 + 角度走最短弧避免 `±π` 跳变时整船翻面；`drawGhostRun()` 钢蓝虚线影子 + 220 段同步生长的航迹 + `ΔN` 距离读数（>90px 才显示）+ 越过终点 2.4s 淡出 `×` 标记；`renderGhostRow()` 机库状态行 + 清除键；`OPTS.ghost` 实时开关；**`loadOpts` 加 `if(k in s)` 判据**避免新开关对老玩家默认关；**读档校验下界 6 而非 9**避免两条点的合法短轨迹被拒。18 项断言全过（含 6.1·6.2·6.3·6.4 钩子回归 + 续档还原），`audit-tokens.js` 全绿。**顺手修掉 6.2/6.3/6.4 的续档缺陷**：`saveRun` 漏存 `G.diff/G.rmods/G.ban`，刷新续档后深渊档变标准档、Modifier 与禁用池全失效（详见 §7 #166）。回退点 `.workbuddy/backups/index_*_phase6-5-pre.html` · post `index_*_phase6-5-post.html`，截图 `.workbuddy/shots/phase6/6-5-s1…s4-*.png` |
 | 2026-09-12 | **Phase 6.2 难度档完成**。新增 `DIFFS` 三档（巡航 0.75/0.7/0.85/×0.8 · 标准 1 · 深渊 1.35/1.3/1.2/×1.4，深渊需历史最佳波次 ≥15），只改敌人三围·密度·承伤与得分系数，**不碰玩家输出**；六个应用点（spawnEnemy / spawnAst / hurtPlayer / drainPlayer / buildWave 的 total / 新增 addScore），加分点从 5 处 `G.score+=` 收敛到 `addScore()`；局内以 `G.diff` 锁定不受后续选择影响；每日挑战固定标准档；难度进记录·成绩卡·榜单。14 项断言全过，`audit-tokens.js` 全绿。回退点 `.workbuddy/backups/index_*_phase6-2-pre.html`，截图 `.workbuddy/shots/phase6/6-2-s1…s5-*.png` |
 | 2026-09-12 | **Phase 6.3 自定义挑战完成**。5 个 Modifier `RMODS`（蜂群 数量×1.45/血×0.8 · 铁壁 血×1.7/速×0.85 · 疾风 速×1.35/伤×1.15 · 荒芜 补给×2.2 · 脆命 船体×0.5），最多叠 3 个，**得分加成累加不连乘**（三个 0.35 是 ×2.05 而不是 ×2.46）并与难度档相乘；六个应用点每帧只问一次 `modNow()` 快照；`applyRmods()` 在 hull.apply + 局外加成之后生效；局内 `G.rmods` 冻结不受改选影响；每日挑战强制清空。机库 `#rmodRow` 多选 + 实时倍率文案；记录·榜单·卡片追加「蜂群+脆命」式标记。19 项断言全过，`audit-tokens.js` 全绿。post-backup `.workbuddy/backups/index_20260912-221500_phase6-3-post.html`，截图 `.workbuddy/shots/phase6/6-3-s1…s5-*.png` |
 | 2026-09-12 | **Phase 6.4 工坊式卡池完成**。`POOL_KEY='nova-pool'` + `POOL_MAX=8` 最多禁 29 个模块中的 8 个；`G.ban` 局内冻结（与 G.diff / G.rmods 同条规矩）；每日挑战强制清空；`rollChoices()` 在 rarity/cap 过滤**之前**加一行 `pool.filter(m=>G.ban.indexOf(m.id)<0)`。机库 `#poolRow` 29 个 chip 多选（满 8 时其他变灰），chip 顺序按 `MODULES` 定义序；记录·榜单·卡片追加「工坊 xN」。**故意不给得分加成** —— 禁"垃圾"是纯收益、禁"强卡"自然更难，不引入"禁得越多分数越高"的 gaming 漏洞。14 项断言全过（含三套并存：深渊+挑战+工坊 船体仍 50），`audit-tokens.js` 全绿。pre `index_20260912-225300_phase6-4-pre.html` · post `index_20260912-230600_phase6-4-post.html`，截图 `phase6/6-4-s1…s5-*.png`。**本次踩坑最大教训**：6.3 那次口头"已创建 pre"实际没写，**pre 备份必须用脚本第一步固化**，已写进 §7 #162 |

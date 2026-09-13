@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#fff}iframe{display:block;border:0}</style></head><body>
+<iframe id="f" width="375" height="2000" src="../index.html"></iframe>
+<script>
+window.addEventListener('load', function(){
+  var f = document.getElementById('f');
+  function fit(){
+    try {
+      var d = f.contentDocument;
+      if (d && d.documentElement) {
+        var h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight);
+        f.style.height = h + 'px';
+        document.title = 'H=' + h;
+      }
+    } catch(e) { document.title = 'ERR:' + e.message; }
+  }
+  setTimeout(fit, 600); setTimeout(fit, 1500);
+});
+</script></body></html>

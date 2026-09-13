@@ -1,0 +1,108 @@
+/* ============================================================
+   辰光修表铺 · Chenguang Watch Atelier — 设计 token（唯一真源）
+   骨架：website-style-router emit_tokens.py
+         --anchor editorial-hero --surface paper --variant a --pair 0
+   覆盖：品牌卡三色三字体（溯源与派生见 design-system/MASTER.md）
+   本文件与 design-system/MASTER.md 必须逐值一致（铁律 26 / 审计 F18）
+   ============================================================ */
+
+/* ── 西文字体自托管（latin 子集 woff2；中文走系统栈，不拖首屏）── */
+@font-face {
+  font-family: "EB Garamond";
+  src: url("../fonts/EBGaramond-var.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("../fonts/Lora-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ── 颜色（品牌卡覆盖：浅金 #C8A96B / 墨黑 #1A1A1A / 纸质米白 #F7F4EE）── */
+  --bg:        #F7F4EE;   /* 品牌卡 L12 纸质米白（paper 档，oklch≈0.956 0.008 90） */
+  --bg-soft:   #EFE9DB;   /* 米白加深一档：柔和面板 / 图框底 */
+  --fg:        #1A1A1A;   /* 品牌卡 L11 墨黑（对 --bg 对比度 ≈15.9:1） */
+  --muted:     #716C5C;   /* 暖灰次要文字（对 --bg ≈4.8:1） */
+  --line:      rgba(26,26,26,.14);
+
+  /* 纸面强调色：品牌浅金 #C8A96B 在米白底上仅 2.07:1，不可作纸上文字；
+     同色相加深为黄铜金供纸上文字/数字使用，浅金保留在墨黑面上 */
+  --accent:      #8A6C39;   /* 深化金：价格 / 编号 / 大字强调（对 --bg ≈4.5:1） */
+  --accent-ink:  #7E6234;   /* 链接金：小字强调（对 --bg ≈5.3:1） */
+  --accent-soft: rgba(138,108,57,.10);
+
+  --gold:      #C8A96B;   /* 品牌卡 L10 浅金：墨黑面文字（对 --ink ≈7.7:1）与装饰线框 */
+  --ink:       #1A1A1A;   /* 招牌底色：hero / 页脚 / 到店信息面 */
+  --on-ink:    #F7F4EE;   /* 墨底主文字 */
+  --on-ink-muted: rgba(247,244,238,.72);   /* 墨底次要文字 */
+
+  /* ── 反同质化指纹（同批次内必须唯一）── */
+  --surface: "paper";
+  --variant: "a";
+
+  /* ── 字体（具名搭配；品牌卡 L15-16 覆盖注册表默认 Playfair Display）── */
+  --font-display: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Lora", Georgia, "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-cjk: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --font-display-name: "EB Garamond";
+  --font-body-name: "Lora";
+  --weight-display: 700;
+  --weight-body: 400;
+
+  /* ── 字阶（公比 1.414，基准 18px，6 级封顶）── */
+  --fs-xs: 13px;
+  --fs-base: 18px;
+  --fs-lg: 25px;
+  --fs-xl: 36px;
+  --fs-2xl: 51px;
+  --fs-display: 72px;
+
+  /* ── 行高（字号越大越紧；中文主站整体上浮）── */
+  --lh-xs: 1.8;
+  --lh-base: 1.75;
+  --lh-lg: 1.52;
+  --lh-xl: 1.41;
+  --lh-2xl: 1.27;
+  --lh-display: 1.13;
+
+  /* ── 字距 ── */
+  --trk-display: -0.02em;
+  --trk-heading: -0.01em;
+  --trk-body: 0em;
+  --trk-label: 0.08em;
+
+  /* ── 间距（基数 8px，全部为它的整数倍）── */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+  --space-7: 96px;
+  --space-8: 128px;
+
+  /* ── 形状（印刷直角：全 0；分区靠 1px --line）── */
+  --radius-sm: 0px;
+  --radius: 0px;
+  --radius-lg: 0px;
+  --shadow: none;
+
+  /* ── 版心 ── */
+  --measure: 1080px;
+  --prose-width: 60ch;
+  --gutter: 16px;
+
+  /* ── 中轴 ── */
+  --axis: center-axis;
+
+  /* ── 动效（性格：soft；一律可被 prefers-reduced-motion 关闭）── */
+  --dur-fast: 180ms;
+  --dur-normal: 320ms;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}

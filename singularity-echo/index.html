@@ -908,6 +908,12 @@ html[data-rm] .overlay{animation:none}
 .sdcode{margin-top:8px;color:var(--c-amber);letter-spacing:.16em;font-size:var(--fs-2)}
 /* ---------- 6.2 难度档 ---------- */
 .difrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+/* 7.4 冲刺赛：机库里难度 / 挑战 / 卡池三行在本局被冻结 —— 变灰且不可点，另给一行说明，
+   否则界面照旧显示玩家存下的选择（实测 abyss+蜂群+脆命），实际生效的却是 standard/无/无。 */
+.tafreeze{opacity:.4;pointer-events:none}
+.tanotice{margin-top:18px;text-align:center;font-size:var(--fs-2);letter-spacing:.12em;
+  color:var(--c-amber);border:1px solid rgb(var(--c-amber-rgb) / .38);border-radius:4px;
+  padding:8px 12px;line-height:1.7}
 .diflab{width:100%;text-align:center;font-size:var(--fs-1);color:var(--c-steel);letter-spacing:.16em}
 .dif{padding:6px 16px;font-size:var(--fs-2);letter-spacing:.1em;color:var(--c-ink);
   background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .25);border-radius:2px;cursor:pointer}
@@ -938,6 +944,19 @@ html[data-rm] .overlay{animation:none}
 .ghostrow .gclr{padding:3px 11px;font-size:var(--fs-1);letter-spacing:.08em;color:var(--c-ink);
   background:transparent;border:1px solid rgb(var(--c-cyan-rgb) / .25);border-radius:1px;cursor:pointer}
 .ghostrow .gclr:hover{border-color:var(--c-foe);color:var(--c-foe)}
+.ghostrow .glink{color:var(--c-amber)}
+/* ---------- 6.6 轨迹码 ---------- */
+.gcode{width:100%;min-height:64px;margin-top:10px;padding:8px 10px;box-sizing:border-box;
+  background:rgb(var(--c-void-rgb) / .55);border:1px solid rgb(var(--c-cyan-rgb) / .3);
+  border-radius:2px;color:var(--c-cyan-hi);font-size:var(--fs-1);line-height:1.5;
+  word-break:break-all;resize:vertical}
+.gcodehint{font-size:var(--fs-1);color:var(--c-steel);letter-spacing:.1em;margin-top:6px}
+/* ---------- 7 冲刺赛 ---------- */
+#tatime{font-size:var(--fs-2);letter-spacing:.18em;color:var(--c-amber);
+  text-shadow:0 0 12px rgb(var(--c-amber-rgb) / .45)}
+#tatime.warn{color:var(--c-foe);text-shadow:0 0 14px rgb(var(--c-foe-rgb) / .55)}
+.tasum{font-size:var(--fs-2);color:var(--c-amber);letter-spacing:.14em;
+  margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgb(var(--c-line-rgb) / .35)}
 /* ---------- 5.6 分享卡片 ---------- */
 #shareImg{display:block;width:min(560px,90vw);margin:10px auto 0;
   border:1px solid rgb(var(--c-cyan-rgb) / .3);background:var(--c-void)}
@@ -1025,6 +1044,7 @@ html[data-rm] .overlay{animation:none}
     <div id="best" class="mono" data-page-node-id="Uhfc7lHoWueANaeXpcrZCL">BEST 0</div>
     <div id="ptime" class="mono" data-page-node-id="ynaKGW8rqUPEoWHKF4COII">0:00</div>
     <div id="enleft" class="mono" hidden data-page-node-id="Y1t6xUsdakK5ABCNAcKzAN">剩余 0</div>
+    <div id="tatime" class="mono" hidden>3:00</div>
   </div>
   <div class="hud-btns" data-page-node-id="Akeo8WmMHPJkClO1jVFaWD">
     <button id="btnMute" title="音效 M" data-i18n-t="hud_mute" data-page-node-id="WxYGd7PwyFAET48AykU7EJ">♪</button>
@@ -1062,6 +1082,7 @@ html[data-rm] .overlay{animation:none}
       <button id="btnLaunch" class="btn" data-i18n="m_launch" data-page-node-id="aV5dF8XRuZsW7M1KtlJEDX">LAUNCH ▸ 出击</button>
       <button id="btnContinue" class="btn ghost" hidden data-i18n="m_resume" data-page-node-id="BYU3FTlwdVGSljwm5aRuAR">继续漂移 ▸ C</button>
       <button id="btnDaily" class="btn" data-page-node-id="__DAILY_BTN__" data-i18n="m_daily">DAILY ▸ 每日挑战</button>
+      <button id="btnTime" class="btn" data-i18n="m_time">TIME ▸ 限时冲刺</button>
       <button id="btnSeed" class="btn ghost" data-i18n="m_seed">SEED ▸ 自定义种子</button>
       <button id="btnSaves" class="btn ghost" data-i18n="m_saves" data-page-node-id="APHyEc2RHlKhVAFVbhb6aF">SAVES ▸ 存档管理</button>
       <button id="btnLogbook" class="btn ghost" data-i18n="m_log" data-page-node-id="dWzHTpgncosz0SYYwdM33Z">LOG ▸ 航行日志</button>
@@ -1078,6 +1099,7 @@ html[data-rm] .overlay{animation:none}
 <div id="hulls" class="overlay" hidden data-page-node-id="7YeBgENyG6xpMeNkVbF5xC">
   <div class="cards-in" data-page-node-id="HKrBYk8WWJyqAcntsJolsP">
     <h2 data-page-node-id="ruNuChH5DOKwjIQMV3UwVf">CHOOSE HULL<span data-i18n="h_sub" data-page-node-id="4EZY7QqC0kdgMCrPkZrCJI">选择出厂船体 —— 击败巨像解锁更多</span></h2>
+    <div class="tanotice" id="taNotice" hidden></div>
     <div class="difrow" id="diffRow"></div>
     <div class="rmodrow" id="rmodRow"></div>
     <div class="poolrow" id="poolRow"></div>
@@ -1104,9 +1126,12 @@ html[data-rm] .overlay{animation:none}
     <div class="chips" id="vicChips" data-page-node-id="zQdalkxTO6KYnPktwhxJDY"></div>
     <div class="bdrank" id="vicRank" hidden></div>
     <div class="sdcode" id="vicSeed" hidden></div>
+    <textarea class="gcode" id="vicGhost" hidden readonly></textarea>
+    <div class="gcodehint" id="vicGhostHint" hidden></div>
     <div class="row-btns" data-page-node-id="7QUW3tU7uFmNCZnkL9lPDq">
       <button id="btnEndless" class="btn" data-i18n="v_endless" data-page-node-id="oi76jcED2La916psncK27C">无尽漂移 ▸ E</button>
       <button id="btnShareV" class="btn ghost" data-i18n="v_share">CARD ▸ 分享卡片</button>
+      <button id="btnGhostV" class="btn ghost" hidden>LINK ▸ 轨迹链接</button>
       <button id="btnMenuV" class="btn ghost" data-i18n="v_menu" data-page-node-id="FHCz3cNqa2EeRl4eMYFR74">返回标题</button>
     </div>
   </div>
@@ -1202,7 +1227,10 @@ html[data-rm] .overlay{animation:none}
     <div class="chips" id="overChips" data-page-node-id="xFgESe1KjP3AK1NdCfFW1F"></div>
     <div class="bdrank" id="overRank" hidden></div>
     <div class="sdcode" id="overSeed" hidden></div>
+    <textarea class="gcode" id="overGhost" hidden readonly></textarea>
+    <div class="gcodehint" id="overGhostHint" hidden></div>
     <div class="row-btns" data-page-node-id="wRCzBhpF708lrY3uZVh9eX">
+      <button id="btnGhostO" class="btn ghost" hidden>LINK ▸ 轨迹链接</button>
       <button id="btnRetry" class="btn" data-i18n="o_retry" data-page-node-id="DPdUSs6U83Kq7e4DWaWUa6">再出击 ▸ R</button>
       <button id="btnShareO" class="btn ghost" data-i18n="o_share">CARD ▸ 分享卡片</button>
       <button id="btnMenu" class="btn ghost" data-i18n="o_menu" data-page-node-id="DYZdfF5SYiBevD3bkaTLtw">返回标题</button>
@@ -1721,7 +1749,7 @@ const el={
   pTime:$('pTime'),pStats:$('pStats'),over:$('over'),overScore:$('overScore'),newBest:$('newBest'),
   stWave:$('stWave'),stLevel:$('stLevel'),stKills:$('stKills'),stTime:$('stTime'),overChips:$('overChips'),
   overCauseBody:$('overCauseBody'),overExtra:$('overExtra'),overCause:$('overCause'),
-  hulls:$('hulls'),hullrow:$('hullrow'),diffRow:$('diffRow'),rmodRow:$('rmodRow'),poolRow:$('poolRow'),ghostRow:$('ghostRow'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
+  hulls:$('hulls'),hullrow:$('hullrow'),diffRow:$('diffRow'),rmodRow:$('rmodRow'),poolRow:$('poolRow'),ghostRow:$('ghostRow'),overGhost:$('overGhost'),vicGhost:$('vicGhost'),victory:$('victory'),vicScore:$('vicScore'),vicBonus:$('vicBonus'),
   logbook:$('logbook'),lbKills:$('lbKills'),lbGames:$('lbGames'),lbWave:$('lbWave'),lbTime:$('lbTime'),
   lbScoreSum:$('lbScoreSum'),lbBest:$('lbBest'),lbHulls:$('lbHulls'),lbSwarm:$('lbSwarm'),
   lbEnemies:$('lbEnemies'),lbBosses:$('lbBosses'),lbAffix:$('lbAffix'),
@@ -1732,7 +1760,10 @@ const el={
   joybase:$('joybase'),joyknob:$('joyknob'),firebtn:$('firebtn'),orhint:$('orhint'),
   board:$('board'),bdList:$('bdList'),sharecard:$('sharecard'),shareImg:$('shareImg'),
   overRank:$('overRank'),vicRank:$('vicRank'),
+  btnGhostO:$('btnGhostO'),btnGhostV:$('btnGhostV'),btnTime:$('btnTime'),tatime:$('tatime'),
+  overGhostHint:$('overGhostHint'),vicGhostHint:$('vicGhostHint'),
   seedpanel:$('seedpanel'),sdInput:$('sdInput'),pSeed:$('pSeed'),overSeed:$('overSeed'),vicSeed:$('vicSeed'),
+  taNotice:$('taNotice'),   /* 7.4 冲刺赛：机库里的「本局配置已冻结」说明行 */
   btnReroll:$('btnReroll'),
   saves:$('saves'),saveList:$('saveList'),
   settings:$('settings'),bgmVol:$('bgmVol'),sfxVol:$('sfxVol'),bgmVal:$('bgmVal'),sfxVal:$('sfxVal'),
@@ -2647,6 +2678,8 @@ const G={
   rmods:[], // 6.3 自定义挑战：开局时从 G_RMODS 冻结，局内改选择不影响本局
   ban:[],   // 6.4 卡池工坊：开局时从 G_BAN 冻结，局内改禁用不影响本局
   gdt:0.1,gpts:null,gn:0,gplay:null, // 6.5 幽灵：录制步长 / 轨迹扁平数组 / 已录点数 / 本局影子
+  gsrc:'',pendingGhost:null,         // 6.6 轨迹码：本局影子来源 '' | 'best' | 'link' / 待注入的外来影子
+  taMode:false,taT:0,                 // 7 冲刺赛：模式开关 / 倒计时（秒，0=非 TA 局）
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
@@ -2663,8 +2696,17 @@ function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
 function saveRun(){
   if(!P||(G.mode!=='play'&&G.mode!=='inter'&&G.mode!=='pause'&&G.mode!=='levelup'))return;
   flushStats(); // 暂停/退出/关闭页面时同步提交局外统计，避免末段数据丢失
+  /* 7.4：TA 局不写续档存档。两件事：
+     ① 实测一局普通局（WAVE 11）的存档会被下一局 TA 的自动存档整个冲掉（→ WAVE 2）；
+     ② TA 是「3 分钟一局」的独立赛道，中途关页就没了，符合「输了不心疼」的定位。
+     统计照常 flush（这一行在上面），生涯数据不丢。 */
+  if(G.taMode)return;
   const s={v:1,id:G.runId,st:G.runStart,h:Math.max(0,HULLS.indexOf(G.lastHull)),w:Wv.n,lv:P.level,xp:P.xp,xpN:P.xpNext,
     hp:P.hp,sh:P.shield,sc:G.score,k:G.kills,t:G.runT,e:G.endless?1:0,b:G.build,
+    /* 6.2/6.3/6.4：难度 / 挑战 / 卡池必须跟着存档走 —— 否则续档后三者全丢，
+       深渊档变标准档、Modifier 全失效、禁用池失效，而且 G.diff 缺失会让
+       diffNow() 回落到菜单当前选择 —— 局内改菜单就能改本局数值，「开局冻结」被绕过。 */
+    df:G.diff||'standard',rm:(G.rmods||[]).slice(),bn:(G.ban||[]).slice(),
     bb:G.bossBag,cb:G.champBag,bl:G.bossLast,cl:G.champLast};
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
 }
@@ -2695,6 +2737,10 @@ function refreshContinue(){
 }
 function resumeRun(){
   fireOn=false;el.firebtn.classList.remove('hot');
+  /* 7.4：续档一律按普通漂移恢复 —— TA 局根本不写续档存档（见 saveRun），
+     能续起来的一定是普通局；不置 false 的话，打过 TA 之后再续档会带着 taMode=true 进去，
+     倒计时是旧值 0（不跑），但结算仍走 taSettle → 普通局的分数进了 TA 榜。 */
+  G.taMode=false;
   const s=loadSave();
   if(!s)return openHulls();
   AU.ensure();
@@ -2716,6 +2762,12 @@ function resumeRun(){
   if(P.level>=30&&P.xpNext>XP_CAP)P.xpNext=XP_CAP; // 30 级后固定经验需求（兼容旧存档）
   P.hp=Math.min(P.maxHp,s.hp||P.maxHp);P.shield=clamp(s.sh||0,0,P.shieldMax);
   G.score=s.sc||0;G.kills=s.k||0;G.runT=s.t||0;G.endless=!!s.e;
+  G.diff=s.df||G_DIFF;G.rmods=(s.rm||[]).slice(0,RMOD_MAX);G.ban=(s.bn||[]).slice(0,POOL_MAX);
+/* 6.5 幽灵：续档「照播不录」—— 影子按 runT 走，续档后位置自动对上，玩家仍有参照；
+     但前面没录到的那一段没法补，轨缺口会让这条影子在下一局变成一段瞬移，
+     所以 G.gpts 保持 null：既不录，也不参与归档（ghostSave 会直接 return false）。 */
+  G.gdt=GHOST_DT0;G.gpts=null;G.gn=0;
+  G.gplay=OPTS.ghost?(GHOSTS[ghostFp()]||null):null;
   /* 4.5：轮换袋必须还原 —— 否则续档时袋子是空的，重新洗牌又可能连续重复 */
   G.bossBag=(s.bb&&s.bb.length)?s.bb.slice():null;G.champBag=(s.cb&&s.cb.length)?s.cb.slice():null;
   G.bossLast=s.bl||null;G.champLast=s.cl||null;
@@ -3466,7 +3518,10 @@ function flushStats(){
   if(newFl)s.flaw=Wv.n;
   if(newHull)s.hulls.push(hullId);
   // 最高分随进度实时刷新：即使中途关页/未走到结算界面也不会丢
-  if(G.score>G.best){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
+  /* 7 冲刺赛：TA 是「3 分钟冲波次」的独立赛道，分数不进 nova-best ——
+     否则一条短局冲刺就能顶掉长期漂移的最高分，两个榜的含义会互相污染。
+     击坠/时长/分数仍然照常计入生涯统计（玩家在 TA 里也该有进度感）。 */
+  if(!G.taMode&&G.score>G.best){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   saveStats(s);
   achCheck(s, before); // 达成提示放在写入之后：此时 loadStats() 已是最新
   if(before<SWARM_KILLS&&s.k>=SWARM_KILLS){ // 蜂群解锁时刻
@@ -3623,6 +3678,9 @@ function ghostFp(){
 /* 机库指纹：读「即将开这一局」的选择 —— 与 ghostFp 同格式，开局冻结后二者必然相等 */
 function ghostFpMenu(){
   if(G.dailyMode)return 'daily:'+new Date().toISOString().slice(0,10);
+  /* 7.4：TA 开局会把 diff/rmods/ban 强制成 standard/[]/[]，机库若还按菜单选项算指纹，
+     取到的影子就是另一条（实测机库 abyss|swarm+brittle|crit+magnet，实际 standard|-|-）。 */
+  if(G.taMode)return 'standard|-|-';
   return [G_DIFF,(G_RMODS||[]).join('+')||'-',(G_BAN||[]).join('+')||'-'].join('|');
 }
 function ghostSel(){return GHOSTS[ghostFpMenu()]||null;}
@@ -3652,12 +3710,13 @@ function ghostPush(x,y,a){
   q.push(Math.round(x),Math.round(y),Math.round(a*100)/100);
   G.gn++;
 }
-/* 播放：按 runT 线性插值；角度走最短弧，否则 ±π 处整船会瞬间翻个面 */
-function ghostAt(t){
-  const g=G.gplay;
-  if(!g||!g.n)return null;
-  const p=g.pts,n=g.n,k=t/g.dt,i=Math.floor(k);
+/* 播放：按 t 在任意一条轨迹上线性插值；角度走最短弧，否则 ±π 处整船会瞬间翻个面。
+   抽成通用函数是为了 6.6 重采样 —— 本机录的是 10Hz，轨迹码要 5Hz，同一套插值不能写两遍。 */
+function gpAt(p,n,dt,t){
+  if(!p||!n||!(dt>0))return null;
+  const k=t/dt,i=Math.floor(k);
   if(i>=n-1)return null;          // 影子已经跑完它那一局
+  if(i>=n-1)return null;          // 已跑完这一条轨迹
   const j=i<0?0:i,f=k-i;
   const x0=p[j*3],y0=p[j*3+1],a0=p[j*3+2];
   const x1=p[j*3+3],y1=p[j*3+4],a1=p[j*3+5];
@@ -3665,6 +3724,10 @@ function ghostAt(t){
   while(da>Math.PI)da-=TAU;
   while(da<-Math.PI)da+=TAU;
   return {x:x0+(x1-x0)*f,y:y0+(y1-y0)*f,ang:a0+da*f,i:j};
+}
+function ghostAt(t){
+  const g=G.gplay;if(!g)return null;
+  return gpAt(g.pts,g.n,g.dt,t);
 }
 /* 归档：只在打破「本组配置」纪录时覆盖 —— 打得差的一局不该顶掉巅峰那条影子 */
 function ghostSave(){
@@ -3739,31 +3802,313 @@ function drawGhostRun(){
   }
   ctx.restore();
 }
+/* ======================= 6.6 轨迹码（GHOST CODE） =======================
+   把「种子 + 难度 + 挑战 + 卡池 + 飞行轨迹」压成一段短码，塞进分享链接的 hash。
+   别人点开就是**同一张地图**（6.1 种子）+ **一只你的影子陪着飞**（6.5 轨迹）——
+   6.1 让两个人跑同一局，6.5 让一局留下自己的形状，6.6 把两件事合成一个链接。
+
+   长度是先量出来的，不是拍的（探针 probe66.js）：
+   差分 + zigzag varint 后**恒为 3.01 字节/点**，与采样率无关 —— 已经贴着最优，
+   再压只能减点数。所以定 **5Hz × 90 秒 = 450 点 ≈ 1.35KB → base64url ≈ 1.8K 字符**。
+   走 hash 而不是 query：hash 不发给服务器、长度上限宽得多，
+   且 6.1 的 seedFromUrl 本来就同时解析 search 与 hash。
+
+   轨迹码只在**有种子**的局生成 —— 随机局地图不同，影子没有可比性（与 6.1 同一条语义）。 */
+/* 7.3：v2 起头部多一个标志字节（bit0 = 冲刺赛）。老码是 v1，解码端照收（见 gcodeDec）——
+   版本号就是干这个用的，别为了省一个字节去猜长度。 */
+const GCODE_VER=2,GCODE_HZ=5,GCODE_SEC=90;
+const GCODE_MAX=GCODE_HZ*GCODE_SEC;          // 450 点
+/* 7.2：TA 整局只有 180s，而默认档只录前 90s —— 影子半路消失，等于后半程没有参照。
+   按探针 probe72.js 实测（10Hz 真值对照，同一条三频规避航线）：
+     5Hz×90s（现状）  450 点 / 1866 字 · 位置 p95 8.00px · 角度 p95 12.9° · 覆盖 90s
+     2.5Hz×180s       450 点 / 1972 字（+5.7%）· p95 15.57px · 角度 p95 38.8° ← 角度太粗
+     3.33Hz×180s      600 点 / 2534 字（+36%）· p95 11.77px · 角度 p95 26.2°
+     4Hz×180s         720 点 / 2990 字（+60%）· p95  8.94px · 角度 p95 21.5° ← 拐点
+     5Hz×180s         900 点 / 3706 字（+99%）· p95  8.32px · 角度 p95 13.2°
+   4Hz 之后精度几乎不再涨、长度却线性翻倍，所以取 4Hz×180s。
+   **只有 TA 走这一档** —— 普通漂移一局 5~15 分钟，前 90 秒陪跑足够，
+   没必要让每一条分享链接都变长 60%。 */
+const GCODE_TA_HZ=4,GCODE_TA_SEC=180;
+const GCODE_TA_MAX=GCODE_TA_HZ*GCODE_TA_SEC; // 720 点
+const GCODE_CAP=Math.max(GCODE_MAX,GCODE_TA_MAX); // 解码上界取两档较大者
+function gcodeHz(){return G.taMode?GCODE_TA_HZ:GCODE_HZ;}
+function gcodeSec(){return G.taMode?GCODE_TA_SEC:GCODE_SEC;}
+function gcodeMax(){return G.taMode?GCODE_TA_MAX:GCODE_MAX;}
+const GCODE_QX=4;                            // 位置量化 4px（世界 2600×1700 → 650×425）
+const TAU_A=256;                             // 朝向量化 256 级/圈
+
+function vPut(o,n){n=(n<<1)^(n>>31);while(n>=0x80){o.push((n&0x7f)|0x80);n>>>=7;}o.push(n);}
+function vGet(b,i){let r=0,sh=0,x;do{x=b[i++];r|=(x&0x7f)<<sh;sh+=7;}while(x&0x80);
+  return [((r>>>1)^-(r&1))|0,i];}
+function b64e(b){let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64d(str){
+  let s=String(str).replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4)s+='=';
+  const bin=atob(s),o=[];
+  for(let i=0;i<bin.length;i++)o.push(bin.charCodeAt(i));
+  return o;
+}
+/* 重采样：本机录的是 10Hz（抽稀后可能更低），轨迹码要 gcodeHz() —— 按时间插值，与源步长无关 */
+function gcodeResample(){
+  if(!G.gpts||G.gn<GHOST_MIN)return null;
+  const src=Math.floor(G.gpts.length/3),out=[],hz=gcodeHz();
+  for(let k=0;k<gcodeMax();k++){
+    const p=gpAt(G.gpts,src,G.gdt,k/hz);
+    if(!p)break;
+    out.push(p.x,p.y,p.ang);
+  }
+  return out.length>=9?out:null;
+}
+function gcodeEnc(g){
+  try{
+    const o=[GCODE_VER,G.taMode?1:0,Math.round(100/gcodeHz())];
+    /* 7.2：头部带真实 hz，解码端照它播；7.3：标志位 bit0 = 这是一场冲刺赛 */
+    const di=Math.max(0,DIFFS.findIndex(d=>d.id===g.diff));
+    let rm=0;for(const r of (g.rm||[])){const i=RMODS.findIndex(m=>m.id===r);if(i>=0)rm|=1<<i;}
+    let bn=0;for(const b of (g.bn||[])){const i=MODULES.findIndex(m=>m.id===b);if(i>=0)bn|=1<<i;}
+    const hi=Math.max(0,HULLS.findIndex(h=>h.id===g.hull));
+    const sd=(g.sd>>>0);
+    o.push(di,rm&255,(bn>>>24)&255,(bn>>>16)&255,(bn>>>8)&255,bn&255,
+           (sd>>>24)&255,(sd>>>16)&255,(sd>>>8)&255,sd&255,hi);
+    vPut(o,Math.max(0,Math.round(g.sc||0)));vPut(o,Math.max(0,g.w|0));vPut(o,g.n|0);
+    let px=0,py=0,pa=0;
+    for(let i=0;i<g.n;i++){
+      const x=Math.round(g.pts[i*3]/GCODE_QX),y=Math.round(g.pts[i*3+1]/GCODE_QX);
+      const a=Math.round(((g.pts[i*3+2]+Math.PI)/TAU)*TAU_A)&255;
+      let da=a-pa;if(da>128)da-=256;if(da<-128)da+=256;
+      vPut(o,x-px);vPut(o,y-py);vPut(o,da);
+      px=x;py=y;pa=a;
+    }
+    return b64e(o);
+  }catch(e){return '';}
+}
+function gcodeDec(str){
+  try{
+    const b=b64d(str);
+    if(b.length<13||b[0]<1||b[0]>GCODE_VER)return null;   /* 7.3：v1 老码照收 */
+    let i=1;
+    const flags=b[0]>=2?(b[i++]||0):0;   /* v2 起第 2 字节是标志位，v1 没有这一字节 */
+    const ta=!!(flags&1);
+    const hz=100/(b[i++]||100);
+    const diff=(DIFFS[b[i++]]||DIFFS[1]).id;
+    const rmask=b[i++],bn=(b[i++]<<24)|(b[i++]<<16)|(b[i++]<<8)|b[i++];
+    const sd=((b[i++]<<24)|(b[i++]<<16)|(b[i++]<<8)|b[i++])>>>0;
+    const hull=(HULLS[b[i++]]||HULLS[0]).id;
+    let sc,w,n;
+    [sc,i]=vGet(b,i);[w,i]=vGet(b,i);[n,i]=vGet(b,i);
+    if(!(n>0)||n>GCODE_CAP*2)return null;   // 7.2：上界覆盖 TA 档的 720 点
+    const pts=[];let px=0,py=0,pa=0;
+    for(let k=0;k<n;k++){
+      let dx,dy,da;
+      [dx,i]=vGet(b,i);if(dx===undefined)return null;
+      [dy,i]=vGet(b,i);if(dy===undefined)return null;
+      [da,i]=vGet(b,i);if(da===undefined)return null;
+      px+=dx;py+=dy;pa=(pa+da+256)&255;
+      pts.push(px*GCODE_QX,py*GCODE_QX,(pa/TAU_A)*TAU-Math.PI);
+    }
+    const rm=RMODS.filter((m,mi)=>rmask&(1<<mi)).map(m=>m.id);
+    const bl=MODULES.filter((m,mi)=>bn&(1<<mi)).map(m=>m.id);
+    /* 7.2：dt 必须取头部里的 hz —— 写死 1/GCODE_HZ 的话，TA 档（4Hz）编出来的码
+       会被按 5Hz 播，整条影子速度快 25%、时长短 20%；老码头里存的是 100/5=20，
+       照它解仍是 5Hz，向后兼容天然成立，不用升 GCODE_VER。 */
+    return {sc:sc,w:w,hull:hull,sd:seedCode(sd),seed:sd,diff:diff,rm:rm,bn:bl,
+            v:0,dt:1/hz,n:n,pts:pts,ts:Date.now(),ext:1,ta:ta};
+  }catch(e){return null;}
+}
+/* 当前局能不能出码：必须有种子（地图可比）+ 录够点数 */
+function gcodeMine(){
+  if(!G.seed||!G.gpts||G.gn<GHOST_MIN)return '';
+  const pts=gcodeResample();
+  if(!pts)return '';
+  const hz=gcodeHz(),sec=Math.round(pts.length/3/hz);
+  return gcodeEnc({sc:Math.round(G.score),w:Wv.n,
+    hull:(G.lastHull&&G.lastHull.id)||'peregrine',sd:G.seed,
+    diff:G.diff||'standard',rm:(G.rmods||[]).slice(),bn:(G.ban||[]).slice(),
+    dt:1/hz,n:Math.floor(pts.length/3),pts:pts});
+}
+function gcodeUrl(code){
+  if(!code)return '';
+  const u=location.href.split('#')[0];
+  return u+'#seed='+seedCode(G.seed)+'&g='+code;
+}
+/* 分享入口：优先剪贴板，file:// / 非安全上下文会失败 —— 那就把完整链接摆出来手动复制 */
+function gcodeShare(node,hint){
+  const code=gcodeMine();
+  if(!code){banner('NO TRACK',T('这一局没有轨迹可分享','No track to share'));return '';}
+  const url=gcodeUrl(code);
+  const setHint=d=>{
+    if(!hint)return;
+    hint.hidden=false;
+    hint.textContent=d?T('链接已复制到剪贴板','Link copied to clipboard')
+                      :T('自动复制失败 —— 已选中，请手动复制','Auto-copy failed — selected, copy manually');
+  };
+  /* 无论自动复制成不成，都把完整链接摆出来 —— 玩家看得见自己到底在分享什么 */
+  if(node){
+    node.hidden=false;node.value=url;
+    try{node.focus();node.select();}catch(e){}
+  }
+  try{
+    /* ⚠️ writeText 返回的是 promise，被拒时 try/catch 抓不到、直接冒成 pageerror
+       （file:// 与无用户手势场景必拒）—— 必须挂 .then 的第二个回调吃掉。 */
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      const pr=navigator.clipboard.writeText(url);
+      if(pr&&pr.then){pr.then(()=>setHint(true),()=>setHint(false));}
+      else setHint(true);
+      banner(G.taMode?'SPRINT LINK':'TRACK LINK',
+             (G.taMode?T('冲刺赛链接 · ','Sprint link · '):T('轨迹链接 · ','Track link · '))
+             +Math.round(code.length/1024*10)/10+'KB');
+      sfx.ui();
+      return url;
+    }
+  }catch(e){}
+  let done=false;
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=url;ta.style.cssText='position:fixed;left:-9999px';
+    document.body.appendChild(ta);ta.select();
+    done=!!(document.execCommand&&document.execCommand('copy'));
+    document.body.removeChild(ta);
+  }catch(e){}
+  setHint(done);
+  banner(G.taMode?'SPRINT LINK':'TRACK LINK',
+         (G.taMode?T('冲刺赛链接 · ','Sprint link · '):T('轨迹链接 · ','Track link · '))
+         +Math.round(code.length/1024*10)/10+'KB');
+  sfx.ui();
+  return url;
+}
+/* 收端：解析 #g=，注入影子 + 种子，直接开局（外来影子不写进本机 GHOSTS） */
+function gcodeTake(code){
+  const g=gcodeDec(code);
+  if(!g||!g.seed)return false;
+  G.pendingGhost=g;G.pendingSeed=g.seed;G.dailyMode=false;G.daily=null;
+  /* 7.3：模式位跟着链接走 —— 「分享一条链接比谁 3 分钟冲得远」这个语境，
+     以前在收端整个丢了：对方点开是普通漂移，影子跑到 90s 就没了，冲刺的意味全无。
+     实测（probe73.js，全新实例）乙方 `G.taMode=false / G.taT=0`。
+     `startGame()` 里已有 `if(G.taMode)G.taT=TA_SEC;`，置位后倒计时自动就位。 */
+  G.taMode=!!g.ta;
+  return true;
+}
 /* 机库状态行：影子来自哪一局，一眼可查；换配置看不到别人的影子 */
 function renderGhostRow(){
   if(!el.ghostRow)return;
   const row=el.ghostRow;row.innerHTML='';
-  const fp=ghostFpMenu(),g=GHOSTS[fp];
+  const fp=ghostFpMenu(),g=G.pendingGhost||GHOSTS[fp];
+  const ext=!!G.pendingGhost;
   const lab=document.createElement('div');
   lab.className='ghostlab';
   if(!g){
     lab.innerHTML=T('影子','GHOST')+' · '
       +T('暂无 —— 打完一局自动录下','NONE — finish a run to record one');
   }else{
-    lab.innerHTML=T('影子','GHOST')+' · <b>'+fmt(g.sc)+'</b>'
+    lab.innerHTML=T('影子','GHOST')+(ext?'<i> · '+T('来自链接','FROM LINK')+'</i>':'')
+      +' · <b>'+fmt(g.sc)+'</b>'
       +' · '+T('第 ','WAVE ')+g.w+' · '+fmtT(g.t)
       +(g.sd?(' · '+T('种子','SEED')+' '+g.sd):'')
       +(G.dailyMode?'':' · '+diffName(g.diff||'standard')
         +modTags(g.rm)+(g.bn&&g.bn.length?(' · '+T('工坊','WORKSHOP')+'x'+g.bn.length):''));
   }
   row.appendChild(lab);
-  if(g){
+  if(g&&!ext){   /* 外来影子只在这一局生效，不给「清除」—— 清除键动的是本机影子库 */
     const b=document.createElement('button');
     b.className='gclr';b.dataset.gclr=fp;
     b.textContent=T('清除','CLEAR');
     b.addEventListener('click',()=>{delete GHOSTS[fp];ghostStore();renderGhostRow();sfx.ui();});
     row.appendChild(b);
   }
+}
+  /* ======================= 7 冲刺赛（TIME ATTACK） =======================
+   3 分钟倒计时、推波次、独立榜单 —— 让 6.5 影子 + 6.6 轨迹码从「锦上添花」
+   变成核心机制：分享一条链接就是「3 分钟里跟你的影子比谁冲得更远」。
+
+   设计约束（每条踩过坑才定）：
+   · 固定 diff=standard、rmods=[]、ban=[]，禁三选卡玩家带 garbage 进 TA；
+   · 不更新 nova-best / 不 commitDaily / 不出星尘 —— 三个面板「独立于长期进度」，
+     输了不心疼，赢了也只是「TA 榜单」的一个名字；
+   · 倒计时只在 play/inter 衰减，pause/levelup/dying 都不动 —— 跟 runT 同语义；
+   · 死亡或时间到都走 taSettle('over')，**不**走 showOver 那条流（避免 G.best 误写）； */
+const TA_SEC=180;
+const TA_KEY='nova-tattack';
+const TA_MAX=10;
+let TA_BOARD=[];
+function taBoardLoad(){
+  let a=null;try{a=JSON.parse(localStorage.getItem(TA_KEY)||'null');}catch(e){}
+  TA_BOARD=(Array.isArray(a)?a:[]).filter(r=>r&&typeof r.s==='number')
+          /* 主键 wave 降序，平局按用时升序（剩得越久越慢到） */
+          .sort((x,y)=>(y.w-x.w)||((x.rt|0)-(y.rt|0))).slice(0,TA_MAX);
+}
+function taBoardSave(){try{localStorage.setItem(TA_KEY,JSON.stringify(TA_BOARD));}catch(e){}}
+/* 返回 1-based 名次；0 = 没挤进 Top 10 */
+function taBoardAdd(r){
+  TA_BOARD.push(r);
+  TA_BOARD.sort((x,y)=>(y.w-x.w)||((x.rt|0)-(y.rt|0)));
+  const i=TA_BOARD.indexOf(r);
+  TA_BOARD=TA_BOARD.slice(0,TA_MAX);
+  taBoardSave();
+  return i<TA_MAX?i+1:0;
+}
+function taBoardClear(){TA_BOARD=[];taBoardSave();}
+/* 倒计时：每帧在 updateWorld 内调一次 */
+function taTick(dt){
+  if(!G.taMode||G.taT<=0)return;
+  if(G.mode==='play'||G.mode==='inter'){
+    G.taT=Math.max(0,G.taT-dt);
+    if(G.taT===0&&(G.mode==='play'||G.mode==='inter')){
+      die();                       /* 借用 die() 进入 dying → showOver → taSettle */
+    }
+  }
+}
+/* TA 专属结算：G.score 不写入 nova-best / 不 commitDaily / 不出 star dust */
+function taSettle(){
+  if(!G.taMode)return;
+  G.mode='over';
+  flushStats();clearSave();removeSlotArch(G.runId);
+  ghostSave();
+  el.overScore.textContent='WAVE '+Wv.n;
+  el.newBest.hidden=true;
+  if(el.overDust)el.overDust.hidden=true;
+  setSeedLine(el.overSeed);   // 7.2：TA 现在必有种子，照 6.1 的规矩显示出来
+  setStat('stWave',Wv.n);
+  setStat('stLevel',P.level);
+  setStat('stKills',G.kills);
+  setStat('stTime',G.taT>0?fmtT(G.taT):T('时间到','TIME UP'));
+  /* TA 摘要 + 死因/构筑同款 */
+  el.overCauseBody.innerHTML='<div class="tasum">'
+    +T('倒计时 ','TIMER ')+(G.taT>0?fmtT(G.taT):T('时间到','TIME UP'))
+    +' · '+T('到达 ','REACHED ')+'WAVE '+Wv.n
+    +'</div>'+buildCause();
+  el.overExtra.innerHTML=buildOverExtra();
+  el.overChips.innerHTML=buildChips()||`<span>${T('裸船出战','Bare hull — no modules')}</span>`;
+  fitChips(el.overChips);
+  /* TA 榜单独立：按 wave / 剩余秒 排 */
+  const rec=boardRec(false);rec.m=3;
+  rec.rt=Math.round(G.taT);                  /* 剩余秒，平局时小的赢 */
+  const rk=taBoardAdd(rec);
+  SH_REC=rec;SH_RANK=rk;
+  if(el.btnGhostO)el.btnGhostO.hidden=!gcodeMine();
+  if(el.overGhost&&!gcodeMine()){el.overGhost.hidden=true;el.overGhostHint.hidden=true;}
+  el.overRank.hidden=false;
+  el.overRank.textContent=rk?'TIME ATTACK #'+rk+' / '+TA_BOARD.length
+                             :T('未进前 10','Outside top 10');
+  el.over.hidden=false;el.hud.hidden=true;
+}
+/* HUD 倒计时读数：1s 内变红、结束脉冲 */
+function taHudPaint(){
+  const t=el.tatime;if(!t)return;
+  if(!G.taMode){t.hidden=true;return;}
+  t.hidden=false;
+  const m=Math.floor(G.taT/60),s=Math.floor(G.taT%60);
+  t.textContent='TIME '+(m+':'+String(s).padStart(2,'0'));
+  t.classList.toggle('warn',G.taT<=10);
+}
+
+/* 7.4b：离开机库的唯一出口。原先 ESC 与返回键各自 `el.hulls.hidden=true;G.mode='menu'` 就地处理，
+   绕过了 `toMenu()` —— `G.taMode` 就留在 true（探针实测：ESC 出机库后直接开一局，
+   倒计时 180s · diff=standard，普通漂移又变成限时赛）。
+   **复位点必须覆盖所有离开路径**，所以收口成一个函数，别再散着写第二遍。 */
+function closeHulls(){
+  el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;
+  G.taMode=false;   /* 放弃这次出击准备 = 退出冲刺 */
 }
 function openHulls(){
   G.mode='hulls';
@@ -3773,6 +4118,14 @@ function openHulls(){
   renderRmods();   // 6.3 自定义挑战（多选，最多 3 个）
   renderPool();    // 6.4 卡池工坊（禁用模块，最多 8/29）
   renderGhostRow();// 6.5 幽灵回放：影子状态行（按当前选择取对应的那条）
+  /* 7.4：TA 本局配置被冻结 —— 三行变灰不可点，并明说被固定成什么，不要让玩家猜 */
+  if(el.taNotice){
+    el.taNotice.hidden=!G.taMode;
+    if(G.taMode)el.taNotice.textContent=
+      T('限时冲刺 · 3 分钟 —— 本局固定：标准难度 / 无挑战 / 全卡池',
+        'TIME ATTACK · 3:00 — locked: standard / no challenge / full pool');
+  }
+  for(const r of [el.diffRow,el.rmodRow,el.poolRow])if(r)r.classList.toggle('tafreeze',!!G.taMode);
   HULLS.forEach((h,i)=>{
     const div=document.createElement('div');
     div.className='card';
@@ -4044,7 +4397,7 @@ function padBack(){
   if(!el.sharecard.hidden){closeShare();return true;}   /* 5.6 分享面板盖在对局之上，先关它 */
   if(!el.board.hidden){closeBoard();return true;}   /* 5.6 board 不占 G.mode，按可见性关 */
   if(G.mode==='logbook'||G.mode==='saves'){toMenu();return true;}
-  if(G.mode==='hulls'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return true;}
+  if(G.mode==='hulls'){closeHulls();return true;}   /* 7.4b */
   if(G.mode==='pause'){resumeGame();return true;}
   return false;
 }
@@ -4225,7 +4578,7 @@ window.addEventListener('keydown',e=>{
   if(G.mode==='menu'&&e.code==='KeyL'){openLogbook();return;}
   if((G.mode==='logbook'||G.mode==='saves')&&e.code==='Escape'){toMenu();return;}
   if(G.mode==='hulls'&&/^Digit[1-7]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
-  if(G.mode==='hulls'&&e.code==='Escape'){el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return;}
+  if(G.mode==='hulls'&&e.code==='Escape'){closeHulls();return;}   /* 7.4b */
   if(G.mode==='victory'&&(isAct('endless',e.code)||e.code==='Enter')){continueEndless();return;}
   if(G.mode==='over'&&(isAct('restart',e.code)||e.code==='Enter')){startGame();return;}
   if(G.mode==='levelup'&&/^Digit[1-3]$/.test(e.code)){pickCard(+e.code.slice(5)-1);return;}
@@ -7170,19 +7523,30 @@ function startGame(hull,seed){
   if(seed===undefined)seed=G.pendingSeed||0;
   G.pendingSeed=0;
   if(seed){G.seed=normSeed(seed);setSeed(G.seed);G.daily=null;G.dailyMode=false;}
+  /* 7.2：冲刺赛自动落种子。gcodeMine() 首行就是 `if(!G.seed)return ''`，
+     而菜单进 TA 是不带种子的 —— 实测 `gcodeMine()` 返回空串，
+     「分享一条链接跟你的影子比」这条 TA 的核心玩法**根本出不来**。
+     玩家仍可自己填种子跑同一张图；没填就现起一个，保证每条 TA 局都有码可分享。 */
+  else if(G.taMode){G.seed=normSeed(irand(1,SEED_MAX));setSeed(G.seed);G.daily=null;G.dailyMode=false;}
   else{G.seed=0;if(!G.dailyMode)clearSeed();}
   /* 6.2 每日挑战固定标准难度，保证同日可比。
      ⚠️ 判据必须是 G.daily 而不是 G.dailyMode —— 上面那行 `G.dailyMode=false`
         已经把它清掉了，用 dailyMode 判会永远走到玩家自选的那一档。 */
-  G.diff=G.daily?'standard':G_DIFF;
+  /* 7 冲刺赛：固定 standard · 无 modifier · 无禁用 —— 不让玩家带任何「让游戏更慢」
+     的选项进 TA（TA 的本质是「3 分钟冲波次」，带禁工具会让节奏失真）。 */
+  G.diff=G.daily?'standard':(G.taMode?'standard':G_DIFF);
   /* 6.3 挑战同样在开局时冻结 —— 每日挑战一律不带 Modifier，保证同日可比 */
-  G.rmods=G.daily?[]:(G_RMODS||[]).slice(0,RMOD_MAX);
+  G.rmods=G.daily?[]:(G.taMode?[]:(G_RMODS||[]).slice(0,RMOD_MAX));
   /* 6.4 卡池工坊同样冻结 —— 每日挑战一律按默认池，跨玩家与跨日都可比 */
-  G.ban=G.daily?[]:(G_BAN||[]).slice(0,POOL_MAX);
+  G.ban=G.daily?[]:(G.taMode?[]:(G_BAN||[]).slice(0,POOL_MAX));
   /* 6.5 幽灵回放：开局瞬间冻结轨迹缓冲与影子 —— 必须排在 diff/rmods/ban 冻结之后，
      否则指纹算的是上一局的残留值；局内改设置也不影响本局。 */
   G.gdt=GHOST_DT0;G.gpts=[];G.gn=0;
-  G.gplay=OPTS.ghost?(GHOSTS[ghostFp()]||null):null;
+  /* 7 冲刺赛：开局瞬间重置倒计时（续档时 G.taT 是旧的，要清零） */
+  if(G.taMode)G.taT=TA_SEC;
+  /* 6.6 外来影子优先级最高：链接带的影子只在这一局生效，用完即清，不写进本机影子库 */
+  if(G.pendingGhost){G.gplay=OPTS.ghost?G.pendingGhost:null;G.gsrc=OPTS.ghost?'link':'';G.pendingGhost=null;}
+  else{G.gplay=OPTS.ghost?(GHOSTS[ghostFp()]||null):null;G.gsrc=G.gplay?'best':'';}
   G.statK=0;G.statRT=0;G.statSc=0;G.statOn=true;
   {const st=loadStats();st.g+=1;saveStats(st);} // 出击场次 +1
   P=newPlayer();G.player=P;
@@ -7424,7 +7788,7 @@ function boardRec(win){
   const h=(G.lastHull&&G.lastHull.id)||'peregrine',d=new Date();
   return {s:Math.round(G.score),w:Wv.n,k:G.kills,l:P?P.level:1,t:Math.round(G.runT),
           h:h,d:(d.getMonth()+1)+'/'+d.getDate(),
-          m:G.daily?2:(G.endless?1:0),v:win?1:0,at:Date.now(),
+          m:G.taMode?3:(G.daily?2:(G.endless?1:0)),v:win?1:0,at:Date.now(),
           /* 6.1 种子码：随机局留空。存短码而不是数字 —— 一眼能念、能抄、能贴。 */
           sd:G.seed?seedCode(G.seed):'',
           df:G.diff||'standard',     /* 6.2 难度 */
@@ -7432,8 +7796,9 @@ function boardRec(win){
           bn:(G.ban||[]).slice()};   /* 6.4 卡池工坊 */
 }
 function bdMode(r){
-  return r.v?T('肃清','CLEAR'):(r.m===2?T('每日','DAILY'):
-        (r.m===1?T('无尽','ENDLESS'):T('标准','STANDARD')));
+  return r.v?T('肃清','CLEAR'):(r.m===3?T('限时','TIME'):
+        (r.m===2?T('每日','DAILY'):
+        (r.m===1?T('无尽','ENDLESS'):T('标准','STANDARD'))));
 }
 function renderBoard(hi){
   const L=el.bdList;
@@ -7481,6 +7846,15 @@ function seedGo(){
 /* ?seed=XXXXXX 直达（分享链接） */
 function seedFromUrl(){
   const q=(location.search||'')+'&'+(location.hash||'').replace(/^#/,'');
+  /* 6.6 轨迹码：先试 #g= —— 码里自带种子，解出来就是「同地图 + 一只影子」 */
+  const mg=/[?&#]g=([0-9A-Za-z_\-]+)/.exec(q);
+  if(mg&&gcodeTake(mg[1])){
+    const isTa=!!G.taMode;
+    startGame(G.lastHull||HULLS[0]);
+    /* 7.3：点开链接的人必须知道自己在跑什么 —— HUD 的倒计时读数不如一句话直白 */
+    if(isTa)banner('TIME ATTACK',T('3 分钟冲刺 · 同地图 + 一只影子','3-minute sprint — same map, one ghost'));
+    return true;
+  }
   const m=/[?&#]seed=([0-9A-Za-z]{1,8})/.exec(q);
   if(!m)return false;
   const sd=codeSeed(m[1]);
@@ -7601,6 +7975,7 @@ $('btnShShare').addEventListener('click',shareNative);
 loadBoard();
 
 function showOver(){
+  if(G.taMode)return taSettle();      // 7 冲刺赛走独立结算（不写 nova-best、不 commitDaily、不出星尘）
   G.mode='over';
   flushStats(); // 坠毁结算前提交末段统计，否则最后一波击坠/得分/时长会丢失
   clearSave();
@@ -7630,6 +8005,9 @@ function showOver(){
   const oRank=boardAdd(oRec);
   SH_REC=oRec;SH_RANK=oRank;
   el.overRank.hidden=false;setSeedLine(el.overSeed);
+  /* 6.6 有种子 + 录够点数才给轨迹链接；没码就把按钮和上次的残留一起收掉 */
+  if(el.btnGhostO)el.btnGhostO.hidden=!gcodeMine();
+  if(el.overGhost&&!gcodeMine()){el.overGhost.hidden=true;el.overGhostHint.hidden=true;}
   el.overRank.textContent=oRank?T('本局排名','THIS RUN')+' #'+oRank+' / '+BOARD.length
                                :T('未进前 10','Outside top 10');
   el.over.hidden=false;
@@ -7642,7 +8020,7 @@ function showVictory(){
   addScore(8000);
   G.lastDust=metaEarn(); // 局外解锁树：通关产出星尘
   renderDust(el.vicDust,G.lastDust);
-  const isBest=G.score>G.best;
+  const isBest=!G.taMode&&G.score>G.best;   // 7 冲刺赛：TA 通关也不进 nova-best
   if(isBest){G.best=G.score;try{localStorage.setItem('nova-best',String(G.best));}catch(e){}}
   const nu=unlockHull('nemesis'); // 肃清第 30 波：解锁第六船体「回响」
   el.vicUnlock.hidden=!nu;
@@ -7660,6 +8038,8 @@ function showVictory(){
   const vRank=boardAdd(vRec);
   SH_REC=vRec;SH_RANK=vRank;
   el.vicRank.hidden=false;setSeedLine(el.vicSeed);
+  if(el.btnGhostV)el.btnGhostV.hidden=!gcodeMine();
+  if(el.vicGhost&&!gcodeMine()){el.vicGhost.hidden=true;el.vicGhostHint.hidden=true;}
   el.vicRank.textContent=vRank?T('本局排名','THIS RUN')+' #'+vRank+' / '+BOARD.length
                               :T('未进前 10','Outside top 10');
   el.victory.hidden=false;
@@ -7678,6 +8058,11 @@ function continueEndless(){
 }
 function toMenu(){
   flushStats(); // 从暂停/结算直接回主菜单时补提交（G.mode 变更前的最后一次机会）
+  /* 7.4：G.taMode 之前**只有置真、没有任何复位点** —— 打完一局 TA 回菜单后它仍是 true，
+     之后每一局「普通漂移」都被当成 3 分钟限时赛（分数还不进 nova-best），玩家完全不知情。
+     实测（probe74.js）：回菜单 taMode=true → 直接开一局 taT=180 / diff=standard。
+     回标题 = 退出冲刺，这是唯一符合直觉的复位时机。 */
+  G.taMode=false;
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
@@ -8337,6 +8722,7 @@ function renderDaily(){
   el.menuDaily.hidden=false;
 }
 el.btnDaily.addEventListener('click',()=>{G.dailyMode=true;openHulls();});
+$('btnTime').addEventListener('click',()=>{G.taMode=true;G.dailyMode=false;openHulls();});
 $('btnContinue').addEventListener('click',resumeRun);
 $('btnReroll').addEventListener('click',rerollCards);
 /* ESC/结算/通关面板：模块与协同条目 —— 桌面 hover 展开，触屏点击展开（再点收起，点其它切换） */
@@ -8487,6 +8873,9 @@ function openSettings(){
   sfx.ui();
 }
 function closeSettings(){el.settings.hidden=true;keyWait=null;}
+/* 6.6 轨迹链接：坠毁 / 通关各一个入口 */
+$('btnGhostO').addEventListener('click',()=>gcodeShare(el.overGhost,el.overGhostHint));
+$('btnGhostV').addEventListener('click',()=>gcodeShare(el.vicGhost,el.vicGhostHint));
 $('btnSettings').addEventListener('click',openSettings);
 $('btnSettingsP').addEventListener('click',openSettings);
 $('btnSetBack').addEventListener('click',closeSettings);
@@ -8514,6 +8903,7 @@ window.addEventListener('pagehide',()=>{flushStats();});
 function updateWorld(dt){
   G.runT+=dt;
   ghostRec();      // 6.5 幽灵回放：按 runT 采样（暂停/三选一时 runT 不涨，天然不录）
+  taTick(dt);      // 7 冲刺赛：倒计时（与 runT 同语义：pause/levelup/dying 时跑 updateWorld 路径外）
   // 峰值威胁：同屏最多敌人数量（结算面板的「关键统计」用，只在 play 阶段采样）
   if(G.mode==='play'){
     const n=G.enemies.length+G.asteroids.length;
@@ -9866,10 +10256,11 @@ function updateHUD(){
     }
     HUDC.raw=G.score;
   }
-  s='BEST '+fmt(Math.max(G.best,G.score));
+  s='BEST '+fmt(G.taMode?G.best:Math.max(G.best,G.score)); // 7 冲刺赛：TA 分数不冒充历史最高
   if(HUDC.bs!==s){HUDC.bs=s;el.best.textContent=s;}
   s=fmtT(G.runT);
   if(HUDC.pt!==s){HUDC.pt=s;el.ptime.textContent=s;}
+  taHudPaint();   // 7 冲刺赛：HUD 倒计时（每帧刷一次，hidden 由内部判断）
 }
 /* 装配框图标 HTML（能力型与数值型共用同一份结构，仅 class/容器区分） */
 const CD_MOD_IDS={tesla:1,lance:1,nova:1,blink:1,mine:1};
@@ -10072,6 +10463,7 @@ async function boot(){
   G_RMODS=rmodLoad();  // 6.3 记住上次选的挑战组合
   G_BAN=poolLoad();    // 6.4 记住上次选的禁用组合
   GHOSTS=ghostLoad();  // 6.5 读回各组配置的最佳轨迹
+  taBoardLoad();       // 7 冲刺赛：读 TA 独立榜单
   renderDaily();
   seedFromUrl();   // 6.1 分享链接直达：带了 ?seed= 就不进菜单，直接开局
   refreshMenuMeta();
@@ -10588,6 +10980,42 @@ window.NOVA={
     setWave:w=>{const st=loadStats();st.w=w|0;saveStats(st);return loadStats().w;},
     store:()=>localStorage.getItem(DIFF_KEY),
     name:id=>diffName(id),
+  },
+  /* 冲刺赛（7）—— 测试钩子 */
+  ta:{
+    sec:()=>TA_SEC,max:()=>TA_MAX,
+    board:()=>TA_BOARD.slice(),
+    mode:on=>{if(on!==undefined)G.taMode=!!on;return !!G.taMode;},
+    t:v=>{if(v!==undefined)G.taT=+v||0;return +G.taT;},
+    tick:dt=>{taTick(dt||0);return +G.taT;},
+    settle:()=>taSettle(),
+    paint:()=>taHudPaint(),
+    add:r=>taBoardAdd(r||{s:0,w:1,k:0,l:1,t:0,h:'peregrine',d:'1/1',m:3,v:0,at:Date.now(),sd:'',df:'standard',rm:[],bn:[],rt:0}),
+    clear:()=>{taBoardClear();return TA_BOARD.length;},
+    hudShown:()=>!el.tatime.hidden,
+    start:()=>{G.taMode=true;G.dailyMode=false;G.daily=null;G.pendingGhost=null;
+      startGame(HULLS[0]);
+      return JSON.stringify({mode:G.mode,taMode:G.taMode,taT:G.taT,
+      diff:G.diff,rm:G.rmods,ban:G.ban});},
+  },
+  /* 轨迹码（6.6）—— 测试钩子 */
+  gcode:{
+    hz:()=>gcodeHz(),sec:()=>gcodeSec(),max:()=>gcodeMax(),q:()=>GCODE_QX,
+    taHz:()=>GCODE_TA_HZ,taSec:()=>GCODE_TA_SEC,taMax:()=>GCODE_TA_MAX,cap:()=>GCODE_CAP,
+    ver:()=>GCODE_VER,
+    modeHooks:()=>JSON.stringify({ta:G.taMode,hz:gcodeHz(),sec:gcodeSec(),max:gcodeMax()}),
+    mine:()=>gcodeMine(),
+    resample:()=>{const p=gcodeResample();return p?p.length/3:0;},
+    enc:g=>gcodeEnc(g),
+    dec:c=>{const g=gcodeDec(c);return g?{sc:g.sc,w:g.w,n:g.n,hull:g.hull,sd:g.sd,seed:g.seed,
+      diff:g.diff,rm:g.rm,bn:g.bn,dt:g.dt,ext:g.ext,ta:!!g.ta}:null;},
+    url:()=>gcodeUrl(gcodeMine()),
+    take:c=>gcodeTake(c),
+    src:()=>G.gsrc,
+    play:()=>{const g=G.gplay;return g?{n:g.n,dt:g.dt,sc:g.sc,hull:g.hull,ext:!!g.ext}:null;},
+    seed:v=>{if(v!==undefined)G.seed=normSeed(v);return G.seed;},
+    start:()=>{startGame(HULLS[0]);return JSON.stringify({src:G.gsrc,play:!!G.gplay});},
+    share:()=>{const u=gcodeShare(el.overGhost,el.overGhostHint);return u?u.length:0;},
   },
   /* 幽灵回放（6.5）—— 测试钩子 */
   ghost:{

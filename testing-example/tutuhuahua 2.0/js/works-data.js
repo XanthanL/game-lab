@@ -1,11 +1,24 @@
 // 本文件由 tools/build.py 生成 —— 手改会被覆盖,请改 tools/works.json
 window.WORKS = {
-  "updated": "2026-09-12",
+  "updated": "2026-09-13",
   "works": [
     {
       "no": "01",
       "src": "assets/art/w-01.jpg",
       "thumb": "assets/art/thumb/w-01.jpg",
+      "w": 588,
+      "h": 720,
+      "title": "火箭与外星人",
+      "media": "油画棒",
+      "author": "",
+      "age": "",
+      "srcName": "image-295e692b679abb849107ff91f50f32b3.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "02",
+      "src": "assets/art/w-02.jpg",
+      "thumb": "assets/art/thumb/w-02.jpg",
       "w": 592,
       "h": 720,
       "title": "飞向太空",
@@ -16,9 +29,61 @@ window.WORKS = {
       "srcFormat": "JPEG"
     },
     {
-      "no": "02",
-      "src": "assets/art/w-02.jpg",
-      "thumb": "assets/art/thumb/w-02.jpg",
+      "no": "03",
+      "src": "assets/art/w-03.jpg",
+      "thumb": "assets/art/thumb/w-03.jpg",
+      "w": 601,
+      "h": 720,
+      "title": "拖拉机与苹果树",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-30fd2f8b30f66b244ed3f0757223cf81.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "04",
+      "src": "assets/art/w-04.jpg",
+      "thumb": "assets/art/thumb/w-04.jpg",
+      "w": 599,
+      "h": 720,
+      "title": "全家福",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-39d66751714410c9f2876c1687a2d829.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "05",
+      "src": "assets/art/w-05.jpg",
+      "thumb": "assets/art/thumb/w-05.jpg",
+      "w": 720,
+      "h": 480,
+      "title": "落日帆船",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-3e573b046cfe3262dffbf908657fd9b2.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "06",
+      "src": "assets/art/w-06.jpg",
+      "thumb": "assets/art/thumb/w-06.jpg",
+      "w": 599,
+      "h": 720,
+      "title": "彩虹雨",
+      "media": "水彩",
+      "author": "",
+      "age": "",
+      "srcName": "image-582bb8f07ccb970509e0fdd9a29d020d.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "07",
+      "src": "assets/art/w-07.jpg",
+      "thumb": "assets/art/thumb/w-07.jpg",
       "w": 592,
       "h": 720,
       "title": "深海里的鲸",
@@ -29,9 +94,35 @@ window.WORKS = {
       "srcFormat": "JPEG"
     },
     {
-      "no": "03",
-      "src": "assets/art/w-03.jpg",
-      "thumb": "assets/art/thumb/w-03.jpg",
+      "no": "08",
+      "src": "assets/art/w-08.jpg",
+      "thumb": "assets/art/thumb/w-08.jpg",
+      "w": 595,
+      "h": 720,
+      "title": "猫咪与毛线球",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-64d66d4f66edc9496c099b1da4976bd7.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "09",
+      "src": "assets/art/w-09.jpg",
+      "thumb": "assets/art/thumb/w-09.jpg",
+      "w": 610,
+      "h": 720,
+      "title": "蝴蝶和笑脸花",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-9062cf745fbe00d32fe1ebc9b4b286e4.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "10",
+      "src": "assets/art/w-10.jpg",
+      "thumb": "assets/art/thumb/w-10.jpg",
       "w": 607,
       "h": 720,
       "title": "爸爸妈妈和我",
@@ -42,9 +133,9 @@ window.WORKS = {
       "srcFormat": "JPEG"
     },
     {
-      "no": "04",
-      "src": "assets/art/w-04.jpg",
-      "thumb": "assets/art/thumb/w-04.jpg",
+      "no": "11",
+      "src": "assets/art/w-11.jpg",
+      "thumb": "assets/art/thumb/w-11.jpg",
       "w": 586,
       "h": 720,
       "title": "彩虹花园",
@@ -55,9 +146,22 @@ window.WORKS = {
       "srcFormat": "JPEG"
     },
     {
-      "no": "05",
-      "src": "assets/art/w-05.jpg",
-      "thumb": "assets/art/thumb/w-05.jpg",
+      "no": "12",
+      "src": "assets/art/w-12.jpg",
+      "thumb": "assets/art/thumb/w-12.jpg",
+      "w": 586,
+      "h": 720,
+      "title": "一家人去散步",
+      "media": "蜡笔",
+      "author": "",
+      "age": "",
+      "srcName": "image-bea61ec3f3922a0659ca2b9f910fc169.png",
+      "srcFormat": "PNG"
+    },
+    {
+      "no": "13",
+      "src": "assets/art/w-13.jpg",
+      "thumb": "assets/art/thumb/w-13.jpg",
       "w": 610,
       "h": 720,
       "title": "猫与金鱼",
@@ -68,9 +172,9 @@ window.WORKS = {
       "srcFormat": "JPEG"
     },
     {
-      "no": "06",
-      "src": "assets/art/w-06.jpg",
-      "thumb": "assets/art/thumb/w-06.jpg",
+      "no": "14",
+      "src": "assets/art/w-14.jpg",
+      "thumb": "assets/art/thumb/w-14.jpg",
       "w": 606,
       "h": 720,
       "title": "喷火龙与火山",

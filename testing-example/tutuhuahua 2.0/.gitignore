@@ -1,0 +1,11 @@
+# 发布产物(tools/pack.py 生成,别提交)
+dist/
+dist.zip
+
+# 改动前的本地回退点
+.backup-*/
+
+# 系统杂物
+.DS_Store
+Thumbs.db
+__pycache__/

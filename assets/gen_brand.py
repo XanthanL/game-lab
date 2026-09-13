@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
 """GAME LAB 品牌资产生成：favicon（多尺寸 PNG + SVG）。
 
-设计语言与站点一致——石墨底 + 液态玻璃（45° 双端高光 / 内缩暗环 / 1px 描边）
-+ 2×2 小格子。全部 PIL 手绘，无外部依赖，可重复执行。
+设计语言 = 站点默认皮肤「电光蓝 / Electric Blue」（<html data-style="hermes">）。
+配色不是想象的，取自 assets/index.css 里那套实测 token：
 
-本文件同时充当绘图原语库（渐变 / 遮罩 / 高光 / 内阴影 / 字距），
-分享缩略图从 assets/share_card.py 复用它。
+    --hm-blue     #0000f2   电光蓝，满版（官网 body 背景实测 rgb(0,0,242)）
+    --hm-paper    #ffffff   白纸面板
+    --hm-acid     #edff45   酸黄，只给极小的标注与高亮
+    米白正文       #f5f5f5
+    --hm-shadow   rgba(0,0,22,.34)   白纸卡片的硬偏移落影
+    --hm-hair     rgba(0,0,242,.18)  白纸上的 1px 蓝细线
+
+所以这里**没有**液态玻璃那套（45° 双端高光 / 内缩折射暗环 / 模糊柔光）——
+那是另一套皮肤的语言。电光蓝是：满版蓝 + 白纸 + 硬落影 + 1px 细线 + 一枚酸黄。
+2×2 格子保留（品牌连续性），改成「三格白纸 + 右下那枚酸黄」，
+酸黄是全图标唯一的彩色，对应官网「只给极小标注与高亮」的用法。
+
+全部 PIL 手绘，无外部依赖，可重复执行。
+下方 diag_sheen / inner_shadow 是液态玻璃皮肤用的通用原语，本图标不再调用。
 
     venv python assets/gen_brand.py
 """
@@ -16,13 +28,17 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 BG = os.path.join(HERE, "bg")
 
-# ── 调色（与 assets/index.css 的暗色 token 对齐）─────────────────────────────
+# ── 调色（与 assets/index.css 的「电光蓝」皮肤 token 对齐）───────────────────
+BLUE_TOP = (12, 12, 255)      # --hm-blue #0000f2，顶边抬一丝只为撑起体积
+BLUE_BOT = (0, 0, 208)
+PAPER = (255, 255, 255)       # --hm-paper 白纸面板
+ACID = (237, 255, 69)         # --hm-acid 酸黄，唯一的彩色
+OFFWHITE = (245, 245, 245)    # 米白：1px 内描边
+HARD_SHADOW = (0, 0, 22)      # --hm-shadow 的墨色
+# 以下三个是液态玻璃皮肤用的原语配色，电光蓝图标不再使用
 GRAPHITE_TOP = (46, 46, 52)
 GRAPHITE_BOT = (17, 17, 20)
 GLASS_WHITE = (255, 255, 255)
-CELL_LIGHT = (242, 242, 240)
-CELL_MID = (142, 142, 146)
-CELL_DARK = (74, 74, 78)
 
 
 def rounded_mask(size, box, radius):
@@ -77,53 +93,56 @@ def inner_shadow(mask, offset, blur, alpha):
 
 
 def build_icon(size=512, supersample=4):
-    """玻璃方块 + 2×2 格子：明暗自左上向右下递进，呼应 45° 光向。"""
+    """电光蓝方块 + 2×2 白纸格（右下那枚酸黄）+ 硬偏移落影。
+
+    没有高光、没有内缩折射暗环 —— 电光蓝皮肤里不存在模糊。
+    落影是白纸卡片那种硬边偏移（--hm-shadow），只给极小模糊免得锯齿。
+    """
     S = size * supersample
     pad = round(S * 0.055)
     box = [pad, pad, S - pad, S - pad]
     radius = round((S - 2 * pad) * 0.26)
     shape = rounded_mask((S, S), box, radius)
 
-    # 1) 石墨渐变底 + 玻璃白雾（yzrt 原版是白 4%）
-    body = vgrad((S, S), GRAPHITE_TOP, GRAPHITE_BOT)
-    body = Image.blend(body, Image.new("RGB", (S, S), GLASS_WHITE), 0.05)
+    def overlay(base, draw_fn):
+        """把一层半透明绘制合成到 RGBA 底图上。"""
+        ov = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        draw_fn(ImageDraw.Draw(ov))
+        return Image.alpha_composite(base, ov)
 
-    # 2) 45° 双端高光
-    sheen = diag_sheen((S, S), blur=round(S * 0.012))
-    body.paste(GLASS_WHITE, (0, 0), Image.eval(sheen, lambda v: int(v * 0.72)))
+    # 1) 电光蓝满版 —— 不给玻璃白雾，官网就是一整块纯蓝
+    body = vgrad((S, S), BLUE_TOP, BLUE_BOT).convert("RGBA")
 
-    # 3) 内缩暗环（折射厚度）
-    body.paste(Image.new("RGB", (S, S), (0, 0, 0)), (0, 0), inner_shadow(shape, round(S * 0.012), round(S * 0.022), 210))
+    # 2) 1px 米白内描边：描在 box 上，外半边随后被 shape 裁掉，只留内侧那条
+    body = overlay(body, lambda d: d.rounded_rectangle(
+        box, radius=radius, outline=OFFWHITE + (140,), width=round(S * 0.007)))
 
-    # 4) 1px 内描边
-    rim = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(rim).rounded_rectangle(box, radius=radius, outline=72, width=round(S * 0.006))
-    body.paste(GLASS_WHITE, (0, 0), Image.eval(rim, lambda v: int(v * 0.55)))
-
-    # 5) 2×2 格子：左上最亮 → 右下最暗
+    # 3) 2×2 格子：三格白纸（左上最实），右下那枚酸黄是全图标唯一的彩色
     inner = S - 2 * pad
     cell = round(inner * 0.205)
     gap = round(inner * 0.075)
     grid_w = cell * 2 + gap
     x0 = (S - grid_w) // 2
     y0 = (S - grid_w) // 2
-    d = ImageDraw.Draw(body)
     cr = round(cell * 0.24)
-    tones = [CELL_LIGHT, CELL_MID, CELL_MID, CELL_DARK]
-    for i, tone in enumerate(tones):
-        cx = x0 + (i % 2) * (cell + gap)
-        cy = y0 + (i // 2) * (cell + gap)
-        d.rounded_rectangle([cx, cy, cx + cell, cy + cell], radius=cr, fill=tone)
+    tones = [(PAPER, 255), (PAPER, 199), (PAPER, 199), (ACID, 255)]
+
+    def cells(d):
+        for i, (tone, alpha) in enumerate(tones):
+            cx = x0 + (i % 2) * (cell + gap)
+            cy = y0 + (i // 2) * (cell + gap)
+            d.rounded_rectangle([cx, cy, cx + cell, cy + cell], radius=cr, fill=tone + (alpha,))
+    body = overlay(body, cells)
 
     out = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     out.paste(body, (0, 0), shape)
 
-    # 6) 外阴影（玻璃浮起）
+    # 4) 硬偏移落影：白纸卡片那种不带柔化的边（--hm-shadow 约 34%）
     shadow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shadow)
     sy = round(S * 0.022)
-    sd.rounded_rectangle([box[0], box[1] + sy, box[2], box[3] + sy], radius=radius, fill=(0, 0, 0, 92))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(round(S * 0.026)))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        [box[0], box[1] + sy, box[2], box[3] + sy], radius=radius, fill=HARD_SHADOW + (92,))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(round(S * 0.006)))
     base = Image.alpha_composite(shadow, out)
 
     return base.resize((size, size), Image.LANCZOS)
@@ -131,28 +150,21 @@ def build_icon(size=512, supersample=4):
 
 ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2e2e34"/><stop offset="1" stop-color="#111114"/>
-    </linearGradient>
-    <linearGradient id="s" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".72"/>
-      <stop offset=".22" stop-color="#fff" stop-opacity="0"/>
-      <stop offset=".78" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".72"/>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c0cff"/><stop offset="1" stop-color="#0000d0"/>
     </linearGradient>
     <clipPath id="c"><rect x="28" y="28" width="456" height="456" rx="118"/></clipPath>
   </defs>
+  <!-- 硬偏移落影：白纸卡片那种不带柔化的边（--hm-shadow rgba(0,0,22,.34)） -->
+  <rect x="28" y="45" width="456" height="456" rx="118" fill="#000016" opacity=".36"/>
   <g clip-path="url(#c)">
-    <rect x="28" y="28" width="456" height="456" fill="url(#g)"/>
-    <rect x="28" y="28" width="456" height="456" fill="#fff" opacity=".05"/>
-    <rect x="28" y="28" width="456" height="456" fill="url(#s)"/>
-    <rect x="34" y="40" width="444" height="444" rx="112" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="14" filter="blur(9px)"/>
-    <rect x="31" y="31" width="450" height="450" rx="117" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="3"/>
+    <rect x="28" y="28" width="456" height="456" fill="url(#b)"/>
+    <rect x="31" y="31" width="450" height="450" rx="117" fill="none" stroke="#f5f5f5" stroke-opacity=".55" stroke-width="3"/>
     <g>
-      <rect x="154" y="154" width="94" height="94" rx="23" fill="#f2f2f0"/>
-      <rect x="264" y="154" width="94" height="94" rx="23" fill="#8e8e92"/>
-      <rect x="154" y="264" width="94" height="94" rx="23" fill="#8e8e92"/>
-      <rect x="264" y="264" width="94" height="94" rx="23" fill="#4a4a4e"/>
+      <rect x="154" y="154" width="94" height="94" rx="23" fill="#ffffff"/>
+      <rect x="264" y="154" width="94" height="94" rx="23" fill="#ffffff" opacity=".78"/>
+      <rect x="154" y="264" width="94" height="94" rx="23" fill="#ffffff" opacity=".78"/>
+      <rect x="264" y="264" width="94" height="94" rx="23" fill="#edff45"/>
     </g>
   </g>
 </svg>

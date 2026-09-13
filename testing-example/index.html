@@ -11,8 +11,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="180x180" href="../assets/favicon-180.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="../assets/favicon-180.png" />
-<meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0000f2" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#eef1ff" media="(prefers-color-scheme: light)" />
 <title>样例站点 · 实验合集</title>
 <meta name="description" content="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
 <meta property="og:type" content="website" />
@@ -49,6 +49,7 @@
 })();
 </script>
 <link rel="stylesheet" href="../assets/index.css" />
+<link rel="stylesheet" href="viscose.css" />
 </head>
 <body>
 
@@ -65,8 +66,8 @@
   <header class="hero sub-hero">
     <p class="sub-kicker"><a href="../">GAME LAB</a><span class="sub-sep">/</span><span data-zh="样例站点" data-en="Samples">样例站点</span></p>
     <h1 class="hero-title" data-zh="样例站点" data-en="Samples">样例站点</h1>
-    <p class="lede" data-zh="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。"
-       data-en="Ten small-business site samples — barber, noodle shop, florist, teapots, record store. One brief rendered across many style families, for picking layout and palette.">10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。</p>
+    <p class="lede" data-zh="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。"
+       data-en="Twelve small-business site samples — barber, noodle shop, florist, teapots, record store. One brief rendered across many style families, for picking layout and palette.">12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。</p>
     <input id="q" class="sub-search" type="search" aria-label="筛选站点" />
     <nav class="toc" aria-label="目录">
       <a class="glass" href="../"><span data-zh="首页" data-en="Home">首页</span></a>
@@ -75,6 +76,19 @@
       <a class="glass" href="../sites.html"><span data-zh="站点" data-en="Sites">站点</span> <em>04</em></a>
     </nav>
   </header>
+
+  <section class="ring-sec" id="ringSec" hidden>
+    <div class="ring-stage" id="ringStage" role="group" aria-label="样例站点环形浏览">
+      <canvas class="ring-canvas" id="ringCanvas" aria-hidden="true"></canvas>
+      <div class="ring-front">
+        <span class="ring-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <a class="ring-name" id="ringName" href="#">&nbsp;</a>
+        <span class="ring-sub" id="ringSub">&nbsp;</span>
+      </div>
+      <ol class="ring-col" id="ringCol"></ol>
+      <p class="ring-hint" data-zh="拖动 · 方向键 · 点右侧编号" data-en="Drag · arrow keys · pick a number">拖动 · 方向键 · 点右侧编号</p>
+    </div>
+  </section>
 
   <section class="sec" id="samples">
     <div class="sec-head reveal">
@@ -99,7 +113,7 @@
 
 <!--SITES:BEGIN-->
 <script type="application/json" id="sites-data">{
-  "generatedAt": "2026-09-12 23:47",
+  "generatedAt": "2026-09-13 15:10",
   "sites": [
     {
       "dir": "acute-angle-2.0",
@@ -110,6 +124,18 @@
         {
           "path": "acute-angle-2.0/index.html",
           "title": "锐角 ACUTE ANGLE · 预约制理发店"
+        }
+      ]
+    },
+    {
+      "dir": "chenguang-watch",
+      "name": "辰光修表铺 · Chenguang Watch Atelier — 机械表保养 · 古董表修复",
+      "status": "ok",
+      "updated": "2026-09-13 13:43",
+      "pages": [
+        {
+          "path": "chenguang-watch/index.html",
+          "title": "辰光修表铺 · Chenguang Watch Atelier — 机械表保养 · 古董表修复"
         }
       ]
     },
@@ -241,7 +267,7 @@
       "dir": "tutuhuahua 2.0",
       "name": "涂涂画画 · 儿童美术教室",
       "status": "ok",
-      "updated": "2026-09-12 17:56",
+      "updated": "2026-09-13 14:59",
       "pages": [
         {
           "path": "tutuhuahua 2.0/index.html",
@@ -270,6 +296,18 @@
         {
           "path": "void-codex/index.html",
           "title": "虚空典籍 — 24 小时文学艺术书店 · 朗读会 · 皮尔特沃夫"
+        }
+      ]
+    },
+    {
+      "dir": "yuguang-photo",
+      "name": "屿光摄影 · 海边小城的婚礼与家庭纪实",
+      "status": "ok",
+      "updated": "2026-09-13 12:40",
+      "pages": [
+        {
+          "path": "yuguang-photo/index.html",
+          "title": "屿光摄影 · 海边小城的婚礼与家庭纪实"
         }
       ]
     }
@@ -359,6 +397,7 @@
   }
 })();
 </script>
+<script src="viscose.js"></script>
 <script src="../assets/i18n.js"></script>
 <script src="../assets/interactions.js"></script>
 </body>

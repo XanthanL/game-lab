@@ -1,68 +1,110 @@
-# 涂涂画画 · 官网 v2(静奢 · 纸白)
+# 涂涂画画 · 官网 v2(整站即环廊)
 
-儿童美术教室「涂涂画画」招生单页的第二版:静奢(quiet-luxury)风格,交错作品流。
-孩子的画以大图慢流呈现,像奢侈品官网的 lookbook,而不是卡片网格(v1 的呈现方式,两版并存可对照)。
+儿童美术教室「涂涂画画」的单页站:**整站就是一座黏液环廊**。
+「涂涂画画」以片头字标开场,字标淡出后,孩子们的画作为竖版卡片沿一座
+黏液圆环展开——相邻卡片触碰时熔融相连、拉出蜂蜜丝,上下边缘有玻璃折射。
+效果移植自 [Viscose carousel](https://github.com/Yousuf-developer/Viscose-carousel)
+(MIT),用**原生 WebGL 重写为零依赖版本**,决策与取舍见 `docs/references.md`。
+
+## 操作
+
+- **转环**:拖拽 / 鼠标滚轮 / 触屏左右滑 / 方向键 / 左下右下箭头按钮
+- **看大图**:点击正面的卡片(悬停会出现「看大图」标签),Esc 或 × 关闭
+- 环有惯性并自动吸附到最近的卡片
 
 ## 上新画作(最常用)
 
 1. 照片放进 `assets/art/inbox/`(jpg / png / webp)
 2. 跑一次:
    ```
-   npm run build        # 或者:python tools/build.py
+   python tools/build.py
    ```
-3. 完成。作品流自动上架,每 4 件自动分一辑
+3. 完成。环上自动多一张卡;画名/媒介在 `tools/works.json` 里补,再跑一次即可
+   (build.py 会同步 index.html 里数据的版本号,微信等强缓存环境也能及时上新)
 
-**改画名 / 标媒介 / 标年龄**:`tools/works.json`,按文件名改 `title / media / author / age`,保存后再跑 `npm run build`。
+**环上限 32 件**(着色器 uniform 预算),当前 14 件;超出部分需要分辑时再议。
+注意件数越多图集格位越小(见「体积与资源」)—— 想保住清晰度,与其往环上加件数,不如分辑。
 
-**拍照建议**(决定页面质感的关键):
-
-- 画摆正、正上方拍、不要斜
-- 避开灯光反光;尽量纯色/白墙背景,画铺满画面
-- iPhone:「设置 → 相机 → 格式」选**兼容性最佳**(否则 heic 读不了)
-
-## 填还没填的信息
-
-页面所有青铜金虚线 `[待填]` 都要补:试听的年龄/人数/时长/费用、微信号、电话、地址、ICP 备案号。
-改 `index.html` 对应位置;教室照片搜 `space-slot` 替换为 `<img>`。
+**拍照建议**:画摆正、正上方拍、避开反光;「兼容性最佳」格式(iPhone)。
 
 ## 本地预览
 
 ```
-npm run serve        # 或者:python -m http.server 8081
+python tools/dev-server.py        # 推荐:禁缓存,改完刷新即生效
 ```
 
-浏览器开 http://localhost:8081 。
-
-## 上线
-
-纯静态文件,任意静态托管;国内建议国内主机 + ICP 备案(填页脚)。
+浏览器开 http://localhost:8095 。纯静态文件,任意静态托管可上线。
 
 ## 项目结构
 
 ```
-index.html              页面(文案、待填标记)
+index.html              页面(环廊 + 灯箱)
 css/tokens.css          设计 token(唯一真源;配 design-system/MASTER.md)
-css/site.css            布局与组件
-assets/fonts/           自托管拉丁字体(Cormorant Garamond / Jost,latin 子集,OFL)
-assets/art/inbox/       ← 画作原图丢这里
-assets/art/             build 产物
-tools/build.py          上架脚本
+css/site.css            环廊与灯箱样式
+assets/art/inbox/       ← 画作原图丢这里(构建输入,不发布)
+assets/art/w-*.jpg      build 产物:灯箱大图(长边 ≤1400px)
+assets/art/thumb/       build 产物:环廊图集源(长边 ≤720px)
+tools/build.py          上架脚本(会同步 works-data.js 版本号)
+tools/pack.py           发布打包 → dist/(只收运行时文件,并自检引用)
+tools/probe-ring.py     渲染探针(无头 Chrome 量首屏请求 / 纹理尺寸 / 入场)
+tools/dev-server.py     本地预览(no-store)
 tools/works.json        画作信息(画名/媒介/作者/年龄)
 js/works-data.js        画作数据(build 生成)
-js/gallery.js           作品流渲染 + 灯箱
-docs/                   选型与溯源文档(tech-stack / intent-summary / content-profile / source-map)
+js/ring-carousel.js     环廊(原生 WebGL 移植,零依赖)
+js/gallery.js           灯箱(window.LB.open 供环廊调用)
+docs/                   选型与溯源文档(references / tech-stack / intent-summary / source-map)
 design-system/MASTER.md 设计系统(token 值 + 视觉签名 + never 清单)
+source/                 溯源素材(v1 沿用,不发布)
 ```
 
-## 与 v1 的区别(为什么要两版)
+## 体积与资源(2026-09-13 实测)
 
-| | v1(tutuhuahua/) | v2(tutuhuahua 2.0/) |
-|---|---|---|
-| 风格锚点 | museum-modern 美术馆现代 | quiet-luxury 静奢 |
-| 布局 | 展签卡片网格(2/3 列) | 交错作品流(5:7 栏,左右互换) |
-| 底色 | 纯白 #FFFFFF | 纸白 #F9F7EF |
-| 强调色 | 展签朱红 | 青铜金 |
-| 标题字体 | 系统宋体栈 | Cormorant Garamond(拉丁)+ 衬线中文栈 |
-| 节奏 | 扫读型网格 | 慢流型,每 4 件分辑 |
+首屏(环廊转起来所需的全部)约 **1.2 MB** —— 就是 14 张 `assets/art/thumb/*.jpg`。
+大图 `w-*.jpg` 只在点开灯箱时按需加载。
 
-两版共用同一套画作数据管线(inbox → build.py),照片丢进哪一版的 inbox 就上哪一版。
+- **环廊吃 thumb(≤720px),不吃大图。** 图集格位最长边 ≤1024,720 已够采样;
+  拿 1400px 的大图去填 320px 的格位是纯浪费 —— 实测首屏会从 1.18 MB 涨到 1.98 MB。
+  取值在 `js/ring-carousel.js` 的 `fetchInto`:`works[i].thumb || works[i].src`。
+- **图集打包按件数自动选形状。** `buildAtlas` 把列数 1..n 扫一遍,取「格位最长边最大」
+  的那一种。14 件 → 4 列 × 4 行,格位 **450×512**,图集 2048²(约 16 MB 显存,不含 mipmap)。
+  改之前是从 640 起按 2 的幂降档,14 件装不下就直接掉到 **281×320**,画被放大 2.63 倍。
+  件数越多格位越小:20 件 409×466,32 件 299×341 —— 环上限 32 件这条约束仍在。
+- **不加载任何 webfont。** 全站可见文字只有中文和数字:数字走 `--font-mono`
+  (JetBrains Mono,从未自托管),中文两个字体栈都没有 CJK 字形 —— 原先自托管的
+  Cormorant Garamond / Jost 一个可见字形都落不到,已移除(省 140 KB)。
+  token 里的字体栈保留不删:将来真要加拉丁文,把字体按名字放回去即可。
+
+## 发布
+
+```
+python tools/pack.py          # 生成 dist/(约 3.2 MB,34 个文件)
+python tools/pack.py --zip    # 顺手打个 zip
+```
+
+`assets/art/inbox/`(原图 12 MB)和 `source/`(7.5 MB)是构建输入与溯源素材,
+**不进 dist/**。整目录上传会把它们一起送上服务器 —— 用 pack.py,别手动传整个文件夹。
+pack.py 会顺带自检:解析 index.html 的 `src`/`href`,确认每个引用在 dist/ 里都存在。
+
+## 改完怎么验
+
+```
+python tools/probe-ring.py                              # 桌面视口 1512×870
+python tools/probe-ring.py --width 390 --height 844     # 手机视口
+```
+
+无头 Chrome 真跑一遍,打出「请求了哪些图 / 首屏多少 MB / 图集多大 / 入场走到哪」。
+环廊的毛病大多**不报错、只是静默变差**(图集降档、图源换错、入场卡住)—— 这条命令能抓住。
+软件渲染下虚拟时钟走得慢,入场时间线不一定在预算内走完,那只是探针的局限;
+真出错会明确报 `[失败]`。
+
+## 兼容与降级
+
+- WebGL 1 + OES_standard_derivatives(近十年浏览器全覆盖);缺失时整区降级为一行指引
+- `prefers-reduced-motion`:跳过入场动画,直接呈现可交互的环
+- 手机竖屏:两侧铭牌退场,画名/媒介走底部一行
+- 交互:滚轮/拖拽已被环廊占用,页面本身不滚动
+
+## 与旧版(v2 交错流 / v1 网格)的关系
+
+前两版(展签网格、交错作品流)已被本版整体替代:同样的画作数据管线,
+不同的展示哲学——从「翻看一面墙」变成「走进一座环廊」。

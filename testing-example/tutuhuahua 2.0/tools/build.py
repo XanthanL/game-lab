@@ -138,6 +138,20 @@ def main():
         fh.write(json.dumps(payload, ensure_ascii=False, indent=2))
         fh.write(";\n")
 
+    # 同步 index.html 里 works-data.js 的版本号(?v=日期),微信等强缓存环境也能及时上新
+    index_file = os.path.join(ROOT, "index.html")
+    if os.path.exists(index_file):
+        with open(index_file, "r", encoding="utf-8") as fh:
+            html = fh.read()
+        new_html = re.sub(
+            r'(js/works-data\.js\?v=)[\w.-]+',
+            r'\g<1>' + payload["updated"],
+            html,
+        )
+        if new_html != html:
+            with open(index_file, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(new_html)
+
     total_kb = 0
     for fname in os.listdir(OUT_DIR):
         if fname.startswith("w-") and fname.endswith(".jpg"):

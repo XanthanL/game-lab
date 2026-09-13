@@ -1,0 +1,377 @@
+/* ============================================================
+   辰光修表铺 · 样式（token 见 css/tokens.css；规范见 design-system/MASTER.md）
+   布局原型：editorial-hero ｜ 中轴：center-axis（hero/标题居中，正文左对齐）
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-base);
+  letter-spacing: var(--trk-body);
+  line-break: strict;
+  hanging-punctuation: first allow-end;
+  font-feature-settings: "palt" 0;
+}
+
+::selection { background: var(--accent-soft); }
+
+/* ── 通用 ── */
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.skip {
+  position: absolute; left: -999px; top: 0;
+  background: var(--ink); color: var(--gold);
+  padding: var(--space-1) var(--space-2);
+  text-decoration: none; font-size: var(--fs-xs);
+}
+.skip:focus { left: 0; z-index: 10; }
+
+/* [待填] 标记（上线前必替换；见 README.md）—— 有意脱离色板的警示红 */
+.tbd {
+  color: #B3452E;
+  border: 1.5px dashed #B3452E;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a { color: var(--accent-ink); text-underline-offset: 0.12em; text-decoration-thickness: from-font; }
+a:hover { color: var(--accent); }
+
+/* ══ 招牌 / Hero（墨黑面）══ */
+.hero {
+  background: var(--ink);
+  color: var(--on-ink);
+  text-align: center;
+  padding-block: var(--space-6) var(--space-5);
+}
+
+.kicker-line {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.shop-name {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: clamp(44px, 17.5vw, 72px); /* = --fs-display；5 汉字在 320–375px 不溢出、无孤字 */
+  line-height: var(--lh-display);
+  letter-spacing: var(--trk-display);
+  color: var(--gold);
+  margin-top: var(--space-1);
+}
+
+.slogan {
+  margin-top: var(--space-2);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+  letter-spacing: var(--trk-heading);
+  color: var(--on-ink);
+}
+.slogan [lang="en"] { font-family: var(--font-display); font-style: normal; color: var(--on-ink-muted); }
+
+.specialty {
+  margin-top: var(--space-1);
+  font-size: var(--fs-base);
+  color: var(--on-ink-muted);
+}
+.dot { margin-inline: 0.5em; color: var(--gold); }
+
+/* 门头照位：浅金细框（照片由 JS 按 data-photo 自动换入） */
+.ph-storefront {
+  max-width: 620px;
+  margin: var(--space-4) auto 0;
+}
+
+.hero-contact {
+  margin-top: var(--space-4);
+  font-size: var(--fs-base);
+  color: var(--on-ink);
+}
+.hero-contact .tbd { color: #E08A6A; border-color: #E08A6A; } /* 墨底上的警示红提亮 */
+
+.cta-row {
+  margin-top: var(--space-4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.btn {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.btn:hover, .btn:focus-visible { background: var(--gold); color: var(--ink); }
+.link { color: var(--on-ink-muted); }
+
+/* ══ 行内目录（anchor-jump：静态、不跟随滚动）══ */
+.jump {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  text-transform: uppercase;
+}
+.jump-label { color: var(--muted); font-family: var(--font-display); }
+.jump a { color: var(--accent-ink); }
+.jump-sep { color: var(--line); }
+
+/* ══ 区块骨架 ══ */
+.sec { padding-block: var(--space-6) var(--space-7); border-top: 1px solid var(--line); }
+.sec-soft { background: var(--bg-soft); }
+.sec-ink { background: var(--ink); color: var(--on-ink); border-top: none; }
+.sec:focus { outline: none; }
+.sec:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.sec-head {
+  text-align: center;                 /* center-axis：标题居中 */
+  margin-bottom: var(--space-4);
+}
+.num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: var(--space-1);
+}
+.sec-ink .num { color: var(--gold); }
+.sec-head h2 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+  letter-spacing: var(--trk-heading);
+}
+.sec-en {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: var(--space-1);
+}
+.sec-ink .sec-en { color: var(--on-ink-muted); }
+
+.sec-intro {
+  max-width: var(--prose-width);
+  margin: 0 auto var(--space-4);
+  color: var(--fg);
+  text-align: center;                 /* 一句引导语属标题层，随中轴居中 */
+}
+.sec-intro [lang="en"] { display: block; font-family: var(--font-display); color: var(--muted); font-size: var(--fs-xs); letter-spacing: 0.02em; margin-top: var(--space-1); }
+
+/* ── 01 价目（台账行：名称—点线—价格）── */
+.ledger { list-style: none; max-width: 720px; margin-inline: auto; }
+.ledger li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+  border-bottom: 1px solid var(--line);
+}
+.ledger li:first-child { border-top: 1px solid var(--line); }
+.svc { flex: 1 1 auto; min-width: 0; }
+.svc-en { display: block; font-family: var(--font-display); font-size: var(--fs-xs); color: var(--muted); letter-spacing: 0.02em; }
+.lead { flex: 0 1 48px; border-bottom: 1px dotted var(--muted); transform: translateY(-0.25em); min-width: 16px; }
+.price {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-lg);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.price .qi { font-family: var(--font-body); font-size: var(--fs-base); color: var(--fg); }
+.price-quote { letter-spacing: 0.06em; }
+.price-en {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.footnote {
+  max-width: var(--prose-width);
+  margin: var(--space-3) auto 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-xs);
+  color: var(--muted);
+}
+
+/* ── 02 手艺（正文左对齐 + 双图交错）── */
+.prose { max-width: var(--prose-width); margin-inline: auto; }
+.prose p + p { margin-top: 0.75em; }
+.prose [lang="en"] { font-family: var(--font-display); color: var(--fg); }
+
+.duo {
+  max-width: 900px;
+  margin: var(--space-4) auto 0;
+  display: grid;
+  gap: var(--space-3);
+}
+@media (min-width: 720px) {
+  .duo { grid-template-columns: 55% 55%; justify-content: space-between; }
+  .duo .ph:nth-child(1) { margin-right: auto; }   /* 图文交错：第一张靠左 */
+  .duo .ph:nth-child(2) { margin-left: auto; }    /* 第二张靠右，形成左右交替 */
+  .duo .ph:nth-child(2) { margin-top: calc(-1 * var(--space-5)); }
+}
+
+/* ── 照片位（占位框 = 设计对象；传图后 JS 换入）── */
+.ph-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.ph-storefront .ph-frame { aspect-ratio: 3 / 2; background: rgba(247,244,238,.06); }
+.ph img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.ph-empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  text-align: center;
+}
+.ph-cn { color: var(--muted); }
+.ph-en { font-family: var(--font-display); font-size: var(--fs-xs); letter-spacing: var(--trk-label); text-transform: uppercase; color: var(--muted); }
+.ph-file { font-family: var(--font-mono); font-size: 11px; color: var(--muted); opacity: .8; }
+.ph figcaption {
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── 03 机芯微距（2×2 图廊，单一展示尺度）── */
+.gallery {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) { .gallery { grid-template-columns: 1fr 1fr; } }
+
+/* ── 04 新到名表 ── */
+.na-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px) { .na-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .na-grid { grid-template-columns: repeat(3, 1fr); } }
+.na-card { border-top: 1px solid var(--line); padding-top: var(--space-2); }
+.na-card .ph-frame { aspect-ratio: 1 / 1; }
+.na-name { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--fs-base); margin-top: var(--space-1); }
+.na-name-en { display: block; font-weight: 400; font-size: var(--fs-xs); letter-spacing: var(--trk-label); text-transform: uppercase; color: var(--muted); }
+.na-detail { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--space-1); }
+.na-price { font-family: var(--font-display); font-size: var(--fs-base); color: var(--accent); font-variant-numeric: tabular-nums; }
+.na-empty {
+  border: 1px dashed var(--muted);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--muted);
+  max-width: var(--prose-width);
+  margin-inline: auto;
+}
+.na-empty [lang="en"] { display: block; font-family: var(--font-display); font-size: var(--fs-xs); letter-spacing: 0.02em; margin-top: var(--space-1); }
+
+/* ── 05 到店信息（墨黑面；NAP 左对齐）── */
+.sec-ink .sec-intro [lang="en"] { color: var(--on-ink-muted); }
+.nap { max-width: 720px; margin-inline: auto; }
+.nap-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid rgba(247,244,238,.18);
+}
+.nap-row:first-child { border-top: 1px solid rgba(247,244,238,.18); }
+.nap dt {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--trk-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.nap dt [lang="en"] { color: var(--on-ink-muted); margin-left: 0.5em; }
+.nap dd { font-size: var(--fs-base); line-height: var(--lh-base); }
+.nap dd strong { font-weight: var(--weight-body); font-family: var(--font-display); font-size: var(--fs-lg); line-height: var(--lh-lg); color: var(--gold); }
+.nap-en { font-family: var(--font-display); font-size: var(--fs-xs); color: var(--on-ink-muted); letter-spacing: 0.02em; }
+.sec-ink .tbd { color: #E08A6A; border-color: #E08A6A; }
+.visit-note {
+  max-width: var(--prose-width);
+  margin: var(--space-3) auto 0;
+  font-size: var(--fs-xs);
+  color: var(--on-ink-muted);
+  text-align: center;
+}
+
+/* ══ 页脚 ══ */
+.foot {
+  background: var(--ink);
+  color: var(--on-ink-muted);
+  text-align: center;
+  padding-block: var(--space-5);
+  border-top: 1px solid var(--gold);
+}
+.foot-name { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--fs-lg); line-height: var(--lh-lg); color: var(--gold); letter-spacing: var(--trk-heading); }
+.foot-name [lang="en"] { display: block; font-weight: 400; font-size: var(--fs-xs); letter-spacing: var(--trk-label); text-transform: uppercase; color: var(--on-ink-muted); }
+.foot-slogan { margin-top: var(--space-1); font-size: var(--fs-base); }
+.foot-copy { margin-top: var(--space-2); font-size: var(--fs-xs); }
+
+/* ── 窄屏微调：slogan 英文独立成行；地址 / 电话分行（去悬挂分隔点）── */
+@media (max-width: 480px) {
+  .slogan .dash { display: none; }
+  .slogan [lang="en"] { display: block; }
+  .hero-contact .dot { display: none; }
+  .hero-contact .tbd { display: inline-block; margin-top: var(--space-1); }
+}
+
+/* ── 动效降级 ── */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+html { scroll-behavior: smooth; }

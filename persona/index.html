@@ -39,10 +39,12 @@
       t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }
     d.setAttribute("data-theme", t);
-    /* 风格：glass 液态玻璃（默认）、soft 新拟物、raw 新粗野、crete 砼核、
-       xp Windows XP Luna、w7 Windows 7 Aero、w10 Windows 10 Metro */
+    /* 风格：沿用用户在别处选过的那套；没存过（首次进入）才回退 glass。
+       白名单必须与 assets/i18n.js 的 GROUPS 派生出的 STYLES 完全一致 ——
+       漏登记任何一套，用户选过的皮肤在这一页会被静默丢掉、掉回 glass。
+       （本页没有皮肤切换器，只能靠这里把选择继承过来。） */
     var st = localStorage.getItem("gl-style");
-    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi"];
+    var OK = ["glass","soft","raw","crete","xp","w7","w10","classic","dream","pool","weird","mc","gtavc","gtasa","gta4","gta5","pipboy","construct", "blueprint", "fc", "synthwave", "glitch", "clay", "cyberpunk", "rdr2", "p5", "aperture", "halo", "splatoon", "pokemon", "crt", "gb", "winamp", "dos", "mac7", "bauhaus", "deco", "memphis", "pop", "swiss", "vaporwave", "washi", "morandi", "skate", "decon", "ink", "futurism", "hermes","klein","diagonal","shanshui","borderlands"];
     d.setAttribute("data-style", OK.indexOf(st) !== -1 ? st : "glass");
   } catch (e) {}
 })();

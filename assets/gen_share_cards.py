@@ -4,7 +4,8 @@
 一套**刻意不统一**的设计：每张图都按自己项目真实的样子画 —— 底色 / 主色 / 字体气质
 取自各站点自己的 CSS（采集方法见 .workbuddy/shots/probe-style.js）：
 
-    实验合集      石墨 + 暖白衬线 + 细分隔线（站点自身几乎没有彩色，这里也不给）
+    实验合集      电光蓝满版 + 白纸 + 酸黄标注（= 站点默认皮肤 <html data-style="hermes">。
+                 其余各张画的是项目自己的长相，只有这张代表站点本体，所以跟着皮肤走）
     奇点回响      虚空黑 + 暖纸白 + 星野 + 一枚红刻度
     微软大战代码  浅灰桌面 + 白窗 + 绿按钮（它首屏那个安装向导）
     植物大战僵尸  草坪条纹 + 太阳 + 绿色硬阴影标题
@@ -52,38 +53,52 @@ def ink_glow(im, cx, cy, text, f, tracking, color, radius, alpha):
     return Image.composite(Image.new("RGB", im.size, color), im, g)
 
 
-def mark2x2(im, cx, cy, cell=27, gap=8, alpha=225):
-    """favicon 的 2×2 玻璃格标记。"""
-    tones = [(242, 242, 240), (142, 142, 146), (142, 142, 146), (74, 74, 78)]
+def mark2x2(im, cx, cy, cell=27, gap=8):
+    """favicon 的 2×2 格子标记 —— 与 assets/gen_brand.py 同一套电光蓝配色：
+    三格白纸（左上最实）+ 右下那枚酸黄，酸黄是唯一的彩色。"""
+    tones = [((255, 255, 255), 255), ((255, 255, 255), 199),
+             ((255, 255, 255), 199), ((237, 255, 69), 255)]
 
     def fn(d):
-        for i, t in enumerate(tones):
+        for i, (t, a) in enumerate(tones):
             x = cx - cell - gap / 2 + (i % 2) * (cell + gap)
             y = cy - cell - gap / 2 + (i // 2) * (cell + gap)
             d.rounded_rectangle([x, y, x + cell, y + cell],
-                                radius=round(cell * 0.26), fill=t + (alpha,))
+                                radius=round(cell * 0.26), fill=t + (a,))
     return layer(im, fn)
 
 
 # ------------------------------------------------------------------ 1. 实验合集
 def scene_site(size=SZ):
-    im = K.vgrad((size, size), (17, 17, 20), (8, 8, 10))
-    im = K.wash(im, size / 2, size * 0.40, size * 0.66, (72, 68, 60), 0.42)
-    im = K.grain(im, 3.0, seed=5)
-    ink = (242, 239, 233)
+    """站点本体 —— 电光蓝（--hm-blue #0000f2）满版 + 米白 + 酸黄标注。
+    同心环是官网首屏「光轮」的抽象，和首页 hero 同一个母题。"""
+    im = K.vgrad((size, size), (12, 12, 255), (0, 0, 208))
+    im = K.grain(im, 3.0, seed=5)          # 满版抖色网点般的底噪
+    ink = (245, 245, 245)                  # 米白（--hm-paper 上的正文色）
+    acid = (237, 255, 69)                  # --hm-acid，只给极小标注
+    # 副标题要压在电光蓝上，K.tracked 走的是不透明 RGB，所以这里先混好
+    dim = (138, 138, 238)                  # 米白 55% 叠在电光蓝上
+
+    def rings(d):
+        for r in (150, 214, 278):
+            d.ellipse([size / 2 - r, 232 - r, size / 2 + r, 232 + r],
+                      outline=ink + (26,), width=2)
 
     def rules(d):
         for y in (232, 1004):
-            d.line([(120, y), (size - 120, y)], fill=ink + (34,), width=1)
-        d.line([(468, 706), (732, 706)], fill=ink + (110,), width=2)
+            d.line([(120, y), (size - 120, y)], fill=ink + (100,), width=1)
+        # 酸黄：整张图唯一的一处彩色，对应官网「只给极小的标注与高亮」
+        d.line([(468, 706), (732, 706)], fill=acid + (255,), width=4)
 
+    im = layer(im, rings)
     im = layer(im, rules)
     im = mark2x2(im, size / 2, 232)
 
     d = ImageDraw.Draw(im)
     K.tracked(d, size / 2, 552, "实验合集", K.serif(208, 600), ink, 26)
-    K.tracked(d, size / 2, 848, "游戏 · 实验 · 站点", K.sans(40, 350), (128, 124, 116), 18)
-    return K.vignette(im, 0.40)
+    K.tracked(d, size / 2, 848, "游戏 · 实验 · 站点", K.sans(40, 350), dim, 18)
+    # 暗角只留一点点：电光蓝是「满版平涂」，压重了就变成深藏青，不再是那块蓝
+    return K.vignette(im, 0.16, radius=0.95)
 
 
 # ------------------------------------------------------------------ 2. 奇点回响

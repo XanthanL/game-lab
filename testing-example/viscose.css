@@ -1,0 +1,88 @@
+/* ==================================================================
+   样例站点 · Viscose 环形轮播（配套 testing-example/viscose.js）
+
+   参考 https://github.com/Yousuf-developer/Viscose-carousel —— 卡片沿一只
+   大半在屏外的圆环排布，相邻卡片在着色器里用 SDF 的 smooth-minimum 混在一起，
+   靠近时融成一坨、分开时拉出细丝。这里把图片换成站点卡片。
+
+   本文件只管「壳」：舞台尺寸、叠加的文字、右侧索引列、提示。
+   圆环本体是 canvas，配色从皮肤变量读（--bg / --card-bg / --accent / --ink），
+   所以 52 套皮肤换装时轮播跟着换。
+================================================================== */
+
+.ring-sec { margin-top: clamp(18px, 3.5vh, 40px); }
+.ring-sec[hidden] { display: none; }
+
+.ring-stage {
+  position: relative; isolation: isolate;
+  height: clamp(420px, 62vh, 660px);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  overflow: hidden;
+  /* 竖向留给页面翻页，横向拖动归轮播 —— 手机上不会把人困在这里 */
+  touch-action: pan-y;
+  cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+}
+.ring-stage.is-drag { cursor: grabbing; }
+
+.ring-canvas { display: block; width: 100%; height: 100%; }
+
+/* ── 正面那张卡的信息：环的下方正中空着，放这里不挡卡片 ── */
+.ring-front {
+  position: absolute; left: 0; right: 0; bottom: clamp(18px, 3vh, 30px);
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  padding: 0 74px; text-align: center; pointer-events: none;
+}
+.ring-mark {
+  display: grid; grid-template-columns: repeat(2, 7px); grid-template-rows: repeat(2, 7px);
+  gap: 3px;
+}
+.ring-mark i { width: 7px; height: 7px; border-radius: 2px; background: var(--ink-3); }
+.ring-mark i:last-child { background: var(--accent); }
+
+.ring-name {
+  pointer-events: auto;
+  font-family: var(--serif); font-size: clamp(19px, 2.3vw, 29px); line-height: 1.25;
+  color: var(--ink); text-decoration: none;
+  display: inline-block; padding: 2px 4px;
+  transition: color .3s var(--ease), opacity .3s var(--ease);
+}
+.ring-name:hover, .ring-name:focus-visible { color: var(--accent); }
+.ring-sub {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+/* ── 右侧索引列：对应原作右上角那个 01–18 的项目表，可点着跳 ── */
+.ring-col {
+  position: absolute; right: clamp(10px, 2vw, 20px); top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 0; padding: 0; list-style: none;
+}
+.ring-col button {
+  display: block; width: 100%; padding: 3px 6px;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+  color: var(--ink-3); opacity: .55;
+  transition: color .3s var(--ease), opacity .3s var(--ease);
+}
+.ring-col button:hover, .ring-col button:focus-visible { opacity: 1; color: var(--ink); }
+.ring-col button[aria-current="true"] { opacity: 1; color: var(--accent); }
+
+/* ── 左下提示 ── */
+.ring-hint {
+  position: absolute; left: clamp(10px, 2vw, 20px); bottom: clamp(14px, 2.4vh, 22px);
+  margin: 0; max-width: 15ch;
+  font-family: var(--mono); font-size: 9.5px; line-height: 1.7;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+}
+
+@media (max-width: 700px) {
+  .ring-stage { height: clamp(360px, 58vh, 480px); }
+  .ring-col { display: none; }          /* 窄屏放不下，改靠拖动 */
+  .ring-front { padding: 0 20px; }
+  .ring-hint { max-width: 11ch; }
+}
