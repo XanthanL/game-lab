@@ -4669,7 +4669,9 @@ window.addEventListener('touchstart',e=>{
     if(t.clientY<70&&t.clientX>VW-120)continue; // hud buttons
     // FIRE 按钮 = 唯一开火开关；按钮之外的任意位置都作为方向/推力
     if(isFireBtn(t.clientX,t.clientY)){fireOn=!fireOn;el.firebtn.classList.toggle('hot',fireOn);}
-    else if(joy.id===null){
+    /* 7.6：joy.endT 待收尾 = 上一根手指已被 touchcancel，玩家立刻重新触摸时让新手指接管 */
+    else if(joy.id===null||joy.endT){
+      clearTimeout(joy.endT);joy.endT=0;
       joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.dx=0;joy.dy=0;joy.on=true;
       joyRead();
       el.joybase.hidden=false;el.joybase.style.left=joy.ox+'px';el.joybase.style.top=joy.oy+'px';
@@ -4710,6 +4712,7 @@ function endTouch(e){
       joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;
     }else{
       joy.endT=setTimeout(()=>{
+        joy.endT=0;   /* 收尾后清零，否则 touchstart 的 "joy.endT" 判据会误判为「待收尾」 */
         joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;
       },120);
     }

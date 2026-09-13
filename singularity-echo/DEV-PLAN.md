@@ -111,7 +111,7 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 | `.workbuddy/shots/phase5-2-shots.js` | 留档截图：连接横幅 / 卡牌手柄选中 / 机库手柄选中 / 竖屏焦点 | 人工 |
 | `.workbuddy/shots/phase5-3-check.js` | **设置面板 14 项**（默认值与表定义 / 持久化与坏档兜底 / 画质四档 / **手动画质锁死不自动降** / 四个特效开关 / 减弱动态 / 色盲 token 覆盖与逐条还原 / PAL 重读与中性色不动 / **CVD 模拟三对关键色分离度 ≥90（基础配色必须不过线）** / 敌方弹丸走 token / 中英 / 手柄可达 / 数据规模回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase5-4-check.js` | **性能 12 项**（预算表八项三档严格单调 / **降档同 tick 砍存量** / 粒子·残骸入口上限随档 / 残影·电弧·碎片·飘字 trim 后不超档 / **绘制调用数 100%→85%→63% 单调递减** / bloom 只在高档的 A/B 差值 / 看门狗降档预算同步 / DPR 与星场层数 / 低档照样打得死人 / 5.1·5.2·5.3 回归 / 竖屏） | 无 pageerror、断言全过 |
-| `.workbuddy/shots/phase5-5-check.js` | **移动端 13 项**（**模拟量转向：推杆幅度→转角严格递增** / 死区内抖动不转船 / **下拉是刹车不是推进** / 手指拖远时底盘重锚且满舵不跳变 / 安全区变量链路与 FIRE 的 calc 避让 / 竖屏提示出现·点击永久忽略·横屏不出现 / 中英 / **真鼠标按下切回键鼠** / 键鼠·手柄转向无回归 / 竖横屏都不出界 / 触屏下能击杀 / 5.1·5.3·5.4 无回归 / **touchcancel 不立刻打死摇杆（A 续上 / B 静默 150ms / C touchend 兜底）**） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase5-5-check.js` | **移动端 14 项**（**模拟量转向：推杆幅度→转角严格递增** / 死区内抖动不转船 / **下拉是刹车不是推进** / 手指拖远时底盘重锚且满舵不跳变 / 安全区变量链路与 FIRE 的 calc 避让 / 竖屏提示出现·点击永久忽略·横屏不出现 / 中英 / **真鼠标按下切回键鼠** / 键鼠·手柄转向无回归 / 竖横屏都不出界 / 触屏下能击杀 / 5.1·5.3·5.4 无回归 / **touchcancel 不立刻打死摇杆（A 续上 / B 静默 150ms / C touchend 兜底）**） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-2-check.js` | **难度档 14 项**（三档系数表严格单调且标准档=1 / 敌人三围随档递增 / **同样 20 点伤害三档扣血不同** / 每波数量递增 / 得分系数 0.8·1·1.4 / **开局后改选择不改本局数值** / 解锁门槛 / 刷新后读回 / 机库三档可选且当前高亮 / **每日挑战固定标准档** / 记录·卡片·榜单带难度 / 中英 / 6.1 与 5.x 无回归 / 竖屏） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-3-check.js` | **自定义挑战 19 项**（5 个 Modifier 数据表与上限 3 / 蜂群 数量×1.45 单体血×0.8 / 铁壁 血×1.7 速×0.85 / 疾风 速×1.35 伤×1.15 / 荒芜 补给间隔最小采样 ×2.2 / 脆命 船体上限 ×0.5 / **组合相乘而非覆盖** / **得分加成累加不连乘** 与难度档相乘 / 最多选 3 / **开局后冻结本局** / 历史最佳波次解锁门槛 / localStorage 持久化 / **每日挑战强制清空** / 记录·榜单·卡片带标记 / 像素差证明卡片真的画了 / 机库 UI 选中与倍率文案 / 中英 / 6.1·6.2 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-4-check.js` | **卡池工坊 14 项**（29 个模块 · 最多禁用 8 · **禁用后 50 次采样 0 次出现** / 禁 8 个仍能凑齐 3 张不塌成 REPAIR / 选 10 个只留前 8 / **开局后冻结本局** / localStorage 持久化 / **每日挑战强制清空** / 记录·榜单·卡片带「工坊 xN」标记 / 像素差证明卡片真画了 / 机库 UI 选中 + 上限变色 + 顺序按 MODULES 定义序 / 中英 / 6.1·6.2·6.3 + 难度/挑战/工坊三套并存 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
@@ -1097,7 +1097,7 @@ headless 是软件渲染，单帧耗时被放大十几倍且抖 ±20% —— 消
 **六、混用设备**：`isTouch` 改前一旦触屏就永久为 true，触屏笔记本插鼠标也回不去。
 现在用 `pointerType==='mouse'` 判断 —— **触屏会产生合成的 mouse 事件，只靠 `mousedown` 会反复横跳**。
 
-**验证**：`phase5-5-check.js` **13 项全过**（第 13 项即 7.6 touchcancel 修复，见 §6 7.6 节）；
+**验证**：`phase5-5-check.js` **14 项全过**（第 13 项 = 7.6 touchcancel 修复 / 第 14 项 = 7.6 缺口补修，见 §6 7.6 节）；
 20 套脚本（+ `phase5-5-check`）**无 ERR / 无 FAIL**；`audit-tokens.js` 全绿。
 回退点 `.workbuddy/backups/index_*_phase5-5-pre.html`，
 截图 `.workbuddy/shots/phase5/5-5-s1…s5-*.png`。
@@ -1503,6 +1503,12 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
 **验证**：`phase5-5-check.js` 第 13 项三条路径全过（A: cancel+50ms touchmove→on=true dx=-46; B: cancel+150ms 静默→on=false; C: touchend→on=false）；
 修前对比：同样序列在修前 `joy.on` 立即 false、船原地不动；修后 30 帧合成 touchmove 让船持续推进 dy=-519.9、vy=-340。
 `audit-tokens.js` 全绿；JS 语法 OK。**回退点** `index_*_phase7-6-post.html`（共同前态 = `index_*_phase7-5-post.html`，diff 仅含本节三处改动）。
+
+**补修（7.6 缺口）**：`probe76-takeover.js` 发现 —— 上一根手指被 `touchcancel` 后 120ms 内
+**新手指触摸会被吞**（`touchstart` 仍按 `joy.id===null` 判定，旧 id 占着坑）。
+修：① `touchstart` 判据扩为 `joy.id===null||joy.endT`（待收尾也算空），接管时 `clearTimeout(joy.endT); joy.endT=0;`；
+② `timeout` 回调里 `joy.endT=0` 避免残留 truthy 误导后续 `touchstart`。
+`phase5-5-check.js` 加第 14 项 `5-5-14-takeover` 守此路径。
 
 ---
 
@@ -2162,6 +2168,7 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
      而是**把两处接到同一个来源上**，顺手还少了两处 JS 颜色字面量。
      通用动作：改任何颜色前先 `grep` 那个色值，看它是不是"本来应该等于某个变量"。
 179. **touchcancel 不等于 touchend**（7.6）—— 浏览器抢手势时（滚屏 / 拉地址栏 / 系统手势 / 切后台）会发 touchcancel，但**玩家手指多半还在屏幕上**。原 `endTouch` 把两者一视同仁都立刻打死摇杆，玩家必须抬起重新摸。真机上 touchcancel 触发率远高于想象（一次划屏可能发好几次），体感就是「移动严重卡顿」。**修法**：区分 `e.type`：touchend 立即收尾（行为不变），touchcancel 设延迟定时器（默认 120ms）；`touchmove` 同 id 续上就 `clearTimeout`。
+180. **「待收尾」期间新手指必须能接管**（7.6 补修）—— 上一根手指被 touchcancel 后 `joy.id` 还占着旧 id、`joy.endT` 还挂着未触发的定时器。这时新手指触摸，`touchstart` 仍按 `joy.id===null` 判定 → 新手指被吞。**修法**：把 `joy.endT` 也算空（`||joy.endT`），允许接管；接管时 `clearTimeout(joy.endT); joy.endT=0;`。**`timeout` 回调里也要 `joy.endT=0`** —— 否则 timeout 触发后 `joy.endT` 残留 truthy，后续 `touchstart` 误判为「待收尾」又走接管分支，污染逻辑。
 
 174. **探针自己也会踩「没复现真实路径」的坑**（7.3）—— 第一版 `probe73.js` 在同一个页面里
      `NOVA.ta.start()` 之后再测"对方点开链接"，而 `G.taMode` 是**内存态**，
@@ -2237,6 +2244,7 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
 | 日期 | 内容 |
 |---|---|
 | | 2026-09-13 | **Phase 7.6 touchcancel 不要立刻打死摇杆（手机端移动严重问题）**。作者报「手机端上面的移动出现了严重的问题」，常规排查（摇杆逻辑 / dt / 多指 / 引导遮罩）均正常，**最后靠 CDP `Input.dispatchTouchEvent` 复现 `touchCancel` 后 `joy.on` 立即变 false**（同时 CDP 拒绝后续同 id touchMove，—— 这恰好印证了真机上「取消后继续拖」的事件链路是断的）。修法：`endTouch` 按 `e.type` 分支，`touchcancel` 延迟 120ms 收尾（期间同 id `touchmove` 续上即 `clearTimeout`），真抬起才由 `touchend` 立即收尾。`phase5-5-check.js` 加第 13 项守三条路径（A 续上 / B 静默 150ms / C touchend 兜底）全过；`probe76.js` 验证修复：cancel 后 30 帧合成 touchmove 让船持续推进 dy=-519.9 / vy=-340（修前 dy=0）。**教训**：浏览器抢手势 ≠ 手指抬起 —— 收到 touchcancel 之前先想想「手指真的离开了吗」。
+| | 2026-09-13 | **Phase 7.6 补修：touchcancel 收尾期间新手指接管**。`probe76-takeover.js` 发现上一根手指被 touchcancel 后 120ms 内 **新手指触摸会被吞**（`touchstart` 仍按 `joy.id===null` 判定，旧 id 占着坑）。修：① `touchstart` 判据扩为 `joy.id===null||joy.endT`，接管时清定时器并 endT=0；② `timeout` 回调里 `joy.endT=0` 避免残留 truthy。`phase5-5-check.js` 加第 14 项 `5-5-14-takeover` 守此路径（14/14 全过）。**教训**：状态机标志位要么每次显式清零，要么分两变量 —— 不能依赖 truthy 区分「待收尾」与「已死」。
 探针一律保留作证据（probe66 / 72–76），一次性补丁脚本 `.workbuddy/*.py` 已清理。
 | | 2026-09-13 | **Phase 7.5 高爆弹配色跟随战机**。作者指出高爆弹的橙光和所选战机不搭。一查 `drawBulletVis()` 第 5 层（脉动光晕 + 弹壳环）写死了 `rgba(255,170,110,…)`，而**同一个函数里弹体本身早就用 `v.c`**（= `hullGlow()`，在 `bulletVis()` 里取一次）—— 颜色来源本来就在手边，只是那一层没接上。两行 `fillStyle`/`strokeStyle` 改 `rgba(${v.c},0.16)` / `rgba(${v.c},0.85)`，注释同步。探针 `probe75.js` **拦截 canvas 的 fillStyle/strokeStyle setter**，直接验第 5 层写进 canvas 的颜色：7/7 命中 `rgba(hullGlow,…)`、**旧橙色 `255,170,110` 一笔不剩**、7 条船体 7 种色，pageerror 0，`audit-tokens.js` 全绿（少两处 JS 颜色字面量），定向回归 5 套零 FAIL 零 ERR。**教训**：同一件东西的颜色有两个来源，早晚不一致 —— 改颜色前先 `grep` 那个色值（§7 #178） |
 | | 2026-09-13 | **Phase 7.4b 离开机库的漏网路径**。7.4 收尾后把 §7 #176 系统性复用了一遍（grep 所有模式开关的赋值点逐个查复位），发现 `dailyMode`/`endless`/`pendingSeed`/`pendingGhost` 都在 `startGame` 里有复位点（稳妥模式），只有 `G.taMode` 必须活到 `startGame` 被读、只能在「离开」时复位 —— 而 ESC 与手柄 B（`padBack()`）是就地 `el.hulls.hidden=true;G.mode='menu'`，**根本没走 `toMenu()`**（探针 probe74b.js 实测：出机库后直接开一局，倒计时 180s · standard）。修法不是再补两行，而是**收口成统一的 `closeHulls()`**。7.4 断言从 10 项扩到 12 项全过，31 套回归零 FAIL 零 ERR。**教训**：复位要覆盖所有离开路径，收口成一个出口函数比在每个出口各写一遍可靠 |
