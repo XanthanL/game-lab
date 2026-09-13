@@ -152,6 +152,7 @@
     'uniform vec3  uTint[MAXC];',   /* 每张卡的纸色（按景深微调） */
     'uniform float uVis[MAXC];',    /* 0..1 可见度，背面淡出 */
     'uniform vec4  uActive;',       /* 正面那张的 cx, cy, halfW, halfH */
+    'uniform vec4  uActiveCell;',   /* 正面那张在图集里的格子 (u0, v0, du, dv) */
     'uniform vec3  uBg;',
     'uniform vec3  uAccent;',
     'uniform vec3  uHair;',
@@ -159,7 +160,6 @@
     'uniform float uCorner;',
     'uniform float uMark;',
     'uniform sampler2D uAtlas;',    /* 卡面内容图集：Canvas 2D 画好的站名 / 序号 / 元信息 */
-    'uniform vec4  uCell[MAXC];',   /* 每张卡在图集里的格子 (u0, v0, du, dv) */
     'uniform float uHasTex;',       /* 图集就绪 = 1；否则 0，走纯色兜底 */
     'float sdBox(vec2 p, vec2 b, float r){',
     '  vec2 q = abs(p) - b + r;',
@@ -178,14 +178,8 @@
     'void main(){',
     '  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);',
     '  float d = 1e9;',
-    '  vec3  tintSum  = vec3(0.0);',
-    '  vec2  uvSum    = vec2(0.0);',
-    '  float wSum     = 0.0;',
-    '  float wuSum    = 0.0;',
-    '  float wuBest   = -1.0;',
-    '  vec2  cellBest = vec2(0.0);',
-    '  vec2  sizeBest = vec2(1.0);',
-    '  float visBest  = 0.0;',
+    '  vec3  tintSum = vec3(0.0);',
+    '  float wSum    = 0.0;',
     '  for (int i = 0; i < MAXC; i++) {',
     '    if (i < uCount) {',
     '      vec4  c   = uCard[i];',
@@ -195,14 +189,6 @@
     '      float w  = exp(-max(di, 0.0) / (uK * 2.5 + 14.0));',
     '      tintSum += uTint[i] * w;',
     '      wSum    += w;',
-    /* 卡面内容的 UV 用一套「锐利」权重（衰减 9px）：只有几乎贴着这张卡的像素才参与。
-       若沿用上面那个软权重，两张卡的局部 UV 一平均就会指到图集里别人格子上，
-       卡面会串出隔壁站的内容。贴边那几像素的混合刚好给它一点被拉扯的错觉。 */
-    '      vec2  uvi = (p - c.xy) / max(c.zw, vec2(1.0)) * 0.5 + 0.5;',
-    '      float wu  = exp(-max(di, 0.0) / 9.0) * vis;',
-    '      uvSum += uvi * wu;',
-    '      wuSum += wu;',
-    '      if (wu > wuBest) { wuBest = wu; cellBest = uCell[i].xy; sizeBest = uCell[i].zw; visBest = vis; }',
     '      d = (d > 1e8) ? di : smin(d, di, uK);',
     '    }',
     '  }',
@@ -211,13 +197,15 @@
     '  vec3 col = uBg;',
     '  vec3 paper = tint * (0.965 + 0.035 * (1.0 - clamp(p.y / uRes.y, 0.0, 1.0)));',
     '  col = mix(col, paper, m);',
-    /* 卡面内容：从图集里取站名 / 序号 / 元信息。
-       uv 先 clamp 回 [0,1]，保证再怎么融合也不会溢出去采到隔壁卡的格子。
-       visBest 当 mask 用 —— 只让正面那张和它两邻的内容真正显示，
-       否则两侧被透视压扁的卡里文字会挤成一团反而难看。 */
-    '  vec2 uvl = clamp(uvSum / max(wuSum, 1e-5), 0.0, 1.0);',
-    '  vec4 tex = texture2D(uAtlas, cellBest + uvl * sizeBest);',
-    '  col = mix(col, tex.rgb, tex.a * m * uHasTex * uMark * smoothstep(0.72, 0.92, visBest));',
+    /* 卡面内容：只让正面那张显示完整内容（站名 / 序号 / 元信息 / 酸黄方块），
+       其余卡只显纸色。这样 goo 细丝是干净的纸色，不会串味；正面那张的边框被
+       goo 拉糊的部分按 front 自己的 SDF mask 切掉，不让文字溢出到细丝里。 */
+    '  vec2 qiF = (p - uActive.xy) / max(uActive.zw, vec2(1.0));',
+    '  vec2 uvlF = clamp(qiF * 0.5 + 0.5, 0.0, 1.0);',
+    '  vec4 tex = texture2D(uAtlas, uActiveCell.xy + uvlF * uActiveCell.zw);',
+    '  float sdFront = sdBox(p - uActive.xy, uActive.zw, min(uActive.z, uActive.w) * uCorner);',
+    '  float mFront = 1.0 - sstep(-0.6, 0.6, sdFront);',
+    '  col = mix(col, tex.rgb, tex.a * m * uHasTex * uMark * mFront);',
     /* 正面那张：沿轮廓描一道酸黄，指明「点这张会打开」 */
     '  float dA = sdBox(p - uActive.xy, uActive.zw, min(uActive.z, uActive.w) * uCorner);',
     '  float rim = (1.0 - sstep(0.0, 2.4, abs(dA))) * m;',
@@ -256,8 +244,8 @@
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   var U = {};
-  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uCell[0]', 'uActive',
-   'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark',
+  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uActive',
+   'uActiveCell', 'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark',
    'uAtlas', 'uHasTex'].forEach(function (k) {
     U[k.replace('[0]', '')] = gl.getUniformLocation(prog, k);
   });
@@ -384,7 +372,7 @@
 
     if (!atlasTex) atlasTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, atlasTex);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -638,6 +626,13 @@
     gl.uniform1fv(U.uVis, aVis);
     gl.uniform4f(U.uActive, act.sx * DPR, act.sy * DPR,
                  Math.max(act.hw * DPR, 0.5), Math.max(act.hh * DPR, 0.5));
+    /* 正面那张在图集里的格子 —— 卡面内容只采这一格 */
+    gl.uniform4f(U.uActiveCell, aCell[0], aCell[1],
+                 aCell[2], aCell[3]);   /* DEBUG: 强制 site 0 */
+    /* DEBUG: 输出 aCell[0..3] 到页面上肉眼核对 */
+    var dbg = document.getElementById('__dbgAc');
+    if (!dbg) { dbg = document.createElement('div'); dbg.id = '__dbgAc'; dbg.style.cssText='position:fixed;left:0;bottom:0;background:#fff;color:#000;padding:8px;font:11px monospace;z-index:99999;border:2px solid red'; document.body.appendChild(dbg); }
+    dbg.textContent = 'ai=' + ai + ' aCell[0..3]=' + aCell[0].toFixed(3) + ',' + aCell[1].toFixed(3) + ',' + aCell[2].toFixed(3) + ',' + aCell[3].toFixed(3) + ' U.uAC=' + (U.uActiveCell === null ? 'NULL' : 'OK') + ' aCell[32..35]=' + aCell[32].toFixed(3) + ',' + aCell[33].toFixed(3) + ',' + aCell[34].toFixed(3) + ',' + aCell[35].toFixed(3);
     gl.uniform3f(U.uBg, COL.bg[0], COL.bg[1], COL.bg[2]);
     gl.uniform3f(U.uAccent, COL.accent[0], COL.accent[1], COL.accent[2]);
     gl.uniform3f(U.uHair, COL.hair[0], COL.hair[1], COL.hair[2]);
@@ -647,7 +642,6 @@
       gl.bindTexture(gl.TEXTURE_2D, atlasTex);
       gl.uniform1i(U.uAtlas, 0);
     }
-    gl.uniform4fv(U.uCell, aCell);
     gl.uniform1f(U.uHasTex, hasTex);
     /* 入场：融合半径从极大收到常态 —— 所有卡先是糊成一坨，再一张张撕开 */
     gl.uniform1f(U.uK, baseK * DPR * (1 + (1 - introT) * 16));

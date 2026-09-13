@@ -19,8 +19,16 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX_FILE = ROOT / "index.html"
 SKIP_DIR_NAMES = {"node_modules", "tools"}
 TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+DESC_RE = re.compile(
+    r"""<meta\s+name=["']description["']\s+content=["'](.*?)["']""",
+    re.IGNORECASE | re.DOTALL,
+)
 WS_RE = re.compile(r"\s+")
+# 一段拉丁文（含词间空格与常见连接符），用来从双语标题里抠出英文名
+LATIN_RE = re.compile(r"[A-Za-z][A-Za-z0-9&'\u2019\-.]*(?:\s+[A-Za-z0-9&'\u2019\-.]+)*")
+SENT_END_RE = re.compile(r"[。！？!?]")
 MAX_PAGES_PER_SITE = 20
+DESC_LIMIT = 46
 
 
 def is_skipped(name: str) -> bool:
@@ -45,12 +53,66 @@ def find_pages(site_dir: Path):
 
 
 def page_title(path: Path) -> str:
+    return page_meta(path)[0]
+
+
+def page_meta(path: Path):
+    """返回 (标题, 描述)。描述取自 <meta name="description">，供卡片的小字用。"""
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
+        return "", ""
+    t = TITLE_RE.search(text)
+    d = DESC_RE.search(text)
+    title = WS_RE.sub(" ", t.group(1)).strip() if t else ""
+    desc = WS_RE.sub(" ", d.group(1)).strip() if d else ""
+    return title, desc
+
+
+def latin_of(text: str) -> str:
+    """取标题里最长的一段拉丁文当英文名。
+
+    「锐角 ACUTE ANGLE · 预约制理发店」-> ACUTE ANGLE
+    「辰光修表铺 · Chenguang Watch Atelier — 机械表保养」-> Chenguang Watch Atelier
+    """
+    best = ""
+    for m in LATIN_RE.finditer(text or ""):
+        s = m.group(0).strip(" -\u2013\u2014\u00b7|\uff5c")
+        if len(s) > len(best):
+            best = s
+    return best
+
+
+def prettify_dir(name: str) -> str:
+    """目录名兜底成可读的英文：hongda-auto-repair-2.0 -> Hongda Auto Repair 2.0"""
+    out = []
+    for p in re.split(r"[-_\s]+", name):
+        if not p:
+            continue
+        out.append(p if re.fullmatch(r"\d+(\.\d+)*", p) else p[:1].upper() + p[1:])
+    return " ".join(out)
+
+
+def first_sentence(text: str, limit: int = DESC_LIMIT) -> str:
+    """掐出第一句，超长就截断加省略号 —— 卡片上放得下才是好介绍。"""
+    text = WS_RE.sub(" ", text or "").strip()
+    if not text:
         return ""
-    m = TITLE_RE.search(text)
-    return WS_RE.sub(" ", m.group(1)).strip() if m else ""
+    m = SENT_END_RE.search(text)
+    if m and m.start() <= limit:
+        text = text[: m.start()]
+    if len(text) > limit:
+        text = text[:limit].rstrip(" ,\uff0c\u3001;\uff1b") + "\u2026"
+    return text
+
+
+def english_sentence(text: str) -> str:
+    """从描述里挖一句英文（不少子站点自带英文副标），挖不到返回空串。"""
+    for m in LATIN_RE.finditer(text or ""):
+        s = m.group(0).strip()
+        if len(s) >= 24:
+            return s
+    return ""
 
 
 def latest_mtime(site_dir: Path) -> float:

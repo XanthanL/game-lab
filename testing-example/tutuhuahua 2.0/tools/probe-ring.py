@@ -120,6 +120,28 @@ def human(n):
     return f"{n / 1048576:.2f} MB" if n >= 1048576 else f"{n / 1024:.0f} KB"
 
 
+def rmtree_hard(path):
+    """删临时目录,并且**确认真的删掉了**。
+
+    为什么不用裸 `shutil.rmtree(..., ignore_errors=True)`:在带 safe-delete 代理的
+    沙箱里,rmtree 会被改写成「移到回收站」,对 Chrome profile 这种上千文件的目录
+    会直接失败 —— 而 `ignore_errors=True` 把它静默吞掉,于是每跑一次探针就漏几十 MB。
+    所以这里删完必须复查,没删掉就走系统命令兜底。
+    """
+    p = Path(path)
+    if not p.exists():
+        return
+    shutil.rmtree(p, ignore_errors=True)
+    if not p.exists():
+        return
+    if os.name == "nt":
+        subprocess.run(["cmd", "/c", "rmdir", "/s", "/q", str(p)], capture_output=True)
+    else:
+        subprocess.run(["rm", "-rf", str(p)], capture_output=True)
+    if p.exists():
+        print(f"[提示] 临时目录没能删掉,请手动清理:{p}", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--chrome", default=None, help="chrome/edge 可执行文件路径")
@@ -199,7 +221,7 @@ def main():
         print("\n[通过] 环廊跑通,时间线完成,无异常。")
         return 0
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        rmtree_hard(tmp)
         if PROBE.exists():
             PROBE.unlink()
 

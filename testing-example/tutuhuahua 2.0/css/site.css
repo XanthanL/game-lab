@@ -121,16 +121,14 @@ img { display: block; max-width: 100%; }
 /* 界面层随环出生:片头字标阶段只有字标与计数 */
 .ring__list,
 .ring__meta,
-.ring__caption,
-.ring__bar {
+.ring__caption {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-normal) var(--ease);
 }
 .ring.is-live .ring__list,
 .ring.is-live .ring__meta,
-.ring.is-live .ring__caption,
-.ring.is-live .ring__bar {
+.ring.is-live .ring__caption {
   opacity: 1;
   pointer-events: auto;
 }
@@ -172,7 +170,12 @@ img { display: block; max-width: 100%; }
   transition: opacity var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
 }
 .ring__meta--left { left: var(--gutter); }
-.ring__meta--right { right: var(--gutter); text-align: right; }
+/* 右侧铭牌在 .ring__side 横排里占一列,故自身不再定位/不再纵向居中 */
+.ring__meta--right {
+  position: static;
+  transform: none;
+  text-align: right;
+}
 .ring__meta.is-swap,
 .ring__caption.is-swap { opacity: 0; filter: blur(6px); }
 .ring__no {
@@ -220,7 +223,10 @@ img { display: block; max-width: 100%; }
   line-height: var(--lh-lg);
 }
 
-/* 计数与操作条 */
+/* 计数(入场时数到 100,随后自行淡出)
+   注:底部操作条(.ring__bar:提示小字 + 左右箭头)已按作者要求整条移除。
+   转环仍有三条通路,都不依赖它 —— 滚轮 / 拖拽 / 方向键(←→),
+   点击正面卡看大图。JS 侧 el.prev / el.next 本就有 if 守卫,删 DOM 不会抛错。 */
 .ring__loader {
   position: absolute;
   left: 50%;
@@ -231,46 +237,31 @@ img { display: block; max-width: 100%; }
   transition: opacity var(--dur-normal) var(--ease);
 }
 .ring__loader.is-done { opacity: 0; }
-.ring__bar {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--gutter) var(--space-2);
-}
-.ring__nav {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: var(--fs-base);
-  line-height: 1;
-  color: var(--muted);
-  padding: var(--space-1);
-}
-.ring__nav:hover { color: var(--accent); }
-.ring__hint { text-align: center; }
 
 /* WebGL 不可用:整区退场,只留一句指引 */
 .ring--off { cursor: default; }
 .ring--off .ring__canvas,
-.ring--off .ring__list,
+.ring--off .ring__side,
 .ring--off .ring__meta,
 .ring--off .ring__caption,
-.ring--off .ring__loader,
-.ring--off .ring__bar { display: none; }
+.ring--off .ring__loader { display: none; }
+
+/* 降级提示默认必须是 none。
+   踩过的坑:这里若直接写 display:flex,作者样式会压过浏览器默认的
+   [hidden]{display:none} —— 结果 JS 一行没错,提示却无条件铺满盖住整座环。
+   所以默认 none,只在 JS 的 shutDown() 真判定失败(加 .ring--off 且摘掉 hidden)时才铺满。 */
 .ring__fallback {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: var(--gutter);
 }
+.ring--off .ring__fallback--webgl:not([hidden]) { display: flex; }
+/* <noscript> 里的那份只在 JS 关闭时渲染,直接给出来 */
+.ring__fallback--nojs { display: flex; }
 
 /* ── 灯箱(点击正面卡看大图)────────────────────── */
 .lb {
