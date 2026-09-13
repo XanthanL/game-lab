@@ -4496,7 +4496,7 @@ const JOY_R=46,             // 杆最大位移 px（与 #joyknob 直径对齐，
       JOY_BRK=0.62,         // 下拉超过此比例算刹车（对齐 5.2 手柄 ay>0.5）
       JOY_THR=0.12,         // 推进阈值：刚出死区就点火太敏感
       JOY_FOLLOW=2.2;       // 手指超出 2.2R 才重锚底盘（见 touchmove）
-const joy={id:null,ox:0,oy:0,dx:0,dy:0,on:false,mag:0,nx:0,ny:0};
+const joy={id:null,ox:0,oy:0,dx:0,dy:0,on:false,mag:0,nx:0,ny:0,endT:0};
 /* 死区 → 重映射 → 归一化，与 5.2 padScan 同一套做法：
    两种模拟量输入（手柄 / 触屏）的语义必须一致，否则玩家换个设备手要重新学。 */
 function joyRead(){
@@ -4679,6 +4679,7 @@ window.addEventListener('touchstart',e=>{
 window.addEventListener('touchmove',e=>{
   for(const t of e.changedTouches){
     if(t.identifier===joy.id){
+      clearTimeout(joy.endT);   /* 续上：touchcancel 的延迟收尾取消 */
       let dx=t.clientX-joy.ox,dy=t.clientY-joy.oy;
       let m=Math.hypot(dx,dy);
       /* 手指拖出 2.2R：把底盘挪到「手指 − R」处再钳一次。
@@ -4698,7 +4699,20 @@ window.addEventListener('touchmove',e=>{
 },{passive:true});
 function endTouch(e){
   for(const t of e.changedTouches){
-    if(t.identifier===joy.id){joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;}
+    if(t.identifier!==joy.id)continue;
+    clearTimeout(joy.endT);
+    /* touchend = 手指真抬起，立即收尾。
+       touchcancel = 浏览器抢了手势（滚屏/捏合/系统手势/地址栏），
+         玩家手指多半还在屏幕上。立刻打死摇杆 = 移动永久卡死，要重新摸。
+         延迟 120ms：期间同根手指 touchmove 续上（touchmove 里清定时器），
+         或 touchend 来（真抬起）则照样收尾。120ms 静默 = 真没了，正常结束。 */
+    if(e.type==='touchend'){
+      joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;
+    }else{
+      joy.endT=setTimeout(()=>{
+        joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();el.joybase.hidden=true;
+      },120);
+    }
   }
 }
 window.addEventListener('touchend',endTouch);
