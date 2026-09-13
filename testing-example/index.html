@@ -2,8 +2,8 @@
 <html lang="zh-CN"
       data-title-zh="样例站点 · 实验合集"
       data-title-en="Samples — GAME LAB"
-      data-desc-zh="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。"
-      data-desc-en="Ten small-business site samples — barber, noodle shop, florist, teapots, record store — one brief rendered across many style families.">
+      data-desc-zh="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。"
+      data-desc-en="Twelve small-business site samples — barber, noodle shop, florist, teapots, record store — one brief rendered across many style families.">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,19 +14,19 @@
 <meta name="theme-color" content="#0000f2" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#eef1ff" media="(prefers-color-scheme: light)" />
 <title>样例站点 · 实验合集</title>
-<meta name="description" content="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
+<meta name="description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="实验合集" />
 <meta property="og:locale" content="zh_CN" />
 <meta property="og:title" content="样例站点 · 实验合集" />
-<meta property="og:description" content="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
+<meta property="og:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
 <meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="1200" />
 <meta property="og:url" content="https://xanthanl.github.io/game-lab/testing-example/" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="样例站点 · 实验合集" />
-<meta name="twitter:description" content="10 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
+<meta name="twitter:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
 <!-- 主题 / 风格 / 语言在样式生效前定好，避免刷新时闪一下 -->
 <script>
@@ -83,6 +83,7 @@
       <div class="ring-front">
         <span class="ring-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <a class="ring-name" id="ringName" href="#">&nbsp;</a>
+        <span class="ring-desc" id="ringDesc">&nbsp;</span>
         <span class="ring-sub" id="ringSub">&nbsp;</span>
       </div>
       <ol class="ring-col" id="ringCol"></ol>
@@ -108,7 +109,7 @@
 
 <!--SITES:BEGIN-->
 <script type="application/json" id="sites-data">{
-  "generatedAt": "2026-09-13 15:10",
+  "generatedAt": "2026-09-13 16:33",
   "sites": [
     {
       "dir": "acute-angle-2.0",
@@ -120,7 +121,11 @@
           "path": "acute-angle-2.0/index.html",
           "title": "锐角 ACUTE ANGLE · 预约制理发店"
         }
-      ]
+      ],
+      "nameZh": "锐角 ACUTE ANGLE",
+      "nameEn": "ACUTE ANGLE",
+      "descZh": "预约制理发店，每一单从约定的时间开始。",
+      "descEn": "Appointment-only barber shop — your slot starts when it says it does."
     },
     {
       "dir": "chenguang-watch",
@@ -132,7 +137,11 @@
           "path": "chenguang-watch/index.html",
           "title": "辰光修表铺 · Chenguang Watch Atelier — 机械表保养 · 古董表修复"
         }
-      ]
+      ],
+      "nameZh": "辰光修表铺",
+      "nameEn": "Chenguang Watch Atelier",
+      "descZh": "三十余年老店：机械表保养、古董表修复、换电池换表带。",
+      "descEn": "Thirty years of watch repair — servicing, vintage restoration, batteries, straps."
     },
     {
       "dir": "hongda-auto-repair-2.0",
@@ -144,7 +153,11 @@
           "path": "hongda-auto-repair-2.0/site/index.html",
           "title": "宏达汽修｜价目表与电话预约"
         }
-      ]
+      ],
+      "nameZh": "宏达汽修",
+      "nameEn": "Hongda Auto Repair",
+      "descZh": "价目表与电话预约，周一至周六 8:30–18:30。",
+      "descEn": "Price list and phone booking. Mon–Sat 8:30–18:30, parking in the yard."
     },
     {
       "dir": "laochen-noodles",
@@ -156,7 +169,11 @@
           "path": "laochen-noodles/site/index.html",
           "title": "老陈家面馆 · 三十年老店 · 招牌红烧牛肉面"
         }
-      ]
+      ],
+      "nameZh": "老陈家面馆",
+      "nameEn": "Laochen Noodle House",
+      "descZh": "三十年老店，招牌红烧牛肉面，牛肉凌晨四点现卤。",
+      "descEn": "A thirty-year noodle shop — braised beef noodles, meat braised at 4 a.m."
     },
     {
       "dir": "maimang-site-2.0",
@@ -168,7 +185,11 @@
           "path": "maimang-site-2.0/index.html",
           "title": "麦芒手作 · 梦境工坊｜全宇宙最好吃的软欧包（我们只统计了地球）"
         }
-      ]
+      ],
+      "nameZh": "麦芒手作",
+      "nameEn": "Maimang Bakery",
+      "descZh": "藏在巷子深处的梦境工坊，无糖无油软欧包。",
+      "descEn": "A bakery workshop down a winding alley — sourdough, bagels, no sugar added."
     },
     {
       "dir": "shihua 2.0",
@@ -180,7 +201,11 @@
           "path": "shihua 2.0/index.html",
           "title": "拾花 · 杭州街坊的手作花店"
         }
-      ]
+      ],
+      "nameZh": "拾花",
+      "nameEn": "Shihua Florist",
+      "descZh": "杭州街坊的手作花店，一枝一枝挑，一束一束包。",
+      "descEn": "A neighbourhood flower shop in Hangzhou — stems picked and wrapped one by one."
     },
     {
       "dir": "teapot-artisan",
@@ -244,7 +269,11 @@
           "path": "teapot-artisan/site/dist/zh/works/orchid-gaiwan/index.html",
           "title": "兰草盖碗 · 簪三制壶"
         }
-      ]
+      ],
+      "nameZh": "簪三制壶",
+      "nameEn": "Zansan Teapots",
+      "descZh": "手作茶壶，一次十来件，面向海外茶客与藏家。",
+      "descEn": "Handmade teapots, a dozen at a time, for overseas tea buyers and collectors."
     },
     {
       "dir": "tongguan-lvxin",
@@ -256,19 +285,31 @@
           "path": "tongguan-lvxin/index.html",
           "title": "铜管与滤芯 · 祖安呼吸安全站｜呼吸器维修 · 滤芯定制 · 氧气囊租赁"
         }
-      ]
+      ],
+      "nameZh": "铜管与滤芯",
+      "nameEn": "Copper & Filter",
+      "descZh": "祖安呼吸安全站：呼吸器维修、滤芯定制、氧气囊租赁。",
+      "descEn": "Respirator repair, custom filter cartridges, oxygen bladder rental. Same day."
     },
     {
       "dir": "tutuhuahua 2.0",
       "name": "涂涂画画 · 儿童美术教室",
       "status": "ok",
-      "updated": "2026-09-13 14:59",
+      "updated": "2026-09-13 16:24",
       "pages": [
         {
           "path": "tutuhuahua 2.0/index.html",
           "title": "涂涂画画 · 儿童美术教室"
+        },
+        {
+          "path": "tutuhuahua 2.0/dist/index.html",
+          "title": "涂涂画画 · 儿童美术教室"
         }
-      ]
+      ],
+      "nameZh": "涂涂画画",
+      "nameEn": "Tutuhuahua Art Studio",
+      "descZh": "一间儿童美术教室，转动环廊看孩子们的画。",
+      "descEn": "A children's art studio — spin the ring to see what they drew."
     },
     {
       "dir": "vinyl-store-site",
@@ -280,7 +321,11 @@
           "path": "vinyl-store-site/index.html",
           "title": "唱片库存 · 有没有货，自己查"
         }
-      ]
+      ],
+      "nameZh": "唱片库存",
+      "nameEn": "Vinyl Stock",
+      "descZh": "二手唱片店库存自助查询：有没有货、什么版本、多少钱。",
+      "descEn": "Self-serve inventory for a second-hand record shop, refreshed every Sunday."
     },
     {
       "dir": "void-codex",
@@ -292,7 +337,11 @@
           "path": "void-codex/index.html",
           "title": "虚空典籍 — 24 小时文学艺术书店 · 朗读会 · 皮尔特沃夫"
         }
-      ]
+      ],
+      "nameZh": "虚空典籍",
+      "nameEn": "Void Codex",
+      "descZh": "皮尔特沃夫的深夜书店，文学与艺术书 24 小时亮灯。",
+      "descEn": "A late-night bookshop on Hextech Avenue — literature and art, lights on 24h."
     },
     {
       "dir": "yuguang-photo",
@@ -304,7 +353,11 @@
           "path": "yuguang-photo/index.html",
           "title": "屿光摄影 · 海边小城的婚礼与家庭纪实"
         }
-      ]
+      ],
+      "nameZh": "屿光摄影",
+      "nameEn": "Yuguang Photo",
+      "descZh": "海边小城的婚礼跟拍与家庭纪实，自然光、不摆拍。",
+      "descEn": "Wedding and family documentary in a seaside town — natural light, no posing."
     }
   ]
 }</script>
@@ -336,12 +389,17 @@
   }
 
   /* 每个子站点只给一个入口。这里渲染的是无 WebGL / 减少动效时的兜底：
-     一列朴素链接，不是卡片堆；轮播接管后会被 viscose.js 收起来。 */
+     一列朴素链接，不是卡片堆；轮播接管后会被 viscose.js 收起来。
+     站名与介绍跟着 <html data-lang> 走 —— 两种语言各写进 data-zh / data-en，
+     交给 i18n.js 的 apply() 统一翻（所以这个脚本要在 i18n.js 之前跑）。 */
   function itemHTML(s, i) {
     var ok = s.status === 'ok';
     var pages = ok && Array.isArray(s.pages) ? s.pages : [];
     var entry = pages[0] || null;
-    var title = s.name || s.dir;
+    var nameZh = s.nameZh || s.name || s.dir;
+    var nameEn = s.nameEn || nameZh;
+    var descZh = s.descZh || '';
+    var descEn = s.descEn || descZh;
     var num = (i + 1) < 10 ? '0' + (i + 1) : String(i + 1);
 
     var bits = [];
@@ -351,7 +409,11 @@
     var inner =
       '<span class="rl-num">' + num + '</span>' +
       '<span class="rl-main">' +
-        '<b>' + esc(title) + '</b>' +
+        '<b data-zh="' + esc(nameZh) + '" data-en="' + esc(nameEn) + '">' + esc(nameZh) + '</b>' +
+        (descZh
+          ? '<span class="rl-desc" data-zh="' + esc(descZh) + '" data-en="' + esc(descEn) + '">' +
+              esc(descZh) + '</span>'
+          : '') +
         '<span class="rl-sub">' + esc(s.dir) + '/' +
           (bits.length ? ' · ' + bits.join(' · ') : '') + '</span>' +
       '</span>';
@@ -365,7 +427,8 @@
     var q = $('#q').value.trim().toLowerCase();
     var list = state.sites.filter(function (s) {
       if (!q) return true;
-      return (s.dir + ' ' + (s.name || '')).toLowerCase().indexOf(q) !== -1;
+      var hay = s.dir + ' ' + (s.name || '') + ' ' + (s.nameZh || '') + ' ' + (s.nameEn || '');
+      return hay.toLowerCase().indexOf(q) !== -1;
     });
     $('#ringList').innerHTML = list.length
       ? list.map(itemHTML).join('')

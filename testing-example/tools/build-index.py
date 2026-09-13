@@ -5,6 +5,11 @@
 - 目录内能找到 HTML 文件 -> 记为「可浏览」站点，提取 <title>、入口及全部子页面；
 - 找不到 HTML -> 记为「进行中」，仅展示目录名和最后更新时间。
 
+每个可浏览站点还会带上一组「卡片用」的中英字段（nameZh / nameEn / descZh / descEn）：
+先自动推导（中文名取标题首个分句、英文名取标题里最长的拉丁文段、介绍取
+<meta name="description"> 的第一句），再用 tools/site-meta.json 里手写的覆盖。
+环形轮播拿这几个字段画卡面，所以改了 meta 之后要重跑本脚本。
+
 用法：
     python tools/build-index.py
 """
@@ -17,6 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX_FILE = ROOT / "index.html"
+META_FILE = ROOT / "tools" / "site-meta.json"
 SKIP_DIR_NAMES = {"node_modules", "tools"}
 TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 DESC_RE = re.compile(
@@ -27,8 +33,10 @@ WS_RE = re.compile(r"\s+")
 # 一段拉丁文（含词间空格与常见连接符），用来从双语标题里抠出英文名
 LATIN_RE = re.compile(r"[A-Za-z][A-Za-z0-9&'\u2019\-.]*(?:\s+[A-Za-z0-9&'\u2019\-.]+)*")
 SENT_END_RE = re.compile(r"[。！？!?]")
+# 标题里的分隔符：分号、竖线、破折号、斜杠 —— 第一段通常就是品牌名
+SPLIT_RE = re.compile(r"[·｜|—–／/]+")
 MAX_PAGES_PER_SITE = 20
-DESC_LIMIT = 46
+DESC_LIMIT = 34
 
 
 def is_skipped(name: str) -> bool:
@@ -83,6 +91,17 @@ def latin_of(text: str) -> str:
     return best
 
 
+def first_chunk(title: str) -> str:
+    """取标题的第一个分句当站名。
+
+    「宏达汽修｜价目表与电话预约」            -> 宏达汽修
+    「锐角 ACUTE ANGLE · 预约制理发店」        -> 锐角 ACUTE ANGLE
+    「Zansan Teapots — Handmade Teapots…」 -> Zansan Teapots
+    """
+    head = SPLIT_RE.split(WS_RE.sub(" ", title or "").strip())[0].strip()
+    return head or (title or "").strip()
+
+
 def prettify_dir(name: str) -> str:
     """目录名兜底成可读的英文：hongda-auto-repair-2.0 -> Hongda Auto Repair 2.0"""
     out = []
@@ -115,6 +134,41 @@ def english_sentence(text: str) -> str:
     return ""
 
 
+def load_overrides() -> dict:
+    """读 tools/site-meta.json 里手写的卡片文案（可缺省，缺了就全走自动推导）。"""
+    if not META_FILE.exists():
+        return {}
+    try:
+        raw = json.loads(META_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"！{META_FILE.name} 读取失败，本次全走自动推导：{e}", file=sys.stderr)
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    # 以 _ 开头的键是写给人看的注释，不是站点
+    return {k: v for k, v in raw.items()
+            if not k.startswith("_") and isinstance(v, dict)}
+
+
+def card_fields(dir_name: str, title: str, desc: str, ov: dict) -> dict:
+    """合成卡片要用的四个字段：手写覆盖 > 自动推导 > 目录名兜底。"""
+    def pick(key, *fallbacks):
+        v = ov.get(key)
+        if isinstance(v, str) and v.strip():
+            return WS_RE.sub(" ", v).strip()
+        for f in fallbacks:
+            if f:
+                return f
+        return ""
+
+    return {
+        "nameZh": pick("nameZh", first_chunk(title), title, prettify_dir(dir_name)),
+        "nameEn": pick("nameEn", latin_of(title), prettify_dir(dir_name)),
+        "descZh": pick("descZh", first_sentence(desc)),
+        "descEn": pick("descEn", english_sentence(desc)),
+    }
+
+
 def latest_mtime(site_dir: Path) -> float:
     latest = 0.0
     for p in site_dir.rglob("*"):
@@ -133,6 +187,7 @@ def fmt_time(ts: float) -> str:
 
 
 def collect_sites():
+    overrides = load_overrides()
     sites = []
     for d in sorted(ROOT.iterdir(), key=lambda p: p.name):
         if not d.is_dir() or is_skipped(d.name):
@@ -148,13 +203,17 @@ def collect_sites():
                 updated = fmt_time(entry_path.stat().st_mtime)
             except OSError:
                 updated = ""
-            sites.append({
+            title = page_items[0]["title"]
+            _, desc = page_meta(entry_path)
+            site = {
                 "dir": d.name,
-                "name": page_items[0]["title"],
+                "name": title,
                 "status": "ok",
                 "updated": updated,
                 "pages": page_items,
-            })
+            }
+            site.update(card_fields(d.name, title, desc, overrides.get(d.name, {})))
+            sites.append(site)
         else:
             sites.append({
                 "dir": d.name,
@@ -162,6 +221,10 @@ def collect_sites():
                 "status": "wip",
                 "updated": fmt_time(latest_mtime(d)),
                 "pages": [],
+                "nameZh": d.name,
+                "nameEn": prettify_dir(d.name),
+                "descZh": "",
+                "descEn": "",
             })
     sites.sort(key=lambda s: (s["status"] != "ok", s["dir"]))
     return {"generatedAt": datetime.now().strftime("%Y-%m-%d %H:%M"), "sites": sites}
@@ -196,6 +259,10 @@ def main() -> None:
     for s in payload["sites"]:
         mark = "✓" if s["status"] == "ok" else "…"
         print(f"  {mark} {s['dir']}  ->  {s['name']}")
+        if s["status"] == "ok":
+            print(f"      卡片：{s['nameZh']}  /  {s['nameEn']}")
+            print(f"      介绍：{s['descZh'] or '（无）'}")
+            print(f"            {s['descEn'] or '（无）'}")
 
 
 if __name__ == "__main__":

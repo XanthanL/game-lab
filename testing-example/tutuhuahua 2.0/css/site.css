@@ -160,6 +160,10 @@ img { display: block; max-width: 100%; }
 .ring__list li { opacity: 0.2; }
 .ring__list li.is-on { opacity: 1; color: var(--accent); }
 
+/* 全馆名录的省略标记 —— 桌面整列能放完 14 行,无需「···」;
+   只在窄屏(列表被截掉时)才显示,所以默认隐藏 */
+.ring__ellipsis { display: none; }
+
 /* 两侧铭牌(正面卡的画名与媒介) */
 .ring__meta {
   position: absolute;
@@ -364,6 +368,36 @@ img { display: block; max-width: 100%; }
   .ring__meta { display: none; }
   .ring__brand h1 { font-size: 64px; }   /* 4 字 × 96px 超出 375 视口 */
   .ring__brand-line { font-size: var(--fs-base); }
+
+  /* ── 右侧名录挪到右上角(原先纵向居中整列,画在正面卡片上挡图)── */
+  .ring__side {
+    top: var(--gutter);
+    right: var(--gutter);
+    transform: none;                /* 取消纵向居中 */
+    flex-direction: column;         /* 名录 + 省略标记 → 上下排 */
+    align-items: flex-end;          /* 右对齐 */
+    gap: 4px;
+    max-height: calc(100% - var(--space-3));   /* 上贴顶角,下留到 space-3 */
+  }
+  .ring__list {
+    max-height: 32vh;               /* 实际可见 ≈ 32vh / 22px ≈ 7-8 行 */
+    overflow: hidden;               /* 截掉多余的 <li> */
+    -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+  }
+  /* 桌面整列能放完 14 行,无需「···」;窄屏列表被截掉时才把它显出来 */
+  .ring__ellipsis {
+    display: block;
+    text-align: right;
+    color: var(--muted);
+    line-height: 1;
+    letter-spacing: 0.3em;
+    margin-top: 2px;
+  }
+
+  /* 标题条往下挪一点(128 → 96,32px),留出和正面卡片的呼吸;
+     命名上仍是「var(--space-5)」,沿用间距档,不引新数值 */
+  .ring__caption { bottom: var(--space-5); }
 }
 
 @media (prefers-reduced-motion: reduce) {

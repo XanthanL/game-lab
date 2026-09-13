@@ -56,27 +56,43 @@
 
   var N = sites.length;
 
-  /* ---------------- 数据整形 ---------------- */
-  function shortName(s) {
-    var n = String(s.name || s.dir || '').trim();
-    var first = n.split(/[·｜|—–／\/]/)[0].trim();
-    return (first.length >= 2 ? first : n).slice(0, 22);
-  }
+  /* ---------------- 数据整形 ----------------
+     卡片上要放「站名 + 一行小字介绍」。这两样都由 tools/build-index.py 预处理好
+     中英两份写进 sites-data（nameZh / nameEn / descZh / descEn），这里只负责按
+     当前 <html data-lang> 挑一份 —— 切语言时整张图集重画。 */
+  function isEn() { return document.documentElement.getAttribute('data-lang') === 'en'; }
+
   function subOf(s) {
     var np = s.pages.length;
-    var zh = window.__ringLang !== 'en';
+    var zh = !isEn();
     var cnt = np > 1 ? (np + (zh ? ' 页' : ' pages')) : (zh ? '单页' : 'one page');
     var d = String(s.updated || '').slice(0, 7) || String(s.dir || '');
     return cnt + ' · ' + (zh ? '更新 ' : 'upd ') + d;
   }
-  var items = sites.map(function (s) {
-    return {
-      name: shortName(s),
-      sub: subOf(s),
-      href: encodeURI(s.pages[0].path),
-      dir: s.dir
-    };
-  });
+
+  /* 缺英文就退回中文（宁可显中文，也别在卡上留一块空白） */
+  function pick(s, zhKey, enKey) {
+    var zh = String(s[zhKey] || '').trim();
+    var en = String(s[enKey] || '').trim();
+    return isEn() ? (en || zh) : (zh || en);
+  }
+
+  var items = [];
+  function buildItems() {
+    items = sites.map(function (s) {
+      return {
+        name: pick(s, 'nameZh', 'nameEn') || String(s.name || s.dir || '').trim(),
+        desc: pick(s, 'descZh', 'descEn'),
+        sub:  subOf(s),
+        href: encodeURI(s.pages[0].path),
+        dir:  s.dir,
+        /* 搜索要中英都命中，所以两份都留着 */
+        hay: (s.dir + ' ' + (s.nameZh || '') + ' ' + (s.nameEn || '') + ' ' +
+              (s.name || '')).toLowerCase()
+      };
+    });
+  }
+  buildItems();
 
   /* ---------------- 从皮肤变量取色 ---------------- */
   function parseColor(str) {
@@ -100,7 +116,12 @@
     return null;
   }
   var COL = { bg: [1, 1, 1], paper: [0.1, 0.1, 0.1], accent: [1, 0.8, 0],
-              hair: [0.8, 0.8, 0.8], inkOnPaper: [0.1, 0.1, 0.1] };
+              hair: [0.8, 0.8, 0.8], inkOnPaper: [0.1, 0.1, 0.1],
+              chip: [1, 0.8, 0] };
+  /* 卡面与底色至少要有这么多亮度差，否则在浅色皮肤里卡片会糊进背景 */
+  var MIN_DELTA = 0.13;
+  /* 卡面当作纸，明度至少提到这里（只提不压） */
+  var PAPER_LUM = 0.82;
   function readColors() {
     var cs = getComputedStyle(document.documentElement);
     var bg   = parseColor(cs.getPropertyValue('--bg'))      || [1, 1, 1, 1];
@@ -110,7 +131,7 @@
        比 card-bg 更准（card-bg 经常是半透明）。读不到再退回 card-bg，
        并用一个保证对比度的目标色兜底，免得在某些皮肤里卡片糊进背景。 */
     var hmPaper = parseColor(cs.getPropertyValue('--hm-paper'));
-    var a, paper, lum, tgt;
+    var a, paper;
     if (hmPaper) {
       a = hmPaper[3];
       paper = [hmPaper[0] * a + bg[0] * (1 - a), hmPaper[1] * a + bg[1] * (1 - a),
@@ -119,9 +140,20 @@
       a = card[3];
       paper = [card[0] * a + bg[0] * (1 - a), card[1] * a + bg[1] * (1 - a),
                card[2] * a + bg[2] * (1 - a)];
-      lum = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2];
-      tgt = lum > 0.5 ? [0.07, 0.07, 0.08] : [0.97, 0.97, 0.95];
-      paper = [(paper[0] + tgt[0]) * 0.5, (paper[1] + tgt[1]) * 0.5, (paper[2] + tgt[2]) * 0.5];
+      /* 卡面永远当「一张纸」处理：把皮肤声明的 card-bg 往亮里提到纸的明度，
+         只提不压，所以浅色皮肤（本来就是纸）原样保留，深色皮肤那张近黑的
+         card-bg 会变成暖灰纸 —— 和原先的观感一致，但色相仍是皮肤自己的。
+         往白里混而不是等比缩放：后者在饱和的深色上会把通道压爆、色相跑偏。 */
+      var lumBg = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2];
+      var lumP  = 0.2126 * paper[0] + 0.7152 * paper[1] + 0.0722 * paper[2];
+      var target = Math.max(lumP, PAPER_LUM);
+      /* 底色本身也接近纸白时（浅色皮肤的纸压纸），再提一点，保住卡片边界 */
+      if (target - lumBg < MIN_DELTA) target = Math.min(0.985, lumBg + MIN_DELTA);
+      if (target > lumP) {
+        var t = (target - lumP) / Math.max(1 - lumP, 1e-3);
+        paper = [paper[0] + (1 - paper[0]) * t, paper[1] + (1 - paper[1]) * t,
+                 paper[2] + (1 - paper[2]) * t];
+      }
     }
     COL.bg = [bg[0], bg[1], bg[2]];
     COL.paper = paper;
@@ -134,6 +166,10 @@
     var lp = 0.2126 * paper[0] + 0.7152 * paper[1] + 0.0722 * paper[2];
     if (blue && lp > 0.35) COL.inkOnPaper = [blue[0], blue[1], blue[2]];
     else COL.inkOnPaper = lp > 0.5 ? [0.055, 0.055, 0.085] : [0.96, 0.96, 0.94];
+    /* 卡面右下角那个小方块：电光蓝这类皮肤里 --accent 是结构蓝，酸黄才是内容色，
+       所以有 --hm-acid 就用它（其余 51 套没有这个变量，自动退回 --accent）。 */
+    var acid = parseColor(cs.getPropertyValue('--hm-acid'));
+    COL.chip = acid ? [acid[0], acid[1], acid[2]] : COL.accent;
   }
   readColors();
 
@@ -279,28 +315,59 @@
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-  /* 按可用宽度断行；最多 maxLines 行，还有字没放下就把末行收成省略号 */
-  function wrapText(g, text, maxW, maxLines) {
-    var chars = String(text).split(''), out = [], line = '', i;
-    for (i = 0; i < chars.length; i++) {
-      var t = line + chars[i];
-      if (line && g.measureText(t).width > maxW) {
-        out.push(line); line = chars[i];
-        if (out.length >= maxLines) { line = ''; break; }
-      } else line = t;
+  /* 拉丁词（含数字与常见连接符）整块切，其余字符逐个切 ——
+     中文逐字断行才自然，但 ACUTE ANGLE 不能断成 ACUTE ANG / LE。 */
+  function tokenize(text) {
+    var s = String(text || ''), out = [], buf = '', i, c;
+    for (i = 0; i < s.length; i++) {
+      c = s.charAt(i);
+      if (/[0-9A-Za-z\u00c0-\u024f&'\u2019.\-\u2013\u2014]/.test(c)) buf += c;
+      else {
+        if (buf) { out.push(buf); buf = ''; }
+        out.push(c);
+      }
     }
-    if (line && out.length < maxLines) out.push(line);
-    if (i < chars.length && out.length) {                 /* 截断了 */
-      var last = out[out.length - 1];
-      while (last && g.measureText(last + '…').width > maxW) last = last.slice(0, -1);
-      out[out.length - 1] = last + '…';
-    }
+    if (buf) out.push(buf);
     return out;
   }
 
+  /* 按可用宽度断行；最多 maxLines 行，还有字没放下就把末行收成省略号 */
+  function wrapText(g, text, maxW, maxLines) {
+    var toks = tokenize(text);
+    var lines = [], cur = '', truncated = false, i, t, cut, last;
+    for (i = 0; i < toks.length; i++) {
+      t = toks[i];
+      if (!cur && (t === ' ' || t === '\u00a0')) continue;   /* 行首不留空格 */
+      if (cur && g.measureText(cur + t).width > maxW) {
+        lines.push(cur); cur = '';
+        if (lines.length >= maxLines) { truncated = true; break; }
+      }
+      /* 单个词自己就超宽：按字符硬拆到放得下为止 */
+      while (g.measureText(t).width > maxW && t.length > 1) {
+        cut = t.length - 1;
+        while (cut > 1 && g.measureText(t.slice(0, cut)).width > maxW) cut--;
+        lines.push(t.slice(0, cut));
+        t = t.slice(cut);
+        if (lines.length >= maxLines) { truncated = true; break; }
+      }
+      if (truncated) break;
+      cur += t;
+    }
+    if (!truncated && cur && lines.length < maxLines) lines.push(cur);
+    if (truncated && lines.length) {                        /* 截断了 */
+      last = lines[lines.length - 1];
+      while (last.length > 1 && g.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+      lines[lines.length - 1] = last + '…';
+    }
+    return lines;
+  }
+
+  /* 一张卡面的排布（从上到下）：序号 → 发丝线 → 站名 → 小字介绍 → …留白… → 底部元信息。
+     字号都以 cellW 为基准 —— 整张卡投影到屏幕上只剩 ~0.36 倍，所以这里得往大写，
+     否则站名勉强能看、介绍就成了一排糊点。 */
   function drawCardFace(g, x, y, w, h, i) {
     var it  = items[i];
-    var pad = Math.round(w * 0.105);
+    var pad = Math.round(w * 0.100);
     var iw  = w - pad * 2;
     var ink = COL.inkOnPaper;
 
@@ -310,24 +377,35 @@
     g.textBaseline = 'top';
 
     /* 序号 */
-    var f1 = Math.round(w * 0.058);
+    var f1 = Math.round(w * 0.056);
     g.font = '600 ' + f1 + 'px ' + FONT_MONO;
     g.fillStyle = rgba(ink, 0.5);
     g.fillText(pad2(i + 1), pad, pad);
 
     /* 序号下一条发丝线 */
-    var ry = pad + f1 + Math.round(h * 0.020);
+    var ry = pad + f1 + Math.round(h * 0.018);
     g.fillStyle = rgba(ink, 0.22);
-    g.fillRect(pad, ry, iw, Math.max(1, Math.round(h * 0.0035)));
+    g.fillRect(pad, ry, iw, Math.max(1, Math.round(h * 0.0032)));
 
-    /* 站名：主视觉，最多两行；字号相对 cellW 偏小（投影后整张卡会缩到 ~0.7 倍） */
-    var f2 = Math.round(w * 0.090);
+    /* 站名：主视觉，最多两行 */
+    var f2 = Math.round(w * 0.094);
+    var lh2 = Math.round(f2 * 1.16);
     g.font = '700 ' + f2 + 'px ' + FONT_SERIF;
     g.fillStyle = rgba(ink, 1);
     var lines = wrapText(g, it.name, iw, 2);
-    var lh = Math.round(f2 * 1.18);
-    var ty = ry + Math.round(h * 0.046);
-    for (var k = 0; k < lines.length; k++) g.fillText(lines[k], pad, ty + k * lh);
+    var ty = ry + Math.round(h * 0.042);
+    for (var k = 0; k < lines.length; k++) g.fillText(lines[k], pad, ty + k * lh2);
+
+    /* 小字介绍：紧接站名下方，最多三行，比站名轻一档 */
+    var dy = ty + lines.length * lh2 + Math.round(h * 0.026);
+    if (it.desc) {
+      var f4 = Math.round(w * 0.058);
+      var lh4 = Math.round(f4 * 1.46);
+      g.font = '400 ' + f4 + 'px ' + FONT_SERIF;
+      g.fillStyle = rgba(ink, 0.70);
+      var dl = wrapText(g, it.desc, iw, 3);
+      for (var m = 0; m < dl.length; m++) g.fillText(dl[m], pad, dy + m * lh4);
+    }
 
     /* 底部元信息 */
     var f3 = Math.round(w * 0.046);
@@ -337,7 +415,7 @@
 
     /* 右下角酸黄方块 —— favicon 那个 2×2 标记里的第四格 */
     var sq = Math.round(w * 0.058);
-    g.fillStyle = rgba(COL.accent, 1);
+    g.fillStyle = rgba(COL.chip, 1);
     g.fillRect(w - pad - sq, h - pad - sq, sq, sq);
 
     g.restore();
@@ -361,11 +439,17 @@
     for (var i = 0; i < N; i++) {
       drawCardFace(g, (i % cols) * cw, ((i / cols) | 0) * ch, cw, ch, i);
     }
-    /* 采样格子。上传时开了 UNPACK_FLIP_Y，v 是翻过来的 —— 行号要从底部数 */
+    /* 采样格子。
+       两处方向约定必须对上，错一个就会采到隔壁站点的卡面：
+       ① 上传时 UNPACK_FLIP_Y_WEBGL = false —— 画布第一行（图像顶部）落在 t=0，
+          所以图集里 v 越大越往下。
+       ② 着色器里 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y)，p.y 也是
+          自上而下增大；uvlF.y 在卡顶为 0、卡底为 1。
+       两者同向，于是「行号从上数」直接算就行，不用翻。 */
     for (var j = 0; j < N; j++) {
       var c0 = j % cols, r0 = (j / cols) | 0;
       aCell[j * 4]     = (c0 * cw) / cv.width;
-      aCell[j * 4 + 1] = 1 - (r0 + 1) * ch / cv.height;
+      aCell[j * 4 + 1] = (r0 * ch) / cv.height;
       aCell[j * 4 + 2] = cw / cv.width;
       aCell[j * 4 + 3] = ch / cv.height;
     }
@@ -453,19 +537,22 @@
     var step = TAU / N;
     return Math.round(phase / step) * step;
   }
-  function goTo(i) {
+  function goTo(i, instant) {
     var step = TAU / N;
     var want = -i * step;
     want += Math.round((phase - want) / TAU) * TAU;
+    if (instant) { phase = want; targetPhase = null; vel = 0; return; }
     targetPhase = want;
   }
 
   /* ---------------- 叠加层 ---------------- */
   var nameEl = document.getElementById('ringName');
+  var descEl = document.getElementById('ringDesc');
   var subEl  = document.getElementById('ringSub');
   var colEl  = document.getElementById('ringCol');
   var lastIdx = -1;
 
+  /* 右侧索引列只画一次；站名会随语言变，所以标签单独一遍 */
   if (colEl) {
     colEl.innerHTML = '';
     items.forEach(function (it, i) {
@@ -473,17 +560,25 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
-      b.setAttribute('aria-label', it.name);
       b.addEventListener('click', function () { goTo(i); });
       li.appendChild(b);
       colEl.appendChild(li);
     });
+    relabelCol();
+  }
+  function relabelCol() {
+    if (!colEl) return;
+    var bs = colEl.querySelectorAll('button');
+    for (var k = 0; k < bs.length && k < items.length; k++) {
+      bs[k].setAttribute('aria-label', items[k].name + (items[k].desc ? ' — ' + items[k].desc : ''));
+    }
   }
 
   function syncMeta(i) {
     if (i === lastIdx) return;
     lastIdx = i;
     if (nameEl) { nameEl.textContent = items[i].name; nameEl.href = items[i].href; }
+    if (descEl) { descEl.textContent = items[i].desc; descEl.hidden = !items[i].desc; }
     if (subEl)  { subEl.textContent = items[i].sub; }
     if (colEl) {
       var bs = colEl.querySelectorAll('button');
@@ -494,13 +589,13 @@
     }
   }
 
-  /* 语言切换后副标题要跟着换（data-zh/data-en 管不到动态插入的文本） */
-  window.__ringLang = document.documentElement.getAttribute('data-lang') || 'zh';
+  /* 切语言：站名、介绍、副标题三样都要换，然后整张图集重画
+     （data-zh/data-en 只认静态元素，这里的内容是脚本拼的，管不到） */
   new MutationObserver(function () {
-    window.__ringLang = document.documentElement.getAttribute('data-lang') || 'zh';
-    items.forEach(function (it, i) { it.sub = subOf(sites[i]); });
+    buildItems();
+    relabelCol();
     lastIdx = -1;
-    rebuildAtlas();                    /* 副标题跟着语言换，图集要重画 */
+    rebuildAtlas();
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
 
   /* 皮肤换了就重新取色 */
@@ -563,13 +658,22 @@
     else if (e.key === 'Enter' || e.key === ' ') { window.location.href = items[cur].href; e.preventDefault(); }
   });
 
+  /* #07 这样的锚点直接落到第 7 张卡 —— 轮播里没有可分享的 URL，补一个。
+     顺带也是截图核对的抓手（无头浏览器点不了方向键）。 */
+  function applyHash() {
+    var m = /^#(\d{1,2})$/.exec(window.location.hash || '');
+    if (!m) return;
+    var i = parseInt(m[1], 10) - 1;
+    if (i >= 0 && i < N) goTo(i, true);      /* 锚点是「已经在这张卡上」，不播旋转 */
+  }
+  window.addEventListener('hashchange', applyHash);
+
   /* 顶部那个筛选框：轮播启用后没有网格可筛了，改成「跳到第一个匹配的站点」 */
   window.__ringJump = function (q) {
     q = String(q || '').trim().toLowerCase();
     if (!q) return;
     for (var i = 0; i < items.length; i++) {
-      var hay = (items[i].dir || '') + ' ' + (items[i].name || '');
-      if (hay.toLowerCase().indexOf(q) !== -1) { goTo(i); return; }
+      if (items[i].hay.indexOf(q) !== -1) { goTo(i); return; }
     }
   };
 
@@ -627,12 +731,8 @@
     gl.uniform4f(U.uActive, act.sx * DPR, act.sy * DPR,
                  Math.max(act.hw * DPR, 0.5), Math.max(act.hh * DPR, 0.5));
     /* 正面那张在图集里的格子 —— 卡面内容只采这一格 */
-    gl.uniform4f(U.uActiveCell, aCell[0], aCell[1],
-                 aCell[2], aCell[3]);   /* DEBUG: 强制 site 0 */
-    /* DEBUG: 输出 aCell[0..3] 到页面上肉眼核对 */
-    var dbg = document.getElementById('__dbgAc');
-    if (!dbg) { dbg = document.createElement('div'); dbg.id = '__dbgAc'; dbg.style.cssText='position:fixed;left:0;bottom:0;background:#fff;color:#000;padding:8px;font:11px monospace;z-index:99999;border:2px solid red'; document.body.appendChild(dbg); }
-    dbg.textContent = 'ai=' + ai + ' aCell[0..3]=' + aCell[0].toFixed(3) + ',' + aCell[1].toFixed(3) + ',' + aCell[2].toFixed(3) + ',' + aCell[3].toFixed(3) + ' U.uAC=' + (U.uActiveCell === null ? 'NULL' : 'OK') + ' aCell[32..35]=' + aCell[32].toFixed(3) + ',' + aCell[33].toFixed(3) + ',' + aCell[34].toFixed(3) + ',' + aCell[35].toFixed(3);
+    gl.uniform4f(U.uActiveCell, aCell[ai * 4], aCell[ai * 4 + 1],
+                 aCell[ai * 4 + 2], aCell[ai * 4 + 3]);
     gl.uniform3f(U.uBg, COL.bg[0], COL.bg[1], COL.bg[2]);
     gl.uniform3f(U.uAccent, COL.accent[0], COL.accent[1], COL.accent[2]);
     gl.uniform3f(U.uHair, COL.hair[0], COL.hair[1], COL.hair[2]);
@@ -667,4 +767,5 @@
   stage.hidden = false;
   running = true;
   requestAnimationFrame(frame);
+  applyHash();
 })();

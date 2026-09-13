@@ -5924,7 +5924,7 @@ function die(){
    基础弹体：船体辉光色细光条（重型弹头→加长加粗）
    穿甲(pierce)  ：白色长针，向后大幅延伸（最长视觉元素，金色针尖=MAX）
    跳弹(ricochet)：琥珀色旋转环（环数随等级 1~3）
-   高爆(splash)  ：橙色脉动光晕 + 弹壳环（MAX→更大）
+   高爆(splash)  ：船体辉光色脉动光晕 + 弹壳环（跟随所选战机颜色；MAX→更大）
    制导(homing)  ：青绿波动尾迹（尾长随制导强度）
    暴击(crit)    ：紫色柔光核
    任意组合 = 以上各层叠加，每种已选能力都可见，不再只有一种特效 */
@@ -5969,11 +5969,11 @@ function drawBulletVis(b,a,v){
   ctx.beginPath();ctx.moveTo(b.x-cs*L,b.y-sn*L);ctx.lineTo(b.x,b.y);ctx.stroke();
   ctx.strokeStyle=`rgba(${v.c},1)`;ctx.lineWidth=W;
   ctx.beginPath();ctx.moveTo(b.x-cs*L*0.78,b.y-sn*L*0.78);ctx.lineTo(b.x,b.y);ctx.stroke();
-  // 5) 高爆脉动光晕 + 弹壳环（橙）
+  // 5) 高爆脉动光晕 + 弹壳环（跟随船体辉光色，不再写死橙色）
   if(v.spl){
     add();const pr=(v.pulseBig?6.5:4.6)+1.6*Math.sin(G.t*10+b.x*0.03);
-    ctx.fillStyle='rgba(255,170,110,0.16)';ctx.beginPath();ctx.arc(b.x,b.y,pr+3,0,TAU);ctx.fill();
-    ctx.strokeStyle='rgba(255,170,110,0.85)';ctx.lineWidth=1.2;
+    ctx.fillStyle=`rgba(${v.c},0.16)`;ctx.beginPath();ctx.arc(b.x,b.y,pr+3,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(${v.c},0.85)`;ctx.lineWidth=1.2;
     ctx.beginPath();ctx.arc(b.x,b.y,v.pulseBig?5.2:4.2,0,TAU);ctx.stroke();rst();
   }
   // 6) 跳弹旋转环（琥珀）

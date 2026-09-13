@@ -1,0 +1,81 @@
+{
+  "_readme": [
+    "卡片上要显示的「站名 + 一行小字介绍」，中英各一份。key = 子站点目录名。",
+    "build-index.py 每次运行都会先自动从子站点的 <title> / <meta name=\"description\"> 推一遍，",
+    "推不出来、或者推得不好看的，就用这份手写覆盖。所以这里不必写全，只写要纠正的那些。",
+    "字段：nameZh / nameEn / descZh / descEn —— 缺哪个就哪个走自动推导。"
+  ],
+
+  "acute-angle-2.0": {
+    "nameZh": "锐角 ACUTE ANGLE",
+    "nameEn": "ACUTE ANGLE",
+    "descZh": "预约制理发店，每一单从约定的时间开始。",
+    "descEn": "Appointment-only barber shop — your slot starts when it says it does."
+  },
+  "chenguang-watch": {
+    "nameZh": "辰光修表铺",
+    "nameEn": "Chenguang Watch Atelier",
+    "descZh": "三十余年老店：机械表保养、古董表修复、换电池换表带。",
+    "descEn": "Thirty years of watch repair — servicing, vintage restoration, batteries, straps."
+  },
+  "hongda-auto-repair-2.0": {
+    "nameZh": "宏达汽修",
+    "nameEn": "Hongda Auto Repair",
+    "descZh": "价目表与电话预约，周一至周六 8:30–18:30。",
+    "descEn": "Price list and phone booking. Mon–Sat 8:30–18:30, parking in the yard."
+  },
+  "laochen-noodles": {
+    "nameZh": "老陈家面馆",
+    "nameEn": "Laochen Noodle House",
+    "descZh": "三十年老店，招牌红烧牛肉面，牛肉凌晨四点现卤。",
+    "descEn": "A thirty-year noodle shop — braised beef noodles, meat braised at 4 a.m."
+  },
+  "maimang-site-2.0": {
+    "nameZh": "麦芒手作",
+    "nameEn": "Maimang Bakery",
+    "descZh": "藏在巷子深处的梦境工坊，无糖无油软欧包。",
+    "descEn": "A bakery workshop down a winding alley — sourdough, bagels, no sugar added."
+  },
+  "shihua 2.0": {
+    "nameZh": "拾花",
+    "nameEn": "Shihua Florist",
+    "descZh": "杭州街坊的手作花店，一枝一枝挑，一束一束包。",
+    "descEn": "A neighbourhood flower shop in Hangzhou — stems picked and wrapped one by one."
+  },
+  "teapot-artisan": {
+    "nameZh": "簪三制壶",
+    "nameEn": "Zansan Teapots",
+    "descZh": "手作茶壶，一次十来件，面向海外茶客与藏家。",
+    "descEn": "Handmade teapots, a dozen at a time, for overseas tea buyers and collectors."
+  },
+  "tongguan-lvxin": {
+    "nameZh": "铜管与滤芯",
+    "nameEn": "Copper & Filter",
+    "descZh": "祖安呼吸安全站：呼吸器维修、滤芯定制、氧气囊租赁。",
+    "descEn": "Respirator repair, custom filter cartridges, oxygen bladder rental. Same day."
+  },
+  "tutuhuahua 2.0": {
+    "nameZh": "涂涂画画",
+    "nameEn": "Tutuhuahua Art Studio",
+    "descZh": "一间儿童美术教室，转动环廊看孩子们的画。",
+    "descEn": "A children's art studio — spin the ring to see what they drew."
+  },
+  "vinyl-store-site": {
+    "nameZh": "唱片库存",
+    "nameEn": "Vinyl Stock",
+    "descZh": "二手唱片店库存自助查询：有没有货、什么版本、多少钱。",
+    "descEn": "Self-serve inventory for a second-hand record shop, refreshed every Sunday."
+  },
+  "void-codex": {
+    "nameZh": "虚空典籍",
+    "nameEn": "Void Codex",
+    "descZh": "皮尔特沃夫的深夜书店，文学与艺术书 24 小时亮灯。",
+    "descEn": "A late-night bookshop on Hextech Avenue — literature and art, lights on 24h."
+  },
+  "yuguang-photo": {
+    "nameZh": "屿光摄影",
+    "nameEn": "Yuguang Photo",
+    "descZh": "海边小城的婚礼跟拍与家庭纪实，自然光、不摆拍。",
+    "descEn": "Wedding and family documentary in a seaside town — natural light, no posing."
+  }
+}

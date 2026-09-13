@@ -50,6 +50,11 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
 }
 .rl-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .rl-main b { font-family: var(--serif); font-size: 17px; font-weight: 700; line-height: 1.3; }
+.rl-desc {
+  font-family: var(--serif); font-size: 13px; line-height: 1.5;
+  color: var(--ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .rl-sub {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
   color: var(--ink-3); text-transform: uppercase;
@@ -81,6 +86,13 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
   transition: color .3s var(--ease), opacity .3s var(--ease);
 }
 .ring-name:hover, .ring-name:focus-visible { color: var(--accent); }
+/* 卡面那行小字在环上被投影缩到 ~9px，读不清；这里给一份等价的正文副本 */
+.ring-desc {
+  max-width: 46ch;
+  font-family: var(--serif); font-size: clamp(13px, 1.15vw, 15px); line-height: 1.55;
+  color: var(--ink-2);
+}
+.ring-desc[hidden] { display: none; }
 .ring-sub {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em;
   text-transform: uppercase; color: var(--ink-3);
