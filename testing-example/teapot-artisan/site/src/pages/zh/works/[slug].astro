@@ -19,7 +19,7 @@ const mailto = siteEmail
   ? `mailto:${siteEmail}?subject=${encodeURIComponent(`${s.work.emailSubject} ${w.title.zh}`)}`
   : null;
 ---
-<Base lang={lang} title={`${w.title.zh} · 簪三制壶`} description={w.note.zh}>
+<Base lang={lang} title={`${w.title.zh} · 簪三制壶`} description={w.note.zh} ogImage={`zansan-${w.slug}.jpg`}>
   <article class="wrap">
     <p class="crumb"><a href="/zh/#works">← {s.work.back}</a></p>
     <div class="detail-split">

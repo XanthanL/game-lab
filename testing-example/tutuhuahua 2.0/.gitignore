@@ -13,5 +13,6 @@ __pycache__/
 # 无头 Chrome 探针的临时产物(别提交:profile 有上千个文件)
 .shots/prof*/
 _probe.html
+_probe_*.html
 _layout.html
 _diag.*

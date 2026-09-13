@@ -69,11 +69,29 @@
     radius: 10,          // 卡片圆角,画纸的钝角
     blend: 14,           // 相邻画作在黏液里的交叉渐变 px
 
+    /* 入场时间线:数值与结构照抄原实现 params.js 的 entry timing。
+       spin 与 move 是**两条绝对定位的并行补间**(不是先转完再缩进)——
+       环一边转一边缩,这正是原实现开场最好看的那一下。 */
     stagger: 0.34,
-    launchTime: 1.6, spreadTime: 2.9, stageAt: 0.7,
-    spinTurns: 1, spinTime: 2.2, moveTime: 1.8, moveDelay: 0.2,
+    launchTime: 1.95, spreadTime: 3.6, stageAt: 0.7,
+    spinTurns: 1, spinTime: 2.6, spinDelay: 0,
+    moveTime: 2.2, moveDelay: 0.2,
     posY: 0, endScale: 4.2,
-    holdAfter: 0.15,
+    holdAfter: 0,
+
+    /* 字标(中央印记)的两拍。语义是**整体圆环的名牌**:
+       环一转起来、开始缩进(也就是离开整体视角),它就该走。
+       所以退场锚在**转圈起点** stageStart,不是环落地 —— 锚落地会让它
+       在整段转圈里一直杵着,看着像"转完了才消失"。
+       浮现则必须相应提前:原实现的 textAt 0.42 让字标在 stageStart 前
+       0.06s 才刚浮现完,没有停留就被拽走。0.20 留出约 0.85s 的完全显示期。 */
+    textAt: 0.20,        // 占 spread 的比例
+    textOutAt: 0,        // 相对**转圈起点** stageStart 的秒数,负 = 提前
+
+    // 整体圆环 ↔ 单张聚焦
+    overviewFit: 0.88,   // 整体圆环:整环(含卡片)占视口短边的比例
+    zoomTurns: 1,        // 两态切换自带的自转圈数(整圈 → 卡片对位不变)
+    pinchOut: 0.82,      // 双指间距缩到起始的这个比例 → 退回整体圆环
 
     scrollSpeed: 0.012, damping: 0.94, maxSpeed: 10, dragSpeed: 1,
     snap: true, snapTime: 0.8, snapFrom: 1, pickTime: 0.55,
@@ -104,10 +122,19 @@
 
   /* ── 工具(与原实现 utils.js 同名同义)───────────────────── */
   function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
-  function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
-  function easeOutQuad(x) { return 1 - (1 - x) * (1 - x); }
+  /* 缓动一律对齐原实现的 GSAP 曲线 —— GSAP 的 powerN 是多项式幂:
+     power1=quad power2=cubic power3=quart power4=quint。
+     开场时间线全程用 power2(launch/spin/move 是 inOut、spread 是 out),
+     字标用 power4.out 浮现、power2.in 退场,点击归位用 power3.inOut。
+     移植初版把这几处降成了 power1(quad),收放就显得软而钝 —— 已订正。 */
+  // quad 系只留给「看大图」标签那一下伸缩 —— 它不属于开场时间线,
+  // 也不是原实现抄来的,保留移植初版的手感即可
   function easeInOutQuad(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
-  function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function easeInCubic(x) { return x * x * x; }                                  // power2.in
+  function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }                     // power2.out
+  function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }  // power2.inOut
+  function easeInOutQuart(x) { return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2; } // power3.inOut
+  function easeOutQuint(x) { return 1 - Math.pow(1 - x, 5); }                     // power4.out
   function smoothstep(a, b, x) { var t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
   function signedOffset(i) { return i === 0 ? 0 : (i % 2 === 1 ? (i + 1) / 2 : -i / 2); }
   function chase(dt, rate) { return 1 - Math.pow(1 - rate, dt * 60); }
@@ -651,7 +678,7 @@
   var uLinkPar = new Float32Array(MAX_LINKS * 4);
 
   /* ── 状态 ───────────────────────────────────────────────── */
-  var state = { progress: 0, launch: 0, spread: 0, spin: 0, shift: 0 };
+  var state = { progress: 0, launch: 0, spread: 0, spin: 0 };
   var interactive = false;
 
   var viewW = 1, viewH = 1;
@@ -659,7 +686,16 @@
   var fit = 1, planeK = 1, radiusK = 1;
   var narrowNow = false, tightNow = false;
   var endScaleNow = P.endScale;
-  var posXNow = -2;
+
+  // 双态:0 = 整体圆环(整环可见 + 中央字标),1 = 单张聚焦(正面大卡)
+  var zoomNow = 0, zoomTarget = 0;
+  var zoomTween = null;    // 玩家触发的补间 { from, to, dir, t0 }
+  var zoomSpin = 0;        // 过渡自带的自转(弧度),只加在画面上,不动 state.spin
+  var overviewG = 1;       // 整体圆环的缩放:整环按视口短边落位
+  var markOn = false;      // 中央字标该不该在场
+  var markDelay = 0;       // 回整体时,等环快落定才允许字标回来
+  var inZoomClass = false;
+  var zoomingClass = false;
 
   var ringCentre = { x: 0, y: 0 };
   var frontAngle = 0;
@@ -715,10 +751,16 @@
     endScaleNow = tightNow ? P.tightEndScale :
       (narrowNow ? P.narrowEndScale : P.endScale);
 
-    // 正面卡钉在屏宽中心:环心左移 R·g,posX 以半屏宽为单位反推
-    var g = endScaleNow * fit;
-    var Rnow = P.ringRadius * radiusK * g;
-    posXNow = -2 * Rnow / Math.max(1, viewW);
+    // 整体圆环:整环连同卡片要整个落进视口短边,环心留白给「涂涂画画」。
+    // 半边按最坏角度算 —— 径向的 R + W/2 与切向的 H/2 合成
+    var hPerG = P.planeSize * planeK;
+    var wPerG = hPerG * artAspect;
+    var rPerG = P.ringRadius * radiusK;
+    var half = Math.sqrt(
+      Math.pow(rPerG + wPerG * 0.5, 2) + Math.pow(hPerG * 0.5, 2));
+    overviewG = Math.min(viewW, viewH) * P.overviewFit / (2 * half);
+    if (!isFinite(overviewG) || overviewG <= 0) overviewG = fit * 0.5;
+    overviewG = Math.min(overviewG, endScaleNow * fit);
   }
 
   function resize() {
@@ -739,10 +781,14 @@
     var step = TAU / count;
     var spread = clamp01(state.spread);
 
-    var shift = clamp01(state.shift);
-    var g = (1 + (endScaleNow - 1) * shift) * fit;
-    var cx = posXNow * viewW * 0.5 * shift;
-    var cy = P.posY * viewH * 0.5 * shift;
+    // 两态共用一个 g:整体圆环用 overviewG,聚焦用 endScaleNow·fit。
+    // 环心左移 R·zoom —— 正面卡因此恒在 (R + cx) = R(1-zoom):
+    // 整体时它停在环的三点钟方向,聚焦时正好滑到画面正中
+    var zoom = clamp01(zoomNow);
+    var g = overviewG + (endScaleNow * fit - overviewG) * zoom;
+    var R0 = P.ringRadius * radiusK * g;
+    var cx = -R0 * zoom;
+    var cy = 0;
 
     ringCentre.x = viewW * 0.5 + cx;
     ringCentre.y = viewH * 0.5 - cy;
@@ -757,7 +803,7 @@
     var sepExtent = H;    // 沿切向量到邻居的伸展 = 长边
     var faceEdge = W;     // 与邻居相望的边 = 短边(竖版的上下边)
 
-    var R = P.ringRadius * radiusK * g;
+    var R = R0;
     var restingGap = 2 * R * Math.sin(step / 2) - sepExtent;
     var finalSep = Math.max(1, restingGap);
 
@@ -772,7 +818,7 @@
     }
 
     var seedAngle = 0 * DEG;
-    var launch = easeInOutQuad(clamp01(state.launch));
+    var launch = easeInOutCubic(clamp01(state.launch));   // power2.inOut
     var Rnow = R * launch;
 
     order.length = 0;
@@ -794,12 +840,15 @@
       var u = i === 0 ? clamp01(state.progress) : travel[gen];
       var cell = cellOf(sIdx);
 
-      var angle = seedAngle + (sIdx > 0 ? 1 : sIdx < 0 ? -1 : 0) * step * cum[gen] + state.spin;
+      var angle = seedAngle + (sIdx > 0 ? 1 : sIdx < 0 ? -1 : 0) * step * cum[gen] +
+        state.spin + zoomSpin;
       var px = Math.cos(angle) * Rnow + cx;
       var py = Math.sin(angle) * Rnow + cy;
       rest[i].x = px; rest[i].y = py;
 
-      var da = angle - frontAngle;
+      // 判正面要把过渡自转减掉 —— 否则两态切换的整圈自转会一路换"正面卡",
+      // 铭牌跟着跳十几次(画面已经靠 .is-zooming 藏了,但逻辑上也不该乱)
+      var da = angle - frontAngle - zoomSpin;
       var toFront = Math.abs(Math.atan2(Math.sin(da), Math.cos(da)));
       if (toFront < fD) { fD = toFront; fI = i; fCell = cell; }
 
@@ -880,7 +929,9 @@
     over = overI;
     frontI = fI;
     // 标签只在正面卡出现:侧面卡点了是转过来,不该许诺"看大图"
-    var wantTag = over >= 0 && over === frontI && !coarse && viewW > P.tagFrom;
+    // 整体圆环态不许诺「看大图」—— 那时点一下是先聚焦
+    var wantTag = over >= 0 && over === frontI && !coarse &&
+      viewW > P.tagFrom && zoomTarget > 0.5;
     if (wantTag !== tagUp) { tagUp = wantTag; showTag(wantTag); }
     if (over >= 0) { focusPos.x = rest[over].x; focusPos.y = rest[over].y; }
 
@@ -984,6 +1035,8 @@
   var entry = {
     t0: null,        // 种子开始出生的时刻
     launchAt: null,  // 计数到 100 之后一小拍,环出发
+    textOn: false,   // 「涂涂画画」该在环心了(原实现 textAt)
+    textOff: false,  // 该退场了(原实现 textOutAt)
     done: false
   };
   var PROGRESS_DUR = 1.2;
@@ -991,12 +1044,18 @@
   var brandShownAt = null;   // 片头字标出现的时刻
   var brandDismissed = false;
   var seedArmed = false;
+  var entryStarted = false;
 
   function startEntry() {
-    if (brandShownAt !== null) return;
+    // 守卫必须是独立的旗标:降级动画分支不设 brandShownAt,
+    // 用它当守卫会让 startEntry 每帧重跑,把玩家刚设的 zoomTarget 掰回去
+    if (entryStarted) return;
+    entryStarted = true;
     if (reduceMotion) {
       state.progress = 1; state.launch = 1; state.spread = 1;
-      state.shift = 1; state.spin = 0;
+      state.spin = 0;
+      // 无动画就直取收势:正面大卡已在画面正中,字标不登场(与有动画的终点一致)
+      zoomNow = 1; zoomTarget = 1;
       interactive = true;
       entry.done = true;
       brandDismissed = true; seedArmed = true;
@@ -1024,18 +1083,49 @@
     if (entry.t0 === null) return;
 
     var t = (now - entry.t0) / 1000;
-    state.progress = easeOutQuad(clamp01(t / PROGRESS_DUR));
+    state.progress = easeOutCubic(clamp01(t / PROGRESS_DUR));       // power2.out
 
     if (entry.launchAt !== null) {
       var tl = (now - entry.launchAt) / 1000;
-      state.launch = easeInOutQuad(clamp01(tl / P.launchTime));
+      state.launch = easeInOutCubic(clamp01(tl / P.launchTime));    // power2.inOut
       var spreadStart = P.launchTime - 0.15;
-      state.spread = easeOutQuad(clamp01((tl - spreadStart) / P.spreadTime));
+      state.spread = easeOutCubic(clamp01((tl - spreadStart) / P.spreadTime)); // power2.out
       var stageStart = spreadStart + P.stageAt * P.spreadTime;
-      state.spin = easeInOutQuad(clamp01((tl - stageStart) / P.spinTime)) *
-        P.spinTurns * TAU;
-      state.shift = easeInOutQuad(clamp01((tl - stageStart - P.moveDelay) / P.moveTime));
-      if (tl >= stageStart + P.moveDelay + P.moveTime) {
+
+      // 自转与缩进是**两条并行的补间**(原实现就是这么挂的):
+      // spin 从 stageStart+spinDelay 起跑,zoom 从 stageStart+moveDelay 起跑,
+      // 各自 power2.inOut —— 于是"边转圈边缩进",而不是转完再推
+      state.spin = easeInOutCubic(
+        clamp01((tl - stageStart - P.spinDelay) / P.spinTime)) * P.spinTurns * TAU;
+      zoomNow = easeInOutCubic(
+        clamp01((tl - stageStart - P.moveDelay) / P.moveTime));
+      zoomTarget = 1;
+
+      // 字标:环展开到 textAt 时浮现在环心,环一开始转圈就退场。
+      // 锚点是 stageStart(转圈起点)而不是 landed(环落地)—— 锚 landed
+      // 会让它陪着整段转圈杵在原地,看起来就是"转完了才消失"。
+      var textStart = spreadStart + P.textAt * P.spreadTime;
+      var landed = Math.max(
+        stageStart + P.spinDelay + P.spinTime,
+        stageStart + P.moveDelay + P.moveTime);
+      entry.textOn = tl >= textStart;
+      entry.textOff = tl >= stageStart + P.textOutAt;
+
+      // 节拍回显(每个只写一次,零开销):远程/探针可以直接读出
+      // 字标浮现、转圈起点、字标退场、环落地四个时刻的**实测**相对秒数,
+      // 不用再去推参数。tl 是相对 entry.launchAt 的秒。
+      if (entry.textOn && stage.dataset.markOnAt == null)
+        stage.dataset.markOnAt = tl.toFixed(2);
+      if (state.spin > 0 && stage.dataset.spinAt == null)
+        stage.dataset.spinAt = tl.toFixed(2);
+      if (entry.textOff && stage.dataset.markOffAt == null)
+        stage.dataset.markOffAt = tl.toFixed(2);
+      if (tl >= landed && stage.dataset.landedAt == null)
+        stage.dataset.landedAt = tl.toFixed(2);
+
+      // 全部落定(含字标退场)才交还玩家
+      if (tl >= landed + 0.2) {
+        zoomNow = 1;
         entry.done = true;
         interactive = true;
       }
@@ -1120,7 +1210,8 @@
         Array.prototype.forEach.call(metas, function (m) { m.classList.remove("is-swap"); });
       }, 170);
     }
-    if (el.live) {
+    // 两态切换时环在整圈自转,正面卡一路换人 —— 别让读屏跟着念十四遍
+    if (el.live && !zoomTween) {
       var w = works[cell];
       el.live.textContent = "第 " + (cell + 1) + " 件,《" + w.title + "》";
     }
@@ -1151,6 +1242,51 @@
   }
 
   function stopPick() { pickAnim = null; }
+
+  /* ── 整体圆环 ↔ 单张聚焦 ──────────────────────────────── */
+  // 玩家触发的切换就是开场那段 staging move 的**原样重演**:
+  // 自转 spinTime 秒 ∥ 缩进 moveTime 秒(延后 moveDelay),两条 power2.inOut。
+  // 进聚焦是正向转一圈,回整体是倒着转一圈 —— 所以卡片对位天然不变,
+  // 不需要额外校正,也不会"缩一半卡在两张之间"。
+  function setZoom(v) {
+    if (!interactive) return;
+    v = v > 0.5 ? 1 : 0;
+    if (zoomTarget === v) return;
+    zoomTarget = v;
+    spinVel = 0;
+    settling = false;
+    stopPick();
+    // 字标:去聚焦要它**先**走;回整体等环快落定再让它回来
+    markDelay = (v === 0 && !reduceMotion) ? (P.moveDelay + P.moveTime) * 0.72 : 0;
+    if (reduceMotion) {
+      // 关了动效的人不该被拖着转 2.6 秒 —— 直接换态,一帧到位
+      zoomNow = v;
+      zoomSpin = 0;
+      zoomTween = null;
+      return;
+    }
+    zoomTween = {
+      from: zoomNow, to: v,
+      dir: v === 1 ? 1 : -1,
+      t0: performance.now()
+    };
+  }
+
+  function stepZoom(now) {
+    if (!zoomTween) return;
+    var e = (now - zoomTween.t0) / 1000;
+    var kSpin = clamp01(e / P.spinTime);
+    var kMove = clamp01((e - P.moveDelay) / P.moveTime);
+    zoomSpin = zoomTween.dir * P.zoomTurns * TAU * easeInOutCubic(kSpin);
+    zoomNow = zoomTween.from +
+      (zoomTween.to - zoomTween.from) * easeInOutCubic(kMove);
+    if (kSpin >= 1 && kMove >= 1) {
+      zoomNow = zoomTween.to;
+      state.spin += zoomTween.dir * P.zoomTurns * TAU;  // 整圈并回常态自转
+      zoomSpin = 0;
+      zoomTween = null;
+    }
+  }
 
   function pick(i) {
     var slot = TAU / count;
@@ -1187,16 +1323,40 @@
     return Math.atan2(-dy, dx);
   }
 
+  /* 双指往中间收缩 → 退回整体圆环(手机端没有 ESC 键) */
+  var touches = {}, touchN = 0;
+  var pinching = false, pinchD0 = 0, pinchUsed = false;
+
+  function pinchDist() {
+    var ids = Object.keys(touches);
+    if (ids.length < 2) return 0;
+    var a = touches[ids[0]], b = touches[ids[1]];
+    return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+  }
+
   function onPointerDown(e) {
     pointerTravel = 0;
     travelX = e.clientX; travelY = e.clientY;
     trackPointer(e);
+
+    touches[e.pointerId] = { x: e.clientX, y: e.clientY };
+    touchN = Object.keys(touches).length;
+    if (touchN === 1) pinchUsed = false;
+
     if (!interactive) return;
     stopPick();
     if (coarse) beginHold();
     dragging = true;
     settling = false;
     spinVel = 0;
+    if (touchN >= 2) {
+      // 第二指落下:转环让位给手势
+      pinching = true;
+      dragging = false;
+      endHold();
+      spinVel = 0;
+      pinchD0 = pinchDist();
+    }
     dragPrevAngle = pointerAngle(e);
     dragPrevTime = performance.now();
     if (canvas.setPointerCapture) {
@@ -1206,9 +1366,21 @@
 
   function onPointerMove(e) {
     trackPointer(e);
+    if (touches[e.pointerId]) {
+      touches[e.pointerId].x = e.clientX;
+      touches[e.pointerId].y = e.clientY;
+    }
     pointerTravel += Math.abs(e.clientX - travelX) + Math.abs(e.clientY - travelY);
     travelX = e.clientX; travelY = e.clientY;
     if (coarse && !held && pointerTravel > P.touchSlop) endHold();
+    if (pinching) {
+      var d = pinchDist();
+      if (pinchD0 > 1 && d > 1 && d / pinchD0 < P.pinchOut && zoomTarget > 0.5) {
+        setZoom(0);
+        pinchUsed = true;
+      }
+      return;
+    }
     if (!dragging) return;
 
     var a = pointerAngle(e);
@@ -1226,6 +1398,14 @@
 
   function onPointerUp(e) {
     trackPointer(e);
+    if (touches[e.pointerId]) {
+      delete touches[e.pointerId];
+      touchN = Object.keys(touches).length;
+      if (touchN < 2) {
+        pinching = false;
+        dragging = false;   // 只剩一指时不接着转,免得跳一下
+      }
+    }
     endHold();
     if (!dragging) return;
     dragging = false;
@@ -1234,11 +1414,20 @@
     }
   }
 
-  function onPointerLeave() { pointer.inside = false; }
+  function onPointerLeave() {
+    pointer.inside = false;
+    touches = {}; touchN = 0; pinching = false;
+  }
 
   function onClick() {
-    if (!interactive || pointerTravel >= 6 || over < 0) return;
-    // 点的就是正面卡 → 看大图;点旁边卡 → 先转过来
+    if (!interactive || pinchUsed || pointerTravel >= 6 || over < 0) return;
+    // 整体圆环:点哪一张就聚焦哪一张(点侧面卡 = 转过来 + 放大,一步到位)
+    if (zoomTarget < 0.5) {
+      if (over !== frontI) pick(over);
+      setZoom(1);
+      return;
+    }
+    // 聚焦态:点的就是正面卡 → 看大图;点旁边卡 → 先转过来
     if (over === frontI) {
       if (window.LB && window.LB.open) window.LB.open(shownCell);
       else if (works[shownCell] && works[shownCell].src) {
@@ -1258,11 +1447,21 @@
     if (e.key === "ArrowRight") { e.preventDefault(); stepFocus(1); }
     else if (e.key === "ArrowLeft") { e.preventDefault(); stepFocus(-1); }
     else if (e.key === "Enter") {
-      if (interactive && shownCell >= 0 && window.LB && window.LB.open) {
-        window.LB.open(shownCell);
-      }
+      // 整体圆环下回车 = 聚焦当前这张;聚焦态下才是看大图
+      if (!interactive || shownCell < 0) return;
+      if (zoomTarget < 0.5) setZoom(1);
+      else if (window.LB && window.LB.open) window.LB.open(shownCell);
     }
   }
+
+  // ESC 退到整体圆环。挂在 document 上:玩家未必先点过画面;
+  // 灯箱开着时它的 ESC 归它自己,这里让路
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var lbEl = document.getElementById("lb");
+    if (lbEl && lbEl.classList.contains("is-open")) return;
+    if (zoomTarget > 0.5) setZoom(0);
+  });
 
   stage.addEventListener("wheel", onWheel, { passive: false });
   stage.addEventListener("pointerdown", onPointerDown);
@@ -1341,11 +1540,15 @@
       // 点击归位:转环补间期间动量整体让位
       if (pickAnim) {
         var kt = clamp01((now - pickAnim.t0) / pickAnim.dur);
-        state.spin = pickAnim.from + (pickAnim.to - pickAnim.from) * easeInOutCubic(kt);
+        state.spin = pickAnim.from +
+          (pickAnim.to - pickAnim.from) * easeInOutQuart(kt);   // power3.inOut
         if (kt >= 1) pickAnim = null;
       }
 
-      if (interactive && !dragging && !pickAnim) {
+      // 两态切换期间:自转由补间全权负责,惯性与吸附让位(否则两边抢 state.spin)
+      if (zoomTween) {
+        spinVel *= Math.pow(P.damping, dt * 60);
+      } else if (interactive && !dragging && !pickAnim) {
         state.spin += spinVel * dt;
         spinVel *= Math.pow(P.damping, dt * 60);
 
@@ -1380,7 +1583,43 @@
 
       tickLoader(dt);
       updatePointer(dt);
+      // 开场期间 zoom 由 entryEval 的时间线推,不收玩家的补间
+      if (entry.done) stepZoom(now);
       layout(dt, time);
+
+      // 聚焦态开/关:铭牌与底部标题只在聚焦时出现,整体圆环留给字标
+      var inZoom = zoomNow > 0.02;
+      if (inZoom !== inZoomClass) {
+        inZoomClass = inZoom;
+        stage.classList.toggle("is-zoom", inZoom);
+      }
+      // 切换进行中:整圈自转会让"正面卡"一路换人,铭牌在这一段收起来,
+      // 等环落定再登场(顺带也避免了标题连跳十四次)
+      var zooming = !!zoomTween;
+      if (zooming !== zoomingClass) {
+        zoomingClass = zooming;
+        stage.classList.toggle("is-zooming", zooming);
+      }
+
+      // 中央字标:和片头同一款淡入淡出(不透明度 + 模糊 + 微移),
+      // 只管「该不该在场」,具体曲线交给 CSS —— 见 .ring__brand.is-mark-*
+      if (el.brand && shownCell >= 0) {
+        var wantMark;
+        if (!entry.done) {
+          wantMark = entry.textOn && !entry.textOff;          // 开场时间线说了算
+        } else if (zoomTarget < 0.5) {
+          if (markDelay > 0) { markDelay -= dt; wantMark = false; }
+          else wantMark = true;                                // 回整体:环落定再浮现
+        } else {
+          wantMark = false;                                    // 进聚焦:字标先走
+        }
+        if (wantMark !== markOn) {
+          markOn = wantMark;
+          el.brand.classList.add("is-mark");
+          el.brand.classList.toggle("is-mark-in", markOn);
+          el.brand.classList.toggle("is-mark-out", !markOn);
+        }
+      }
 
       // 入场真正完成 + 正面卡已填充 → 文字层可以登场了
       // (品牌字标在这之前已淡出,环也展开完了,不会有"字飘在空中"的画面)
@@ -1396,7 +1635,7 @@
           "p" + state.progress.toFixed(2) +
           " l" + state.launch.toFixed(2) +
           " s" + state.spread.toFixed(2) +
-          " sh" + state.shift.toFixed(2) +
+          " z" + zoomNow.toFixed(2) +
           " atlas" + atlas.prog.toFixed(2) +
           (entry.done ? " done" : ""));
       }

@@ -1,33 +1,51 @@
 <!doctype html>
 <html lang="zh-CN"
-      data-title-zh="样例站点 · 实验合集"
-      data-title-en="Samples — GAME LAB"
+      data-title-zh="样例站点"
+      data-title-en="Samples"
       data-desc-zh="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。"
       data-desc-en="Twelve small-business site samples — barber, noodle shop, florist, teapots, record store — one brief rendered across many style families.">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--SHARE:BEGIN 由 tools/sync-share.py 生成，勿手改-->
+  <title>样例站点</title>
+  <meta name="description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="样例站点">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="样例站点">
+  <meta property="og:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。">
+  <meta property="og:url" content="https://xanthanl.github.io/game-lab/testing-example/">
+  <meta property="og:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/samples.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="1200">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="样例站点">
+  <meta name="twitter:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。">
+  <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/samples.jpg">
+  <!--SHARE:END-->
+
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png" />
 <link rel="icon" type="image/png" sizes="180x180" href="../assets/favicon-180.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="../assets/favicon-180.png" />
 <meta name="theme-color" content="#0000f2" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#eef1ff" media="(prefers-color-scheme: light)" />
-<title>样例站点 · 实验合集</title>
-<meta name="description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="实验合集" />
-<meta property="og:locale" content="zh_CN" />
-<meta property="og:title" content="样例站点 · 实验合集" />
-<meta property="og:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
-<meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="1200" />
-<meta property="og:url" content="https://xanthanl.github.io/game-lab/testing-example/" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="样例站点 · 实验合集" />
-<meta name="twitter:description" content="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。" />
-<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- 主题 / 风格 / 语言在样式生效前定好，避免刷新时闪一下 -->
 <script>
 (function () {
@@ -63,19 +81,10 @@
     </div>
   </div>
 
-  <header class="hero sub-hero">
-    <p class="sub-kicker"><a href="../">GAME LAB</a><span class="sub-sep">/</span><span data-zh="样例站点" data-en="Samples">样例站点</span></p>
-    <h1 class="hero-title" data-zh="样例站点" data-en="Samples">样例站点</h1>
-    <p class="lede" data-zh="12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。"
-       data-en="Twelve small-business site samples — barber, noodle shop, florist, teapots, record store. One brief rendered across many style families, for picking layout and palette.">12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍，用来挑版式与配色。</p>
-    <input id="q" class="sub-search" type="search" aria-label="筛选站点" />
-    <nav class="toc" aria-label="目录">
-      <a class="glass" href="../"><span data-zh="首页" data-en="Home">首页</span></a>
-      <a class="glass" href="../games.html"><span data-zh="游戏" data-en="Games">游戏</span> <em>07</em></a>
-      <a class="glass" href="../lab.html"><span data-zh="实验" data-en="Experiments">实验</span> <em>02</em></a>
-      <a class="glass" href="../sites.html"><span data-zh="站点" data-en="Sites">站点</span> <em>04</em></a>
-    </nav>
-  </header>
+  <!-- 这页刻意不留标题区：整页只给轮播。
+       但 h1 得留着 —— 没有它，页面在大纲里就没有名字（读屏与 SEO 都会丢）。
+       视觉上不可见，不占布局（1px 裁切，不用 display:none，那是真的读不到）。 -->
+  <h1 class="sr-only" data-zh="样例站点" data-en="Samples">样例站点</h1>
 
   <section class="ring-sec" id="ringSec">
     <div class="ring-stage" id="ringStage" role="group" aria-label="样例站点环形浏览" hidden>
@@ -107,17 +116,17 @@
 
 <!--SITES:BEGIN-->
 <script type="application/json" id="sites-data">{
-  "generatedAt": "2026-09-13 16:33",
+  "generatedAt": "2026-09-13 21:03",
   "sites": [
     {
       "dir": "acute-angle-2.0",
-      "name": "锐角 ACUTE ANGLE · 预约制理发店",
+      "name": "锐角 ACUTE ANGLE",
       "status": "ok",
-      "updated": "2026-09-12 18:44",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "acute-angle-2.0/index.html",
-          "title": "锐角 ACUTE ANGLE · 预约制理发店"
+          "title": "锐角 ACUTE ANGLE"
         }
       ],
       "nameZh": "锐角 ACUTE ANGLE",
@@ -127,13 +136,13 @@
     },
     {
       "dir": "chenguang-watch",
-      "name": "辰光修表铺 · Chenguang Watch Atelier — 机械表保养 · 古董表修复",
+      "name": "辰光修表铺",
       "status": "ok",
-      "updated": "2026-09-13 13:43",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "chenguang-watch/index.html",
-          "title": "辰光修表铺 · Chenguang Watch Atelier — 机械表保养 · 古董表修复"
+          "title": "辰光修表铺"
         }
       ],
       "nameZh": "辰光修表铺",
@@ -143,13 +152,13 @@
     },
     {
       "dir": "hongda-auto-repair-2.0",
-      "name": "宏达汽修｜价目表与电话预约",
+      "name": "宏达汽修",
       "status": "ok",
-      "updated": "2026-09-12 18:45",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "hongda-auto-repair-2.0/site/index.html",
-          "title": "宏达汽修｜价目表与电话预约"
+          "title": "宏达汽修"
         }
       ],
       "nameZh": "宏达汽修",
@@ -159,13 +168,13 @@
     },
     {
       "dir": "laochen-noodles",
-      "name": "老陈家面馆 · 三十年老店 · 招牌红烧牛肉面",
+      "name": "老陈家面馆",
       "status": "ok",
-      "updated": "2026-09-12 17:33",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "laochen-noodles/site/index.html",
-          "title": "老陈家面馆 · 三十年老店 · 招牌红烧牛肉面"
+          "title": "老陈家面馆"
         }
       ],
       "nameZh": "老陈家面馆",
@@ -175,13 +184,13 @@
     },
     {
       "dir": "maimang-site-2.0",
-      "name": "麦芒手作 · 梦境工坊｜全宇宙最好吃的软欧包（我们只统计了地球）",
+      "name": "麦芒手作",
       "status": "ok",
-      "updated": "2026-09-12 22:38",
+      "updated": "2026-09-13 20:43",
       "pages": [
         {
           "path": "maimang-site-2.0/index.html",
-          "title": "麦芒手作 · 梦境工坊｜全宇宙最好吃的软欧包（我们只统计了地球）"
+          "title": "麦芒手作"
         }
       ],
       "nameZh": "麦芒手作",
@@ -191,13 +200,13 @@
     },
     {
       "dir": "shihua 2.0",
-      "name": "拾花 · 杭州街坊的手作花店",
+      "name": "拾花",
       "status": "ok",
-      "updated": "2026-09-12 16:58",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "shihua 2.0/index.html",
-          "title": "拾花 · 杭州街坊的手作花店"
+          "title": "拾花"
         }
       ],
       "nameZh": "拾花",
@@ -207,13 +216,13 @@
     },
     {
       "dir": "teapot-artisan",
-      "name": "Zansan Teapots — Handmade Teapots for Collectors",
+      "name": "Zansan Teapots",
       "status": "ok",
-      "updated": "2026-09-12 17:19",
+      "updated": "2026-09-13 21:01",
       "pages": [
         {
           "path": "teapot-artisan/site/dist/index.html",
-          "title": "Zansan Teapots — Handmade Teapots for Collectors"
+          "title": "Zansan Teapots"
         },
         {
           "path": "teapot-artisan/site/dist/about/index.html",
@@ -221,7 +230,7 @@
         },
         {
           "path": "teapot-artisan/site/dist/zh/index.html",
-          "title": "簪三制壶 · 手作茶壶"
+          "title": "簪三制壶"
         },
         {
           "path": "teapot-artisan/site/dist/works/ball-knob-teapot/index.html",
@@ -275,13 +284,13 @@
     },
     {
       "dir": "tongguan-lvxin",
-      "name": "铜管与滤芯 · 祖安呼吸安全站｜呼吸器维修 · 滤芯定制 · 氧气囊租赁",
+      "name": "铜管与滤芯",
       "status": "ok",
-      "updated": "2026-09-12 17:44",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "tongguan-lvxin/index.html",
-          "title": "铜管与滤芯 · 祖安呼吸安全站｜呼吸器维修 · 滤芯定制 · 氧气囊租赁"
+          "title": "铜管与滤芯"
         }
       ],
       "nameZh": "铜管与滤芯",
@@ -291,17 +300,17 @@
     },
     {
       "dir": "tutuhuahua 2.0",
-      "name": "涂涂画画 · 儿童美术教室",
+      "name": "涂涂画画",
       "status": "ok",
-      "updated": "2026-09-13 16:24",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "tutuhuahua 2.0/index.html",
-          "title": "涂涂画画 · 儿童美术教室"
+          "title": "涂涂画画"
         },
         {
           "path": "tutuhuahua 2.0/dist/index.html",
-          "title": "涂涂画画 · 儿童美术教室"
+          "title": "涂涂画画"
         }
       ],
       "nameZh": "涂涂画画",
@@ -311,13 +320,13 @@
     },
     {
       "dir": "vinyl-store-site",
-      "name": "唱片库存 · 有没有货，自己查",
+      "name": "唱片库存",
       "status": "ok",
-      "updated": "2026-09-12 15:45",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "vinyl-store-site/index.html",
-          "title": "唱片库存 · 有没有货，自己查"
+          "title": "唱片库存"
         }
       ],
       "nameZh": "唱片库存",
@@ -327,13 +336,13 @@
     },
     {
       "dir": "void-codex",
-      "name": "虚空典籍 — 24 小时文学艺术书店 · 朗读会 · 皮尔特沃夫",
+      "name": "虚空典籍",
       "status": "ok",
-      "updated": "2026-09-12 16:23",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "void-codex/index.html",
-          "title": "虚空典籍 — 24 小时文学艺术书店 · 朗读会 · 皮尔特沃夫"
+          "title": "虚空典籍"
         }
       ],
       "nameZh": "虚空典籍",
@@ -343,19 +352,30 @@
     },
     {
       "dir": "yuguang-photo",
-      "name": "屿光摄影 · 海边小城的婚礼与家庭纪实",
+      "name": "屿光摄影",
       "status": "ok",
-      "updated": "2026-09-13 12:40",
+      "updated": "2026-09-13 20:44",
       "pages": [
         {
           "path": "yuguang-photo/index.html",
-          "title": "屿光摄影 · 海边小城的婚礼与家庭纪实"
+          "title": "屿光摄影"
         }
       ],
       "nameZh": "屿光摄影",
       "nameEn": "Yuguang Photo",
       "descZh": "海边小城的婚礼跟拍与家庭纪实，自然光、不摆拍。",
       "descEn": "Wedding and family documentary in a seaside town — natural light, no posing."
+    },
+    {
+      "dir": "assets",
+      "name": "assets",
+      "status": "wip",
+      "updated": "2026-09-13 20:51",
+      "pages": [],
+      "nameZh": "assets",
+      "nameEn": "Assets",
+      "descZh": "",
+      "descEn": ""
     }
   ]
 }</script>
@@ -367,7 +387,6 @@
 (function () {
   'use strict';
   var $ = function (s) { return document.querySelector(s); };
-  var PH = { zh: '筛选：名称 / 目录…', en: 'Filter by name / folder…' };
   var state = { sites: [] };
 
   function esc(s) {
@@ -421,34 +440,14 @@
       : '<li><span class="rl-row">' + inner + '</span></li>';
   }
 
+  /* 没有筛选框了 —— 这一列就是全部站点，不做过滤。
+     轮播启用后会被 viscose.js 收起来，所以它只在兜底时露面。 */
   function render() {
-    var q = $('#q').value.trim().toLowerCase();
-    var list = state.sites.filter(function (s) {
-      if (!q) return true;
-      var hay = s.dir + ' ' + (s.name || '') + ' ' + (s.nameZh || '') + ' ' + (s.nameEn || '');
-      return hay.toLowerCase().indexOf(q) !== -1;
-    });
-    $('#ringList').innerHTML = list.length
-      ? list.map(itemHTML).join('')
-      : '<li class="rl-empty">' + esc(q) + '</li>';
-    /* 轮播启用后搜索框改作「跳到第一个匹配的站点」 */
-    if (window.__ringJump) window.__ringJump(q);
+    $('#ringList').innerHTML = state.sites.map(itemHTML).join('');
   }
 
-  /* placeholder 不吃 data-zh，只能自己跟着 <html data-lang> 换 */
-  function syncPh() {
-    var lg = document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'zh';
-    $('#q').setAttribute('placeholder', PH[lg]);
-  }
-
-  $('#q').addEventListener('input', render);
   state.sites = parseBaked();
   render();
-  syncPh();
-  if (window.MutationObserver) {
-    new MutationObserver(syncPh).observe(document.documentElement,
-      { attributes: true, attributeFilter: ['data-lang'] });
-  }
 })();
 </script>
 <script src="viscose.js"></script>

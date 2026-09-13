@@ -8,9 +8,18 @@ interface Props {
   lang: Lang;
   title: string;
   description: string;
+  /** 分享缩略图的文件名（位于 ../../assets/og/），缺省用站点那张 */
+  ogImage?: string;
 }
 const { lang, title, description } = Astro.props;
 const s = strings(lang);
+
+// 微信只认 HTTPS 绝对地址、且必须能直连，所以这里一律写全。
+// 页面在 dist/ 下；分享图跟其余 11 个子站共用 testing-example/assets/og/，不重复放一份。
+const PAGE_BASE = 'https://xanthanl.github.io/game-lab/testing-example/teapot-artisan/site/dist/';
+const OG_BASE = 'https://xanthanl.github.io/game-lab/testing-example/assets/og/';
+const ogImage = OG_BASE + (Astro.props.ogImage || 'zansan-teapots.jpg');
+const ogUrl = PAGE_BASE + Astro.url.pathname.replace(/^\//, '');
 ---
 <!doctype html>
 <html lang={s.htmlLang}>
@@ -23,9 +32,19 @@ const s = strings(lang);
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={lang === 'zh' ? '簪三制壶' : 'Zansan Teapots'} />
+    <meta property="og:locale" content={lang === 'zh' ? 'zh_CN' : 'en_US'} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:url" content={ogUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="1200" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content · 跳到正文</a>

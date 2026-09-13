@@ -34,7 +34,14 @@
     goo:    0.075,  /* 融合半径 = min(宽,高) × 此值 */
     corner: 0.13,   /* 圆角 = min(半宽,半高) × 此值 */
     dragK:  2.6,    /* 拖过整个舞台宽度 = 2.6 弧度 */
-    intro:  1700    /* 入场时长（毫秒） */
+    intro:  1700,   /* 入场时长（毫秒） */
+    /* 环心与底部叠加文字之间至少要留的净空（px）。
+       环心不是写死的：measureOverlay() 取所有站点最坏高度，placeFront() 把
+       叠加块顶锚到「正面卡下沿 + frontGap」处，放不下就把环心整体上提。
+       之前 P.cy 固定 0.46，而舞台高 = clamp(420px, 62vh, 660px) 随视口变，
+       1440×900 时只剩 556px，英文两行简介直接把站名顶进卡片里（实测净空 4.5px）。
+       固定 cy 治不了这个，只能按最坏值反推 + 顶锚。 */
+    frontGap: 18
   };
 
   var dataEl = document.getElementById('sites-data');
@@ -86,10 +93,7 @@
         desc: pick(s, 'descZh', 'descEn'),
         sub:  subOf(s),
         href: encodeURI(s.pages[0].path),
-        dir:  s.dir,
-        /* 搜索要中英都命中，所以两份都留着 */
-        hay: (s.dir + ' ' + (s.nameZh || '') + ' ' + (s.nameEn || '') + ' ' +
-              (s.name || '')).toLowerCase()
+        dir:  s.dir
       };
     });
   }
@@ -511,6 +515,66 @@
   var W = 0, H = 0, DPR = 1;
   var baseK = 30, cornerPx = 8;
 
+  /* ---------------- 底部叠加文字占多高 ----------------
+     .ring-front 由 placeFront() 顶锚：顶边贴在「正面卡下沿 + frontGap」处。
+     高度随简介行数变（中文里就有 1 行和 2 行的），但环心不能跟着让 —— 那会让
+     转盘上下跳。**取所有站点里最高的那一次**做约束，转盘就稳了。
+     12 次同步重排只在 resize / 换语言 / 字体到位时跑一次，不热。 */
+  var frontEl = document.querySelector('.ring-front');
+  var overlayH = 0;
+  var cyFit = -1;
+  var frontPlaced = false;
+
+  function measureOverlay() {
+    if (!frontEl) return;
+    /* placeFront() 设过内联 top/bottom 的话，先清掉才能读到 CSS 里的 bottom */
+    if (frontPlaced) { frontEl.style.top = ''; frontEl.style.bottom = ''; frontPlaced = false; }
+
+    if (items && items.length && nameEl && descEl) {
+      var keepN = nameEl.textContent, keepD = descEl.textContent, keepH = descEl.hidden;
+      var worst = 0;
+      for (var i = 0; i < items.length; i++) {
+        nameEl.textContent = items[i].name || keepN;
+        descEl.textContent = items[i].desc || '';
+        descEl.hidden = !items[i].desc;
+        var h = frontEl.getBoundingClientRect().height;
+        if (h > worst) worst = h;
+      }
+      /* 同一次同步任务内全部还原，浏览器不会中间上屏 */
+      nameEl.textContent = keepN;
+      descEl.textContent = keepD;
+      descEl.hidden = keepH;
+      overlayH = worst;
+    } else {
+      overlayH = frontEl.getBoundingClientRect().height;
+    }
+  }
+
+  /* 把叠加块顶边贴在「正面卡满尺寸下沿 + frontGap」处；放不下就让环心整体上提。
+     上提量计入 cyFit，由 layout() 读取。 */
+  function placeFront() {
+    if (!frontEl) return;
+    var R = W * P.radius, D = R * P.dist, cosT = Math.cos(P.tilt);
+    var pFront = D / Math.max((R + D) - R * cosT, 1);
+    var half = H * P.cardH * 0.5 * pFront;
+    var cyWant = H * P.cy;
+    /* 顶边位置：正面卡（满尺寸）的下沿 + frontGap */
+    var y = cyWant + half + P.frontGap;
+    /* 最坏情况下叠加块的底边不能越过舞台底边 —— 留出 overlayBot 给 CSS 处理 */
+    var maxY = H - overlayH;
+    var cy = cyWant;
+    if (y > maxY) {
+      /* 放不下：环心整体上提，文字块跟着上去（间距不变） */
+      var lift = Math.min(y - maxY, cyWant - (half + 4));
+      cy = cyWant - lift;
+      y = cy + half + P.frontGap;
+    }
+    cyFit = cy;
+    frontEl.style.top = Math.round(y) + 'px';
+    frontEl.style.bottom = 'auto';
+    frontPlaced = true;
+  }
+
   function resize() {
     W = stage.clientWidth; H = stage.clientHeight;
     DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -518,6 +582,8 @@
     canvas.height = Math.round(H * DPR);
     gl.viewport(0, 0, canvas.width, canvas.height);
     baseK = Math.min(W, H) * P.goo;
+    measureOverlay();          /* 字号跟着 vw/vh 走，尺寸一变就得重量 */
+    placeFront();
   }
 
   function smoothstep(e0, e1, x) {
@@ -528,10 +594,14 @@
   function layout(sizeMul) {
     var R = W * P.radius;
     var D = R * P.dist;
-    var cx = W * 0.5, cy = H * P.cy;
+    var cx = W * 0.5;
     var baseH = H * P.cardH * sizeMul;
     var baseW = baseH * P.aspect;
     var sinT = Math.sin(P.tilt), cosT = Math.cos(P.tilt);
+
+    /* 环心由 placeFront() 算好了缓存在这里 —— resize / 换语言 / 字体到位时刷新。
+       之前的 cyMax / cyMin 逻辑移到 placeFront 里。 */
+    var cy = cyFit >= 0 ? cyFit : H * P.cy;
     cards.length = 0;
     for (var i = 0; i < N; i++) {
       var a = i * TAU / N + phase;
@@ -622,6 +692,8 @@
         else bs[k].removeAttribute('aria-current');
       }
     }
+    /* 不再 measureOverlay —— 顶锚 + 最坏值，环心不随当前站点变，
+       转盘就稳。换语言 / resize / 字体到位时才需重测。 */
   }
 
   /* 切语言：站名、介绍、副标题三样都要换，然后整张图集重画
@@ -631,6 +703,10 @@
     relabelCol();
     lastIdx = -1;
     rebuildAtlas();
+    /* 换语言后站点描述的行数可能整体变（zh 多 1 行 / en 多 2 行），
+       重新量最坏高度并把叠加块重新顶锚 */
+    measureOverlay();
+    placeFront();
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-lang'] });
 
   /* 皮肤换了就重新取色 */
@@ -693,6 +769,22 @@
     else if (e.key === 'Enter' || e.key === ' ') { window.location.href = items[cur].href; e.preventDefault(); }
   });
 
+  /* 滚轮翻卡：这一页整页只有轮播，鼠标滚下去没人会想滚页面 —— 直接吃成翻卡。
+     每收到一次 wheel 就翻 1 张；用 380ms 的最小间隔做去抖，触控板一次猛滑也不会跳十几张
+     （但也不会硬卡死——只是「一秒最多翻 2~3 张」，手感顺）。
+     passive: false 是为了能 preventDefault()，挡住浏览器同时去滚这页本来就滚不动的页面。 */
+  var wheelTimer = 0;
+  window.addEventListener('wheel', function (e) {
+    if (dragging) return;                            /* 拖动中别抢 */
+    e.preventDefault();
+    var now = performance.now();
+    if (now - wheelTimer < 380) return;              /* 冷却中：先忽略 */
+    wheelTimer = now;
+    var cur = activeIndex();
+    var nxt = (cur + (e.deltaY > 0 ? 1 : -1) + N) % N;
+    goTo(nxt);
+  }, { passive: false });
+
   /* #07 这样的锚点直接落到第 7 张卡 —— 轮播里没有可分享的 URL，补一个。
      顺带也是截图核对的抓手（无头浏览器点不了方向键）。 */
   function applyHash() {
@@ -703,13 +795,24 @@
   }
   window.addEventListener('hashchange', applyHash);
 
-  /* 顶部那个筛选框：轮播启用后没有网格可筛了，改成「跳到第一个匹配的站点」 */
-  window.__ringJump = function (q) {
-    q = String(q || '').trim().toLowerCase();
-    if (!q) return;
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].hay.indexOf(q) !== -1) { goTo(i); return; }
-    }
+  /* 验收用：把当前几何吐出来。
+     探针**不要**再抄一份 layout() 的公式去复算 —— 抄一份必然脱节，
+     改了参数忘了改探针，净空照旧按老值算，白测一轮（踩过一次）。 */
+  window.__ringGeom = function () {
+    var ai = activeIndex(), act = null;
+    for (var i = 0; i < cards.length; i++) if (cards[i].idx === ai) { act = cards[i]; break; }
+    if (!act) return null;
+    var R = W * P.radius, D = R * P.dist;
+    var pFront = D / Math.max((R + D) - R * Math.cos(P.tilt), 1);
+    return {
+      W: W, H: H,
+      cardTop: act.sy - act.hh, cardBottom: act.sy + act.hh,
+      /* 满尺寸正面卡的半高。探针拿它当「这张是不是正面卡」的判据：
+         cards[] 只在 frame() 里重算，循环空转时会拿到「新索引 + 旧布局」，
+         那时 act 落在 ±30° 上，hh 会明显小于这个值。 */
+      hhFull: H * P.cardH * 0.5 * pFront,
+      overlayH: overlayH
+    };
   };
 
   /* ---------------- 主循环 ---------------- */
@@ -794,6 +897,15 @@
   resize();
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
   else window.addEventListener('resize', resize);
+
+  /* 字体晚一步到位时，站名/简介的实际行高会变 —— 重测一次，否则环心按
+     回退字体的高度算，字体一换上就压上去了 */
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(function () {
+      measureOverlay();
+      placeFront();
+    }).catch(function () {});
+  }
 
   if (window.IntersectionObserver) {
     new IntersectionObserver(function (es) {

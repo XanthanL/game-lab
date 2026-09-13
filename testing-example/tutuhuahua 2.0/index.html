@@ -3,24 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>涂涂画画 · 儿童美术教室</title>
-  <meta name="description" content="涂涂画画是一间儿童美术教室。转动环廊，看孩子们的画。">
+  <!--SHARE:BEGIN 由 tools/sync-share.py 生成，勿手改-->
+  <title>涂涂画画</title>
+  <meta name="description" content="一间儿童美术教室，转动环廊看孩子们的画。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="涂涂画画">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="涂涂画画">
+  <meta property="og:description" content="一间儿童美术教室，转动环廊看孩子们的画。">
+  <meta property="og:url" content="https://xanthanl.github.io/game-lab/testing-example/tutuhuahua%202.0/index.html">
+  <meta property="og:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/tutuhuahua.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="1200">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="涂涂画画">
+  <meta name="twitter:description" content="一间儿童美术教室，转动环廊看孩子们的画。">
+  <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/tutuhuahua.jpg">
+  <!--SHARE:END-->
+
   <meta name="theme-color" content="#F9F7EF">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F9F7EF'/%3E%3Crect x='7' y='7' width='18' height='18' fill='%23785E40'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/tokens.css?v=3">
-  <link rel="stylesheet" href="css/site.css?v=9">
+  <link rel="stylesheet" href="css/site.css?v=10">
 </head>
 <body>
 
   <!-- 涂涂画画 · 环廊:整站即一座黏液环廊。参考 Viscose carousel,
        原生 WebGL 移植,零依赖。
        「涂涂画画」以片头字标开场(此刻画面无卡,绝无重叠),
-       字标自行淡出后,画作环才从种子展开;
-       拖拽 / 滚轮 / 方向键转环,点击正面卡看大图;
+       字标自行淡出后,画作环才从种子展开;环转到位即收势在「整体圆环」,
+       四个字回到环心 —— 有字标 = 全局环视角,有正面大卡 = 聚焦视角。
+       点击某张进入聚焦;ESC(电脑)/ 双指往中间收缩(手机)退回整体圆环;
+       聚焦态下点击正面卡看大图;拖拽 / 滚轮 / 方向键转环。
        WebGL 不可用时给出文字指引。 -->
   <section class="section--ring" id="ring" aria-label="作品环廊">
     <div class="ring" id="ring-stage" tabindex="0" role="region"
-         aria-roledescription="轮播" aria-label="作品环廊:滚轮或左右拖动转动,回车看大图">
+         aria-roledescription="轮播"
+         aria-label="作品环廊:滚轮或左右拖动转动,回车聚焦,ESC 退回整体圆环">
 
       <div class="ring__brand" id="ring-brand">
         <h1>涂涂画画</h1>
@@ -73,6 +92,6 @@
 
   <script src="js/works-data.js?v=2026-09-13c"></script>
   <script src="js/gallery.js?v=5"></script>
-  <script src="js/ring-carousel.js?v=6"></script>
+  <script src="js/ring-carousel.js?v=7"></script>
 </body>
 </html>

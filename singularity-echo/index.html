@@ -834,9 +834,14 @@ html[data-rm] .overlay{animation:none}
 /* 模块/协同条目：相对定位，展开详情以标签形式贴在条目下方（非弹窗） */
 .chips .mchip,.synlist .schip{position:relative;cursor:help;z-index:var(--z-local-1)}
 /* 层叠修复 1：.mchip 的 skew 变换会创建独立层叠上下文，内部 detail 的 z-index 无法越过后续 DOM 的 synlist；
-   给两个容器显式分层，保证 chips 的详情标签始终盖在 synlist 徽章之上 */
-.chips{position:relative;z-index:var(--z-local-2)}
-.synlist{position:relative;z-index:var(--z-local-1)}
+   给两个容器显式分层，保证 chips 的详情标签始终盖在 synlist 徽章之上。
+   层叠修复 3：原方案 chips=1 / synlist=0 把两个容器压在「positioned z-auto/0」同一层，
+   暂停面板的 .row-btns（容器本身非定位，但 .btn 是 position:relative z=auto）按 DOM 后序后画 →
+   把 synlist 及其 tooltip 全盖住，看上去像「透明文字重叠」（detOverBtn≈2011px²）。
+   把两个容器一并抬到 z>0 的层：chips=z=2、synlist=z=1，与按钮自然分层，
+   而 chips > synlist 的相对顺序由 z 差保留。*/
+.chips{position:relative;z-index:var(--z-local-3)}
+.synlist{position:relative;z-index:var(--z-local-2)}
 /* 层叠修复 2：chips 内部的兄弟 mchip 同样各自成层叠上下文且按 DOM 顺序后画，
    下垂的详情会被下一行模块条盖住 —— 悬停/展开时把该条整体抬到兄弟之上 */
 .chips .mchip:hover,.chips .mchip.open,

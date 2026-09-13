@@ -13,13 +13,28 @@
 .ring-sec { margin-top: clamp(18px, 3.5vh, 40px); }
 .ring-sec[hidden] { display: none; }
 
+/* 这页没有可见的标题区，但 h1 得留 —— 视觉上裁掉、读屏仍能读到。
+   用 1px 裁切而不是 display:none / visibility:hidden：后两者是真的读不到。 */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 这页整页就这一个舞台 —— topbar + 轮播 + footer 三段。
+   高度吃掉 topbar (~50) + footer (~170) 之间的全部空间：clamp(580, 100vh-200, 940)。
+   之前是 clamp(420, 62vh, 660)，大屏上 stage 只占 556px，留了一大块空白；
+   小屏上反而要溢出。换成 calc(100vh-200) 后，环直接顶满。 */
 .ring-stage {
   position: relative; isolation: isolate;
-  height: clamp(420px, 62vh, 660px);
+  height: clamp(580px, calc(100vh - 200px), 940px);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: var(--bg);
   overflow: hidden;
+  /* 鼠标滚轮整页翻卡片 —— 不让浏览器滚 */
+  overscroll-behavior: contain;
   /* 竖向留给页面翻页，横向拖动归轮播 —— 手机上不会把人困在这里 */
   touch-action: pan-y;
   cursor: grab;
@@ -65,9 +80,12 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
   font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
 }
 
-/* ── 正面那张卡的信息：环的下方正中空着，放这里不挡卡片 ── */
+/* ── 正面那张卡的信息：环的下方正中空着，放这里不挡卡片 ──
+   .ring-front 不再写死 bottom —— 由 viscose.js 的 placeFront() 把顶边贴在
+   「正面卡下沿 + frontGap」处，bottom 设为 auto。这样 1 行简介不会在盒子里
+   留出 ~26px 的死区（之前锁两行 min-height 的副作用），副字紧跟描述下方。 */
 .ring-front {
-  position: absolute; left: 0; right: 0; bottom: clamp(18px, 3vh, 30px);
+  position: absolute; left: 0; right: 0;
   display: flex; flex-direction: column; align-items: center; gap: 9px;
   padding: 0 74px; text-align: center; pointer-events: none;
 }
@@ -79,11 +97,16 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
   transition: color .3s var(--ease), opacity .3s var(--ease);
 }
 .ring-name:hover, .ring-name:focus-visible { color: var(--accent); }
-/* 卡面那行小字在环上被投影缩到 ~9px，读不清；这里给一份等价的正文副本 */
+/* 卡面那行小字在环上被投影缩到 ~9px，读不清；这里给一份等价的正文副本。
+   限两行只是兜底（防止极长的简介在轮播里把整个 overlay 撑爆）——
+   **不能**用 min-height 锁高度。叠加块是顶锚的（见 viscose.js 的 placeFront），
+   高度由简介实际行数决定；环心按「最坏情况」反推，转盘才不会转着转着上下跳。 */
 .ring-desc {
   max-width: 46ch;
   font-family: var(--serif); font-size: clamp(13px, 1.15vw, 15px); line-height: 1.55;
   color: var(--ink-2);
+  display: -webkit-box; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; overflow: hidden;
 }
 .ring-desc[hidden] { display: none; }
 .ring-sub {
@@ -108,8 +131,21 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
 .ring-col button:hover, .ring-col button:focus-visible { opacity: 1; color: var(--ink); }
 .ring-col button[aria-current="true"] { opacity: 1; color: var(--accent); }
 
+/* ── 窄屏 ──────────────────────────────────────────────────────────
+   窄屏上台面小、字号却不跟着缩，叠加文字相对更占地方。这里只收「文字自己」的
+   字号与间距；**环心让位由 viscose.js 按实测文字块高度反推**，不写死 cy ——
+   舞台高 = clamp(420px, 62vh, 660px) 随视口变，写死 cy 在某个高度上必然翻车
+   （实测 1440×900 桌面端净空只剩 4.5px，比手机还惨）。 */
 @media (max-width: 700px) {
-  .ring-stage { height: clamp(360px, 58vh, 480px); }
+  /* 窄屏 footer 也得给空间：减到 180 留给版权区。最小 500，够两张卡侧身。
+     真到 380px (iPhone SE) 上限收到 720，再大就溢到 footer 上面了。 */
+  .ring-stage { height: clamp(500px, calc(100vh - 180px), 720px); }
   .ring-col { display: none; }          /* 窄屏放不下，改靠拖动 */
-  .ring-front { padding: 0 20px; }
+  .ring-front {
+    padding: 0 18px;
+    gap: 7px;
+  }
+  .ring-name { font-size: 18px; }
+  .ring-desc { font-size: 12.5px; max-width: none; }
+  .ring-sub  { font-size: 10px; }
 }

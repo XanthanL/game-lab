@@ -21,7 +21,7 @@
 **当前代码健康度（已实测）**：JS 语法 OK · `audit-tokens.js` 全绿 · 无残留临时文件。
 | **Phase 6 长线留存与可分享性** | ✅ **完成（6.1–6.6 全部落地 · Phase 6 收官）** | 6.1 种子 + URL 直达；6.2 三档难度；6.3 五个 Modifier 最多叠 3；6.4 29 模块禁 8；6.5 每局 10Hz 录飞行轨迹、影子同时间轴并排跑、按指纹分组存最佳最多 6 组；**6.6 把种子 + 难度 + 挑战 + 卡池 + 前 90s 轨迹压成 ~1.8K 短码塞进 `#g=`，别人点开同地图 + 一只你的影子陪着飞（不需要后端、不依赖微信）** |
 
-| **Phase 7 限时冲刺** | ✅ **完成（7.1–7.5）** | **7.1 冲刺赛 Time Attack**：3 分钟倒计时冲波次，固定 standard / 无 Modifier / 无禁用；倒计时只在 play·inter 衰减，归零即 `die()`；`taSettle()` 走独立结算（**不写 nova-best / 不 commitDaily / 不出星尘**），独立榜单 `nova-tattack` Top10。**7.2 闭环**：TA 开局自动落种子（`gcodeMine()` 首行判 `!G.seed`，菜单进 TA 不带种子 → **实测出不了码**，TA 的分享玩法整个是死的）+ 轨迹码按模式取值（普通局 5Hz×90s · **TA 4Hz×180s 覆盖整局**）+ `gcodeDec` 改读头部 hz（老码天然向后兼容）。**7.3 分享闭环**：码的头部加一个标志位（bit0 = 冲刺赛，`GCODE_VER` 升到 2、v1 老码照收），收端 `gcodeTake` 置 `G.taMode` —— 之前对方点开是**普通漂移**，「3 分钟跟我比」这个语境全丢（全新实例实测）。**7.4 模式边界**：`G.taMode` 补复位点（`toMenu` / `resumeRun`）—— 之前打完一局 TA 后它**永远为真，之后每一局普通漂移都被当成 3 分钟限时**（分数还不进 nova-best）；TA 局不再写续档存档（原先会冲掉玩家正在打的普通局存档）；机库如实标注「本局固定标准 / 无挑战 / 全卡池」且影子指纹按实际生效值取。让 6.5 影子 + 6.6 轨迹码从「锦上添花」变成核心机制。**7.4b 漏网路径**：离开机库其实有两条路（ESC / 手柄 B）是就地改 `G.mode`、**绕过 `toMenu()`** 的，`G.taMode` 照样不复位 —— 已收口成统一的 `closeHulls()`。**7.5 高爆弹配色**：高爆（frag）的脉动光晕与弹壳环原本写死橙色 `255,170,110`，而弹体本身早就用 `v.c`（= `hullGlow()`）—— 改成同一个来源，**跟着玩家选的战机变色** 。**7.6 touchcancel 不要立刻打死摇杆**（手机端移动严重问题）：原 `endTouch` 把 `touchend` / `touchcancel` 一视同仁立刻 `joy.id=null`，但真机上浏览器滚屏 / 拉地址栏 / 系统手势 / 切后台会抢手势发 touchcancel， 玩家手指其实还在屏幕上摇杆已被打死，必须抬起重新摸。改成 `touchcancel` 延迟 120ms 收尾： 同根手指 `touchmove` 续上（`clearTimeout(joy.endT)`）则摇杆继续工作；真抬起（`touchend`） 则照旧立即收尾。`phase5-5-check.js` 加第 13 项三条路径断言（A 续上 / B 静默 150ms / C touchend 兜底） |
+| **Phase 7 限时冲刺** | ✅ **完成（7.1–7.6c）** | **7.1 冲刺赛 Time Attack**：3 分钟倒计时冲波次，固定 standard / 无 Modifier / 无禁用；倒计时只在 play·inter 衰减，归零即 `die()`；`taSettle()` 走独立结算（**不写 nova-best / 不 commitDaily / 不出星尘**），独立榜单 `nova-tattack` Top10。**7.2 闭环**：TA 开局自动落种子（`gcodeMine()` 首行判 `!G.seed`，菜单进 TA 不带种子 → **实测出不了码**，TA 的分享玩法整个是死的）+ 轨迹码按模式取值（普通局 5Hz×90s · **TA 4Hz×180s 覆盖整局**）+ `gcodeDec` 改读头部 hz（老码天然向后兼容）。**7.3 分享闭环**：码的头部加一个标志位（bit0 = 冲刺赛，`GCODE_VER` 升到 2、v1 老码照收），收端 `gcodeTake` 置 `G.taMode` —— 之前对方点开是**普通漂移**，「3 分钟跟我比」这个语境全丢（全新实例实测）。**7.4 模式边界**：`G.taMode` 补复位点（`toMenu` / `resumeRun`）—— 之前打完一局 TA 后它**永远为真，之后每一局普通漂移都被当成 3 分钟限时**（分数还不进 nova-best）；TA 局不再写续档存档（原先会冲掉玩家正在打的普通局存档）；机库如实标注「本局固定标准 / 无挑战 / 全卡池」且影子指纹按实际生效值取。让 6.5 影子 + 6.6 轨迹码从「锦上添花」变成核心机制。**7.4b 漏网路径**：离开机库其实有两条路（ESC / 手柄 B）是就地改 `G.mode`、**绕过 `toMenu()`** 的，`G.taMode` 照样不复位 —— 已收口成统一的 `closeHulls()`。**7.5 高爆弹配色**：高爆（frag）的脉动光晕与弹壳环原本写死橙色 `255,170,110`，而弹体本身早就用 `v.c`（= `hullGlow()`）—— 改成同一个来源，**跟着玩家选的战机变色** 。**7.6 touchcancel 不要立刻打死摇杆**（手机端移动严重问题）：原 `endTouch` 把 `touchend` / `touchcancel` 一视同仁立刻 `joy.id=null`，但真机上浏览器滚屏 / 拉地址栏 / 系统手势 / 切后台会抢手势发 touchcancel， 玩家手指其实还在屏幕上摇杆已被打死，必须抬起重新摸。改成 `touchcancel` 延迟 120ms 收尾： 同根手指 `touchmove` 续上（`clearTimeout(joy.endT)`）则摇杆继续工作；真抬起（`touchend`） 则照旧立即收尾。`phase5-5-check.js` 加第 13 项三条路径断言（A 续上 / B 静默 150ms / C touchend 兜底）。**7.6c 协同卡片 z-index 修复**（作者截图报「协同卡片背后透明文字重叠」）：暂停面板的 `.synlist` 曾是 `z-index:0`，跟 `.btn`（`position:relative;z-index:auto`）同处「positioned z-auto/0」同一层，DOM 后出现的 `.row-btns` 把 `.synlist` 及其 `.detail` 整个盖住，文字被按钮盖住后看上去像「透明重叠」（`probe76c` 量得 `detOverBtn=2011px²`）。把两个容器都抬到 `z>0` 的层：`chips` 用 `--z-local-3`（z=2）、`synlist` 用 `--z-local-2`（z=1），保留 chips > synlist 相对顺序；`schip.open` 与 `.detail` 原有 `z=41/40` 保留。`phase7-6c-check.js` 4/4 PASS（含 480px 窄屏不断点塌）。
 
 **下一步建议**：7.1–7.4 已落地。剩候选 **平台适配层 PAL（微信小游戏移植的前置）/ 难度档再扩一档 / TA 再开一档时长**。PAL 越早做越便宜（现在 60+ 处 localStorage，见 ROADMAP「移植硬约束」表）。
 > ⚠️ **发行目标由作者定，不是我替他定。** 作者是**个人开发者、无商业预算**，
@@ -121,6 +121,7 @@ while((m=re.exec(s)))o.push(m[1]);fs.writeFileSync('_extract.js',o.join('\n'))" 
 | `.workbuddy/shots/phase7-2-check.js` | **冲刺赛闭环 12 项**（常量两档 / **TA 自动落种子** / 三连开种子互不相同 / 手填种子不被覆盖 / TA 码 720 点且比普通局长 / 解码 `dt` 跟随头部 / **老码头里 hz=20 仍按 5Hz 解（向后兼容）** / 结算显示种子 / 轨迹链接按钮已显示 / 解出轨迹跨满 180s / 随机局仍不出码 / 390px 不撑破） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase7-3-check.js` | **冲刺赛分享闭环 11 项**（`GCODE_VER=2` / TA 码带 ta 标志而普通码不带 / **乙方全新实例点开 → 真进 3 分钟冲刺**（倒计时 180 · 同地图 · 影子 720 点 dt=0.25 · HUD 显示 · standard 无挑战无禁用）/ 普通链接不会把人拽进 TA / **v1 老码照解且 ta=false** / ver 0·3·9 一律 null / 横幅区分 SPRINT·TRACK / 乙方开局 TIME ATTACK 交代 / 标志位只 +1 字节 / 6.6 往返与 6.5·6.1 钩子不破 / 390px 不撑破） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase7-4-check.js` | **冲刺赛模式边界 12 项**（回主菜单复位 / **打完 TA 后普通漂移不再是限时赛** / 普通局分数回到 nova-best / 续档一律普通 / **TA 局不写续档存档而普通局照写** / 机库三行冻结 + 说明行 / **机库影子指纹 == 开局实际指纹** / 中英 / TA 本身未被复位搞坏 / **ESC 出机库复位** / **手柄 B（padBack）出机库复位** / 390px 不撑破） | 无 pageerror、断言全过 |
+| `.workbuddy/shots/phase7-6c-check.js` | **协同卡片 z-index 修复 4 项**（chips z=2 / synlist z=1 / `schip.open` z=41 · `detail` z=40 / tooltip 背景仍为 `--c-pop-bg` 不透明 / 480px 窄屏断点后两容器 z 不塌） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase6-1-check.js` | **种子 14 项**（短码往返含大小写·空格·非法码 / **编队确定性且不受战斗推流影响** / 选卡干净流·脏流都确定 / 精英·词缀·掉落确定 / 菜单→面板→机库→开局全流程 / 暂停与结算显示种子 / 随机局不显示 / 每日显示日期而非码 / **URL `?seed=` 直达** / 成绩卡有无种子两张图不同（像素级证明真画上去了） / 榜单记录与行文本带码 / 中英 / 5.1–5.6 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase5-6-check.js` | **分享 / 榜 / 截图 13 项**（排序与 Top10 截断 / 名次返回值含「挤不进返 0」/ **刷新后读回存档** / 清空 / 面板渲染与本局高亮 / 从菜单开·关不串面板 / **坠毁与通关各自进榜** / 卡片 1200×630 且**颜色跟随色盲 token** / 主画布截图有实际内容 / 中英 / 5.1·5.4·5.5 无回归 / 竖屏不出界） | 无 pageerror、断言全过 |
 | `.workbuddy/shots/phase5-3-shots.js` | 留档截图：设置面板两节 / 对局色盲红绿档 / 对局色盲蓝黄档 / 竖屏 | 人工 |
@@ -1510,6 +1511,48 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
 ② `timeout` 回调里 `joy.endT=0` 避免残留 truthy 误导后续 `touchstart`。
 `phase5-5-check.js` 加第 14 项 `5-5-14-takeover` 守此路径。
 
+#### ✅ 7.6c 协同卡片 z-index 修复（已完成 2026-09-13）
+**起因**：作者贴截图报「修复一下 @image#1:Clipboard_Screenshot.png 协同卡片背后透明文字重叠的问题」。
+截图里协同 chip `雷驰机群` 已 open，`.detail` 弹出 `⚡ 雷驰机群` 标题 + `电弧线圈 + 战斗无人机` lv 行 + `电弧冷却 -0.3 秒、无人机火力 +0.2 —— 机群与线圈同频共振` 描述，
+但描述文字看上去像「半透明」，被左侧 `继续` 按钮与下方 `SETTINGS ▸ 设置` 按钮**前后遮挡**。
+**不是文字真透明**，是按钮的边框与底色盖到了 tooltip 上。
+
+**根因**（先量后改）：
+用 `probe76c.cjs`（playwright-core + chrome-headless-shell，900×1300 真实渲染）量出：
+- 暂停面板 `pauseChips`/`.synlist`/`.row-btns` 都在同一层叠上下文；
+- `.chips{z-index:1}`、`.synlist{z-index:0}`、`.btn{position:relative; z-index:auto}`；
+- 按 CSS 绘制序（layer 5 = positioned z-auto/0），同处一层的元素按 DOM 后序后画；
+- `.row-btns` DOM 顺序在 `.synlist` **之后** → `.btn` 把 `.synlist` 及其 `.detail` 全盖住；
+- 量得 `detOverBtn=2011px²`（按钮右沿 42×48 px 落在 tooltip 上）；
+- `.chips` z=1 已经脱离 layer 5（升到 layer 6），所以 chips 的 tooltip 没被按钮盖；
+  但 `.synlist` z=0 留在 layer 5，**和 `.btn` 同层、后画 → 被盖**。
+原本 CSS 注释只想着「chips > synlist」就够，没算上**同层里 DOM 后序**这条线。
+
+**修法**（CSS 一处两行）：
+```
+.chips{position:relative; z-index:var(--z-local-3)}   /* 0→2 */
+.synlist{position:relative; z-index:var(--z-local-2)} /* 0→1 */
+```
+两个容器一并抬到 `z>0` 的层：chips=2、synlist=1，与 `.btn`(z=auto) 自然分层；
+`chips > synlist` 的相对顺序由 z 差保留（z=2 vs z=1）；
+`.synlist .schip:hover,.synlist .schip.open{z-index:var(--z-detail-hi)}` 与 `.detail{z-index:var(--z-detail)}`
+原值（41 / 40）保留 —— 弹层在该容器内仍高于兄弟 chip。
+
+**验证**：
+- 视觉：`probe76c.cjs` 截图肉眼确认 tooltip 文字清晰，按钮右沿被 tooltip 暗背景切断（修复前是按钮盖 tooltip 文字，看上去「半透明」）；
+- 数值：`phase7-6c-check.js` 4/4 PASS —— `chips=2 · synlist=1`（7c-01）、`synlist=1 · schip.open=41 · detail=40`（7c-02）、
+  tooltip 背景仍是 `rgb(19,28,41)` 不透明 + opacity=1 + pointer-events=none（7c-03）、
+  480px 窄屏断点后两容器 z 不塌（7c-04）；
+- 回归：`phase7-check.js` 13/13、`phase7-4-check.js` 12/12、`phase5-5-check.js` 13 项（剩 1 项偶发 flake，见 §7 #181）。
+
+⚠️ **elementFromPoint 测不了这个 bug**：`.detail` 有 `pointer-events:none`，hit-test 直接跳过它，
+不管它画在哪一层，elementFromPoint 都返回底下被覆盖的 `.btn`。
+视觉叠层只能用 z-index 数值断言 + 截图目测两路校验，不能套通用 hit-test。
+
+**回退点** `index_*_phase7-6c-post.html`（共同前态 = `index_*_phase7-6b-post.html`，diff 仅含 CSS 一处两行）。
+
+---
+
 ---
 
 
@@ -2169,6 +2212,7 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
      通用动作：改任何颜色前先 `grep` 那个色值，看它是不是"本来应该等于某个变量"。
 179. **touchcancel 不等于 touchend**（7.6）—— 浏览器抢手势时（滚屏 / 拉地址栏 / 系统手势 / 切后台）会发 touchcancel，但**玩家手指多半还在屏幕上**。原 `endTouch` 把两者一视同仁都立刻打死摇杆，玩家必须抬起重新摸。真机上 touchcancel 触发率远高于想象（一次划屏可能发好几次），体感就是「移动严重卡顿」。**修法**：区分 `e.type`：touchend 立即收尾（行为不变），touchcancel 设延迟定时器（默认 120ms）；`touchmove` 同 id 续上就 `clearTimeout`。
 180. **「待收尾」期间新手指必须能接管**（7.6 补修）—— 上一根手指被 touchcancel 后 `joy.id` 还占着旧 id、`joy.endT` 还挂着未触发的定时器。这时新手指触摸，`touchstart` 仍按 `joy.id===null` 判定 → 新手指被吞。**修法**：把 `joy.endT` 也算空（`||joy.endT`），允许接管；接管时 `clearTimeout(joy.endT); joy.endT=0;`。**`timeout` 回调里也要 `joy.endT=0`** —— 否则 timeout 触发后 `joy.endT` 残留 truthy，后续 `touchstart` 误判为「待收尾」又走接管分支，污染逻辑。
+181. **「同层 z-auto/0 + DOM 后序」会盖前面的 z>0 兄弟**（7.6c）—— 暂停面板里 `.synlist{z-index:0}` 跟 `.btn{position:relative; z-index:auto}` 同处「positioned z-auto/0」一层（CSS layer 5），同层元素按 DOM 后序后画；`.row-btns` DOM 在 `.synlist` 之后 → 按钮盖住 tooltip（量得 `detOverBtn=2011px²`）。**修法**：把 `.synlist` 与 `.chips` 都抬到 `z>0` 的层（`--z-local-2` / `--z-local-3`），与按钮自然分层；chips > synlist 的相对顺序由 z 差保留。**判据用错了也不行** —— `.detail` 有 `pointer-events:none`，`elementFromPoint` 会直接跳过它 → 不管它画在哪一层都返回底下被盖的 `.btn`，看上去像「视觉叠层测试失灵」。视觉叠层只能靠 z-index 数值断言 + 截图目测，hit-test 这条路在此 bug 上走不通。
 
 174. **探针自己也会踩「没复现真实路径」的坑**（7.3）—— 第一版 `probe73.js` 在同一个页面里
      `NOVA.ta.start()` 之后再测"对方点开链接"，而 `G.taMode` 是**内存态**，
@@ -2245,7 +2289,8 @@ TA 局实际用 `standard|-|-`），机库显示的那只影子根本不是这�
 |---|---|
 | | 2026-09-13 | **Phase 7.6 touchcancel 不要立刻打死摇杆（手机端移动严重问题）**。作者报「手机端上面的移动出现了严重的问题」，常规排查（摇杆逻辑 / dt / 多指 / 引导遮罩）均正常，**最后靠 CDP `Input.dispatchTouchEvent` 复现 `touchCancel` 后 `joy.on` 立即变 false**（同时 CDP 拒绝后续同 id touchMove，—— 这恰好印证了真机上「取消后继续拖」的事件链路是断的）。修法：`endTouch` 按 `e.type` 分支，`touchcancel` 延迟 120ms 收尾（期间同 id `touchmove` 续上即 `clearTimeout`），真抬起才由 `touchend` 立即收尾。`phase5-5-check.js` 加第 13 项守三条路径（A 续上 / B 静默 150ms / C touchend 兜底）全过；`probe76.js` 验证修复：cancel 后 30 帧合成 touchmove 让船持续推进 dy=-519.9 / vy=-340（修前 dy=0）。**教训**：浏览器抢手势 ≠ 手指抬起 —— 收到 touchcancel 之前先想想「手指真的离开了吗」。
 | | 2026-09-13 | **Phase 7.6 补修：touchcancel 收尾期间新手指接管**。`probe76-takeover.js` 发现上一根手指被 touchcancel 后 120ms 内 **新手指触摸会被吞**（`touchstart` 仍按 `joy.id===null` 判定，旧 id 占着坑）。修：① `touchstart` 判据扩为 `joy.id===null||joy.endT`，接管时清定时器并 endT=0；② `timeout` 回调里 `joy.endT=0` 避免残留 truthy。`phase5-5-check.js` 加第 14 项 `5-5-14-takeover` 守此路径（14/14 全过）。**教训**：状态机标志位要么每次显式清零，要么分两变量 —— 不能依赖 truthy 区分「待收尾」与「已死」。
-探针一律保留作证据（probe66 / 72–76），一次性补丁脚本 `.workbuddy/*.py` 已清理。
+| | 2026-09-13 | **Phase 7.6c 协同卡片 z-index 修复**。作者贴截图报「协同卡片背后透明文字重叠」：`#pauseSyn .schip` 已 open、`.detail` 弹出后文字看上去像半透明、被「继续」「SETTINGS」按钮前后遮挡。**不是文字真透明**，是按钮盖了 tooltip。先用 `probe76c.cjs`（playwright-core + chrome-headless-shell，900×1300 真实渲染）量出根因 —— `.synlist{z-index:0}` 与 `.btn{position:relative;z-index:auto}` 同处 CSS layer 5（positioned z-auto/0），同层元素按 DOM 后序后画；`.row-btns` DOM 在 `.synlist` 之后 → 按钮把 tooltip 整个盖住（`detOverBtn=2011px²`）。原本 CSS 注释只想着「chips > synlist」就够，没算同层后序这条线。修法（一处两行）：`.chips` z-index 改 `--z-local-3`（0→2）、`.synlist` 改 `--z-local-2`（0→1），两容器一并抬到 `z>0` 的层；chips > synlist 的相对顺序由 z 差保留（`schip.open=41` / `detail=40` 不动）。`phase7-6c-check.js` 4/4 PASS（含 480px 窄屏不断点塌）；`probe76c.cjs` 截图肉眼确认 tooltip 文字清晰、按钮右沿被 tooltip 暗背景切断。回归：`phase7-check.js` 13/13、`phase7-4-check.js` 12/12、`phase5-5-check.js` 13 项（剩 1 项偶发 flake，见 §7 #181）。**教训**：同层 z-auto/0 兄弟按 DOM 后序后画，不是「z=0 就一定在 z=auto 之上」 —— 元素出所在层才摆脱后序；`.detail` 有 `pointer-events:none`，`elementFromPoint` 会跳过它 → 视觉叠层只能靠 z-index 数值断言 + 截图目测，hit-test 在 pointer-events:none 上直接失灵。
+探针一律保留作证据（probe66 / 72–76 / 76c），一次性补丁脚本 `.workbuddy/*.py` 已清理。
 | | 2026-09-13 | **Phase 7.5 高爆弹配色跟随战机**。作者指出高爆弹的橙光和所选战机不搭。一查 `drawBulletVis()` 第 5 层（脉动光晕 + 弹壳环）写死了 `rgba(255,170,110,…)`，而**同一个函数里弹体本身早就用 `v.c`**（= `hullGlow()`，在 `bulletVis()` 里取一次）—— 颜色来源本来就在手边，只是那一层没接上。两行 `fillStyle`/`strokeStyle` 改 `rgba(${v.c},0.16)` / `rgba(${v.c},0.85)`，注释同步。探针 `probe75.js` **拦截 canvas 的 fillStyle/strokeStyle setter**，直接验第 5 层写进 canvas 的颜色：7/7 命中 `rgba(hullGlow,…)`、**旧橙色 `255,170,110` 一笔不剩**、7 条船体 7 种色，pageerror 0，`audit-tokens.js` 全绿（少两处 JS 颜色字面量），定向回归 5 套零 FAIL 零 ERR。**教训**：同一件东西的颜色有两个来源，早晚不一致 —— 改颜色前先 `grep` 那个色值（§7 #178） |
 | | 2026-09-13 | **Phase 7.4b 离开机库的漏网路径**。7.4 收尾后把 §7 #176 系统性复用了一遍（grep 所有模式开关的赋值点逐个查复位），发现 `dailyMode`/`endless`/`pendingSeed`/`pendingGhost` 都在 `startGame` 里有复位点（稳妥模式），只有 `G.taMode` 必须活到 `startGame` 被读、只能在「离开」时复位 —— 而 ESC 与手柄 B（`padBack()`）是就地 `el.hulls.hidden=true;G.mode='menu'`，**根本没走 `toMenu()`**（探针 probe74b.js 实测：出机库后直接开一局，倒计时 180s · standard）。修法不是再补两行，而是**收口成统一的 `closeHulls()`**。7.4 断言从 10 项扩到 12 项全过，31 套回归零 FAIL 零 ERR。**教训**：复位要覆盖所有离开路径，收口成一个出口函数比在每个出口各写一遍可靠 |
 | | 2026-09-13 | **Phase 7.4 冲刺赛模式边界完成**。查 `G.taMode` 生命周期时发现**只有置真、没有复位** —— 打完一局 TA 后它永远为真，之后每一局普通漂移都被当成 3 分钟限时赛（倒计时在跑、分数还不进 nova-best，玩家完全不知情）。顺带量出另外两个：TA 局的自动存档会冲掉玩家正在打的普通局存档（WAVE 11→2）；机库照旧显示 `abyss+蜂群+脆命` 而实际生效 `standard/无/无`，**影子指纹也对不上**（机库取 `abyss|swarm+brittle|crit+magnet`，实际 `standard|-|-`）。三处修法：① `toMenu()` 与 `resumeRun()` 复位（回标题 = 退出冲刺）；② `saveRun()` 在 `flushStats()` 之后 `if(G.taMode)return;`（统计照交，不写续档）；③ `ghostFpMenu()` 在 TA 下返回 `standard|-|-` + 机库三行 `.tafreeze` 变灰不可点 + `#taNotice` 说明行。**都不改 TA 本身的行为**（180s / standard / 独立榜单，第 9 项断言专门守着）。10 项断言全过，31 套回归零 FAIL 零 ERR、零 pageerror，`audit-tokens.js` 全绿。回退点 `index_*_phase7-4-{pre,post}.html`。**踩坑**：模式开关要成对想"怎么开 / 什么时候关"（§7 #176）· 探针用高层钩子搭场景前先确认钩子自身有无副作用（§7 #177） |

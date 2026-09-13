@@ -37,8 +37,32 @@
 | 卡片 | 1.5:1 横版 | 竖版,比例按 works 数据实际宽高比自适应 |
 | 邻居弦长 | 定值半径 | 随件数计算:弦长 ≈ 1.75 倍卡高(经用户两轮反馈定为疏朗档) |
 | 滚轮 | 抓走全部滚动 | 整页即环廊后,滚轮=转环浏览(用户指定) |
-| 点击 | 只转到正面 | 正面卡点击=打开灯箱看大图;标签只在正面卡出现 |
-| 品牌 | 画布内字形动画,与卡重叠 | 片头字标:先独占画面,自淡出后环才出生,绝无重叠(用户指定) |
+| 点击 | 只转到正面 | 整体圆环下点任意一张 → 聚焦;聚焦态下点正面卡 → 灯箱看大图 |
+| 视角 | 只有一种(正面卡) | 双态:**整体圆环**(14 张全在画面 + 环心字标)↔ **单张聚焦**;Esc / 双指收缩退回整体 |
+| 入场时间线 | 见下 | 结构照抄:spin 与 shift 是**两条并行补间**(边转边缩),数值取 params.js 原值 |
+| 缓动 | GSAP power2 系 | 移植初版整条降成 power1(quad);**已订正回 power2**(见下) |
+| 品牌 | 画布内字形动画,与卡重叠 | 片头字标独占画面自淡出;环展开时「涂涂画画」再以**环心印记**浮现,环落地前 0.5s 退场 |
+
+### 入场时间线:照抄值与照抄缓动
+
+原实现 `Carousel.jsx` 把 `spin`(`stageStart + spinDelay`)与 `shift`(`stageStart + moveDelay`)
+挂成两条**绝对定位**的补间 —— 它们是同时跑的,环一边转一边缩。用户明确要求复刻这一点。
+数值取 `ring/params.js`:`launchTime 1.95 / spreadTime 3.6 / stageAt 0.7 / spinTime 2.6 /
+spinDelay 0 / moveTime 2.2 / moveDelay 0.2 / holdAfter 0`,字标 `textAt 0.42 / textOutAt -0.5`。
+
+更关键的是**缓动降过一档**:GSAP `powerN` 是多项式幂 ——
+power1=quad、power2=cubic、power3=quart、power4=quint。原实现入场全程 power2:
+
+| 时间线节点 | 原实现 | 本项目的曲线 |
+|---|---|---|
+| progress | power2.out | `easeOutCubic` |
+| launch / spin / move | power2.inOut | `easeInOutCubic` |
+| spread | power2.out | `easeOutCubic` |
+| 字标浮现 / 退场 | power4.out / power2.in | CSS `cubic-bezier(.16,1,.3,1)` / `cubic-bezier(.55,0,1,.45)` |
+| 点击归位 pick | power3.inOut | `easeInOutQuart` |
+
+玩家触发的两态切换就是这段的原样重演 —— 同样并行自转 + 缩进、同一条 power2.inOut,
+进聚焦正转一圈、回整体倒转一圈(整圈保证卡片对位不变,无需校正)。
 | 降级 | 无 | WebGL/扩展缺失 → 整区降级为文字指引 |
-| 动效偏好 | 无 | prefers-reduced-motion:跳过入场直切终态 |
+| 动效偏好 | 无 | prefers-reduced-motion:跳过入场直取收势(聚焦态);字标是状态而非动画,整体圆环下仍就位 |
 | 图集 | NPOT(依赖 WebGL2) | 补边到 ≤2048 的 2 的幂,WebGL1 即可跑满;加载挂起 4s 自动重试 |
