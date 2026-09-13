@@ -1002,7 +1002,6 @@
       brandDismissed = true; seedArmed = true;
       if (el.loader) el.loader.style.display = "none";
       if (el.brand) el.brand.classList.add("is-in", "is-out");
-      stage.classList.add("is-live");
       return;
     }
     // 片头:字标独占画面(此刻无任何卡片,绝无重叠)
@@ -1021,7 +1020,6 @@
     if (!seedArmed && now - brandShownAt > 2050) {
       seedArmed = true;
       entry.t0 = now;
-      stage.classList.add("is-live");
     }
     if (entry.t0 === null) return;
 
@@ -1383,6 +1381,12 @@
       tickLoader(dt);
       updatePointer(dt);
       layout(dt, time);
+
+      // 入场真正完成 + 正面卡已填充 → 文字层可以登场了
+      // (品牌字标在这之前已淡出,环也展开完了,不会有"字飘在空中"的画面)
+      if (entry.done && shownCell >= 0 && !stage.classList.contains("is-ready")) {
+        stage.classList.add("is-ready");
+      }
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

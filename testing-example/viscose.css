@@ -71,13 +71,6 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
   display: flex; flex-direction: column; align-items: center; gap: 9px;
   padding: 0 74px; text-align: center; pointer-events: none;
 }
-.ring-mark {
-  display: grid; grid-template-columns: repeat(2, 7px); grid-template-rows: repeat(2, 7px);
-  gap: 3px;
-}
-.ring-mark i { width: 7px; height: 7px; border-radius: 2px; background: var(--ink-3); }
-.ring-mark i:last-child { background: var(--accent); }
-
 .ring-name {
   pointer-events: auto;
   font-family: var(--serif); font-size: clamp(19px, 2.3vw, 29px); line-height: 1.25;
@@ -115,17 +108,8 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
 .ring-col button:hover, .ring-col button:focus-visible { opacity: 1; color: var(--ink); }
 .ring-col button[aria-current="true"] { opacity: 1; color: var(--accent); }
 
-/* ── 左下提示 ── */
-.ring-hint {
-  position: absolute; left: clamp(10px, 2vw, 20px); bottom: clamp(14px, 2.4vh, 22px);
-  margin: 0; max-width: 15ch;
-  font-family: var(--mono); font-size: 9.5px; line-height: 1.7;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
-}
-
 @media (max-width: 700px) {
   .ring-stage { height: clamp(360px, 58vh, 480px); }
   .ring-col { display: none; }          /* 窄屏放不下，改靠拖动 */
   .ring-front { padding: 0 20px; }
-  .ring-hint { max-width: 11ch; }
 }

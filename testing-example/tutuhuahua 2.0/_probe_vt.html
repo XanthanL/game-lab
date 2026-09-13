@@ -71,6 +71,46 @@
     <button class="lb__nav lb__nav--next" id="lb-next" aria-label="下一件">→</button>
   </div>
 
+    <script>
+  (function () {
+    var log = [];
+    var readyAt = -1, capVisAt = -1;
+    function state() {
+      var stage = document.getElementById("ring-stage");
+      var cap = document.querySelector(".ring__caption");
+      var side = document.querySelector(".ring__side");
+      var ell = document.querySelector(".ring__ellipsis");
+      return {
+        ready: stage ? stage.classList.contains("is-ready") : false,
+        live: stage ? stage.classList.contains("is-live") : false,
+        capOp: cap ? getComputedStyle(cap).opacity : "?",
+        capDisp: cap ? getComputedStyle(cap).display : "?",
+        sideDisp: side ? getComputedStyle(side).display : "?",
+        ellExists: !!ell,
+        ring: stage ? stage.getAttribute("data-ring-state") : null
+      };
+    }
+    var n = 0;
+    (function t() {
+      n++;
+      var s = state();
+      if (s.ready && readyAt < 0) readyAt = n;
+      if (s.capOp === "1" && capVisAt < 0) capVisAt = n;
+      if (n <= 4 || n === 15 || n === 30 || n === 60 || n >= 200) {
+        log.push({ f: n, ready: s.ready, capOp: s.capOp, capDisp: s.capDisp,
+                   sideDisp: s.sideDisp, ell: s.ellExists, ring: s.ring });
+      }
+      if (n >= 200 || (n > 20 && readyAt > 0 && capVisAt > 0 && n > readyAt + 20)) {
+        document.body.setAttribute("data-log", JSON.stringify({
+          frames: n, readyAt: readyAt, capVisAt: capVisAt,
+          final: state(), samples: log
+        }));
+        return;
+      }
+      requestAnimationFrame(t);
+    })();
+  })();
+  </script>
   <script src="js/works-data.js?v=2026-09-13c"></script>
   <script src="js/gallery.js?v=5"></script>
   <script src="js/ring-carousel.js?v=6"></script>

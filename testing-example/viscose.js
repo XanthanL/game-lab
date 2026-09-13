@@ -9,10 +9,11 @@
    与站点其余部分的接缝：
    · 配色从 CSS 变量读（--bg / --card-bg / --accent），所以 52 套皮肤换装时
      轮播跟着换；data-style 一变就重新取色。
-   · 卡片文字（站名 / 页数 / 更新时间）留在 DOM 叠加层。WebGL 里画中文不现实，
-     而且文字被 goo 糊掉也没法读 —— 原作同样把 meta 放在着色器之外。
+   · 卡面文字用 Canvas 2D 图集贴上去（着色器里没有字体引擎，画不了中文），
+     每张卡采自己那一格，所以正面的和两侧的都显示各自的内容。
+     底部的 DOM 叠加层再留一份可读、可选中的副本给无障碍和搜索。
    · 拿不到 WebGL、或用户开了 prefers-reduced-motion，就整个不启用，
-     下面原有的卡片网格照常工作（原作没做 reduced-motion，这里补上）。
+     退回下面那列朴素链接（原作没做 reduced-motion，这里补上）。
    · 不劫持滚轮：这是页面里的一个区块而非整屏体验，劫持会让人翻不出去。
      改用拖动 / 点击 / 方向键 / 右侧索引列。
 ================================================================== */
@@ -187,8 +188,9 @@
     'uniform vec4  uCard[MAXC];',   /* cx, cy, halfW, halfH（像素） */
     'uniform vec3  uTint[MAXC];',   /* 每张卡的纸色（按景深微调） */
     'uniform float uVis[MAXC];',    /* 0..1 可见度，背面淡出 */
-    'uniform vec4  uActive;',       /* 正面那张的 cx, cy, halfW, halfH */
-    'uniform vec4  uActiveCell;',   /* 正面那张在图集里的格子 (u0, v0, du, dv) */
+    'uniform vec4  uActive;',       /* 正面那张的 cx, cy, halfW, halfH —— 只用来描那道边 */
+    'uniform vec4  uCell[MAXC];',   /* 每张卡在图集里的格子 (u0, v0, du, dv) */
+    'uniform float uFace[MAXC];',   /* 每张卡「正对镜头」的程度 |cos a|：越侧身字越不可读 */
     'uniform vec3  uBg;',
     'uniform vec3  uAccent;',
     'uniform vec3  uHair;',
@@ -231,17 +233,37 @@
     '  float m    = 1.0 - sstep(-1.2, 1.2, d);',
     '  vec3  tint = tintSum / max(wSum, 1e-5);',
     '  vec3 col = uBg;',
-    '  vec3 paper = tint * (0.965 + 0.035 * (1.0 - clamp(p.y / uRes.y, 0.0, 1.0)));',
-    '  col = mix(col, paper, m);',
-    /* 卡面内容：只让正面那张显示完整内容（站名 / 序号 / 元信息 / 酸黄方块），
-       其余卡只显纸色。这样 goo 细丝是干净的纸色，不会串味；正面那张的边框被
-       goo 拉糊的部分按 front 自己的 SDF mask 切掉，不让文字溢出到细丝里。 */
-    '  vec2 qiF = (p - uActive.xy) / max(uActive.zw, vec2(1.0));',
-    '  vec2 uvlF = clamp(qiF * 0.5 + 0.5, 0.0, 1.0);',
-    '  vec4 tex = texture2D(uAtlas, uActiveCell.xy + uvlF * uActiveCell.zw);',
-    '  float sdFront = sdBox(p - uActive.xy, uActive.zw, min(uActive.z, uActive.w) * uCorner);',
-    '  float mFront = 1.0 - sstep(-0.6, 0.6, sdFront);',
-    '  col = mix(col, tex.rgb, tex.a * m * uHasTex * uMark * mFront);',
+    '  float topLight = 0.965 + 0.035 * (1.0 - clamp(p.y / uRes.y, 0.0, 1.0));',
+    '  col = mix(col, tint * topLight, m);',
+    /* 卡面内容：每张卡用自己的局部坐标采自己那一格，再按自己的轮廓叠上去。
+       四个要点，缺一个就会出问题：
+       ① 不能按 goo 的权重去混各卡 UV —— 那等于把 12 张卡的字摊平叠在一起。
+          要各采各的，再按各自的轮廓遮罩合成。
+       ② 用各自的 SDF 而不是融合后的 d：细丝落在两张卡轮廓之外，遮罩天然为 0，
+          文字不会顺着 goo 溢到丝上，丝保持干净纸色。
+       ③ 叠的顺序：cards 在 JS 里已按景深「近 → 远」排好上传，所以这里必须
+          **从远往近**遍历，近的才会盖在远的上面（GLSL ES 1.0 的循环边界是常量，
+          倒着数没问题）。
+       ④ **每张卡要先把自己的纸色铺满自己的轮廓，再叠字。** 图集里除文字外都是
+          透明的，如果只叠字，近处这张卡「没字」的地方就盖不住远处那张卡的字 ——
+          侧卡上会透出后面几张卡的站名（实测能读出 Void Codex / Tutuhuahua）。 */
+    '  for (int i = MAXC - 1; i >= 0; i--) {',
+    '    if (i < uCount && uVis[i] > 0.02) {',
+    '      vec4  c  = uCard[i];',
+    '      float sd = sdBox(p - c.xy, c.zw, min(c.z, c.w) * uCorner);',
+    '      float mi = 1.0 - sstep(-0.6, 0.6, sd);',
+    '      if (mi > 0.004) {',
+    '        col = mix(col, uTint[i] * topLight, mi * uVis[i]);',
+    '        float fk = sstep(0.52, 0.88, uFace[i]);',
+    '        if (fk > 0.004) {',
+    '          vec2 qi  = (p - c.xy) / max(c.zw, vec2(1.0));',
+    '          vec2 uvl = clamp(qi * 0.5 + 0.5, 0.0, 1.0);',
+    '          vec4 tex = texture2D(uAtlas, uCell[i].xy + uvl * uCell[i].zw);',
+    '          col = mix(col, tex.rgb, tex.a * mi * uHasTex * uMark * uVis[i] * fk);',
+    '        }',
+    '      }',
+    '    }',
+    '  }',
     /* 正面那张：沿轮廓描一道酸黄，指明「点这张会打开」 */
     '  float dA = sdBox(p - uActive.xy, uActive.zw, min(uActive.z, uActive.w) * uCorner);',
     '  float rim = (1.0 - sstep(0.0, 2.4, abs(dA))) * m;',
@@ -280,8 +302,8 @@
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   var U = {};
-  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uActive',
-   'uActiveCell', 'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark',
+  ['uRes', 'uCount', 'uCard[0]', 'uTint[0]', 'uVis[0]', 'uFace[0]', 'uActive',
+   'uCell[0]', 'uBg', 'uAccent', 'uHair', 'uK', 'uCorner', 'uMark',
    'uAtlas', 'uHasTex'].forEach(function (k) {
     U[k.replace('[0]', '')] = gl.getUniformLocation(prog, k);
   });
@@ -289,7 +311,12 @@
   var aCard = new Float32Array(MAXC * 4);
   var aTint = new Float32Array(MAXC * 3);
   var aVis  = new Float32Array(MAXC);
-  var aCell = new Float32Array(MAXC * 4);   /* 每张卡在图集里的格子 */
+  var aFace = new Float32Array(MAXC);       /* 每张卡正对镜头的程度，决定卡面显不显字 */
+  /* 两个格子表，别混：
+     cellOf —— 按**站点序号**存，buildAtlas 填，画卡面时按 c.idx 查
+     aCell  —— 按**上传槽位**存（= cards[] 的景深序），每帧重填给 uCell */
+  var cellOf = new Float32Array(MAXC * 4);
+  var aCell  = new Float32Array(MAXC * 4);
 
   /* ================= 卡面内容图集 =================
      着色器里画不了中文，也排不了一段会自动换行的标题。所以改用 Canvas 2D 把
@@ -446,12 +473,15 @@
        ② 着色器里 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y)，p.y 也是
           自上而下增大；uvlF.y 在卡顶为 0、卡底为 1。
        两者同向，于是「行号从上数」直接算就行，不用翻。 */
+    /* 格子表按**站点序号**（= 图集里的格号）存，不是按绘制顺序。
+       cards[] 是按景深排过序的，第 j 个槽位和第 j 个站点不是一回事 ——
+       上传时要用 c.idx 去查，否则每张卡都会贴到别人的脸。 */
     for (var j = 0; j < N; j++) {
       var c0 = j % cols, r0 = (j / cols) | 0;
-      aCell[j * 4]     = (c0 * cw) / cv.width;
-      aCell[j * 4 + 1] = (r0 * ch) / cv.height;
-      aCell[j * 4 + 2] = cw / cv.width;
-      aCell[j * 4 + 3] = ch / cv.height;
+      cellOf[j * 4]     = (c0 * cw) / cv.width;
+      cellOf[j * 4 + 1] = (r0 * ch) / cv.height;
+      cellOf[j * 4 + 2] = cw / cv.width;
+      cellOf[j * 4 + 3] = ch / cv.height;
     }
 
     if (!atlasTex) atlasTex = gl.createTexture();
@@ -521,7 +551,12 @@
         sy: cy + wy * p,
         hw: baseW * 0.5 * p * Math.max(0.055, Math.abs(facing)),
         hh: baseH * 0.5 * p,
-        p: p, vis: vis
+        p: p, vis: vis,
+        /* 侧身的卡横向被投影压扁（60° 时只剩一半宽），字跟着挤成一团。
+           记下 |cos a|，着色器据此把太侧的那几张卡面淡掉，只留纸色。
+           阈值取 0.52~0.88：12 张时 ±30° 的邻居（0.866）拿到 ~1.0，
+           ±60° 那张（0.5）刚好归零，不会在边上留一层读不出的鬼影。 */
+        face: Math.abs(facing)
       });
     }
     cards.sort(function (x, y) { return y.p - x.p; });   /* 近的在前，命中测试用 */
@@ -713,6 +748,7 @@
 
     for (var j = 0; j < N; j++) {
       var c = cards[j];
+      var k = c.idx;                        /* 槽位 → 站点序号，查格子用 */
       aCard[j * 4] = c.sx * DPR; aCard[j * 4 + 1] = c.sy * DPR;
       aCard[j * 4 + 2] = Math.max(c.hw * DPR, 0.5); aCard[j * 4 + 3] = Math.max(c.hh * DPR, 0.5);
       /* 远的卡往背景色里沉一点，给景深 */
@@ -721,6 +757,11 @@
       aTint[j * 3 + 1] = COL.paper[1] * f + COL.bg[1] * (1 - f);
       aTint[j * 3 + 2] = COL.paper[2] * f + COL.bg[2] * (1 - f);
       aVis[j] = c.vis;
+      aFace[j] = c.face;
+      aCell[j * 4]     = cellOf[k * 4];
+      aCell[j * 4 + 1] = cellOf[k * 4 + 1];
+      aCell[j * 4 + 2] = cellOf[k * 4 + 2];
+      aCell[j * 4 + 3] = cellOf[k * 4 + 3];
     }
 
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
@@ -728,11 +769,11 @@
     gl.uniform4fv(U.uCard, aCard);
     gl.uniform3fv(U.uTint, aTint);
     gl.uniform1fv(U.uVis, aVis);
+    gl.uniform1fv(U.uFace, aFace);
     gl.uniform4f(U.uActive, act.sx * DPR, act.sy * DPR,
                  Math.max(act.hw * DPR, 0.5), Math.max(act.hh * DPR, 0.5));
-    /* 正面那张在图集里的格子 —— 卡面内容只采这一格 */
-    gl.uniform4f(U.uActiveCell, aCell[ai * 4], aCell[ai * 4 + 1],
-                 aCell[ai * 4 + 2], aCell[ai * 4 + 3]);
+    /* 每张卡在图集里的格子 —— 每张采自己那一格 */
+    gl.uniform4fv(U.uCell, aCell);
     gl.uniform3f(U.uBg, COL.bg[0], COL.bg[1], COL.bg[2]);
     gl.uniform3f(U.uAccent, COL.accent[0], COL.accent[1], COL.accent[2]);
     gl.uniform3f(U.uHair, COL.hair[0], COL.hair[1], COL.hair[2]);

@@ -71,6 +71,49 @@
     <button class="lb__nav lb__nav--next" id="lb-next" aria-label="下一件">→</button>
   </div>
 
+    <script>
+  (function () {
+    var n = 0, readyAt = -1;
+    function snap() {
+      var stage = document.getElementById("ring-stage");
+      var cap = document.querySelector(".ring__caption");
+      var meta = document.querySelector(".ring__meta");
+      var side = document.querySelector(".ring__side");
+      var ell = document.querySelector(".ring__ellipsis");
+      return {
+        ready: stage ? stage.classList.contains("is-ready") : false,
+        live: stage ? stage.classList.contains("is-live") : false,
+        capOp: cap ? getComputedStyle(cap).opacity : "?",
+        capDisp: cap ? getComputedStyle(cap).display : "?",
+        metaOp: meta ? getComputedStyle(meta).opacity : "?",
+        metaDisp: meta ? getComputedStyle(meta).display : "?",
+        sideDisp: side ? getComputedStyle(side).display : "?",
+        ellExists: !!ell,
+        vw: innerWidth
+      };
+    }
+    (function t() {
+      n++;
+      var s = snap();
+      if (s.ready && readyAt < 0) readyAt = n;
+      // reduced-motion 下入场瞬时完成,再多等几帧确认稳定
+      if (readyAt > 0 && n >= readyAt + 25) {
+        var f = snap();
+        document.body.setAttribute("data-r", JSON.stringify({
+          frames: n, readyAt: readyAt, final: f
+        }));
+        return;
+      }
+      if (n > 300) {  // 兜底
+        document.body.setAttribute("data-r", JSON.stringify({
+          frames: n, readyAt: readyAt, final: snap()
+        }));
+        return;
+      }
+      requestAnimationFrame(t);
+    })();
+  })();
+  </script>
   <script src="js/works-data.js?v=2026-09-13c"></script>
   <script src="js/gallery.js?v=5"></script>
   <script src="js/ring-carousel.js?v=6"></script>
