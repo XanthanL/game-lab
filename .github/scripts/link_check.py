@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import unquote
@@ -74,13 +75,36 @@ def exists(target: Path) -> bool:
     return target.is_dir() and (target / "index.html").is_file()
 
 
+def published(target: Path) -> Path:
+    """页面真正会去取的那个文件（目录 → 其下的 index.html）。"""
+    if target.is_dir():
+        ix = target / "index.html"
+        if ix.is_file():
+            return ix
+    return target
+
+
+def tracked_files() -> set[str] | None:
+    """git 跟踪清单。没有 git 就返回 None（此时跳过「未发布」检查）。"""
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True
+        ).stdout.decode("utf-8", "replace")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return {p for p in out.split("\0") if p}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
 
     broken: list[tuple[str, str]] = []
+    # 本机存在但没进 git 的目标：线下打得开、线上 404 —— 这类最难发现，必须拦
+    untracked: list[tuple[str, str]] = []
     checked = 0
+    tracked = tracked_files()
 
     for page in iter_html_files():
         rel_page = page.relative_to(ROOT).as_posix()
@@ -96,8 +120,13 @@ def main() -> int:
             checked += 1
             if any(url == e or url.startswith(e) for e in exempt):
                 continue
-            if not exists(resolve(page.parent, url)):
+            target = resolve(page.parent, url)
+            if not exists(target):
                 broken.append((rel_page, url))
+            elif tracked is not None:
+                rel = published(target).relative_to(ROOT).as_posix()
+                if rel not in tracked:
+                    untracked.append((rel_page, url))
 
     if args.verbose:
         print(f"检查了 {checked} 条内部引用（{ROOT}）")
@@ -107,6 +136,14 @@ def main() -> int:
         for page, url in broken:
             print(f"  {page}\n      -> {url}")
         print("\n修完再推。常见原因：构建产物用了根绝对路径（给构建器配 base）。")
+
+    if untracked:
+        print(f"\n发现 {len(untracked)} 处「本机有、但没进 git」的引用（线上一定 404）：\n")
+        for page, url in untracked:
+            print(f"  {page}\n      -> {url}")
+        print("\n多半是被 .gitignore 误伤了运行时资源。给那条规则加例外，再 git add。")
+
+    if broken or untracked:
         return 1
 
     print(f"链接检查通过：{checked} 条内部引用全部可达。")

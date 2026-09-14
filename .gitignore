@@ -36,6 +36,11 @@ node_modules/
 **/logs/
 **/saves/
 **/data/
+# ⚠️ 例外：void-codex 的 data/ 是**事件数据**，被 index.html 当脚本直接加载
+# （<script defer src="data/events.js">），不入库线上就是 404。上面那条 **/data/
+# 是挡存档/运行时数据的，别把这里一起挡掉。
+!testing-example/void-codex/data/
+!testing-example/void-codex/data/**
 
 # ============ Godot 编辑器缓存与引擎二进制 ============
 **/.godot/
