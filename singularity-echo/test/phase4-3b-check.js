@@ -41,7 +41,8 @@ async function run(tag, vw, vh, job) {
   console.log(tag.padEnd(28), errs.length ? 'ERR ' + errs.join(' | ') : 'ok  ' + note);
 }
 const ev = (p, code) => p.evaluate(c => NOVA.debug(c), code);
-const openTree = p => ev(p, 'openLogbook();resetAchPan();"ok"');
+/* 7.9：成就树 / 解锁树搬进了「星图」面板，开日志已经量不到它们 */
+const openTree = p => ev(p, 'openStarmap();resetAchPan();"ok"');
 
 (async () => {
 
@@ -248,7 +249,8 @@ await run('4-3b-12-btn-fixed', ...D, async p => {
 
 /* ── 13 点击节点仍能解锁（平移逻辑不能吃掉点击） ───────────── */
 await run('4-3b-13-click', ...D, async p => {
-  await ev(p, `NOVA.meta.reset();NOVA.meta.grant(100);openLogbook();NOVA.meta.draw();NOVA.meta.fit();"ok"`);
+  /* 7.9：解锁树搬进了星图，这里必须开星图 —— 开日志的话日志浮层会盖住节点 */
+  await ev(p, `NOVA.meta.reset();NOVA.meta.grant(100);openStarmap();NOVA.meta.draw();NOVA.meta.fit();"ok"`);
   await p.waitForTimeout(500);
   /* ⚠️ 必须先滚到「解锁星图」小节 —— 节点落在面板滚动区之外时，强制点击会打在
      覆盖其上的元素上（静默失败，dust 不减、类不变）。与 3-5-12 同一处坑。 */

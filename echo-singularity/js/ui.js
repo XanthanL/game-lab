@@ -13,19 +13,14 @@ const T = require('./tokens.js');
 const ARENA = require('./arena.js');
 const SG = require('./singularity.js');
 const RG = require('./regions.js');
+const PK = require('./pickups.js');
+const Aura = require('./aura.js');
 const Input = require('./input.js');
 const clamp = U.clamp, TAU = U.TAU;
 const AW = ARENA.ARENA_W, AH = ARENA.ARENA_H;
 
-/* ── 卡片池（Stage 1 最小集；Stage 2 会扩成稀有度 + 协同流派） ────────── */
-const CARDS = [
-  { id: 'atk', zh: '膛线校准', en: 'RIFLING', desc: '伤害 +18%' },
-  { id: 'rate', zh: '冷却回路', en: 'CYCLER', desc: '射速 +14%' },
-  { id: 'spd', zh: '推进喷口', en: 'THRUSTER', desc: '极速 +8% · 加速 +6%' },
-  { id: 'armor', zh: '装甲板', en: 'PLATING', desc: '船体 +16%，并回复等量' },
-  { id: 'magnet', zh: '牵引场', en: 'MAGNET', desc: '拾取 +35%' },
-  { id: 'synergy', zh: '协同', en: 'SYNERGY', desc: '奇点被压得更致密：半径↓ 引力↑ 吸积盘更亮' },
-];
+/* ⚠️ 卡池已搬到 cards.js —— 战斗逻辑也要用，寄放在渲染层会让加载顺序变脆弱。
+   这里不再 require 它：drawCardPick 只接收传进来的卡，不自己取。 */
 
 /* ── 绘制小工具 ───────────────────────────────────────────────────────── */
 function rrect(c, x, y, w, h, r) {
@@ -224,6 +219,56 @@ function drawHUD(c, cb) {
       c.restore();
     }
   }
+
+  /* buff 徽章放在最后：它画在门提示之上，挂着的 buff 任何时候都该看得到 */
+  drawBuffs(c, cb);
+}
+
+/* ── buff 徽章（右侧竖排）─────────────────────────────────────────────────
+   边缘光带只回答"有 / 没有"，**精确辨识交给这里**：字形 + 倒计时弧。
+   两个 buff 颜色再接近，看字形也不会认错 —— 这是分层的意义。
+   ⚠️ 判定直接读 Aura.buffList，跟边缘光带是同一份数据，不会出现一边有一边没有。 */
+function drawBuffs(c, cb) {
+  const list = Aura.buffList(cb);
+  if (!list.length) return;
+  const x = AW - 24, y0 = 78, r = 8, step = 22;
+  c.save();
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i];
+    const y = y0 + i * step;
+    /* 底衬：深墨圆，保证在星空上不糊 */
+    c.fillStyle = T.rgba('voidDeep', 0.66);
+    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    c.strokeStyle = T.rgba(b.col, 0.85);
+    c.lineWidth = 1.2;
+    c.beginPath(); c.arc(x, y, r, 0, TAU); c.stroke();
+
+    /* 字形（与拾取物同一个 drawGlyph —— 捡到的和挂着的长得一样） */
+    c.save();
+    c.translate(x, y);
+    c.strokeStyle = T.rgba(b.col, 0.95);
+    PK.drawGlyph(c, b.id, r * 0.76, 1.2);
+    c.restore();
+
+    /* 倒计时弧：绕徽章一圈，随剩余量缩短 */
+    if (b.max > 0) {
+      const t = clamp(b.left / b.max, 0, 1);
+      const urgent = b.left < 1.5;
+      c.strokeStyle = T.rgba(b.col, urgent ? (0.35 + 0.55 * Math.abs(Math.sin(cb.time * 11))) : 0.7);
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.arc(x, y, r + 3, -Math.PI / 2, -Math.PI / 2 + TAU * t);
+      c.stroke();
+      /* 只剩 3 秒内才给数字 —— 平时不吵 */
+      if (b.left <= 3) {
+        c.fillStyle = T.rgba(b.col, 0.95);
+        c.font = T.font('micro', 'bold');
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(String(Math.ceil(b.left)), x, y + r + 9);
+      }
+    }
+  }
+  c.restore();
 }
 
 function pauseHit() { return Input.consumeTapCircle(PAUSE_CX, PAUSE_CY, PAUSE_R + 6); }
@@ -441,8 +486,7 @@ function drawCardPick(c, cards) {
 }
 
 module.exports = {
-  CARDS: CARDS,
-  drawHUD: drawHUD, pauseHit: pauseHit,
+  drawHUD: drawHUD, pauseHit: pauseHit, drawBuffs: drawBuffs,
   drawMenu: drawMenu, drawPause: drawPause, drawOver: drawOver, drawCardPick: drawCardPick,
   drawChannelEnd: drawChannelEnd,
   button: button, bar: bar, rrect: rrect, scrim: scrim, panelBox: panelBox, title: title,

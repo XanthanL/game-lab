@@ -135,7 +135,7 @@ try{
 try{
   const p=await fresh(b);
   await ev(p,`(()=>{NOVA.diff.setWave(20);return '1'})()`);
-  await p.click('#btnLaunch');await p.waitForTimeout(250);
+  await p.click('#btnLaunch');await ev(p,'setCfg(true);1');await p.waitForTimeout(250);
   const n=await p.locator('#diffRow .dif').count();
   const on=(await p.locator('#diffRow .dif.on').textContent())||'';
   await p.locator('#diffRow .dif').nth(2).click();
@@ -178,14 +178,14 @@ try{
 try{
   const p=await fresh(b);
   await ev(p,`(()=>{NOVA.diff.setWave(20);return '1'})()`);
-  await p.click('#btnLaunch');await p.waitForTimeout(250);
+  await p.click('#btnLaunch');await ev(p,'setCfg(true);1');await p.waitForTimeout(250);
   const zh=await p.locator('#diffRow .dif').allTextContents();
   const zhLab=(await p.locator('#diffRow .diflab').textContent())||'';
   /* 机库面板没有返回键，用与 padBack 相同的复位回菜单再切语言
      （#btnLang 在菜单里，被机库盖住时点不到） */
   await ev(p,`(()=>{el.hulls.hidden=true;G.mode='menu';el.menu.hidden=false;return '1'})()`);
   await p.click('#btnLang');await p.waitForTimeout(250);
-  await p.click('#btnLaunch');await p.waitForTimeout(250);
+  await p.click('#btnLaunch');await ev(p,'setCfg(true);1');await p.waitForTimeout(250);
   const en=await p.locator('#diffRow .dif').allTextContents();
   const enLab=(await p.locator('#diffRow .diflab').textContent())||'';
   ok('6-2-12-i18n', zh.join('/').includes('深渊')&&en.join('/').includes('ABYSS')&&
@@ -215,7 +215,7 @@ try{
   await p.goto(URL);
   await p.waitForFunction(()=>window.NOVA&&window.NOVA.diff);
   await p.waitForFunction(()=>NOVA.debug('G.mode')==='menu',null,{timeout:25000}).catch(()=>{});
-  await p.click('#btnLaunch');await p.waitForTimeout(300);
+  await p.click('#btnLaunch');await ev(p,'setCfg(true);1');await p.waitForTimeout(300);
   const r=await p.evaluate(()=>{
     const row=document.getElementById('diffRow').getBoundingClientRect();
     const btns=[...document.querySelectorAll('#diffRow .dif')].map(b=>b.getBoundingClientRect());

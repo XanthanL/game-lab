@@ -60,9 +60,10 @@ for (const [tag, vw, vh] of [['7-7-01a-menu-portrait', ...P], ['7-7-01b-menu-lan
 await run('7-7-02-menu-layers', ...P, async p => {
   const r = await p.evaluate(() => {
     const q = s => document.querySelectorAll(s).length;
-    /* 7.9：模式排加了「ⓘ 模式介绍」→ 4；工具排加了「图鉴 / 星图」→ 8 */
+    /* 7.9：模式排加了「ⓘ 模式介绍」→ 4；工具排加了「图鉴 / 星图」→ 8；
+       7.10 再加「音乐」→ 9 */
     const ids = ['btnLaunch', 'btnDaily', 'btnTime', 'btnModes', 'btnSeed', 'btnSaves',
-      'btnCodex', 'btnStarmap', 'btnLogbook', 'btnBoard', 'btnSettings', 'btnLang'];
+      'btnCodex', 'btnStarmap', 'btnMusic', 'btnLogbook', 'btnBoard', 'btnSettings', 'btnLang'];
     return {
       launch: q('.menu-actions .btn'), modes: q('.menu-modes .btn'), utils: q('.menu-util .util'),
       sep: q('.menu-sep'), missing: ids.filter(i => !document.getElementById(i)),
@@ -71,7 +72,7 @@ await run('7-7-02-menu-layers', ...P, async p => {
       hUtil: Math.round(document.getElementById('btnSeed').getBoundingClientRect().height),
     };
   });
-  const ok = r.launch === 1 && r.modes === 4 && r.utils === 8 && r.sep === 1 &&
+  const ok = r.launch === 1 && r.modes === 4 && r.utils === 9 && r.sep === 1 &&
     r.missing.length === 0 && r.hUtil < r.hLaunch;
   return `${ok ? 'PASS' : 'FAIL'} 主按钮 ${r.launch} · 模式 ${r.modes} · 工具 ${r.utils}` +
     ` · 分隔线 ${r.sep} · 缺失 id ${JSON.stringify(r.missing)}` +

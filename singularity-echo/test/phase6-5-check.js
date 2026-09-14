@@ -41,7 +41,7 @@ try{
   await ev(p,`(()=>{NOVA.ghost.wipe();NOVA.ghost.opt(1);startGame(HULLS[0]);
     return JSON.stringify(!!G.gplay);})()`);
   const has=await ev(p,`(()=>JSON.stringify(!!G.gplay))()`);
-  await ev(p,`(()=>{openHulls();return '1';})()`);
+  await ev(p,`(()=>{openHulls();setCfg(true);return '1';})()`);
   const n=await ev(p,`(()=>NOVA.ghost.render())()`);
   ok('6-5-02-empty', has===false && n===1, `无影子时 gplay=${has} · 机库行 ${n} 个元素`);
   await p.close();
@@ -214,7 +214,7 @@ try{
     NOVA.ghost.set(ghostFpMenu(),{sc:4200,t:88,w:9,hull:'peregrine',sd:'',
       diff:NOVA.diff?NOVA.diff.sel():'standard',rm:[],bn:[],v:0,dt:0.1,n:2,
       pts:[0,0,0,10,0,0],ts:Date.now()});
-    openHulls();return '1';})()`);
+    openHulls();setCfg(true);return '1';})()`);
   const n1=await ev(p,`(()=>NOVA.ghost.render())()`);
   const txt=await p.evaluate(()=>document.getElementById('ghostRow').textContent);
   const hasBtn=await p.evaluate(()=>!!document.querySelector('#ghostRow .gclr'));
@@ -230,7 +230,7 @@ try{
 try{
   const p=await fresh(b);
   const r=await ev(p,`(()=>{NOVA.ghost.wipe();
-    LANG='en';openHulls();var a=document.getElementById('ghostRow').textContent;
+    LANG='en';openHulls();setCfg(true);var a=document.getElementById('ghostRow').textContent;
     NOVA.ghost.set(ghostFpMenu(),{sc:99,t:5,w:2,hull:'peregrine',sd:'',
       diff:'standard',rm:[],bn:[],v:0,dt:0.1,n:2,pts:[0,0,0,1,0,0],ts:Date.now()});
     renderGhostRow();var b=document.getElementById('ghostRow').textContent;
@@ -284,7 +284,7 @@ try{
     NOVA.ghost.set(ghostFpMenu(),{sc:13579,t:300,w:24,hull:'nemesis',sd:'ZZZ999',
       diff:'abyss',rm:['swarm','brittle'],bn:['crit'],v:0,dt:0.1,n:2,
       pts:[0,0,0,10,0,0],ts:Date.now()});
-    openHulls();
+    openHulls();setCfg(true);
     var row=document.getElementById('ghostRow');
     return JSON.stringify({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,
       rh:row.getBoundingClientRect().height,n:row.children.length});})()`);

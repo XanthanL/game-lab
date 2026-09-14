@@ -26,6 +26,8 @@ const Channel = require('./channel.js');
 const WM = require('./warp.js');
 const Render = require('./render.js');
 const UI = require('./ui.js');
+const Aura = require('./aura.js');
+const CD = require('./cards.js');
 const Input = require('./input.js');
 
 const AW = ARENA.ARENA_W, AH = ARENA.ARENA_H;
@@ -66,11 +68,11 @@ App.prototype.resetClock = function () { this.last = PAL.now(); };
 /* ── 选卡 ─────────────────────────────────────────────────────────────── */
 App.prototype._rollCards = function () {
   const cb = this.cb;
-  const pool = UI.CARDS.slice();
+  const pool = CD.CARDS.slice();
   const a = pool.splice(Math.floor(cb.rng.next() * pool.length), 1)[0];
   let b = pool.splice(Math.floor(cb.rng.next() * pool.length), 1)[0];
   /* 保证「协同」有稳定出场率，否则压缩隐喻看不到 */
-  if (a.id !== 'synergy' && b.id !== 'synergy' && cb.rng.chance(0.45)) b = UI.CARDS[5];
+  if (a.id !== 'synergy' && b.id !== 'synergy' && cb.rng.chance(0.45)) b = CD.byId('synergy');
   return [a, b];
 };
 App.prototype._nextCard = function () {
@@ -253,6 +255,10 @@ App.prototype.step = function (dt) {
 
   this.stars.update(dt, cb.p.x - AW / 2, cb.p.y - AH / 2);
   Render.drawWorld(c, cb, this.stars);
+
+  /* 屏幕边缘状态层（低血 / buff）：画在世界之上、HUD 之下 ——
+     它是"世界的一部分"，不是 UI，所以跟着震动走；但不能盖住 HUD 读数。 */
+  Aura.draw(c, cb);
 
   /* HUD / 面板画在震动之外，避免跟着晃 */
   c.restore();

@@ -261,7 +261,7 @@ await run('5-1-11-lang', ...D, async p => {
 
 /* ── 12 数据规模回归 + 图鉴不受影响 ─────────────────────────── */
 await run('5-1-12-regress', ...D, async p => {
-  await p.evaluate(() => NOVA.logbook.open());
+  await p.evaluate(() => { NOVA.logbook.open(); NOVA.logbook.codex(); });
   await p.waitForTimeout(500);
   const c = await p.evaluate(() => NOVA.counts());
   const lb = await p.evaluate(() => NOVA.logbook.counts());
@@ -272,8 +272,8 @@ await run('5-1-12-regress', ...D, async p => {
     secHeads:document.querySelectorAll('#logbook .sec-head').length})`);
   const r = Object.assign({}, c, lb, m);
   const ok = r.mods === 29 && r.syn === 26 && !r.lvEnMissing.length && !r.synEnMissing.length
-    && r.enemies === 24 && r.bosses === 8 && r.hulls === 7 && r.affix === 3
-    && r.nodes === 18 && r.links === 22 && r.meta === 13 && r.secHeads === 7;
+    && r.enemies === 24 && r.bosses === 8 && r.codexHulls === 7 && r.affix === 3
+    && r.nodes === 18 && r.links === 22 && r.meta === 13 && r.secHeads === 1;   /* 7.9：日志只剩「累计记录」一节 */
   return `${ok ? 'PASS' : 'FAIL'} ` + JSON.stringify(r);
 });
 

@@ -44,6 +44,15 @@ function mkPlayer(hullId) {
   h.apply(p);
   p.hp = p.maxHp;
   p.shield = p.shieldMax;
+  /* ── 拾取 buff 计时器（来自 pickups.js，全部是**临时**状态）─────────────
+     ⚠️ 与 p.inv（受击后的短无敌帧）区分开：inv 是"刚被打到"的 0.55s，
+        invuln 是"无敌力场"给的 4s。两者都要在 hurtPlayer 里挡伤害，
+        但视觉上完全不同 —— inv 是船体闪烁，invuln 是金色力场 + 边缘晕影。 */
+  p.boostT = 0;         // 推进超频剩余秒（accel / maxSpeed ×1.5）
+  p.rateT = 0;          // 火力超频剩余秒（fireRate ×1.6）
+  p.invuln = 0;         // 无敌力场剩余秒（免疫一切）
+  p.shieldTmp = 0;      // 相位屏障当前值（先于护盾和船体扛伤害）
+  p.shieldTmpMax = 0;   // 相位屏障上限（HUD 画条用）
   return p;
 }
 

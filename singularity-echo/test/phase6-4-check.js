@@ -153,7 +153,7 @@ try{
 /* 10 机库 UI：29 个 chip · 点选切换 · 上限 8 满后其他变灰 */
 try{
   const p=await fresh(b);
-  await ev(p,`(()=>{NOVA.pool.setWave(15);NOVA.pool.pick([]);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.pool.setWave(15);NOVA.pool.pick([]);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#poolRow button[data-pool]');
   const n=await p.$$eval('#poolRow button[data-pool]',es=>es.length);
   await p.click('#poolRow button[data-pool=crit]');
@@ -175,7 +175,7 @@ try{
 /* 11 中英 */
 try{
   const p=await fresh(b);
-  await ev(p,`(()=>{NOVA.pool.pick(['crit']);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.pool.pick(['crit']);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#poolRow button[data-pool]');
   const zh=await p.$eval('#poolRow .poolbump',e=>e.textContent);
   const en=await ev(p,`(()=>{LANG='en';renderPool();
@@ -218,7 +218,7 @@ try{
 /* 14 竖屏：工坊条不溢出 */
 try{
   const p=await fresh(b,null,'menu',{width:390,height:844});
-  await ev(p,`(()=>{NOVA.pool.pick(['crit','pierce','magnet','crit','pierce']);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.pool.pick(['crit','pierce','magnet','crit','pierce']);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#poolRow button[data-pool]');
   const r=await ev(p,`(()=>{var row=document.getElementById('poolRow');
     var w=row.getBoundingClientRect();var vw=document.documentElement.clientWidth;

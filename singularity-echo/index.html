@@ -363,6 +363,16 @@ body.playing{cursor:none}
   .boot-bar::after{animation:none;opacity:0}
 }
 
+/* ---------- 7.10 奇点视界画布（加载页 + 主界面共用） ----------
+   两块画布是同一个东西：一颗正在吸积的奇点。
+   · 加载页：进度越高内落越快、光子环越亮 —— 除进度条外还有一处"确实在动"的证据；
+   · 主界面：放慢压暗，只做标题背后的环境层，不抢字。
+   画布是 .overlay / #boot 的第一个子节点，用绝对定位铺满并压在内容下面（z-index 0），
+   内容层抬到 1 —— 它是**背景**，绝不能吃掉点击。 */
+#bootcv,#menucv{position:absolute;left:0;top:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;display:block}
+.boot-in,.menu-in{position:relative;z-index:1}
+
 /* ---------- overlays ---------- */
 .overlay{position:fixed;inset:0;z-index:var(--z-overlay);display:flex;align-items:flex-start;overflow:auto;padding:28px 16px;
   background:radial-gradient(ellipse at center,rgb(var(--c-overlay-a-rgb) / .5),rgb(var(--c-overlay-b-rgb) / .86));
@@ -803,6 +813,30 @@ html[data-rm] .overlay{animation:none}
 .mdrows b{flex:none;font-size:var(--fs-1);letter-spacing:.14em;color:var(--c-steel);
   font-weight:normal;min-width:3.4em}
 .mdrows span{font-size:var(--fs-1);letter-spacing:.02em;color:var(--c-ink-2);min-width:0}
+/* ---------- 7.10 音乐鉴赏 ---------- */
+.mu-panel .muvis{display:block;width:100%;height:64px;margin-top:16px;
+  border:1px solid var(--c-line);background:rgb(var(--c-cyan-rgb) / .03)}
+.mu-now{margin-top:10px;font-size:var(--fs-2);letter-spacing:.16em;color:var(--c-cyan-hi);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-now.buff{color:var(--c-steel)}
+.mu-now.err{color:var(--c-foe)}
+.mu-list{margin-top:14px;display:flex;flex-direction:column;gap:5px;text-align:left}
+.mu-item{display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;
+  padding:8px 11px;box-sizing:border-box;font-family:inherit;
+  border:1px solid rgb(var(--c-line) / .55);border-left:2px solid rgb(var(--c-cyan-rgb) / .35);
+  background:rgb(var(--c-cyan-rgb) / .025);color:var(--c-ink-2);
+  transition:border-color var(--dur-2) var(--ease-ui),background var(--dur-2) var(--ease-ui)}
+.mu-item:hover{border-left-color:rgb(var(--c-cyan-rgb) / .7);background:rgb(var(--c-cyan-rgb) / .07)}
+.mu-item.on{border-left-color:var(--c-amber);background:rgb(var(--c-amber-rgb) / .07)}
+.mu-item.on .mu-n{color:var(--c-amber-hi)}
+.mu-item .mu-sc{flex:none;width:3.6em;font-size:var(--fs-1);letter-spacing:.14em;color:var(--c-steel)}
+.mu-item .mu-n{flex:1;min-width:0;font-size:var(--fs-2);letter-spacing:.08em;color:var(--c-ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-item .mu-e{flex:none;font-size:var(--fs-1);letter-spacing:.1em;color:var(--c-ink-3);
+  font-family:ui-monospace,Consolas,monospace}
+.mu-item .mu-st{flex:none;width:4.6em;text-align:right;font-size:var(--fs-1);letter-spacing:.1em;
+  color:var(--c-steel);font-family:ui-monospace,Consolas,monospace}
+.mu-panel .setnote{margin-top:14px}
 /* ---------- 成就树容器
    本版只定版式与交互：视窗 + 平移画布 + SVG 连线层 + 节点层。
    节点坐标写死在 ACH 数据里（不做自动布局），画布尺寸由数据推算。
@@ -1187,6 +1221,7 @@ html[data-rm] .overlay{animation:none}
 
 <!-- boot / loading（在 <body> 顶端，确保浏览器首次绘制即出现读条，不依赖脚本执行顺序） -->
 <div id="boot" data-page-node-id="nb00TXa9Z7p4YhUpBvK4fR">
+  <canvas id="bootcv" aria-hidden="true"></canvas>
   <div class="boot-in" data-page-node-id="nb01eA6uLmVcEjYsR3DqTw">
     <div class="boot-mark" data-page-node-id="nb02XJqKfP4wZnG2sL8aHb">奇点回响<span class="en" data-page-node-id="nb03UdGrVeMyXb1TnHzW8s">SINGULARITY ECHO</span></div>
     <div class="boot-bar" data-page-node-id="nb04BmYhWvTnRqKcZxFp3L"><i id="bootBar" data-page-node-id="nb05CgHpMfXn2WvYrL8sQ9"></i></div>
@@ -1253,6 +1288,7 @@ html[data-rm] .overlay{animation:none}
 
 <!-- menu -->
 <div id="menu" class="overlay" data-page-node-id="ZQc7DJWPiBiLVnZBi8i2ku">
+  <canvas id="menucv" aria-hidden="true"></canvas>
   <div class="menu-in" data-page-node-id="8KzC5f7NwXkJnCbdrXytOu">
     <div class="wordmark" data-page-node-id="6l1UYIuAH8t384c4qa7gEI">奇点回响<span class="en" data-page-node-id="0uA2jGFkIrUGwEVU9tUeE0">SINGULARITY ECHO</span></div>
     <!-- 7.7 三层菜单：出发 / 其它开局方式 / 工具。
@@ -1275,6 +1311,7 @@ html[data-rm] .overlay{animation:none}
       <button id="btnSaves" class="util" data-i18n="m_saves_u">存档</button>
       <button id="btnCodex" class="util" data-i18n="m_codex_u">图鉴</button>
       <button id="btnStarmap" class="util" data-i18n="m_star_u">星图</button>
+      <button id="btnMusic" class="util" data-i18n="m_music_u">音乐</button>
       <button id="btnLogbook" class="util" data-i18n="m_log_u">日志</button>
       <button id="btnBoard" class="util" data-i18n="m_board_u">排行</button>
       <button id="btnSettings" class="util" data-i18n="m_settings_u">设置</button>
@@ -1315,6 +1352,22 @@ html[data-rm] .overlay{animation:none}
     <h2>MODES<span data-i18n="md_sub">三种出击方式 · 有什么区别</span></h2>
     <div class="mdlist" id="mdList"></div>
     <div class="row-btns"><button id="btnMdBack" class="btn" data-i18n="lb_back">返回 ▸ ESC</button></div>
+  </div>
+</div>
+
+<!-- 7.10 音乐鉴赏：把曲库摊开来听 —— 之前九首曲子只作为背景存在，
+     玩家没有任何一处能主动听它们。这里按场景分组，点一首即播，配一条频谱。 -->
+<div id="music" class="overlay" hidden>
+  <div class="panel lb-panel mu-panel">
+    <h2>MUSIC<span data-i18n="mu_sub">曲库鉴赏 —— 点一首听听</span></h2>
+    <canvas id="muVis" class="muvis" aria-hidden="true"></canvas>
+    <div class="mu-now mono" id="muNow" data-i18n="mu_idle">未在播放</div>
+    <div class="mu-list" id="muList"></div>
+    <div class="setnote" data-i18n="mu_note">听不到？去「设置 ▸ 音频」把 BGM 音量调高 —— 曲子走的是同一个总线。</div>
+    <div class="row-btns">
+      <button id="btnMuStop" class="btn ghost" data-i18n="mu_stop">停止</button>
+      <button id="btnMuBack" class="btn" data-i18n="lb_back">返回 ▸ ESC</button>
+    </div>
   </div>
 </div>
 
@@ -1489,11 +1542,11 @@ html[data-rm] .overlay{animation:none}
     <div class="set-body">
       <section class="setpane on" data-pane="hull"><div class="cxlist" id="cxHulls"></div></section>
       <section class="setpane" data-pane="foe">
-        <div class="sec-head" data-i18n="lb_sec2"><i></i><span>敌型</span><em>BESTIARY</em></div>
+        <div class="sec-head" data-i18n="lb_sec2" data-node-id="lbsec2"><i></i><span>敌型</span><em>BESTIARY</em></div>
         <div class="lbgrid" id="lbEnemies"></div>
-        <div class="sec-head" data-i18n="lb_sec3"><i></i><span>巨像名录</span><em>COLOSSI</em></div>
+        <div class="sec-head" data-i18n="lb_sec3" data-node-id="lbsec3"><i></i><span>巨像名录</span><em>COLOSSI</em></div>
         <div class="lbgrid lbgrid-boss" id="lbBosses"></div>
-        <div class="sec-head" data-i18n="lb_sec4"><i></i><span>词缀</span><em>AFFIX</em></div>
+        <div class="sec-head" data-i18n="lb_sec4" data-node-id="lbsec4"><i></i><span>词缀</span><em>AFFIX</em></div>
         <div class="lbgrid lbgrid-affix" id="lbAffix"></div>
       </section>
       <section class="setpane" data-pane="mode"><div class="cxlist" id="cxModes"></div></section>
@@ -1512,7 +1565,7 @@ html[data-rm] .overlay{animation:none}
 <div id="starmap" class="overlay" hidden>
   <div class="panel lb-panel">
     <h2>STAR MAP<span data-i18n="sm_sub">星图 —— 成就与永久解锁</span></h2>
-    <div class="sec-head" data-i18n="lb_sec6"><i></i><span>成就星图</span><em>ACHIEVEMENTS</em></div>
+    <div class="sec-head" data-i18n="lb_sec6" data-node-id="lbsec6"><i></i><span>成就星图</span><em>ACHIEVEMENTS</em></div>
     <div class="lb-tree" id="lbTree">
       <div class="lb-tree-hint" id="lbTreeHint" data-i18n="lb_tree_hint">拖拽浏览 · 滚轮 / 双指缩放</div>
       <div class="lb-zoom" data-page-node-id="4p3bZoomAchBar001">
@@ -1525,7 +1578,7 @@ html[data-rm] .overlay{animation:none}
         <div class="lb-tree-nodes" id="lbTreeNodes"></div>
       </div>
     </div>
-    <div class="sec-head" data-i18n="lb_sec7"><i></i><span>解锁星图</span><em>UNLOCKS</em></div>
+    <div class="sec-head" data-i18n="lb_sec7" data-node-id="lbsec7"><i></i><span>解锁星图</span><em>UNLOCKS</em></div>
     <div class="m-dust mono" id="mDust" data-node-id="__M_DUST__"></div>
     <div class="lb-tree meta" id="mTree" data-node-id="__M_TREE__">
       <div class="lb-tree-hint" id="mTreeHint" data-i18n="lb_tree_hint2">点击节点解锁 · 拖拽 / 双指缩放</div>
@@ -1784,7 +1837,9 @@ const I18N_EN={
  /* 7.7 三层菜单：主按钮 / 模式行 / 工具芯片 */
  m_daily:'Daily run',m_time:'Time attack',
  m_seed_u:'SEED',m_saves_u:'SAVES',m_log_u:'LOG',m_board_u:'BOARD',m_settings_u:'SETTINGS',
- m_codex_u:'CODEX',m_star_u:'STAR MAP',m_modes:'ⓘ What they are',
+ m_codex_u:'CODEX',m_star_u:'STAR MAP',m_music_u:'MUSIC',m_modes:'ⓘ What they are',
+ mu_sub:'Listening room — pick a track',mu_idle:'NOT PLAYING',mu_stop:'STOP',
+ mu_note:"Can't hear it? Turn BGM up in Settings ▸ Audio — tracks run through the same bus.",
  md_sub:'Three ways to fly — how they differ',
  cx_sub:'Codex — models & details',sm_sub:'Star map — achievements & permanent unlocks',
  cx_tab_hu:'Hulls',cx_tab_fo:'Foes',cx_tab_mo:'Modes',cx_tab_up:'Upgrades',cx_syn:'Synergy',
@@ -1934,10 +1989,13 @@ const HULL_LOCK_EN={
 };
 function applyI18n(){
   document.documentElement.lang=LANG==='en'?'en':'zh-CN';
+  /* 7.9：同一个 key 现在可能有好几处（「返回 ▸ ESC」在日志 / 图鉴 / 星图 / 模式介绍
+     各有一个），querySelector 只认第一个 —— 其余三个会永远停在中文。改遍历。 */
   for(const k in I18N_EN){
-    const elm=document.querySelector('[data-i18n="'+k+'"]');if(!elm)continue;
-    if(!elm.dataset.zhHtml)elm.dataset.zhHtml=elm.innerHTML;
-    elm.innerHTML=LANG==='en'?I18N_EN[k]:elm.dataset.zhHtml;
+    for(const elm of document.querySelectorAll('[data-i18n="'+k+'"]')){
+      if(!elm.dataset.zhHtml)elm.dataset.zhHtml=elm.innerHTML;
+      elm.innerHTML=LANG==='en'?I18N_EN[k]:elm.dataset.zhHtml;
+    }
   }
   /* title 属性文案（HUD 按钮等）：data-i18n-t 查 I18N_EN，中文原文缓存于 dataset */
   for(const e of document.querySelectorAll('[data-i18n-t]')){
@@ -2028,6 +2086,8 @@ const el={
   codex:$('codex'),starmap:$('starmap'),modes:$('modes'),
   cxTabs:$('cxTabs'),cxHulls:$('cxHulls'),cxModes:$('cxModes'),cxUps:$('cxUps'),cxSyn:$('cxSyn'),
   mdList:$('mdList'),
+  /* 7.10 音乐鉴赏 */
+  music:$('music'),muList:$('muList'),muNow:$('muNow'),muVis:$('muVis'),
   lbTree:$('lbTree'),lbTreeWrap:$('lbTreeWrap'),lbTreeLinks:$('lbTreeLinks'),lbTreeNodes:$('lbTreeNodes'),mTree:$('mTree'),mTreeWrap:$('mTreeWrap'),mTreeLinks:$('mTreeLinks'),mTreeNodes:$('mTreeNodes'),mDust:$('mDust'),
   vWave:$('vWave'),vLevel:$('vLevel'),vKills:$('vKills'),vTime:$('vTime'),vicChips:$('vicChips'),vicUnlock:$('vicUnlock'),
   overDust:$('overDust'),vicDust:$('vicDust'),
@@ -2808,6 +2868,7 @@ class BGMManager{
     this.flareGroup=null;  // 临时插入曲目（镀金质变）
     this.flareT=0;
     this.gen=0;            // 切换代际令牌：防止旧曲组异步回调覆盖新曲组
+    this.previewUrl=null;  // 7.10：鉴赏模式手动点播的曲目（非空时 tick 不许抢）
   }
   ctx(){const c=AU.ctx||null;if(c)return c;AU.ensure();return AU.ctx;}
   unlock(){const c=this.ctx();if(c&&c.state==='suspended')c.resume();}
@@ -2939,9 +3000,35 @@ class BGMManager{
       };
     });
   }
+  /* 7.10 鉴赏模式：玩家手动点播一首。与 switchTo 的两点不同 ——
+     ① 直接给 url 而不是曲组（曲组里可能有多首，鉴赏要能指定）；
+     ② 期间 tick() 一律不接管，否则玩家点一首战斗曲，下一帧就被"阶段"抢回菜单曲。 */
+  async preview(url){
+    this.unlock();
+    if(!url)return false;
+    this.previewUrl=url;
+    this.stopping=false;this.dimmed=false;
+    const gen=++this.gen;
+    this._stopCur(0.5);
+    const v=await this._start(url,gen,0);
+    if(gen!==this.gen)return false;
+    if(!v)return false;
+    v.src.loop=true;this.cur=v;
+    return true;
+  }
+  endPreview(){
+    if(!this.previewUrl)return;
+    this.previewUrl=null;
+    this.gen++;            // 作废还在路上的异步，别让它晚一步把声音放出来
+    this._stopCur(0.5);
+    this.group=null;       // 置空 → tick 下一帧自己按阶段接回去
+  }
   /* 依据游戏状态推导当前应播放的曲组 */
   _phase(){
-    if(!P||G.mode==='menu'||G.mode==='hulls'||G.mode==='logbook'||G.mode==='saves')return 'menu';
+    /* 7.9：图鉴 / 星图 / 模式介绍都是"停在菜单里看东西"，不是战斗 ——
+       漏掉它们会让翻图鉴时 BGM 切到战斗曲（_phase 会一路落到 combat）。 */
+    if(!P||G.mode==='menu'||G.mode==='hulls'||G.mode==='logbook'||G.mode==='saves'
+       ||G.mode==='codex'||G.mode==='starmap'||G.mode==='modes')return 'menu';
     if(G.mode==='dying'||G.mode==='over'||G.mode==='victory')return 'end';
     if(Wv.boss)return 'boss';
     if(G.endless)return 'endless';
@@ -4988,7 +5075,7 @@ window.addEventListener('keydown',e=>{
   if(G.mode==='menu'&&(e.code==='Enter'||isAct('fire',e.code))){openHulls();return;}
   if(G.mode==='menu'&&e.code==='KeyC'){resumeRun();return;}
   if(G.mode==='menu'&&e.code==='KeyL'){openLogbook();return;}
-  if((G.mode==='logbook'||G.mode==='saves'||G.mode==='codex'||G.mode==='starmap'||G.mode==='modes')&&e.code==='Escape'){toMenu();return;}
+  if((G.mode==='logbook'||G.mode==='saves'||G.mode==='codex'||G.mode==='starmap'||G.mode==='modes'||G.mode==='music')&&e.code==='Escape'){toMenu();return;}
   if(G.mode==='hulls'&&/^Digit[1-7]$/.test(e.code)){pickHull(+e.code.slice(5)-1);return;}
   if(G.mode==='hulls'&&e.code==='Escape'){closeHulls();return;}   /* 7.4b */
   if(G.mode==='victory'&&(isAct('endless',e.code)||e.code==='Enter')){continueEndless();return;}
@@ -8502,8 +8589,11 @@ function toMenu(){
   if(el.codex)el.codex.hidden=true;
   if(el.starmap)el.starmap.hidden=true;
   if(el.modes)el.modes.hidden=true;
+  if(el.music)el.music.hidden=true;
+  if(typeof muStop==='function')muStop();   // 7.10：鉴赏点播不能跟着人回菜单继续放
   el.joybase.hidden=true;el.firebtn.hidden=true;
   el.menuBest.textContent=G.best>0?('BEST · '+fmt(G.best)):'';
+  singKick();   // 7.10：回标题即重开主界面的环境层
   renderDaily();
   el.menu.hidden=false;
   refreshMenuMeta();
@@ -9044,8 +9134,10 @@ if(el.mTreeNodes)el.mTreeNodes.addEventListener('click',e=>{
 const treePtrs=new Map();
 (function(){
   let dragW=null,sx=0,sy=0,ox=0,oy=0,pinch=null;
+  /* 7.9：两张树搬进了「星图」面板 —— 拖拽 / 缩放的 mode 守卫必须把 starmap 算进来，
+     否则在星图里滚轮与双指全都不响应（表现为"图能看不能动"）。 */
   document.addEventListener('pointerdown',e=>{
-    if(G.mode!=='logbook')return;
+    if(G.mode!=='logbook'&&G.mode!=='starmap')return;
     const w=e.target.closest('.lb-tree-wrap');
     if(!w)return;
     if(e.target.closest('.lbnode')||e.target.closest('.lb-zoom'))return;
@@ -9061,7 +9153,7 @@ const treePtrs=new Map();
     w.classList.add('drag');
   });
   document.addEventListener('pointermove',e=>{
-    if(G.mode!=='logbook')return;
+    if(G.mode!=='logbook'&&G.mode!=='starmap')return;
     if(treePtrs.has(e.pointerId))treePtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pinch&&treePtrs.size>=2){
       const [a,b]=[...treePtrs.values()];
@@ -9083,7 +9175,7 @@ const treePtrs=new Map();
   for(const box of [el.lbTree,el.mTree]){
     if(!box)continue;
     box.addEventListener('wheel',e=>{
-      if(G.mode!=='logbook')return;
+      if(G.mode!=='logbook'&&G.mode!=='starmap')return;
       const w=box.querySelector('.lb-tree-wrap');if(!w)return;
       e.preventDefault(); // 图框内滚轮 = 缩放；页面滚动请用图框外的区域
       zoomAt(w,tfOf(w).s*(e.deltaY<0?ZOOM_STEP:1/ZOOM_STEP),e.clientX,e.clientY);
@@ -9102,7 +9194,7 @@ const treePtrs=new Map();
    但 DOM 还停在旧坐标上，表现为"连线与节点错位"。 */
 let treeRzT=0;
 addEventListener('resize',()=>{
-  if(G.mode!=='logbook')return;
+  if(G.mode!=='logbook'&&G.mode!=='starmap')return;
   clearTimeout(treeRzT);
   treeRzT=setTimeout(()=>{drawAch(loadStats());drawMeta();fitAch();fitMeta();},160);
 });
@@ -9165,6 +9257,163 @@ function drawLogbook(){
   drawMeta(); // 局外解锁树
   resetAchPan(); // 重新量视窗并套用自动适配缩放（面板此刻已可见）
 }
+
+/* ===================== 7.10 奇点视界（加载页 + 主界面） =====================
+   两块画布画的是同一颗正在吸积的奇点，只有强度不同：
+   · 加载页 —— 进度越高，尘埃内落越快、光子环越亮。"条在动"之外再多一处证据；
+   · 主界面 —— 放慢压暗，作为标题背后的环境层。
+   互动只做两件，都**不新增任何按钮或文案**：
+     ① 指针牵引：视界中心朝指针方向偏移（幅度封顶 ±6% 画布，且是缓动不是硬跟 ——
+        鼠标乱晃不该把奇点甩得到处飞）；
+     ② 点击 / 触摸：从落点放一圈冲击波环。
+   三条硬约束：prefers-reduced-motion 下只画一帧静态；画质档低时减少粒子；
+   面板不可见就停 rAF —— 别在后台白烧电。 */
+const SING_C=(()=>{
+  const s=getComputedStyle(document.documentElement),g=(k,d)=>(s.getPropertyValue(k)||d).trim();
+  return {cyan:g('--c-cyan-rgb','124 178 221'),amber:g('--c-amber-rgb','201 162 39'),
+          ink:g('--c-ink-rgb','228 233 240'),steel:g('--c-steel-rgb','154 167 182')};
+})();
+const SING_RED=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+const SING={
+  st:{},            // id -> {c,g,w,h}
+  tx:.5,ty:.5,cx:.5,cy:.5,   // 指针目标 / 当前（归一化）
+  t:0,last:0,raf:0,waves:[],
+};
+function singSt(id){
+  const c=document.getElementById(id);if(!c)return null;
+  return SING.st[id]||(SING.st[id]={c,g:c.getContext('2d'),w:0,h:0});
+}
+function singSize(st){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.max(1,Math.round(st.c.clientWidth*dpr)),h=Math.max(1,Math.round(st.c.clientHeight*dpr));
+  if(st.w!==w||st.h!==h){st.c.width=w;st.c.height=h;st.w=w;st.h=h;}
+  return dpr;
+}
+/* 一颗奇点：吸积盘（多层虚线椭圆，内快外慢 = 开普勒剪切）+ 光子环 + 视界黑盘
+   + 内落尘埃 + 冲击波。全部用钢蓝，只有一圈黄铜 —— 与全场的配色规矩一致。 */
+function singPaint(st,t,o){
+  const dpr=singSize(st)||1;
+  const g=st.g,w=st.w,H=st.h;
+  if(!w||!H)return;
+  const A=o.alpha==null?1:o.alpha;
+  const cy=(SING_C.cyan||'124 178 221').replace(/\s+/g,',');
+  const am=(SING_C.amber||'201 162 39').replace(/\s+/g,',');
+  const ink=(SING_C.ink||'228 233 240').replace(/\s+/g,',');
+  g.setTransform(1,0,0,1,0,0);
+  g.clearRect(0,0,w,H);
+  const R=(o.R||140)*dpr;
+  /* 指针牵引：只让中心偏移 ±6%，且缓动 —— 见上面 ① */
+  const ox=(SING.cx-.5)*w*.12, oy=(SING.cy-.5)*H*.12;
+  const cx=w*o.cx+ox, cyy=H*o.cy+oy;
+  const spin=t*(o.spin||.14), prog=o.prog==null?.5:o.prog;
+  g.save();
+  g.translate(cx,cyy);
+  // ① 吸积盘：7 圈虚线椭圆
+  for(let i=0;i<7;i++){
+    const a=A*(0.15-i*0.016);if(a<=0.008)continue;
+    const rr=R*(1.22+i*0.40);
+    g.save();
+    g.rotate(spin*(1.7-i*0.17)+(i%2?-1:1)*spin*0.28);
+    g.beginPath();
+    g.ellipse(0,0,rr,rr*(o.flat||.32),0,0,Math.PI*2);
+    g.setLineDash([rr*0.42,rr*(0.24+i*0.07)]);
+    g.lineWidth=Math.max(1,dpr);
+    g.strokeStyle='rgba('+(i===1?am:cy)+','+a.toFixed(3)+')';
+    g.stroke();
+    g.restore();
+  }
+  // ② 内落尘埃：绕着中心螺旋向内，进度越高越快
+  const ND=o.dust==null?46:o.dust;
+  for(let i=0;i<ND;i++){
+    const p=(i/ND), ph=t*(0.22+prog*0.5)+p*7.13;
+    const rr=R*(3.4-((ph*0.55)%(3.0)));
+    if(rr<=R*0.9)continue;
+    const ang=p*6.283*3+ph*1.5;
+    const x=Math.cos(ang)*rr, y=Math.sin(ang)*rr*(o.flat||.32);
+    const a=A*(0.30-Math.min(.26,rr/(R*6)));
+    if(a<=0.01)continue;
+    g.fillStyle='rgba('+ink+','+a.toFixed(3)+')';
+    const s=Math.max(1,dpr*(0.7+0.8*(1-rr/(R*3.6))));
+    g.fillRect(x-s/2,y-s/2,s,s);
+  }
+  // ③ 视界：黑盘 + 光子环（黄铜一圈，最亮）
+  const grd=g.createRadialGradient(0,0,R*0.55,0,0,R*1.16);
+  grd.addColorStop(0,'rgba(7,11,18,'+(0.92*A).toFixed(3)+')');
+  grd.addColorStop(0.72,'rgba(7,11,18,'+(0.55*A).toFixed(3)+')');
+  grd.addColorStop(1,'rgba(7,11,18,0)');
+  g.fillStyle=grd;g.beginPath();g.arc(0,0,R*1.16,0,Math.PI*2);g.fill();
+  g.beginPath();g.arc(0,0,R,0,Math.PI*2);
+  g.lineWidth=Math.max(1,dpr*1.4);
+  g.strokeStyle='rgba('+cy+','+(0.5*A*(0.6+prog*0.6)).toFixed(3)+')';
+  g.stroke();
+  g.beginPath();g.arc(0,0,R*1.05,0,Math.PI*2);
+  g.lineWidth=Math.max(1,dpr);
+  g.strokeStyle='rgba('+am+','+(0.30*A*(0.5+prog*0.8)).toFixed(3)+')';
+  g.stroke();
+  // ④ 测绘十字：钢蓝细线 + 四角括号（呼应「星图测绘」的语言）
+  const tk=R*2.6;
+  g.strokeStyle='rgba('+cy+','+(0.10*A).toFixed(3)+')';
+  g.lineWidth=Math.max(1,dpr*0.8);
+  g.beginPath();g.moveTo(-tk,0);g.lineTo(tk,0);g.moveTo(0,-tk*(o.flat||.32));g.lineTo(0,tk*(o.flat||.32));g.stroke();
+  g.strokeStyle='rgba('+cy+','+(0.22*A).toFixed(3)+')';
+  const br=R*1.9,bl=R*0.34;
+  g.beginPath();
+  g.moveTo(-br,-br*(o.flat||.32)+bl);g.lineTo(-br,-br*(o.flat||.32));g.lineTo(-br+bl,-br*(o.flat||.32));
+  g.moveTo(br-bl,-br*(o.flat||.32));g.lineTo(br,-br*(o.flat||.32));g.lineTo(br,-br*(o.flat||.32)+bl);
+  g.moveTo(br-bl,br*(o.flat||.32));g.lineTo(br,br*(o.flat||.32));g.lineTo(br,br*(o.flat||.32)-bl);
+  g.moveTo(-br+bl,br*(o.flat||.32));g.lineTo(-br,br*(o.flat||.32));g.lineTo(-br,br*(o.flat||.32)-bl);
+  g.stroke();
+  // ⑤ 冲击波（点击 / 触摸放出的环）
+  for(const wv of SING.waves){
+    const k=(t-wv.t)/1.1;if(k<0||k>1)continue;
+    const rr=R*(0.8+k*4.2),a=(1-k)*0.45*A;
+    g.beginPath();g.arc(wv.x-cx,wv.y-cyy,rr,0,Math.PI*2);
+    g.lineWidth=Math.max(1,dpr*1.2);
+    g.strokeStyle='rgba('+(wv.hot?am:cy)+','+a.toFixed(3)+')';
+    g.stroke();
+  }
+  g.restore();
+}
+function singWave(x,y,hot){
+  SING.waves.push({x,y,t:SING.t,hot:!!hot});
+  if(SING.waves.length>6)SING.waves.shift();
+}
+function singLoop(ts){
+  SING.raf=requestAnimationFrame(singLoop);
+  const dt=Math.min(0.05,(ts-(SING.last||ts))/1000);
+  SING.last=ts;SING.t+=dt;
+  // 中心缓动追指针
+  SING.cx+=(SING.tx-SING.cx)*Math.min(1,dt*3.2);
+  SING.cy+=(SING.ty-SING.cy)*Math.min(1,dt*3.2);
+  // 过期的冲击波清掉，数组不无限长
+  if(SING.waves.length)SING.waves=SING.waves.filter(w=>SING.t-w.t<1.2);
+  const boot=singSt('bootcv'),menu=singSt('menucv');
+  const bootOn=boot&&boot.c.offsetParent!==null&&!document.getElementById('boot').classList.contains('out');
+  const menuOn=menu&&menu.c.offsetParent!==null;
+  if(bootOn)singPaint(boot,SING.t,{cx:.5,cy:.5,R:Math.min(boot.w,boot.h)*0.10,
+    spin:.30,alpha:1,prog:bootVal,dust:56});
+  if(menuOn)singPaint(menu,SING.t,{cx:.5,cy:.40,R:Math.min(menu.w,menu.h)*0.13,
+    spin:.10,alpha:.62,prog:.5,dust:34,flat:.28});
+  if(!bootOn&&!menuOn&&SING.raf){cancelAnimationFrame(SING.raf);SING.raf=0;SING.last=0;}
+}
+function singKick(){
+  if(SING_RED)return;                       // 减弱动态：不跑动画，只画一帧
+  if(!SING.raf){SING.last=0;SING.raf=requestAnimationFrame(singLoop);}
+}
+/* 指针 / 触摸：牵引 + 冲击波。挂在 window 上（画布 pointer-events:none，收不到事件），
+   坐标换算回归一化 —— 两块画布尺寸不同，只有归一化值才能共用。 */
+window.addEventListener('pointermove',e=>{
+  SING.tx=e.clientX/ Math.max(1,window.innerWidth);
+  SING.ty=e.clientY/ Math.max(1,window.innerHeight);
+},{passive:true});
+window.addEventListener('pointerdown',e=>{
+  // 只认落在加载页 / 主界面上的点击 —— 别的面板上点一下不该在背景里放环
+  const b=document.getElementById('boot'),m=document.getElementById('menu');
+  const onBoot=b&&!b.hidden&&!b.classList.contains('out');
+  const onMenu=m&&!m.hidden;
+  if(!onBoot&&!onMenu)return;
+  singWave(e.clientX,e.clientY,onBoot);
+},{passive:true});
 
 /* ===================== 7.9 模式介绍 / 图鉴 =====================
    三种出击方式此前在界面上完全没被解释过 —— 玩家只能靠名字猜。
@@ -9255,6 +9504,119 @@ function drawUpCodex(){
       </div></div>`;
   }).join('');
 }
+/* ===================== 7.10 音乐鉴赏 =====================
+   曲目名直接从文件名解出来（「凝醒___Cryo_Wake」→ 凝醒 / Cryo Wake）——
+   九首曲子的中英文名**本来就在文件名里**，再维护一张表反而会和文件对不上。 */
+function bgmName(url){
+  const f=String(url).split('/').pop().replace(/\.mp3$/i,'');
+  const m=f.match(/「(.+?)___(.+?)」/);
+  if(m)return {zh:m[1],en:m[2].replace(/_/g,' ')};
+  return {zh:f,en:f};
+}
+const BGM_SCENE={menu:['菜单','MENU'],cruise:['巡航','CRUISE'],combat:['战斗','COMBAT'],
+  boss:['巨像','COLOSSUS'],evolve:['质变','EVOLVE'],endless:['无尽','ENDLESS'],end:['结算','RESULT']};
+let muRaf=0,muCur=null;
+function muAnalyser(){
+  const c=BGM.ctx();if(!c)return null;
+  if(!BGM._an){
+    try{
+      BGM._an=c.createAnalyser();
+      BGM._an.fftSize=128;BGM._an.smoothingTimeConstant=.78;
+      /* AU.bgm 是 BGM 总线（gain → destination）。再接一路到 analyser 是**分接**，
+         不改变原有链路 —— 频谱只听不发声。 */
+      (AU.bgm||c.destination).connect(BGM._an);
+    }catch(e){BGM._an=null;}
+  }
+  return BGM._an;
+}
+function muNow(txt,cls){
+  if(!el.muNow)return;
+  el.muNow.textContent=txt;
+  el.muNow.className='mu-now mono'+(cls?(' '+cls):'');
+}
+function muList(){
+  const rows=[];
+  for(const id in BGM.groups)
+    for(const u of BGM.groups[id].urls)rows.push({id,u,n:bgmName(u)});
+  return rows;
+}
+function drawMusicList(){
+  if(!el.muList)return;
+  el.muList.innerHTML=muList().map(r=>{
+    const sc=BGM_SCENE[r.id]||[r.id,r.id];
+    const on=muCur===r.u;
+    return `<button type="button" class="mu-item${on?' on':''}" data-mu="${r.u}">
+      <span class="mu-sc">${T(sc[0],sc[1])}</span>
+      <span class="mu-n">${T(r.n.zh,r.n.en)}</span>
+      <span class="mu-e">${r.n.en.toUpperCase()}</span>
+      <span class="mu-st" data-st="${r.u}">${on?T('播放中','PLAYING'):''}</span>
+    </button>`;
+  }).join('');
+}
+async function muPlay(url){
+  muCur=url;
+  drawMusicList();
+  muNow(T('缓冲中 · 首次播放需要下载整首','BUFFERING — first play downloads the whole track'),'buff');
+  const ok=await BGM.preview(url);
+  if(muCur!==url)return;                 // 期间又点了别首
+  if(ok){
+    const n=bgmName(url);
+    muNow(T('正在播放 · ','NOW PLAYING · ')+T(n.zh,n.en));
+  }else{
+    muCur=null;drawMusicList();
+    muNow(T('下载失败 —— 检查网络后重试','Download failed — check your connection'),'err');
+  }
+  const st=el.muList&&el.muList.querySelector('[data-st="'+url+'"]');
+  if(st)st.textContent=ok?T('播放中','PLAYING'):'';
+}
+function muStop(){
+  muCur=null;
+  BGM.endPreview();
+  drawMusicList();
+  muNow(T('未在播放','NOT PLAYING'));
+}
+/* 频谱：BGM 总线上分接一个 AnalyserNode，画 32 根柱状条。
+   ⚠️ 只在面板可见时跑 rAF —— 关掉就停，别在后台白烧 CPU。 */
+function muTick(){
+  muRaf=requestAnimationFrame(muTick);
+  const cv=el.muVis;if(!cv||!cv.offsetParent)return;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.round(cv.clientWidth*dpr),h=Math.round(cv.clientHeight*dpr);
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  const g=cv.getContext('2d');
+  g.clearRect(0,0,w,h);
+  const an=muAnalyser();
+  const cy=(SING_C.cyan||'124,178,221').replace(/[\s]+/g,',');
+  const am=(SING_C.amber||'201,162,39').replace(/[\s]+/g,',');
+  if(!an){ // 没音频上下文（还没交互解锁）：画一条静默基线，别留一块空白
+    g.strokeStyle='rgba('+cy+',.22)';g.lineWidth=Math.max(1,dpr);
+    g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();return;
+  }
+  const n=32,buf=new Uint8Array(an.frequencyBinCount);
+  an.getByteFrequencyData(buf);
+  const bw=w/n;
+  for(let i=0;i<n;i++){
+    const v=buf[Math.floor(i*buf.length/n)]/255;
+    const bh=Math.max(dpr,v*h*0.94);
+    g.fillStyle='rgba('+(v>0.62?am:cy)+','+(0.30+v*0.6).toFixed(3)+')';
+    g.fillRect(i*bw+0.5,h-bh,bw-Math.max(1,dpr),bh);
+  }
+}
+function openMusic(){
+  G.mode='music';
+  el.menu.hidden=true;
+  el.music.hidden=false;
+  AU.ensure();BGM.unlock();
+  drawMusicList();
+  if(!muCur)muNow(T('未在播放','NOT PLAYING'));
+  if(!muRaf)muRaf=requestAnimationFrame(muTick);
+}
+function closeMusic(){
+  if(el.music)el.music.hidden=true;
+  if(muRaf){cancelAnimationFrame(muRaf);muRaf=0;}
+  if(muCur){muCur=null;BGM.endPreview();}
+  toMenu();
+}
 $('btnLaunch').addEventListener('click',openHulls);
 $('btnRetry').addEventListener('click',()=>startGame());
 $('btnMenu').addEventListener('click',toMenu);
@@ -9303,6 +9665,17 @@ $('btnStarmap').addEventListener('click',openStarmap);
 $('btnSmBack').addEventListener('click',toMenu);
 $('btnModes').addEventListener('click',openModes);
 $('btnMdBack').addEventListener('click',toMenu);
+/* 7.10 音乐鉴赏 */
+$('btnMusic').addEventListener('click',openMusic);
+$('btnMuBack').addEventListener('click',closeMusic);
+$('btnMuStop').addEventListener('click',()=>{muStop();sfx.ui();});
+el.muList.addEventListener('click',e=>{
+  const b=e.target&&e.target.closest?e.target.closest('[data-mu]'):null;
+  if(!b)return;
+  sfx.ui();
+  if(muCur===b.dataset.mu)muStop();     // 再点一次 = 停止
+  else muPlay(b.dataset.mu);
+});
 /* 图鉴子页切换：与设置面板同一套 .settab / .setpane 机制 */
 el.cxTabs.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('.settab'):null;
@@ -11053,6 +11426,7 @@ function bootRace(p){
 let bootMs=0;   // 7.8 探针：启动总耗时（ms）—— 曲库加载不许再算在里面
 async function boot(){
   const bootT0=performance.now();
+  singKick();   // 7.10：加载页的奇点视界（进度越高内落越快）
   bootSet(0.06,T('初始化','INITIALIZING'));
   bootRaf=requestAnimationFrame(bootTick);
   await bootPaint();
@@ -11086,6 +11460,7 @@ async function boot(){
   // 读条淡出 → 主循环启动
   bootEl.classList.add('out');
   setTimeout(()=>{bootEl.hidden=true;},520);
+  singKick();   // 7.10：交接到主界面的环境层（循环自己判断该画哪块）
   requestAnimationFrame(frame);
 }
 boot();
@@ -11112,6 +11487,29 @@ window.NOVA={
     warm:(...ids)=>{BGM.warm(ids);return 1;},
     switchTo:id=>{BGM.switchTo(id);return BGM.group;},
     urls:id=>BGM.groups[id]?BGM.groups[id].urls.slice():null,
+  },
+  /* 7.10 奇点视界（加载页 / 主界面画布）+ 音乐鉴赏 —— 探针用 */
+  sing:{
+    kick:()=>{singKick();return 1;},
+    state:()=>({t:+SING.t.toFixed(2),cx:+SING.cx.toFixed(3),cy:+SING.cy.toFixed(3),
+      waves:SING.waves.length,red:SING_RED,raf:!!SING.raf}),
+    /* 数「有多少个像素不是全透明」—— 断言画布真的画了东西，不只是挂了个元素 */
+    px:id=>{
+      const c=document.getElementById(id);
+      if(!c||!c.width||!c.height)return -1;
+      const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+      let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>6)n++;
+      return n;
+    },
+    wave:(x,y,hot)=>{singWave(x,y,hot);return SING.waves.length;},
+  },
+  music:{
+    list:()=>muList().map(r=>({id:r.id,u:r.u,zh:r.n.zh,en:r.n.en})),
+    cur:()=>muCur,
+    preview:()=>BGM.previewUrl,
+    now:()=>el.muNow?el.muNow.textContent.trim():'',
+    stop:()=>{muStop();return 1;},
+    open:()=>{openMusic();return G.mode;},
   },
   giveXp:n=>{if(P)gainXp(n);},
   launch:i=>startGame(HULLS[i||0]),

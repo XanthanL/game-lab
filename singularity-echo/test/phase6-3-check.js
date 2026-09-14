@@ -239,7 +239,7 @@ try{
 /* 16 机库 UI：5 个按钮 · 点选高亮 · 倍率文案实时更新 */
 try{
   const p=await fresh(b);
-  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick([]);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick([]);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#rmodRow button[data-rmod]');
   const n=await p.$$eval('#rmodRow button[data-rmod]',es=>es.length);
   const t0=await p.$eval('#rmodRow .rmodbump',e=>e.textContent);
@@ -258,7 +258,7 @@ try{
 /* 17 中英 */
 try{
   const p=await fresh(b);
-  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick(['swarm']);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick(['swarm']);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#rmodRow button[data-rmod]');
   const zh=await p.$eval('#rmodRow button[data-rmod=brittle]',e=>e.textContent);
   const zhl=await p.$eval('#rmodRow .rmodbump',e=>e.textContent);
@@ -291,7 +291,7 @@ try{
 /* 19 竖屏：挑战条不溢出 */
 try{
   const p=await fresh(b,null,'menu',{width:390,height:844});
-  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick(['swarm','gale','brittle']);openHulls();return 1;})()`);
+  await ev(p,`(()=>{NOVA.rmod.setWave(15);NOVA.rmod.pick(['swarm','gale','brittle']);openHulls();setCfg(true);return 1;})()`);
   await p.waitForSelector('#rmodRow button[data-rmod]');
   const r=await ev(p,`(()=>{var row=document.getElementById('rmodRow');
     var b=row.getBoundingClientRect();var w=document.documentElement.clientWidth;

@@ -5,10 +5,12 @@
    ----------------------------------------------------------------------------
    绘制顺序（层叠是刻意排的，别随手换）：
      清屏 → 星空(过透镜) → 测绘网格 → 回响 → 奇点底层
-     → 敌机 → 敌弹 → 我方弹 → 玩家(+尾流) → 粒子
-     → 奇点面层(吸积盘/视界/光子环) → 摇杆
+     → 敌机 → 敌弹 → 我方弹 → 玩家(+尾流) → 拾取物 → 粒子
+     → 奇点面层(吸积盘/视界/光子环) → 飘字 → 波次横幅 → 摇杆
    奇点面层盖在实体之上，是因为视界必须"挡住"后面的东西 —— 玩家被吞进去时
    要看到自己的船被黑暗吃掉，这是「奇点」最直观的一帧。
+   拾取物画在玩家之上：它是"去拿"的目标，被船体挡住就失去了引导作用。
+   飘字画在奇点之上：拾到什么是瞬时信息，不能让视界吃掉。
    ========================================================================== */
 
 const U = require('./util.js');
@@ -16,6 +18,7 @@ const T = require('./tokens.js');
 const ARENA = require('./arena.js');
 const E = require('./entities.js');
 const RG = require('./regions.js');
+const PK = require('./pickups.js');
 const Input = require('./input.js');
 const clamp = U.clamp, TAU = U.TAU;
 const AW = ARENA.ARENA_W, AH = ARENA.ARENA_H;
@@ -86,7 +89,7 @@ function drawPlayer(c, p, sing) {
   }
   c.restore();
 
-  /* 护盾环 */
+  /* 护盾环（常驻护盾 —— 状态，不是 buff，所以画得低调） */
   if (p.shield > 0) {
     c.save();
     c.strokeStyle = T.rgba('shieldB', 0.22 + 0.3 * (p.shield / Math.max(1, p.shieldMax)));
@@ -94,6 +97,54 @@ function drawPlayer(c, p, sing) {
     c.beginPath(); c.arc(p.x, p.y, p.r + 6, 0, TAU); c.stroke();
     c.restore();
   }
+
+  /* 相位屏障（拾取来的临时屏障）—— 比常驻护盾更亮更粗、半径更大，
+     一眼分得清"这层是刚捡的、会自己消退"。 */
+  if (p.shieldTmp > 0) {
+    c.save();
+    const k = clamp(p.shieldTmp / Math.max(1, p.shieldTmpMax), 0, 1);
+    c.strokeStyle = T.rgba('shieldB', 0.35 + 0.45 * k);
+    c.lineWidth = 2.2;
+    c.beginPath(); c.arc(p.x, p.y, p.r + 9, 0, TAU); c.stroke();
+    /* 内圈一道更淡的，做出"厚度" */
+    c.strokeStyle = T.rgba('shieldB', 0.14 + 0.2 * k);
+    c.lineWidth = 1;
+    c.beginPath(); c.arc(p.x, p.y, p.r + 6.5, 0, TAU); c.stroke();
+    c.restore();
+  }
+
+  /* 无敌力场：金色双环。用**双环 + 脉动**而不是实心光晕 ——
+     实心会盖住船体，玩家看不见自己在哪，这在弹幕里是要命的。 */
+  if (p.invuln > 0) {
+    c.save();
+    const a = 0.5 + 0.5 * Math.sin(p.invuln * 9);
+    c.strokeStyle = T.rgba('amberHi', 0.45 + 0.35 * a);
+    c.lineWidth = 1.8;
+    c.beginPath(); c.arc(p.x, p.y, p.r + 13, 0, TAU); c.stroke();
+    c.strokeStyle = T.rgba('amberHi', 0.22 + 0.22 * a);
+    c.lineWidth = 1;
+    c.beginPath(); c.arc(p.x, p.y, p.r + 17.5, 0, TAU); c.stroke();
+    c.restore();
+  }
+}
+
+/* ── 飘字（拾到什么 / 屏障破了）───────────────────────────────────────── */
+function drawToasts(c, toasts) {
+  if (!toasts || !toasts.length) return;
+  c.save();
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.font = T.font('small', 'bold');
+  for (let i = 0; i < toasts.length; i++) {
+    const t = toasts[i];
+    const k = t.t / t.max;
+    /* 0→0.15 淡入，0.55→1 淡出，中间实打实 */
+    const a = k < 0.15 ? (k / 0.15) : (1 - Math.max(0, (k - 0.55) / 0.45));
+    c.globalAlpha = clamp(a, 0, 1);
+    c.fillStyle = T.rgba(t.col, 1);
+    c.fillText(t.text, t.x, t.y);
+  }
+  c.restore();
 }
 
 /* ── 粒子 ─────────────────────────────────────────────────────────────── */
@@ -161,14 +212,18 @@ function drawWorld(c, cb, stars) {
     drawPlayer(c, p, cb.sing);
   }
 
+  /* 拾取物画在玩家之上 —— 它是"去拿"的目标，被船体挡住就没有引导作用了 */
+  cb.pk.draw(c, cb.time);
+
   drawFX(c, cb.fx);
 
   /* 奇点面层盖在实体之上 —— 视界要能吃掉玩家和敌机 */
   cb.sing.drawFront(c);
 
+  drawToasts(c, cb.toasts);
   drawBanner(c, cb.banner);
   Input.drawStick(c);
 }
 
-module.exports = { drawWorld: drawWorld, drawPlayer: drawPlayer, drawBanner: drawBanner };
+module.exports = { drawWorld: drawWorld, drawPlayer: drawPlayer, drawBanner: drawBanner, drawToasts: drawToasts };
 })();

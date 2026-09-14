@@ -15,8 +15,20 @@ const E = require('./entities.js');
 const ARENA = require('./arena.js');
 const SG = require('./singularity.js');
 const RG = require('./regions.js');
+const PK = require('./pickups.js');
+const CD = require('./cards.js');   // 卡池已独立成模块，不再借道 ui.js
 const clamp = U.clamp, TAU = U.TAU;
 const AW = ARENA.ARENA_W, AH = ARENA.ARENA_H;
+
+/* ── 拾取 buff 数值（与网页版一致，方便对照平衡） ─────────────────────── */
+const BUFF = {
+  BOOST_ACC: 1.5,      // 推进超频：加速度 ×1.5
+  BOOST_SPD: 1.5,      // 推进超频：极速 ×1.5
+  RATE_MUL: 1.6,       // 火力超频：射速 ×1.6
+  SHIELD_AMT: 40,      // 相位屏障：40 点
+  SHIELD_DECAY: 7,     // 相位屏障：每秒自减 7（≈5.7s 自然消退）
+  HEAL_PCT: 0.30,      // 应急修复：+30% 最大船体
+};
 
 /* ── 波次编排 ─────────────────────────────────────────────────────────── */
 const BOSS_EVERY = 5;
@@ -102,6 +114,12 @@ function Combat(seed, hullId) {
 
   this.pendingEchoSave = null;
 
+  /* 拾取物（地图上刷新的 buff）—— 效果见 applyPickup */
+  this.pk = new PK.PickupField();
+  this._onPick = this.applyPickup.bind(this);   // 预绑定，别每帧建闭包
+  /* 飘字：拾取 / 破盾这类"发生了一次"的瞬时反馈。banner 太重，这里走轻量队列。 */
+  this.toasts = [];
+
   /* 尾流：扁平数组 [x,y,x,y...]，最新在尾部 */
   this.trail = [];
   this.trailN = 26;
@@ -155,14 +173,31 @@ Combat.prototype.updatePlayer = function (dt, input) {
   const p = this.p;
   if (!p.alive) return;
 
+  /* ── buff 计时器递减 ────────────────────────────────────────────────
+     ⚠️ 用**真实 dt**，不吃奇点的时间膨胀：站进引力井里 buff 反而烧得慢，
+        等于奖励玩家去危险区，这个反馈方向是错的。 */
+  if (p.boostT > 0) p.boostT = Math.max(0, p.boostT - dt);
+  if (p.rateT > 0) p.rateT = Math.max(0, p.rateT - dt);
+  if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
+  if (p.shieldTmp > 0) {
+    p.shieldTmp = Math.max(0, p.shieldTmp - BUFF.SHIELD_DECAY * dt);
+    if (p.shieldTmp <= 0) p.shieldTmpMax = 0;
+  }
+
   /* 奇点场：加速度 + 时间膨胀 + 灼烧 */
   const f = this.sing.fieldAt(p.x, p.y);
   const ldt = dt * f.dilate;
 
+  /* 推进超频：加速度与极速**同时**放大。只放一个的话手感很怪 ——
+     只放极速会"起步肉、后段飞"，只放加速会"起步猛、撞墙"。 */
+  const boosting = p.boostT > 0;
+  const acc = p.accel * (boosting ? BUFF.BOOST_ACC : 1);
+  const cap = p.maxSpeed * (boosting ? BUFF.BOOST_SPD : 1);
+
   /* 输入 → 加速度 */
   const s = input && input.stick ? input.stick : null;
   let ax = 0, ay = 0;
-  if (s && s.active) { ax = s.dx * p.accel; ay = s.dy * p.accel; }
+  if (s && s.active) { ax = s.dx * acc; ay = s.dy * acc; }
   ax += f.ax; ay += f.ay;
 
   p.vx += ax * ldt;
@@ -173,7 +208,7 @@ Combat.prototype.updatePlayer = function (dt, input) {
   p.vx *= k; p.vy *= k;
 
   const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-  if (sp > p.maxSpeed) { p.vx = p.vx / sp * p.maxSpeed; p.vy = p.vy / sp * p.maxSpeed; }
+  if (sp > cap) { p.vx = p.vx / sp * cap; p.vy = p.vy / sp * cap; }
 
   p.x += p.vx * ldt;
   p.y += p.vy * ldt;
@@ -199,10 +234,11 @@ Combat.prototype.updatePlayer = function (dt, input) {
   this.trail.push(p.x, p.y);
   if (this.trail.length > this.trailN * 2) this.trail.splice(0, 2);
 
-  /* 自动开火 */
+  /* 自动开火（火力超频：射速 ×1.6） */
+  const rate = p.fireRate * (p.rateT > 0 ? BUFF.RATE_MUL : 1);
   p.cd -= dt;
   if (p.cd <= 0) {
-    p.cd += 1 / p.fireRate;
+    p.cd += 1 / rate;
     if (p.cd < 0) p.cd = 0;
     this.fire();
   }
@@ -229,8 +265,22 @@ Combat.prototype.fire = function () {
 
 Combat.prototype.hurtPlayer = function (dmg, silent) {
   const p = this.p;
-  if (!p.alive || p.inv > 0) return;
+  if (!p.alive) return;
+  /* 无敌力场（拾取 buff）→ 完全免疫。连闪白都不给 —— 玩家要能明确感到
+     「这一下根本没碰到我」，而不是「碰到但我没掉血」。 */
+  if (p.invuln > 0) return;
+  if (p.inv > 0) return;                 // 受击后的短无敌帧
   let d = dmg;
+  /* 相位屏障是最外层：先于常驻护盾与船体扛，破了自己就没了（不回充） */
+  if (p.shieldTmp > 0) {
+    const use = Math.min(p.shieldTmp, d);
+    p.shieldTmp -= use; d -= use;
+    if (p.shieldTmp <= 0) {
+      p.shieldTmpMax = 0;
+      this.toast(p.x, p.y - 26, '屏障破碎', 'shieldB');
+      this.fx.burst(p.x, p.y, 10, 'shieldB', 150, 2);
+    }
+  }
   if (p.shield > 0) {
     const use = Math.min(p.shield, d);
     p.shield -= use; d -= use;
@@ -239,6 +289,14 @@ Combat.prototype.hurtPlayer = function (dmg, silent) {
   p.hitFlash = 0.16;
   if (!silent) { p.inv = 0.55; this.shake(4.5); this.fx.burst(p.x, p.y, 8, 'dangerHi', 130, 1); }
   if (p.hp <= 0) { p.hp = 0; this.killPlayer(); }
+};
+
+/* ── 飘字 ─────────────────────────────────────────────────────────────────
+   瞬时反馈（拾到什么 / 屏障破了）。banner 是全宽横幅，太重；这里只是
+   在世界坐标上浮一行小字，1 秒就没。 */
+Combat.prototype.toast = function (x, y, text, col) {
+  if (this.toasts.length > 12) this.toasts.shift();   // 别让一波拾取顶出一屏
+  this.toasts.push({ x: x, y: y, text: text, col: col, t: 0, max: 1.0 });
 };
 
 Combat.prototype.killPlayer = function () {
@@ -413,6 +471,17 @@ Combat.prototype.update = function (dt, input) {
   this.collide(dt);
   this.fx.update(dt);
 
+  /* 拾取物：刷新 / 磁吸 / 吃到（死了就吃不到了） */
+  if (this.p.alive) {
+    this.pk.update(dt, this.p, this.sing, this.rng, this.fx, this._onPick);
+  }
+  /* 飘字：向上飘并淡出 */
+  for (let i = this.toasts.length - 1; i >= 0; i--) {
+    const t = this.toasts[i];
+    t.t += dt; t.y -= 26 * dt;
+    if (t.t >= t.max) this.toasts.splice(i, 1);
+  }
+
   /* 出怪 */
   if (this.spawnLeft > 0) {
     this.spawnCd -= dt;
@@ -480,6 +549,42 @@ Combat.prototype.applyCard = function (card) {
   if (p.hp > p.maxHp) p.hp = p.maxHp;
   this.pendingCard = false;
   /* ⚠️ 不在这里进下一波 —— 由 app 决定：普通波直接 +1，通道折算的卡发完才 afterWarp */
+};
+
+/* ── 拾取生效 ─────────────────────────────────────────────────────────────
+   数值与网页版一致；唯一改写的是 level，见下面分支里的说明。 */
+Combat.prototype.applyPickup = function (type, x, y) {
+  const p = this.p;
+  const def = PK.PU[type] || PK.PU.heal;
+  let label = def.zh;
+
+  if (type === 'boost') {
+    p.boostT = def.dur; label = def.zh + ' ' + def.dur + 's';
+  } else if (type === 'rate') {
+    p.rateT = def.dur; label = def.zh + ' ' + def.dur + 's';
+  } else if (type === 'invuln') {
+    p.invuln = def.dur; label = def.zh + ' ' + def.dur + 's';
+  } else if (type === 'shield') {
+    p.shieldTmpMax = Math.max(p.shieldTmpMax, BUFF.SHIELD_AMT);
+    p.shieldTmp = p.shieldTmpMax;
+    label = def.zh + ' +' + BUFF.SHIELD_AMT;
+  } else if (type === 'heal') {
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * BUFF.HEAL_PCT);
+    label = def.zh + ' +' + Math.round(p.hp - before);
+  } else if (type === 'level') {
+    /* 网页版这里是 +1 LV，但本作**没有 XP/等级系统**，所以改成立刻白给一张
+       永久强化。「协同」排除在外 —— 它是直接压缩奇点的核心资源，只能玩家
+       自己在选卡时取舍，白送会破坏「构筑 = 压缩」这条隐喻的重量。 */
+    const pool = CD.CARDS.filter(function (cd) { return cd.id !== 'synergy'; });
+    const cd = pool[Math.floor(this.rng.next() * pool.length) % pool.length];
+    this.applyCard(cd);
+    label = def.zh + ' · ' + cd.zh;
+  }
+
+  this.toast(x, y - 24, label, def.col);
+  this.shake(3);
+  this.fx.burst(x, y, 8, def.col, 150, 2);
 };
 
 /* 通道结束，从另一端被吐出来：奇点关上门、回到战场中心、压缩 +1 档，进入下一区域。
