@@ -85,14 +85,25 @@ def published(target: Path) -> Path:
 
 
 def tracked_files() -> set[str] | None:
-    """git 跟踪清单。没有 git 就返回 None（此时跳过「未发布」检查）。"""
+    """git 跟踪清单。ROOT 不是仓库顶层就返回 None（跳过「未发布」检查）。
+
+    必须核对顶层：随便一个临时目录都可能落在某个祖先仓库里，
+    那时 git 照样成功返回、只是清单是空的 —— 会把所有引用都误报成「没进 git」。
+    """
     try:
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], cwd=ROOT,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        if not top or Path(top).resolve() != ROOT:
+            return None
         out = subprocess.run(
             ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True
         ).stdout.decode("utf-8", "replace")
     except (OSError, subprocess.CalledProcessError):
         return None
-    return {p for p in out.split("\0") if p}
+    files = {p for p in out.split("\0") if p}
+    return files or None
 
 
 def main() -> int:
