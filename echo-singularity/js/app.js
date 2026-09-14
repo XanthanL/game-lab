@@ -195,6 +195,8 @@ App.prototype.step = function (dt) {
          （通道内部是副本，撞障碍 / 吃升级都不会反向污染战斗状态）。
          onUpgrade 把升级舱换到的永久强化**立刻**写回战斗层，
          这样通道一结束玩家就能感受到自己变强了。 */
+      /* ⚠️ 通道态不走 Aura.draw（那是战场边缘层），所以这里**不要**发 cb.pulse ——
+         发了也不会被画出来，是死代码。通道有自己的飘字 + 紫色爆散 + 震屏。 */
       this.chan = new Channel.Channel(cb.seedStr + ':' + cb.warps, cb.p, {
         onUpgrade: function (card) { cb.applyCard(card); },
       });

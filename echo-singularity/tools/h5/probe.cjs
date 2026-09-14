@@ -314,6 +314,234 @@ function ok(id, cond, extra) {
   ok('54-aura-order', au.list.length === 2 && au.list[0] === 'invuln' && au.list[1] === 'boost',
     '徽章与光带同源，顺序固定 [' + au.list.join(',') + ']');
 
+  /* ── 3.9b 四种持续态必须是**不同的特效**，不只是换颜色 ────────────────
+     作者原话「分别以不同类型的特效和相应的颜色」。只换颜色会失败：
+     四个 buff 同时挂上时，四条同样形状的彩带叠在边上，余光里分不出谁是谁。
+     所以每种给一套纹理语法，这里量的是**结构**而不是颜色。 */
+  const tex = await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    const AR = window.__reg.arena, RD = window.__reg.render, AU = window.__reg.aura;
+    const cv = window.__ES.PAL.canvas, c = cv.getContext('2d');
+    cb.pk.reset(); cb.pk.t = 1e9;
+    function clean() {
+      p.hp = p.maxHp; p.boostT = 0; p.rateT = 0; p.invuln = 0;
+      p.shieldTmp = 0; p.shieldTmpMax = 0; p.alive = true;
+    }
+
+    /* 取**整条**上边缘（世界 x 30..AW-30，两端各让出 30 避开四角叠加区），
+       纵向取带子内部 y∈[2,10]。
+       ⚠️ 必须取整条边：护盾是 8 块板，只采 60px 的话里面只有 1 块多，
+          量出来的起伏跟加速的流线一样 —— 采样窗口比被测周期还窄，必失真。 */
+    function strip(x0, x1, y0, y1) {
+      const A = AR.toPx(x0, y0), B = AR.toPx(x1, y1);
+      const sx = Math.max(0, Math.round(Math.min(A.x, B.x)));
+      const sy = Math.max(0, Math.round(Math.min(A.y, B.y)));
+      const w = Math.max(1, Math.min(cv.width - sx, Math.round(Math.abs(B.x - A.x))));
+      const h = Math.max(1, Math.min(cv.height - sy, Math.round(Math.abs(B.y - A.y))));
+      const d = c.getImageData(sx, sy, w, h).data;
+      /* 亮度矩阵：rowW 列 × h 行 */
+      const out = [];
+      for (let x = 0; x < w; x++) {
+        let s = 0;
+        for (let y = 0; y < h; y++) { const i = (y * w + x) * 4; s += (d[i] + d[i + 1] + d[i + 2]) / 3; }
+        out.push(s / h);
+      }
+      return out;   // 沿边方向的亮度剖面
+    }
+    function varOf(v) {
+      let m = 0; for (let i = 0; i < v.length; i++) m += v[i];
+      m /= Math.max(1, v.length);
+      let s = 0; for (let i = 0; i < v.length; i++) s += (v[i] - m) * (v[i] - m);
+      return Math.sqrt(s / Math.max(1, v.length));
+    }
+    function meanOf(v) { let m = 0; for (let i = 0; i < v.length; i++) m += v[i]; return m / Math.max(1, v.length); }
+    function lumAt(y0, y1) { return meanOf(strip(30, AR.ARENA_W - 30, y0, y1)); }
+
+    /* 对每种 buff 扫 14 帧，量三个结构维度：
+         rowVar  沿边方向的空间结构（护盾分块 / 攻速刻度 → 高；平带 → 低）
+         timeVar 同一位置的随时间变化（攻速频闪 / 加速流线 → 高；护盾块静止 → 低）
+         rim     内缘是否有亮线（无敌的"穹顶边"→ 高；普通渐变内缘更暗 → 低） */
+    function sig(setup, w) {
+      setup();
+      const rows = [];
+      const frames = 14;
+      for (let k = 0; k < frames; k++) {
+        cb.time = k * 0.037;                 // 非整数倍，避免跟各自的周期共振
+        RD.drawWorld(c, cb, a.stars);
+        AU.draw(c, cb);
+        rows.push(strip(30, AR.ARENA_W - 30, 2, Math.min(10, w - 1)));
+      }
+      const rowVars = [], means = [];
+      for (let k = 0; k < frames; k++) { rowVars.push(varOf(rows[k])); means.push(meanOf(rows[k])); }
+      let rv = 0; for (let k = 0; k < frames; k++) rv += rowVars[k]; rv /= frames;
+      /* 高频空间能量 = 相邻列亮度差的平均。
+         它把"细碎结构"从 rowVar 里单独拎出来：
+           无敌 = 纯渐变（几乎 0）· 护盾 = 8 块大板（低）·
+           攻速 = 13px 刻线（高）· 加速 = 18px 流线（高）
+         rowVar 会把"整体起伏"和"细碎纹理"混在一起，分不开无敌和加速。 */
+      let hf = 0;
+      for (let k = 0; k < frames; k++) {
+        const v = rows[k];
+        let s = 0;
+        for (let x = 1; x < v.length; x++) s += Math.abs(v[x] - v[x - 1]);
+        hf += s / Math.max(1, v.length - 1);
+      }
+      hf /= frames;
+      /* ★ 时间维度要**逐列**测：先算每一列自己跨 14 帧的方差，再取平均。
+         不能只测"整条带均值的方差" —— 加速的流线是"总量不变但在动"
+         （线只是往内流，总墨量几乎恒定），均值方差会把这种运动完全漏掉。 */
+      const colTv = [];
+      for (let x = 0; x < rows[0].length; x++) {
+        const series = [];
+        for (let k = 0; k < frames; k++) series.push(rows[k][x]);
+        colTv.push(varOf(series));
+      }
+      const tv = meanOf(colTv);
+      /* mean 用"扣掉无 buff 基线"的净增量 —— 它反映的是带子的厚度与浓度，
+         （无敌带 18px + 内缘亮线，比攻速/加速的 12px 明显更"占边") */
+      return { rowVar: rv, hf: hf, timeVar: tv, mean: meanOf(means) - baseLum };
+    }
+    /* 基线：什么 buff 都没有时同一条边的亮度 —— 后面的 mean 都减掉它，
+       否则量到的是背景亮度（各色带的背景完全一样，没有区分度）。 */
+    clean(); cb.time = 0.3;
+    RD.drawWorld(c, cb, a.stars); AU.draw(c, cb);
+    const baseLum = meanOf(strip(30, AR.ARENA_W - 30, 2, 10));
+
+    const W = AU.BAND_W;
+    const out = {
+      invuln: sig(function () { clean(); p.invuln = 4; }, W.invuln),
+      shield: sig(function () { clean(); p.shieldTmp = 40; p.shieldTmpMax = 40; }, W.shield),
+      rate:   sig(function () { clean(); p.rateT = 7; }, W.rate),
+      boost:  sig(function () { clean(); p.boostT = 7; }, W.boost),
+    };
+    clean(); cb.time = 0; RD.drawWorld(c, cb, a.stars); AU.draw(c, cb);
+    return out;
+  });
+
+  const TX = ['invuln', 'shield', 'rate', 'boost'];
+  /* 两两比较三个维度：沿边空间节奏 / 随时间变化 / 净亮度（厚度）。
+     ⚠️ 分母下限给得很小（0.08）是**故意**的：
+        护盾是静止的（timeVar≈0），加速在流动（timeVar≈0.1~0.5）——
+        绝对差只有零点几，但对玩家来说"静止 vs 流动"是最强的区分信号。
+        用 0.35 这种大下限会把这种差异抹平成"19%"，等于放过真问题。 */
+  const DIMS = ['rowVar', 'hf', 'timeVar', 'mean'];
+  const texPairs = [];
+  for (let i = 0; i < TX.length; i++) {
+    for (let j = i + 1; j < TX.length; j++) {
+      const A = tex[TX[i]], B = tex[TX[j]];
+      let best = 0, bestDim = '';
+      for (let k = 0; k < DIMS.length; k++) {
+        const d = DIMS[k];
+        const rel = Math.abs(A[d] - B[d]) / Math.max(0.08, Math.max(A[d], B[d]));
+        if (rel > best) { best = rel; bestDim = d; }
+      }
+      texPairs.push({ pair: TX[i] + '/' + TX[j], d: best, dim: bestDim });
+    }
+  }
+  const texWorst = texPairs.reduce(function (m, x) { return x.d < m.d ? x : m; }, texPairs[0]);
+  ok('61-aura-textures', texWorst.d >= 0.5,
+    '四种持续态纹理互不相同（最接近的一对 ' + texWorst.pair + ' 靠「' +
+    ({ rowVar: '空间节奏', hf: '细碎度', timeVar: '时间变化', mean: '厚度' })[texWorst.dim] +
+    '」差 ' + (texWorst.d * 100).toFixed(0) + '%）· ' +
+    TX.map(function (k) {
+      return k + '[节奏' + tex[k].rowVar.toFixed(2) + ' 细碎' + tex[k].hf.toFixed(2) +
+        ' 时间' + tex[k].timeVar.toFixed(2) + ' 净亮' + tex[k].mean.toFixed(1) + ']';
+    }).join(' '));
+
+  /* 护盾的分段必须**读得出剩余量**：段数 = ceil(比例 × 8) */
+  const segTest = await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    const AU = window.__reg.aura;
+    function litAt(ratio) {
+      p.shieldTmp = 40 * ratio; p.shieldTmpMax = 40;
+      const st = AU.buffList(cb).filter(function (x) { return x.id === 'shield'; })[0];
+      if (!st) return -1;
+      return Math.max(1, Math.ceil((st.max > 0 ? st.left / st.max : 1) * AU.SEG_N));
+    }
+    const r = { full: litAt(1), half: litAt(0.5), low: litAt(0.1) };
+    p.shieldTmp = 0; p.shieldTmpMax = 0;
+    return r;
+  });
+  ok('62-aura-shield-reads', segTest.full === 8 && segTest.half === 4 && segTest.low === 1,
+    '护盾边缘装甲板 满盾 ' + segTest.full + ' 块 / 半盾 ' + segTest.half + ' 块 / 见底 ' +
+    segTest.low + ' 块（边缘就能读出还剩几成）');
+
+  /* 触发式脉冲：六种道具各自推送一发，类型与颜色各就各位 */
+  const pulseTest = await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    const AU = window.__reg.aura, T = window.__reg.tokens;
+    const types = ['boost', 'heal', 'rate', 'shield', 'invuln', 'level'];
+    const out = [];
+    for (let i = 0; i < types.length; i++) {
+      const ty = types[i];
+      cb.pulses.length = 0;
+      p.hp = p.maxHp; p.boostT = 0; p.rateT = 0; p.invuln = 0; p.shieldTmp = 0; p.shieldTmpMax = 0;
+      cb.applyPickup(ty, 180, 300);
+      const q = cb.pulses[cb.pulses.length - 1];
+      out.push({
+        type: ty,
+        got: !!q,
+        kind: q ? (AU.PULSE_KIND[q.type] || '?') : '-',
+        col: q ? (AU.PULSE_COL[q.type] || '?') : '-',
+        dur: q ? +q.max.toFixed(2) : 0,
+      });
+    }
+    cb.pulses.length = 0;
+    return { list: out, tok: T.PULSE };
+  });
+  const pMap = {};
+  for (const x of pulseTest.list) pMap[x.type] = x;
+  const pulseOk = pulseTest.list.every(function (x) { return x.got && x.kind !== '?' && x.col !== '?'; }) &&
+    pMap.heal.kind === 'surge' && pMap.level.kind === 'converge' &&
+    pMap.rate.kind === 'sweep' && pMap.boost.kind === 'sweep' &&
+    pMap.shield.kind === 'sweep' && pMap.invuln.kind === 'sweep' &&
+    pMap.heal.col === 'puHeal' && pMap.level.col === 'violetHi' &&
+    pMap.rate.col === 'cyanHi' && pMap.boost.col === 'puBoost' &&
+    pMap.shield.col === 'shieldB' && pMap.invuln.col === 'amberHi' &&
+    /* 触发式（事件）要比持续型的入场 sweep 长 —— 它没有后续状态，得给时间看清 */
+    pMap.heal.dur > pMap.boost.dur && pMap.level.dur > pMap.invuln.dur;
+  ok('63-aura-pulse-types', pulseOk,
+    '六种拾取各推一发：' + pulseTest.list.map(function (x) {
+      return x.type + '→' + x.kind + '/' + x.col + '/' + x.dur + 's';
+    }).join(' · '));
+
+  /* 触发式脉冲必须真的改变画面（不是只存在于数据里） */
+  const pulsePix = await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    const AR = window.__reg.arena, RD = window.__reg.render, AU = window.__reg.aura;
+    const cv = window.__ES.PAL.canvas, c = cv.getContext('2d');
+    cb.pk.reset(); cb.pk.t = 1e9;
+    p.hp = p.maxHp; p.boostT = 0; p.rateT = 0; p.invuln = 0; p.shieldTmp = 0; p.shieldTmpMax = 0;
+    cb.pulses.length = 0;
+    const pt = AR.toPx(AR.ARENA_W / 2, 8);
+    const sx = Math.max(0, Math.min(cv.width - 16, Math.round(pt.x) - 8));
+    const sy = Math.max(0, Math.min(cv.height - 16, Math.round(pt.y) - 8));
+    function samp() {
+      const d = c.getImageData(sx, sy, 16, 16).data;
+      let s = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { s += (d[i] + d[i + 1] + d[i + 2]) / 3; n++; }
+      return s / n;
+    }
+    function frame() { RD.drawWorld(c, cb, a.stars); AU.draw(c, cb); }
+    cb.time = 0.5; frame();
+    const before = samp();
+    /* 打一发回血脉冲，停在 25% 进度（最浓的时候） */
+    cb.pulse('heal', 180, 300);
+    cb.pulses[0].t = cb.pulses[0].max * 0.25;
+    frame();
+    const after = samp();
+    /* 再验证它会自己消失（不能画成永久贴纸） */
+    cb.pulses[0].t = cb.pulses[0].max * 0.999;
+    frame();
+    const end = samp();
+    cb.pulses.length = 0; frame();
+    return { before: before, after: after, end: end };
+  });
+  ok('64-aura-pulse-renders',
+    pulsePix.after > pulsePix.before + 2 && Math.abs(pulsePix.end - pulsePix.before) < 2.5,
+    '回血脉冲让边缘亮度 ' + pulsePix.before.toFixed(1) + ' → ' + pulsePix.after.toFixed(1) +
+    '，随时间自然消退回 ' + pulsePix.end.toFixed(1));
+
   /* ── 3.10 区域划分与奇点阶段必须同步 ────────────────────────────
      两处硬编码同一套波次划分（REGIONS[].from / STAGES[].from）。
      改一处忘另一处 → 「区域横幅说视界、奇点读数还是外环」的割裂。 */
@@ -386,11 +614,33 @@ function ok(id, cond, extra) {
     const mk = (t, x, y) => ({ type: t, x: x, y: y, t: 0.6, life: 12, tr: 0, pulled: false });
     cb.pk.a.push(mk('boost', 90, 250), mk('heal', 180, 250), mk('rate', 270, 250));
     cb.pk.a.push(mk('shield', 135, 340), mk('invuln', 225, 340), mk('level', 180, 420));
+    /* applyPickup 现在会顺带推一发脉冲（sweep）—— 这张图要展示的是**持续态**
+       的四种纹理，脉冲叠上来会糊掉，所以清掉。触发式单独有图。 */
+    cb.pulses.length = 0;
     cb.time = 0.2;
     a.step(1 / 60);
   });
   await page.waitForTimeout(220);
   await page.screenshot({ path: path.join(SHOTS, '10-buffs.png') });
+
+  /* ── 3.9c 触发式脉冲存档（回血的涌入波 / 升级的收缩环）───────── */
+  for (const kind of ['heal', 'level']) {
+    await page.evaluate((ty) => {
+      const a = window.__ES.app, cb = a.cb, p = cb.p;
+      cb.pk.reset(); cb.pk.t = 1e9;
+      a.state = 'playing';
+      p.hp = p.maxHp; p.invuln = 0; p.boostT = 0; p.rateT = 0;
+      p.shieldTmp = 0; p.shieldTmpMax = 0; p.alive = true;
+      cb.toasts.length = 0; cb.pulses.length = 0;
+      /* 停在 22% 进度 —— 最浓、形状最完整的一刻 */
+      cb.pulse(ty, 180, 300);
+      cb.pulses[0].t = cb.pulses[0].max * 0.22;
+      cb.time = 0.2;
+      a.step(1 / 60);
+    }, kind);
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: path.join(SHOTS, (kind === 'heal' ? '16' : '17') + '-aura-pulse-' + kind + '.png') });
+  }
   await page.evaluate(() => {
     const cb = window.__ES.app.cb, p = cb.p;
     p.hp = p.maxHp; p.invuln = 0; p.boostT = 0; p.rateT = 0;

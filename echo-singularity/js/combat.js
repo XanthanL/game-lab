@@ -11,6 +11,7 @@
    ========================================================================== */
 
 const U = require('./util.js');
+const T = require('./tokens.js');
 const E = require('./entities.js');
 const ARENA = require('./arena.js');
 const SG = require('./singularity.js');
@@ -121,6 +122,10 @@ function Combat(seed, hullId) {
   this._onPick = this.applyPickup.bind(this);   // 预绑定，别每帧建闭包
   /* 飘字：拾取 / 破盾这类"发生了一次"的瞬时反馈。banner 太重，这里走轻量队列。 */
   this.toasts = [];
+  /* 屏幕脉冲（触发式拾取反馈：回血 / 升级 / 拿到 buff 的那一刻）。
+     ⚠️ 队列挂在 cb 上、由 Aura 去画 —— 战斗逻辑**不直接 require 渲染层**。
+        （CARDS 寄放在 ui.js 那次已经踩过"逻辑依赖渲染"的坑，不再犯第二次。） */
+  this.pulses = [];
 
   /* 尾流：扁平数组 [x,y,x,y...]，最新在尾部 */
   this.trail = [];
@@ -300,6 +305,14 @@ Combat.prototype.hurtPlayer = function (dmg, silent) {
 Combat.prototype.toast = function (x, y, text, col) {
   if (this.toasts.length > 12) this.toasts.shift();   // 别让一波拾取顶出一屏
   this.toasts.push({ x: x, y: y, text: text, col: col, t: 0, max: 1.0 });
+};
+
+/* 屏幕脉冲：拾取那一瞬间的一次性反馈。
+   持续型 buff（加速/攻速/护盾/无敌）除了常驻光带，也会来一发短的 ——
+   "我拿到了"和"我还挂着"是两件事，前者必须有个明确的起点。 */
+Combat.prototype.pulse = function (type, x, y) {
+  this.pulses.push({ type: type, x: x, y: y, t: 0, max: T.PULSE[type] || T.PULSE._def });
+  if (this.pulses.length > 6) this.pulses.shift();
 };
 
 Combat.prototype.killPlayer = function () {
@@ -484,6 +497,12 @@ Combat.prototype.update = function (dt, input) {
     t.t += dt; t.y -= 26 * dt;
     if (t.t >= t.max) this.toasts.splice(i, 1);
   }
+  /* 脉冲：归一化进度 0→1，具体时长与画法由 Aura 决定（这里只管推进） */
+  for (let i = this.pulses.length - 1; i >= 0; i--) {
+    const q = this.pulses[i];
+    q.t += dt;
+    if (q.t >= q.max) this.pulses.splice(i, 1);
+  }
 
   /* 出怪 */
   if (this.spawnLeft > 0) {
@@ -586,6 +605,7 @@ Combat.prototype.applyPickup = function (type, x, y) {
   }
 
   this.toast(x, y - 24, label, def.col);
+  this.pulse(type, x, y);        // 屏幕边缘的一次性反馈（触发式 / buff 入场）
   this.shake(3);
   this.fx.burst(x, y, 8, def.col, 150, 2);
 };

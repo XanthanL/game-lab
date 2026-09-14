@@ -99,6 +99,21 @@ const TIME = {
   banner: 1.6,
 };
 
+/* ── 屏幕脉冲时长（秒）—— 拾取时的触发式反馈 ───────────────────────────────
+   分两档是刻意的：
+     · 触发式（回血 / 升级）是一次**事件**，没有后续状态，要给足时间看清发生了什么
+     · 持续型 buff 的入场 sweep 只是"我拿到了"的起点提示，必须短 ——
+       它后面还跟着常驻光带，太长会跟常驻态打架（看着像在闪而不是在持续） */
+const PULSE = {
+  heal:   0.62,
+  level:  0.85,
+  invuln: 0.48,
+  boost:  0.38,
+  rate:   0.38,
+  shield: 0.38,
+  _def:   0.45,
+};
+
 /* ── 缓动 ───────────────────────────────────────────────────────────────── */
 const EASE = {
   outCubic: function (t) { return 1 - Math.pow(1 - t, 3); },
@@ -142,7 +157,7 @@ function font(scaleKey, weightKey, px) {
 
 module.exports = {
   COLORS: COLORS, HULL_TINT: HULL_TINT,
-  SCALE: SCALE, WEIGHT: WEIGHT, TIME: TIME, EASE: EASE,
+  SCALE: SCALE, WEIGHT: WEIGHT, TIME: TIME, EASE: EASE, PULSE: PULSE,
   rgba: rgba, hex: hex, mix: mix, font: font,
 };
 })();
