@@ -292,8 +292,9 @@ await run('4-3-12-shape', 1280, 900, async p => {
 /* ── 13 图鉴 / 成就联动（7 格 · 全舰制霸 7） ──────────────── */
 await run('4-3-13-logbook', 1280, 900, async p => {
   const r = JSON.parse(await ev(p, `JSON.stringify((()=>{
-    unlockHull('forge');openLogbook();
-    const chips=[...el.lbHulls.children].map(c=>c.textContent.trim());
+    /* 7.9：船体 chips 从日志挪进了图鉴「战机」页 —— 这里改查图鉴的条目名 */
+    unlockHull('forge');openCodex();
+    const chips=[...el.cxHulls.querySelectorAll('.cxname')].map(c=>c.textContent.replace(/\s+/g,' ').trim());
     const a6=ACH.find(a=>a.id==='hull6');
     return {chips,achGoal:a6.goal(),achZh:a6.d,achEn:a6.de,
       ok:chips.length===7&&/熔炉/.test(chips[6])&&a6.goal()===7&&/7 /.test(a6.d)&&/7 hulls/.test(a6.de)};})())`));

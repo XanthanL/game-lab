@@ -35,10 +35,10 @@ async function run(tag, vw, vh, job, dsf) {
   console.log(tag.padEnd(26), errs.length ? 'ERR ' + errs.join(' | ') : 'ok  ' + note);
 }
 
-/* 打开航行日志（成就树所在面板）→ 用合成统计渲染一版树 → 读全树节点数据。
+/* 打开星图（7.9 起成就树从日志搬到了星图）→ 用合成统计渲染一版树 → 读全树节点数据。
    NOVA.logbook.achPreview 只渲染不写盘，是断言两态最干净的方式。 */
 const openTree = async (p, stats) => {
-  await p.evaluate(() => NOVA.logbook.open());
+  await p.evaluate(() => NOVA.logbook.star());
   await p.waitForTimeout(500);
   if (stats) await p.evaluate(s => NOVA.logbook.achPreview(s), stats);
   await p.waitForTimeout(300);

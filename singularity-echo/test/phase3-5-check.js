@@ -186,13 +186,13 @@ const D = [1280, 900], M = [390, 844];
   });
 
   // 12) 点击解锁链路（真实点击 → 扣费 + 重绘）
-  //     两个前提：① 先开日志，否则节点 0 尺寸；② 先滚到「解锁星图」，
+  //     两个前提：① 先开星图（7.9 起解锁树在这里），否则节点 0 尺寸；② 先滚到「解锁星图」，
   //     否则节点落在面板滚动区之外，force 点击会打到覆盖其上的元素（曾静默失败）。
   await run('3-5-12-click-unlock', ...D, async p => {
     await p.evaluate(() => {
       NOVA.meta.reset();
       NOVA.meta.grant(100);
-      NOVA.logbook.open();
+      NOVA.logbook.star();
       NOVA.meta.draw();
       NOVA.meta.fit();
       const h = document.querySelector('[data-node-id="lbsec7"]');
@@ -208,12 +208,12 @@ const D = [1280, 900], M = [390, 844];
     });
   });
 
-  // 13) 竖屏布局：解锁树缩放适配 + 无横向溢出（同样要先开日志）
+  // 13) 竖屏布局：解锁树缩放适配 + 无横向溢出（同样要先开星图）
   await run('3-5-13-mobile', ...M, async p => {
     return await p.evaluate(() => {
       NOVA.meta.reset();
       NOVA.meta.grant(500);
-      NOVA.logbook.open();
+      NOVA.logbook.star();
       NOVA.meta.draw();
       const f = NOVA.meta.fit();
       const tree = document.getElementById('mTree');

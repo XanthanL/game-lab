@@ -95,25 +95,42 @@ await run('5-5-03-brake', ...P, async p => {
     `（下拉须明显低于不动：它是刹车不是推进）`;
 });
 
-/* ── 04 手指拖远时底盘重锚，且满舵不跳变 ───────────────── */
-await run('5-5-04-reanchor', ...P, async p => {
+/* ── 04 底盘钉死左下角：推多远都不动（7.7） ─────────────
+   旧实现把底盘锚在落点、拖出 2.2R 再重锚 —— 两条位移叠加，玩家每次摸下去杆都在
+   不同地方。现在底盘位置只由 CSS 决定，JS 不再写 style.left/top，所以：
+     ① 四次采样的 rect 必须完全相同；
+     ② style.left / style.top 必须始终是空串（有人再写就是回退）；
+     ③ 杆量仍按「固定圆心 → 手指」算并钳到 JOY_R，推远 = 满舵而不是归零。 */
+await run('5-5-04-fixed-base', ...P, async p => {
   await play(p);
   const r = await evj(p, `(()=>{
-    const T=(id,x,y)=>new Touch({identifier:id,target:document.body,clientX:x,clientY:y});
-    const fire=(type,x,y)=>{const t=T(7,x,y);
+    const B=NOVA.touch.base(), cx=B.l+B.w/2, cy=B.t+B.h/2;
+    const T=(x,y)=>new Touch({identifier:7,target:document.body,clientX:x,clientY:y});
+    const fire=(type,x,y)=>{const t=T(x,y);
       window.dispatchEvent(new TouchEvent(type,{changedTouches:[t],touches:[t],bubbles:true}));};
-    fire('touchstart',100,600);
-    const o0={left:joybase.style.left,top:joybase.style.top};
-    fire('touchmove',100+40,600);            // 杆内：底盘不动
-    const near={left:joybase.style.left,mag:+joy.mag.toFixed(3)};
-    fire('touchmove',100+3*46+30,600);       // 拖到 3R 外：应重锚
-    const far={left:joybase.style.left,mag:+joy.mag.toFixed(3),dx:+joy.dx.toFixed(1)};
-    fire('touchend',100+3*46+30,600);
-    return {o0,near,far,clean:joy.on===false};})()`);
-  const moved = r.far.left !== r.near.left;
-  const ok = r.o0.left === r.near.left && moved && r.far.mag === 1 && r.clean;
-  return `${ok ? 'PASS' : 'FAIL'} 近距底盘不动(${r.near.left}) · 拖远后挪到 ${r.far.left}` +
-    ` · 满舵 mag=${r.far.mag} dx=${r.far.dx}（重锚须保持满舵，不能归零让船停转）`;
+    const snap=()=>{const b=NOVA.touch.base();return b.l+'x'+b.t+'|'+b.lx+'|'+b.ty;};
+    const before=snap();
+    fire('touchstart',cx+5,cy);            // 死区内：不该有任何杆量
+    const dz=NOVA.touch.state();
+    fire('touchmove',cx+30,cy);            // 往右推 30px
+    const right=NOVA.touch.state(), sRight=snap();
+    fire('touchmove',cx+400,cy);           // 推出捕获区外：钳满舵，底盘不动
+    const far=NOVA.touch.state(), sFar=snap();
+    fire('touchmove',cx,cy-400);           // 改往上推：方向要跟着变
+    const up=NOVA.touch.state(), sUp=snap();
+    fire('touchend',cx,cy-400);
+    return {before,dz,right,sRight,far,sFar,up,sUp,after:snap(),
+            afterB:NOVA.touch.base(),clean:joy.on===false};})()`);
+  const same = r.before === r.sRight && r.sRight === r.sFar && r.sFar === r.sUp && r.sUp === r.after;
+  const noInline = /\|\|$/.test(r.before) && /\|\|$/.test(r.after);
+  const ok = same && noInline && r.dz.mag === 0 && r.right.dx > 0 && r.right.mag > 0 &&
+    r.right.mag < 1 && r.far.mag === 1 && r.far.dx === 46 &&
+    r.up.mag === 1 && r.up.dy === -46 && r.clean &&
+    r.afterB.hidden === false && r.afterB.on === false;
+  return `${ok ? 'PASS' : 'FAIL'} 四次采样 rect 全等=${same}(${r.before})` +
+    ` · 无内联 left/top=${noInline} · 死区 mag=${r.dz.mag} · 推 30px mag=${r.right.mag}` +
+    ` · 推远满舵 dx=${r.far.dx} · 上推 dy=${r.up.dy}` +
+    ` · 松手后仍可见(hidden=${r.afterB.hidden},on=${r.afterB.on})`;
 });
 
 /* ── 05 安全区变量链路 + FIRE 按钮用 calc 避让 ─────────── */
@@ -254,6 +271,10 @@ await run('5-5-12-keep', ...P, async p => {
    C) touchend 立即关闭（兑底未破）  */
 await run('5-5-13-cancel', ...P, async p => {
   await play(p);
+  /* 7.7：坐标一律相对**固定圆心**给 —— 旧版写的是绝对坐标（杆锚在落点），
+     底盘钉死之后那些数已经不表示「往哪推」了。 */
+  const B = await evj(p, `NOVA.touch.base()`);
+  const cx = B.l + B.w / 2, cy = B.t + B.h / 2;
   const dispatch = async (id, type, x, y) => await ev(p,
     `(function(){
       const t=new Touch({identifier:${id},target:document.body,clientX:${x},clientY:${y}});
@@ -262,27 +283,27 @@ await run('5-5-13-cancel', ...P, async p => {
       return 1;
     })()`);
   /* A */
-  await dispatch(1,'touchstart',137,506);
-  await dispatch(1,'touchmove',137,460);
+  await dispatch(1,'touchstart',cx,cy);
+  await dispatch(1,'touchmove',cx,cy-60);
   const before=await evj(p,`NOVA.touch.state()`);
-  await dispatch(1,'touchcancel',137,460);
+  await dispatch(1,'touchcancel',cx,cy-60);
   await p.waitForTimeout(50);
-  await dispatch(1,'touchmove',91,506);
+  await dispatch(1,'touchmove',cx-60,cy);
   await p.waitForTimeout(40);
   const after=await evj(p,`NOVA.touch.state()`);
   const okA=before.on===true&&after.on===true&&after.dx===-46&&after.dy===0;
-  await dispatch(1,'touchend',91,506);
+  await dispatch(1,'touchend',cx-60,cy);
   /* B */
-  await dispatch(1,'touchstart',137,506);
-  await dispatch(1,'touchmove',137,460);
-  await dispatch(1,'touchcancel',137,460);
+  await dispatch(1,'touchstart',cx,cy);
+  await dispatch(1,'touchmove',cx,cy-60);
+  await dispatch(1,'touchcancel',cx,cy-60);
   await p.waitForTimeout(150);
   const b=await evj(p,`NOVA.touch.state()`);
   const okB=b.on===false&&b.mag===0;
   /* C */
-  await dispatch(1,'touchstart',137,506);
-  await dispatch(1,'touchmove',137,460);
-  await dispatch(1,'touchend',137,460);
+  await dispatch(1,'touchstart',cx,cy);
+  await dispatch(1,'touchmove',cx,cy-60);
+  await dispatch(1,'touchend',cx,cy-60);
   const c=await evj(p,`NOVA.touch.state()`);
   const okC=c.on===false&&c.mag===0;
   const ok=okA&&okB&&okC;
@@ -293,6 +314,8 @@ await run('5-5-13-cancel', ...P, async p => {
    修：joy.endT 待收尾时也允许 touchstart 接管；timeout 回调里 endT=0 避免残留 truthy。  */
 await run('5-5-14-takeover', ...P, async p => {
   await play(p);
+  const B = await evj(p, `NOVA.touch.base()`);
+  const cx = B.l + B.w / 2, cy = B.t + B.h / 2;
   const dispatch = async (id, type, x, y) => await ev(p,
     `(function(){
       const t=new Touch({identifier:${id},target:document.body,clientX:${x},clientY:${y}});
@@ -300,15 +323,15 @@ await run('5-5-14-takeover', ...P, async p => {
       window.dispatchEvent(new TouchEvent('${type}',{bubbles:true,cancelable:false,touches:isEnd?[]:[t],targetTouches:isEnd?[]:[t],changedTouches:isEnd?[t]:[t]}));
       return 1;
     })()`);
-  await dispatch(1,'touchstart',137,506);
-  await dispatch(1,'touchmove',137,460);
-  await dispatch(1,'touchcancel',137,460);
+  await dispatch(1,'touchstart',cx,cy);
+  await dispatch(1,'touchmove',cx,cy-60);
+  await dispatch(1,'touchcancel',cx,cy-60);
   await p.waitForTimeout(30);
-  await dispatch(2,'touchstart',200,600);
-  await dispatch(2,'touchmove',246,600);
+  await dispatch(2,'touchstart',cx,cy);
+  await dispatch(2,'touchmove',cx+60,cy);
   const s=await evj(p,`NOVA.touch.state()`);
   const ok=s.dx===46&&s.dy===0;
-  await dispatch(2,'touchend',246,600);
+  await dispatch(2,'touchend',cx+60,cy);
   return `${ok?'PASS':'FAIL'} cancel 后 30ms 新手指右推：dx=${s.dx} dy=${s.dy}（期望 46/0）`;
 });
 

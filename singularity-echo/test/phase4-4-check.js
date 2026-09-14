@@ -356,8 +356,9 @@ await run('4-4-13-in-pool', ...D, async p => {
 
 /* ── 14 数据规模回归 + 图鉴不受影响 ─────────────────────────── */
 await run('4-4-14-regress', ...D, async p => {
-  /* ⚠️ NOVA.logbook.counts() 数的是 DOM 子节点 —— 不开日志面板全是 0（不是回归） */
-  await p.evaluate(() => NOVA.logbook.open());
+  /* ⚠️ NOVA.logbook.counts() 数的是 DOM 子节点 —— 不开面板全是 0（不是回归）。
+     7.9 起船体搬进了图鉴「战机」页，所以要连图鉴一起开才数得到。 */
+  await p.evaluate(() => { NOVA.logbook.open(); NOVA.logbook.codex(); });
   await p.waitForTimeout(500);
   const c = await p.evaluate(() => NOVA.counts());
   const lb = await p.evaluate(() => NOVA.logbook.counts());
@@ -366,7 +367,7 @@ await run('4-4-14-regress', ...D, async p => {
     synEnMissing:SYN.filter(s=>!SYN_EN[s.id]).map(s=>s.id),meta:NOVA.meta.tree().length})`);
   const r = Object.assign({}, c, lb, m);
   const ok = r.mods === 29 && r.syn === 26 && !r.lvEnMissing.length && !r.synEnMissing.length
-    && r.enemies === 24 && r.bosses === 8 && r.hulls === 7 && r.affix === 3
+    && r.enemies === 24 && r.bosses === 8 && r.codexHulls === 7 && r.affix === 3
     && r.nodes === 18 && r.links === 22 && r.meta === 13;
   return `${ok ? 'PASS' : 'FAIL'} ` + JSON.stringify(r);
 });

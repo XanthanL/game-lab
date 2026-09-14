@@ -1,0 +1,64 @@
+<div id="logbook" class="overlay" hidden data-page-node-id="5MFmfcKXaXDCrZfCXBY0Ly">
+  <div class="panel lb-panel" data-page-node-id="F68Iifjb1bLzy7pCiSM2sE">
+    <h2 data-page-node-id="DdF7PNXZPomsskZc080PxV">LOGBOOK<span data-i18n="lb_sub" data-page-node-id="gKlIjmForZ4K9HpgweL29E">航行日志 —— 跨出击累计数据</span></h2>
+
+    <div class="sec-head" data-i18n="lb_sec1" data-page-node-id="lbsec1"><i></i><span>累计记录</span><em>LIFETIME</em></div>
+    <div class="statgrid" data-page-node-id="rTLu8aYvTX4Vz4YzLkpse8">
+      <div data-page-node-id="sXcm18T82kKt5PSboS0yYE"><b id="lbKills" class="mono" data-page-node-id="sQJ3VlmIlt9CSzNZ9KKlBU">0</b><span data-i18n="lb_k">累计击坠</span></div>
+      <div data-page-node-id="rxdSqNOHqpGtoLlekM9yDv"><b id="lbGames" class="mono" data-page-node-id="l3lnKUL0IV2dWe9tUx8Rdj">0</b><span data-i18n="lb_g">出击场次</span></div>
+      <div data-page-node-id="KLGfL2Fh8op3VQCqDtAynT"><b id="lbWave" class="mono" data-page-node-id="T2ftr1iSuMpaDOHk2319X2">0</b><span data-i18n="lb_w">最远波次</span></div>
+      <div data-page-node-id="R8CGvliAWPyYVFo6R63V1c"><b id="lbTime" class="mono" data-page-node-id="iGsEyIR0GgFjRCVOvFPlVs">0:00</b><span data-i18n="lb_t">累计漂移</span></div>
+      <div data-page-node-id="Gve8KQ0RS4onIb4RwqzqaH"><b id="lbScoreSum" class="mono" data-page-node-id="VLje0UIlCEjAiDDGSBoq1c">0</b><span data-i18n="lb_s">累计得分</span></div>
+      <div data-page-node-id="Wj1B0pu5DZ7BhFMEOILLh1"><b id="lbBest" class="mono" data-page-node-id="zH4l9XXhsuI9cSXX7psYYk">0</b><span data-i18n="lb_b">最高得分</span></div>
+    </div>
+
+    <!-- 图鉴：敌型 / 巨像 / 词缀 / 船体 —— 全部由现有数据表驱动，零新增存储 -->
+    <div class="sec-head" data-i18n="lb_sec2" data-node-id="lbsec2"><i></i><span>敌型图鉴</span><em>BESTIARY</em></div>
+    <div class="lbgrid" id="lbEnemies" data-node-id="lbEnemies"></div>
+
+    <div class="sec-head" data-i18n="lb_sec3" data-node-id="lbsec3"><i></i><span>巨像名录</span><em>COLOSSI</em></div>
+    <div class="lbgrid lbgrid-boss" id="lbBosses" data-node-id="lbBosses"></div>
+
+    <div class="sec-head" data-i18n="lb_sec4" data-node-id="lbsec4"><i></i><span>词缀</span><em>AFFIX</em></div>
+    <div class="lbgrid lbgrid-affix" id="lbAffix" data-node-id="lbAffix"></div>
+
+    <div class="sec-head" data-i18n="lb_sec5" data-page-node-id="lbsec5x"><i></i><span>船体图鉴</span><em>HULLS</em></div>
+    <div class="chips" id="lbHulls" data-page-node-id="L9CF8H1c9DSR1DuqkFeom1"></div>
+    <div class="synlist" id="lbSwarm" data-page-node-id="MBKWAxldSyCc5kqIwOanrC"></div>
+
+    <!-- 成就树容器（Phase 3.4 填数据；本版先把版式与交互定死） -->
+    <div class="sec-head" data-i18n="lb_sec6" data-node-id="lbsec6"><i></i><span>成就星图</span><em>ACHIEVEMENTS</em></div>
+    <div class="lb-tree" id="lbTree">
+      <div class="lb-tree-hint" id="lbTreeHint" data-i18n="lb_tree_hint">拖拽浏览 · 滚轮 / 双指缩放</div>
+      <div class="lb-zoom" data-page-node-id="4p3bZoomAchBar001">
+        <button type="button" data-zoom="-" title="缩小" data-page-node-id="4p3bZoomAchMinus01">−</button>
+        <button type="button" data-zoom="+" title="放大" data-page-node-id="4p3bZoomAchPlus001">+</button>
+        <button type="button" data-zoom="fit" title="适配" data-page-node-id="4p3bZoomAchFit0001">⤢</button>
+      </div>
+      <div class="lb-tree-wrap" id="lbTreeWrap">
+        <svg class="lb-tree-links" id="lbTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="lb-tree-nodes" id="lbTreeNodes"></div>
+      </div>
+    </div>
+    <!-- 局外解锁树（Phase 3.5）：花星尘换永久起始增益 —— 连败也有进展感 -->
+    <div class="sec-head" data-i18n="lb_sec7" data-node-id="lbsec7"><i></i><span>解锁星图</span><em>UNLOCKS</em></div>
+    <div class="m-dust mono" id="mDust" data-node-id="__M_DUST__"></div>
+    <div class="lb-tree meta" id="mTree" data-node-id="__M_TREE__">
+      <div class="lb-tree-hint" id="mTreeHint" data-i18n="lb_tree_hint2">点击节点解锁 · 拖拽 / 双指缩放</div>
+      <div class="lb-zoom" data-page-node-id="4p3bZoomMetaBar001">
+        <button type="button" data-zoom="-" title="缩小" data-page-node-id="4p3bZoomMetaMinus01">−</button>
+        <button type="button" data-zoom="+" title="放大" data-page-node-id="4p3bZoomMetaPlus001">+</button>
+        <button type="button" data-zoom="fit" title="适配" data-page-node-id="4p3bZoomMetaFit0001">⤢</button>
+      </div>
+      <div class="lb-tree-wrap" id="mTreeWrap" data-node-id="__M_WRAP__">
+        <svg class="lb-tree-links" id="mTreeLinks" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="lb-tree-nodes" id="mTreeNodes" data-node-id="__M_NODES__"></div>
+      </div>
+    </div>
+
+    <div class="row-btns" data-page-node-id="Y1FUfV8tabhHh347u4aXN6">
+      <button id="btnLbBack" class="btn" data-i18n="lb_back" data-page-node-id="dn0FsAkgpBLPRw1lPfBXoc">返回 ▸ ESC</button>
+    </div>
+  </div>
+</div>
+
