@@ -14,40 +14,58 @@
 
 ---
 
-## 1. 工作区隔离（最重要，先做这个）
+## 1. 工作区：默认不开 worktree，按需再开
 
-**绝对不要直接在 `E:\Code\game-lab` 里干活。**
+### 先说事实：多个会话就是共享同一个目录
 
-五个会话共用一个工作目录会发生什么：你 `git add` 的时候别人也在 `git add`，
-你 `commit` 的时候会把别人 staged 的半成品一起提交；有人 `checkout` 会掀掉别人的改动。
-（这不是假想 —— 本项目已经出过一次：一个会话 staged 了文件，另一个会话 commit 时
-把它未完成的移植代码一起带进了提交，最后靠 `reset --soft` 才撤回。）
+在 WorkBuddy 里对同一个项目开多个会话，它们**共享同一个工作目录、同一份 git index**。
+这不是猜测，本项目已经两次实证：
 
-每人一个 **git worktree**，各自独立的工作目录 + 各自的分支 + 各自的 index：
+- 会话甲把 `echo-singularity/*` staged 了，会话乙一次 `git commit` 把它的半成品一起提交，
+  最后靠 `reset --soft` 才撤回
+- 会话乙（就是本手册的作者）把 50 个回归脚本搬进 `test/`，会话甲随后改掉了其中 4 个，
+  并在 `test/` 下堆了 6 个 `_syn.js` / `_overprobe.js` 之类的一次性文件
+
+所以"多开几个会话就好"这个直觉是错的 —— 多开会**更**互相打扰。
+
+### 档位一（推荐起步）：不开 worktree，靠三条铁律
+
+**前提：接受「同一时刻只有 A/B/C 之一在改 index.html」。**
+这条不是流程洁癖 —— 三个人同时写同一个文件，后保存的直接覆盖先保存的，git 救不回来。
+
+在这个前提下，D 和 E 可以随时同开（它们不碰 `index.html`），A/B/C 轮流上。
+此时**不需要建任何 worktree**，但每个会话必须守三条：
+
+1. **只提交自己的路径。**
+   `git add <我改的文件> && git commit -- <我改的文件>`
+   ❌ 绝不 `git add -A` / `git commit -a` / `git commit -m x`（不带路径）
+   —— 那会把别人 staged 的东西一起提交（已发生过一次）
+2. **不做任何分支操作**：不 `checkout` / `switch` / `rebase` / `reset` / `stash`。
+   这些会掀掉别人未提交的改动。合并**由人类在会话之外**做。
+3. **一次性脚本不要丢在共享目录**：临时探针 / 草稿放 `.workbuddy/tmp/`（已 gitignore），
+   不要丢在 `test/` 下堆成 `_xxx.js`（已经发生过一次）。
+
+### 档位二：想让 A/B/C 同时改 `index.html` → 才需要 worktree
+
+只有这时候才值得建。每个角色一个 worktree = 独立目录 + 独立分支 + 独立 index：
 
 ```powershell
-# 由人类在 E:\Code\game-lab 里执行一次，建好五个工作区
 cd E:\Code\game-lab
 git worktree add ..\gl-a -b agent/a-gplay
 git worktree add ..\gl-b -b agent/b-visual
 git worktree add ..\gl-c -b agent/c-system
-git worktree add ..\gl-d -b agent/d-lore
-git worktree add ..\gl-e -b agent/e-quality
 ```
-
-然后**每个会话的工作目录**是：
 
 | 角色 | 工作目录 | 分支 |
 |---|---|---|
 | A 玩法 | `E:\gl-a` | `agent/a-gplay` |
 | B 表现 | `E:\gl-b` | `agent/b-visual` |
 | C 系统 | `E:\gl-c` | `agent/c-system` |
-| D 内容 | `E:\gl-d` | `agent/d-lore` |
-| E 质量 | `E:\gl-e` | `agent/e-quality` |
 
-收工后由人类清理：`git worktree remove ..\gl-a`（加 `--force` 可强删）。
+D / E 仍可留在主工作区（它们不碰 `index.html`，守上面三条铁律即可）。
 
-> 代价：每个 worktree 是一份完整检出，约 195 MB × 5 ≈ 1 GB。磁盘够就别省这个。
+代价：每个 worktree 一份完整检出，约 195 MB × 3 ≈ 585 MB；共享同一个 `.git`，不是重新 clone。
+收工后 `git worktree remove ..\gl-a`（加 `--force` 可强删）。
 
 ---
 

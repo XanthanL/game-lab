@@ -113,9 +113,11 @@ D 和 E 天然完全并行。A/B/C 三人必须靠下面两件事隔开：**分�
 
 完整协议见 **`agents/README.md`**。三条最重要的：
 
-1. **每个会话必须在自己的 git worktree 里工作**，不许直接动 `E:\Code\game-lab`。
-   五个会话共用一个工作区 = 互相踩 index 和 checkout（已经真实发生过一次：
-   一个会话 staged 了文件，另一个 commit 时把它的半成品一起提交了）。
+1. **多个会话共享同一个工作目录和同一份 git index** —— 开得越多越互相打扰。
+   默认不开 worktree，但必须守三条铁律：**只提交自己的路径**（`commit -- <路径>`，
+   绝不 `add -A`）、**不做任何分支操作**（checkout/rebase/reset 交给人类）、
+   **一次性脚本别丢在共享目录**。详见 `agents/README.md` §1。
+   想让 A/B/C 同时改 `index.html` 时才需要建 worktree。
 2. **不同会话之间没有消息通道，也不能互相 @。唯一共享介质是磁盘。**
    所有沟通都写成文件：角色卡（进度）、`agents/REQUESTS.md`（请求）、
    `agents/BASELINE.md`（共享数字）。
@@ -146,9 +148,14 @@ D 和 E 天然完全并行。A/B/C 三人必须靠下面两件事隔开：**分�
 [你的工作目录]\singularity-echo\index.html —— CSS、HTML、JS 全在这一个文件里，
 单文件是刻意的设计主张，不要提议拆分。
 
-你的工作目录是 E:\gl-[a/b/c/d/e]，分支 agent/[x-xxx]。
-全程只在这里改文件、git add 与 commit —— 一次都不许碰 E:\Code\game-lab
-（五个会话共用一个工作区会互相踩 index，已经出过事故）。
+你的工作目录是 [E:\Code\game-lab 或 E:\gl-x，人类填]。
+还有其他会话在同时改这个仓库，它们和你共享同一个目录与同一份 git index，
+所以三条铁律必须守：
+1. 只提交自己的路径：git add <我改的文件> && git commit -- <我改的文件>
+   绝不 git add -A / git commit -a / 不带路径的 commit
+   （会把别人 staged 的半成品一起提交，已经出过一次事故）
+2. 不做任何分支操作：不 checkout / switch / rebase / reset / stash
+3. 一次性脚本、草稿、临时探针放 .workbuddy\tmp\，不要丢在 test/ 或项目根下
 角色已经由人类指定，不需要认领。
 
 开工前依次读完：
