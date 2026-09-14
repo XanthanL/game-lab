@@ -9,7 +9,7 @@
 |------|------|
 | 微信开发者工具（真宿主） | 用「微信开发者工具」打开 `E:\Code\game-lab\echo-singularity\`，appid 选「测试号」或填你自己的 |
 | H5 浏览器预览（推荐日常开发） | 双击 `tools/h5/index.html`，或本地起服务后访问 `tools/h5/index.html` |
-| 无头断言（量化验证） | `node tools/h5/probe.cjs`，退出码 = 失败数 |
+| 无头断言（量化验证） | `node tools/h5/probe.cjs`（单元）或 `probe-endtoend.cjs`（端到端），退出码 = 失败数 |
 
 > ⚠️ H5 预览**不是**微信环境，但通过 PAL 抽象了 `wx.*` 调用：同一份 `game.js` 不改一行就能在两边跑。
 > 一切差异只发生在 `js/pal.js` 一个文件。
@@ -44,7 +44,8 @@ echo-singularity/
       index.html               # H5 预览壳（假 wx + 迷你 CommonJS 装载器）
       wx-shim.js               # 假 wx —— 浏览器里模拟小游戏 API
       wrap-modules.py          # 给模块加 IIFE 外壳（已运行，可重跑）
-      probe.cjs                # 无头真渲染断言（20 项）
+      probe.cjs                # 无头真渲染断言（54 项：单元级）
+      probe-endtoend.cjs       # 端到端断言（6 项：从第1波打到进门）
       _shots/                  # 截图存档
 ```
 
@@ -250,9 +251,14 @@ $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 ```
 $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 & 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe.cjs
+& 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe-endtoend.cjs
 ```
 
-`54/54 PASS`。新增 15 项断言（40–54），覆盖：
+**两个探针分工**：
+- `probe.cjs`（54 项 PASS）—— 局部断言，每个子系统单独验，**手动构造状态**。适合快速反馈。
+- `probe-endtoend.cjs`（6 项 PASS）—— **端到端**：从第 1 波一路打到玩家钻进奇点，验证整个流程链路。慢但可信，能抓"单元都对、组合起来走不通"的 bug。
+
+`probe.cjs` 的 15 项断言（40–54）覆盖：
 - 拾取物刷新 / 磁吸 / 吃到
 - 六种 buff 数值（与网页版严格对齐）
 - buff 实测生效（极速 168→252 = 1.5×、射速 4→6/秒）
