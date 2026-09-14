@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { strings, type Lang } from '../lib/i18n';
+import { strings, local, BASE, type Lang } from '../lib/i18n';
 
 interface Props {
   lang: Lang;
@@ -19,7 +19,8 @@ const s = strings(lang);
 const PAGE_BASE = 'https://xanthanl.github.io/game-lab/testing-example/teapot-artisan/site/dist/';
 const OG_BASE = 'https://xanthanl.github.io/game-lab/testing-example/assets/og/';
 const ogImage = OG_BASE + (Astro.props.ogImage || 'zansan-teapots.jpg');
-const ogUrl = PAGE_BASE + Astro.url.pathname.replace(/^\//, '');
+// Astro.url.pathname 是带 base 的，拼 og:url 前先剥掉，否则 base 出现两次
+const ogUrl = PAGE_BASE + Astro.url.pathname.replace(BASE, '').replace(/^\//, '');
 ---
 <!doctype html>
 <html lang={s.htmlLang}>
@@ -28,7 +29,7 @@ const ogUrl = PAGE_BASE + Astro.url.pathname.replace(/^\//, '');
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={local('/favicon.svg')} type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet" />

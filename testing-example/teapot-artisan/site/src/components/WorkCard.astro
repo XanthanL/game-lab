@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { strings, type Lang } from '../lib/i18n';
+import { strings, local, type Lang } from '../lib/i18n';
 
 interface Props {
   work: {
@@ -19,7 +19,7 @@ interface Props {
 const images = import.meta.glob<{ default: ImageMetadata }>('../assets/works/*.jpg', { eager: true });
 const { work, lang } = Astro.props;
 const meta = images[`../assets/works/${work.img}`]?.default;
-const href = (lang === 'en' ? '/works/' : '/zh/works/') + work.slug + '/';
+const href = local((lang === 'en' ? '/works/' : '/zh/works/') + work.slug + '/');
 const primary = work.title[lang];
 const crossTitle = lang === 'en' ? work.title.zh : work.title.en;
 const num = lang === 'en' ? work.numEn : work.numZh;

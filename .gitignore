@@ -47,6 +47,10 @@ node_modules/
 
 # ============ 备份与临时 ============
 **/dist_backup_*/
+**/.backup-*/
+**/source-images/          # 样例站的原始素材，已迁 local-only/，线上从不加载
+**/photos-raw/
+**/_shots/
 *.tmp
 *.log
 *.bak
@@ -85,3 +89,5 @@ europa/tools/*small*
 # ============ singularity-echo（原 nova-drift）子项目：截图验证临时产物 ============
 # 浏览器截图 / 断言测试产物，不进仓库。
 singularity-echo/.tmp_test/
+# 回归脚本本身要进仓库（singularity-echo/test/*.js），但跑出来的截图不要
+singularity-echo/test/phase*/

@@ -5,7 +5,7 @@ import Seal from '../components/Seal.astro';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { works } from '../data/works.json';
-import { strings } from '../lib/i18n';
+import { strings, local } from '../lib/i18n';
 
 const images = import.meta.glob<{ default: ImageMetadata }>('../assets/works/*.jpg', { eager: true });
 const lang = 'en' as const;
@@ -24,7 +24,7 @@ const heroMeta = images[`../assets/works/${hero.img}`]?.default;
     <p class="hero-sub">{s.home.heroSub}</p>
     <p class="hero-cta">
       <a href="#works">{s.home.ctaWorks} ↓</a>
-      <a href="/about/">{s.home.ctaAbout} →</a>
+      <a href={local('/about/')}>{s.home.ctaAbout} →</a>
     </p>
     <div class="hero-seal-slot"><Seal chars="簪三" /></div>
     <figure class="hero-fig">

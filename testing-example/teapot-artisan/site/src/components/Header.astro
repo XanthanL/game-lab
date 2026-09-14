@@ -1,6 +1,6 @@
 ---
 import Seal from './Seal.astro';
-import { strings, switchPath, siteEmail, type Lang } from '../lib/i18n';
+import { strings, switchPath, siteEmail, local, type Lang } from '../lib/i18n';
 
 interface Props {
   lang: Lang;
@@ -9,14 +9,15 @@ interface Props {
 const { lang, pathname } = Astro.props;
 const s = strings(lang);
 const other: Lang = lang === 'en' ? 'zh' : 'en';
-const worksHref = lang === 'en' ? '/#works' : '/zh/#works';
-const aboutHref = lang === 'en' ? '/about/' : '/zh/about/';
-const isHome = pathname === '/' || pathname === '/zh/' || pathname === '/zh';
+const worksHref = local(lang === 'en' ? '/#works' : '/zh/#works');
+const aboutHref = local(lang === 'en' ? '/about/' : '/zh/about/');
+const homeHref = local(lang === 'en' ? '/' : '/zh/');
+const isHome = pathname === local('/') || pathname === local('/zh/') || pathname === local('/zh');
 const isAbout = pathname.startsWith(aboutHref);
 ---
 <header class="site-head">
   <div class="wrap head-in">
-    <a class="brand" href={lang === 'en' ? '/' : '/zh/'}>簪三制壶</a>
+    <a class="brand" href={homeHref}>簪三制壶</a>
     <nav class="site-nav" aria-label={lang === 'en' ? 'Main' : '导航'}>
       <a href={worksHref} aria-current={isHome ? 'page' : undefined}>{s.nav.works}</a>
       <a href={aboutHref} aria-current={isAbout ? 'page' : undefined}>{s.nav.about}</a>

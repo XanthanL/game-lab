@@ -69,6 +69,7 @@ game-lab/
 ├── persona/              11 部像素舞台剧 + 子索引    (static)
 ├── ascii-art/            ASCII 文字工坊             (static)
 ├── shuyan-travel/        旅行时间线 + 地图          (static, Leaflet vendored)
+├── testing-example/      12 套小生意站点样例        (static + 一个 Astro 构建)
 ├── XanthanLMusic/        音乐站 → dist/ 已提交      (Vite + React 19)
 ├── golden-wind/          金价看板 → out/ 已提交     (Next.js 静态导出)
 └── ARH/                  7 维意识形态问卷 (30/65/95 题) → dist/ 已提交 (Vite + React)
@@ -115,6 +116,11 @@ cd golden-wind    && npm install && npm run build   # → golden-wind/out
    URL，所以这行字面量必须逐段对上。
 3. **根目录的 `.nojekyll` 不能删。** 否则 Pages 会跑 Jekyll，而 Jekyll 会把 `_next/` 静默丢掉——
    整个看板上线就是空的。
+
+另外每次 push 都会跑 `.github/scripts/link_check.py`（零依赖，只用标准库）：遍历全部 HTML，
+任何解析不到实体的内部链接都会让发布失败。它存在的原因是——构建产物里如果写死根绝对路径
+（`/_astro/…`），页面照样打得开，只是所有资源在静默 404，流水线里没有别的环节会发现。
+本机跑：`python .github/scripts/link_check.py`。
 
 分享缩略图：`python assets/gen_share_cards.py` 一次重画全站 11 张（需要 Pillow + numpy）。
 微信在聊天里把 `og:image` 裁成很小的正方形缩略图，所以这些图**本身就是 1200×1200 正方形**、

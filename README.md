@@ -72,6 +72,7 @@ game-lab/
 ├── persona/              11 pixel stage plays + sub-index  (static)
 ├── ascii-art/            ASCII text studio                 (static)
 ├── shuyan-travel/        travel timeline + map             (static, Leaflet vendored)
+├── testing-example/      12 small-business site samples    (static + one Astro build)
 ├── XanthanLMusic/        music site  → dist/ committed     (Vite + React 19)
 ├── golden-wind/          gold dashboard → out/ committed   (Next.js static export)
 └── ARH/                  7-axis ideology quiz (30/65/95 questions) → dist/ committed (Vite + React)
@@ -123,6 +124,12 @@ That single fact drives three conventions, and breaking any of them 404s a subpr
    lands. Next.js cannot resolve relative asset URLs, so that literal has to stay in sync.
 3. **`.nojekyll` must stay.** Pages runs Jekyll over the artifact otherwise, and Jekyll
    silently drops `_next/` — the whole dashboard would deploy looking empty.
+
+Every push also runs `.github/scripts/link_check.py` (zero dependencies, stdlib only), which
+walks every HTML file and fails the deploy on any internal link that resolves to nothing.
+It exists because a build artifact with root-absolute URLs (`/_astro/…`) opens just fine in
+a browser while every asset quietly 404s — nothing else in the pipeline would notice.
+Run it locally with `python .github/scripts/link_check.py`.
 
 Share thumbnails: `python assets/gen_share_cards.py` redraws all eleven of them at once
 (needs Pillow + numpy). WeChat crops `og:image` down to a tiny square thumbnail in chat,

@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""全站内部链接检查 —— 零依赖，CI 和本机都能跑。
+
+用法：
+    python .github/scripts/link_check.py            # 检查，断了退出码 1
+    python .github/scripts/link_check.py --verbose  # 把通过的也列出来
+
+为什么需要它：Pages 直接发布仓库根目录，任何写死的根绝对路径（/_astro/、/about/）
+在子路径部署下都会 404，而页面本身照样能打开、没有任何报错。
+本脚本在建站时就把这类断链抓出来。
+
+约定：
+  * 绝对路径 /foo  → 相对仓库根解析（Pages 的站点根就是 /game-lab/，
+    所以 /game-lab/foo 也按仓库根的 foo 解析）
+  * 相对路径 foo   → 相对该 HTML 所在目录解析
+  * 目录链接       → 目录下有 index.html 即算通过
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+from urllib.parse import unquote
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SITE_PREFIX = "/game-lab/"  # Pages 把仓库挂在 /game-lab/ 下
+
+# 扫都不扫的目录：依赖、本地工程、agent 工作区、版本库自身
+SKIP_DIRS = {
+    "node_modules", ".git", ".next", "local-only",
+    ".workbuddy", ".workbuddy-ai", ".github",
+    "run", "run2", "saves", "data", "logs",
+}
+
+# 已知豁免：(文件, 前缀) —— 只在理由充分时加，且必须写清为什么
+KNOWN_EXEMPT: dict[str, tuple[str, ...]] = {
+    # Vite 开发入口：线上走 dist/，根 index.html 只给 npm run dev 用。
+    # /src/main.tsx 在发布产物里本来就不存在；favicon 那几个在 public/ 下，
+    # 由 Vite 在开发服务器根上提供，发布后由 dist/index.html 用相对路径引用。
+    "ARH/index.html": (
+        "/src/main.tsx", "./favicon.svg", "./favicon.ico", "./apple-touch-icon.png",
+    ),
+    "XanthanLMusic/index.html": ("/src/main.tsx",),
+}
+
+ATTR_RE = re.compile(r"""(?:href|src)\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+# 这些协议不是本站资源
+NON_LOCAL = ("http://", "https://", "mailto:", "tel:", "data:", "javascript:", "#")
+
+
+def iter_html_files() -> list[Path]:
+    out = []
+    for p in ROOT.rglob("*.html"):
+        if any(part in SKIP_DIRS for part in p.relative_to(ROOT).parts[:-1]):
+            continue
+        out.append(p)
+    return sorted(out)
+
+
+def resolve(base_dir: Path, url: str) -> Path:
+    """把 HTML 里的 URL 解析成本地路径。"""
+    url = unquote(url.split("?")[0].split("#")[0]).strip()
+    if url.startswith("/"):
+        rel = url[len(SITE_PREFIX):] if url.startswith(SITE_PREFIX) else url.lstrip("/")
+        return (ROOT / rel).resolve()
+    return (base_dir / url).resolve()
+
+
+def exists(target: Path) -> bool:
+    if target.is_file():
+        return True
+    return target.is_dir() and (target / "index.html").is_file()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--verbose", action="store_true")
+    args = ap.parse_args()
+
+    broken: list[tuple[str, str]] = []
+    checked = 0
+
+    for page in iter_html_files():
+        rel_page = page.relative_to(ROOT).as_posix()
+        try:
+            text = page.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        exempt = KNOWN_EXEMPT.get(rel_page, ())
+
+        for url in ATTR_RE.findall(text):
+            if not url or url.startswith(NON_LOCAL):
+                continue
+            checked += 1
+            if any(url == e or url.startswith(e) for e in exempt):
+                continue
+            if not exists(resolve(page.parent, url)):
+                broken.append((rel_page, url))
+
+    if args.verbose:
+        print(f"检查了 {checked} 条内部引用（{ROOT}）")
+
+    if broken:
+        print(f"\n发现 {len(broken)} 处断链：\n")
+        for page, url in broken:
+            print(f"  {page}\n      -> {url}")
+        print("\n修完再推。常见原因：构建产物用了根绝对路径（给构建器配 base）。")
+        return 1
+
+    print(f"链接检查通过：{checked} 条内部引用全部可达。")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

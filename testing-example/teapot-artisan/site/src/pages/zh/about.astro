@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import Seal from '../../components/Seal.astro';
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { strings } from '../../lib/i18n';
+import { strings, local } from '../../lib/i18n';
 
 const images = import.meta.glob<{ default: ImageMetadata }>('../../assets/works/*.jpg', { eager: true });
 const lang = 'zh' as const;
@@ -18,7 +18,7 @@ const figMeta = images['../../assets/works/tea-tools-bamboo-01.jpg']?.default;
         {s.home.about.body.map((p) => <p>{p}</p>)}
         <div class="pending-block">{s.home.about.pendingBio}</div>
         <p style="margin-top: var(--space-4);">
-          <a href="/zh/#works">{s.home.ctaWorks} →</a>
+          <a href={local('/zh/#works')}>{s.home.ctaWorks} →</a>
         </p>
       </div>
       <figure class="about-fig fade">

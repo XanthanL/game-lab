@@ -15,7 +15,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 发布前先扫一遍内部链接。构建产物写死根绝对路径（/_astro/、/about/）时页面照样打得开，
+  # 只有资源在静默 404 —— 这个 job 是唯一会自动抓到它的地方。
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check internal links
+        run: python .github/scripts/link_check.py --verbose
+
   deploy:
+    needs: link-check
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
