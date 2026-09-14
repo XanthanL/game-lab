@@ -13,7 +13,13 @@
       因为它们是**同一个奇点**在这个深度上的形态，不是三个不同的天体。
    ========================================================================== */
 
-const REGION_LEN = 10;        // 每个区域 10 波
+/* ⚠️ 每个区域的波数。原为 10，作者实测「玩到第 12 波还没见到可进入的奇点」，
+   端到端量出第一个可进入的奇点在游戏内 233.6 秒 ≈ 3 分 54 秒 —— 微信小游戏
+   单次会话典型 3–5 分钟，新玩家很可能玩不到就退出，永远见不到核心玩法。
+   缩到 5 → 约 2 分钟就能钻进第一个奇点。
+   ⚠️ 改这里必须同步改 singularity.js 的 STAGES[].from（两者是同一套划分），
+      probe.cjs 有断言盯着，不同步会直接 FAIL。 */
+const REGION_LEN = 5;
 
 const REGIONS = [
   {
@@ -26,7 +32,7 @@ const REGIONS = [
     accent: 'cyan',
   },
   {
-    id: 'veil', n: 2, zh: '中子星云', en: 'NEUTRON VEIL', from: 11,
+    id: 'veil', n: 2, zh: '中子星云', en: 'NEUTRON VEIL', from: 6,
     kinds: ['drift', 'shard', 'dart'],
     boss: 'warden',
     note: '星云稠密，视线被散射 —— 视界已经能灼伤船体',
@@ -35,7 +41,7 @@ const REGIONS = [
     accent: 'violet',
   },
   {
-    id: 'sing', n: 3, zh: '深空奇点', en: 'SINGULARITY', from: 21,
+    id: 'sing', n: 3, zh: '深空奇点', en: 'SINGULARITY', from: 11,
     kinds: ['dart', 'orb', 'warden'],
     boss: 'warden',
     note: '这里就是它本身 —— 吸积盘在你脚下转动',

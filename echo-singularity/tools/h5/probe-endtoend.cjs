@@ -52,6 +52,7 @@ function ok(id, cond, extra) {
   const run = await page.evaluate(() => {
     const a = window.__ES.app;
     const RG = window.__reg.regions;
+    const FINALW = RG.REGION_LEN;     // 别硬编码第几波 —— 区域长度会调
     a.newRun();
     const cb = a.cb;
 
@@ -111,6 +112,7 @@ function ok(id, cond, extra) {
     return {
       frames: frames, sec: +(frames / 60).toFixed(1),
       wave: cb.wave, state: cb.state, gate: cb.sing.gate,
+      finalW: FINALW,
       pendingWarp: cb.pendingWarp,
       kills: cb.kills, score: cb.score,
       isFinal: RG.isRegionFinal(cb.wave),
@@ -122,7 +124,7 @@ function ok(id, cond, extra) {
   for (const e of run.log) console.log('    [' + e.t + 's 第' + e.wave + '波] ' + e.ev);
   console.log('');
 
-  ok('E1-reached-final-wave', run.wave === 10 && run.isFinal,
+  ok('E1-reached-final-wave', run.wave === run.finalW && run.isFinal,
     '打到第 ' + run.wave + ' 波（区域收尾=' + run.isFinal + '），游戏内耗时 ' + run.sec + 's');
   ok('E2-gate-metastable', run.log.some(e => e.ev.indexOf('gate1') >= 0),
     '巨像倒下 → 奇点变亚稳态');
@@ -133,6 +135,12 @@ function ok(id, cond, extra) {
   ok('E5-no-stuck', !run.log.some(e => e.ev.indexOf('卡死') >= 0),
     '全程无卡死（击坠 ' + run.kills + '，得分 ' + run.score + '）');
   ok('E6-no-error', errs.length === 0, errs.length ? errs.slice(0, 2).join(' | ') : '无未捕获异常');
+
+  /* 节奏：第一个可进入奇点必须在 2 分钟量级内出现，
+     否则新玩家（单次会话 3–5 分钟）很可能玩不到就退出。
+     改前 233.6s → 改后 ~92s（缩到 5 波 + 修可见度后）。 */
+  ok('E7-pacing', run.pendingWarp && run.sec <= 150,
+    '第一个可进入奇点出现在 ' + run.sec + 's（目标 ≤150s，缩到 5 波前 233.6s）');
 
   if (run.pendingWarp) {
     await page.evaluate(() => { window.__ES.app.step(1 / 60); });

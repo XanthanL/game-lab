@@ -44,15 +44,23 @@ const STAGES = [
     dilate: 0,      // 时间膨胀强度
     disk: 0,        // 吸积盘亮度
     flip: false,    // 是否周期反转
-    rMul: 0.55,     // 视界半径倍率（相对基准）
+    /* ⚠️ 原来是 0.55 —— 配上 BASE.R=16 只有 8.8px 半径，比拾取物还小，
+       玩家全程看不见奇点（作者实测到第 12 波都没发现它存在）。
+       0.80 → 12.8px 半径（直径 25.6 ≈ 拾取物大小），既保住「远、还没长大」
+       的叙事，又保证余光能收到。 */
+    rMul: 0.80,     // 视界半径倍率（相对基准）
   },
   {
-    id: 'horizon', zh: '视界', en: 'THE HORIZON', from: 11,
+    /* ⚠️ from 必须与 regions.js 的 REGIONS[].from 完全一致（同一套区域划分
+       的两种表达：那边管色调/敌型，这边管奇点形态）。改一处忘另一处，
+       就会出现「区域横幅说视界、奇点读数还是外环」的割裂。
+       probe.cjs 的 55-stage-region-sync 盯着这个。 */
+    id: 'horizon', zh: '视界', en: 'THE HORIZON', from: 6,
     note: '事件视界成型 —— 靠近即灼烧，时间被拉长',
     grav: 1, burn: 13, dilate: 1, disk: 0.45, flip: false, rMul: 1.0,
   },
   {
-    id: 'core', zh: '核心', en: 'THE CORE', from: 21,
+    id: 'core', zh: '核心', en: 'THE CORE', from: 11,
     note: '吸积盘点亮 —— 引力将周期性倒转为斥力',
     grav: 1.35, burn: 18, dilate: 1, disk: 1, flip: true, rMul: 1.25,
   },
@@ -61,8 +69,12 @@ const STAGES = [
 /* ── 基准数值（arena 宽 360 的坐标系） ─────────────────────────────────── */
 const BASE = {
   /* R 是「事件视界」半径。作者要求：不要很大，大约比升级道具大一倍。
-     升级道具视觉直径约 16 → 这里取 16（视界直径 32 ≈ 道具的两倍）。 */
+     拾取物本体直径约 24（r=11 × 1.12）→ 这里取 16，视界直径 32 ≈ 1.3 倍。 */
   R: 16,
+  /* ⚠️ 视界下限。压缩会让 R 再乘 (1-0.45c)，满压缩时 stage0 会缩到 7px ——
+     比拾取物还小，玩家会彻底失去「它在哪」的感知。压缩是核心隐喻，
+     但表达要有底线：再压也得看得见。 */
+  R_MIN: 9,
   PULL_R: 96,     // 引力作用半径（边缘趋零、中心最强）—— 跟着 R 一起收窄
   PULL_A: 340,    // 引力加速度峰值（范围收窄了，力得更猛才够威胁）
   LENS: 5200,     // 引力透镜位移系数（星空用的老办法，透镜另算）
@@ -192,6 +204,8 @@ Singularity.prototype.metrics = function () {
   const s = this.stageDef(), c = this.compression;
   /* 压缩：半径变小、引力变强、范围略收 —— 更小但更凶 */
   let R = BASE.R * s.rMul * (1 - 0.45 * c);
+  /* 保底：压缩归压缩，不能缩到看不见 —— 否则玩家失去「它在哪」的感知 */
+  R = Math.max(R, BASE.R_MIN);
   let pullR = BASE.PULL_R * s.rMul * (1 - 0.15 * c);
   let pullA = BASE.PULL_A * s.grav * (1 + 1.6 * c);
   let diskA = s.disk * (0.35 + 0.65 * c);
@@ -320,10 +334,12 @@ Singularity.prototype.drawBack = function (c) {
   const a = tr >= 1 ? 1 : T.EASE.outCubic(tr);
   if (m.pullR <= 0) return;
 
-  /* 作用范围虚线环 —— 测绘仪的「读数圈」 */
+  /* 作用范围虚线环 —— 测绘仪的「读数圈」
+     ⚠️ 0.22 → 0.38：外环阶段没有吸积盘，这圈是玩家判断「它在哪、范围多大」
+        的唯一线索，太淡等于没画。 */
   c.save();
   c.globalAlpha = 0.5 * a;
-  c.strokeStyle = T.rgba(this.stage === 0 ? 'singHalo' : 'singHoriz', 0.22);
+  c.strokeStyle = T.rgba(this.stage === 0 ? 'singHalo' : 'singHoriz', 0.38);
   c.lineWidth = 1;
   c.setLineDash([3, 6]);
   c.beginPath();
@@ -336,7 +352,7 @@ Singularity.prototype.drawBack = function (c) {
   const g = c.createRadialGradient(this.x, this.y, m.R * 0.6, this.x, this.y, m.pullR);
   const cc = this.compression;
   g.addColorStop(0, T.rgba('voidDeep', 0));
-  g.addColorStop(0.35, T.rgba(this.flipped ? 'cyanHi' : 'singDisk', 0.05 + 0.10 * cc));
+  g.addColorStop(0.35, T.rgba(this.flipped ? 'cyanHi' : 'singDisk', 0.10 + 0.14 * cc));
   g.addColorStop(1, T.rgba(this.flipped ? 'cyanHi' : 'singDisk', 0));
   c.save();
   c.globalAlpha = a;
@@ -470,21 +486,41 @@ Singularity.prototype.drawFront = function (c) {
   c.arc(this.x, this.y, R, 0, TAU);
   c.fill();
 
-  /* 3) 光子环：视界边缘那一圈亮线；反转期转冷色 */
+  /* 3) 光子环：视界边缘那一圈亮线；反转期转冷色
+     ⚠️ 原来 alpha 只有 0.5、线宽 1.4 —— 在深墨底上几乎糊没了，这是
+        「玩家全程没看见奇点」的直接原因。视界本体是纯黑（要吃掉后面的东西），
+        唯一的轮廓就靠这一圈，必须给足对比度。 */
   const ringCol = this.flipped ? 'cyanHi' : (this.stage >= 2 ? 'singCore' : 'singHoriz');
   const breathe = 1 + Math.sin(this.pulse * (1.6 + 2.4 * cc)) * 0.045 * (0.4 + cc);
-  c.strokeStyle = T.rgba(ringCol, 0.5 + 0.42 * cc);
-  c.lineWidth = 1.4 + 1.6 * cc;
+  c.strokeStyle = T.rgba(ringCol, 0.72 + 0.28 * cc);
+  c.lineWidth = 1.8 + 1.4 * cc;
   c.beginPath();
   c.arc(this.x, this.y, R * breathe, 0, TAU);
   c.stroke();
 
   /* 内侧一圈更细的高光，做出「边缘在燃烧」的厚度 */
-  c.strokeStyle = T.rgba(ringCol, 0.18 + 0.2 * cc);
-  c.lineWidth = 0.8;
+  c.strokeStyle = T.rgba(ringCol, 0.30 + 0.30 * cc);
+  c.lineWidth = 0.9;
   c.beginPath();
   c.arc(this.x, this.y, R * breathe - 2.2, 0, TAU);
   c.stroke();
+
+  /* 4) 外环阶段的「读数刻度」—— 这一阶段视界还很暗、也没有吸积盘，
+        光靠一个黑圆玩家根本注意不到。加一圈缓慢自转的测绘刻度，
+        把「这里有异常」这件事说清楚（跟测绘仪的语言一致）。 */
+  if (this.stage === 0) {
+    const sa = this.pulse * 0.35;
+    c.strokeStyle = T.rgba('singHalo', 0.45 + 0.2 * cc);
+    c.lineWidth = 1.2;
+    c.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = sa + i * TAU / 8;
+      const r1 = R * 1.30, r2 = R * 1.52;
+      c.moveTo(this.x + Math.cos(a) * r1, this.y + Math.sin(a) * r1);
+      c.lineTo(this.x + Math.cos(a) * r2, this.y + Math.sin(a) * r2);
+    }
+    c.stroke();
+  }
 
   /* 4) 反转预警：外圈一道收缩的警示环 */
   if (this.warnT > 0) {

@@ -31,7 +31,9 @@ const BUFF = {
 };
 
 /* ── 波次编排 ─────────────────────────────────────────────────────────── */
-const BOSS_EVERY = 5;
+/* 巨像 = 每个区域的收尾波。直接引用区域长度，两者永远一致 ——
+   以前写死 5，改区域长度时很容易忘，结果巨像出现在区域中间（不开门）。 */
+const BOSS_EVERY = RG.REGION_LEN;
 const WAVE_BASE = 6;          // 第 1 波敌机数
 const WAVE_GROW = 1.9;
 
@@ -150,9 +152,10 @@ Combat.prototype.startWave = function (n) {
   if (boss) {
     const e = this.en.spawn(reg.boss, AW / 2, -40, waveHpMul(n) * 1.6 * tierMul(n));
     if (e) e.vy = 26;
-    /* 只有区域收尾那场（10/20/30）才会在倒下后开门 —— 通道是每 10 波一次的奖励 */
-    this.say(RG.isRegionFinal(n) ? '区域巨像 · 肃清后开启通道' : '巨像接近',
-             RG.isRegionFinal(n) ? 'GATEKEEPER · CLEAR TO OPEN' : 'COLOSSUS INBOUND', 2.0);
+    /* BOSS_EVERY 现在直接等于区域长度，所以巨像必然是区域收尾 ——
+       倒下后原地坍缩成门，肃清残敌即可进入通道。提示说得越直白越好，
+       因为玩家 90% 的时间在被训练「躲开奇点」，这一刻必须反过来说清楚。 */
+    this.say('区域巨像 · 肃清后开启通道', 'GATEKEEPER · CLEAR TO OPEN', 2.0);
   } else if (n === 1) {
     this.say('第 1 波', 'WAVE 1', 1.4);
   }

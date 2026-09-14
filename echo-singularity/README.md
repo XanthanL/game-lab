@@ -44,8 +44,9 @@ echo-singularity/
       index.html               # H5 预览壳（假 wx + 迷你 CommonJS 装载器）
       wx-shim.js               # 假 wx —— 浏览器里模拟小游戏 API
       wrap-modules.py          # 给模块加 IIFE 外壳（已运行，可重跑）
-      probe.cjs                # 无头真渲染断言（54 项：单元级）
-      probe-endtoend.cjs       # 端到端断言（6 项：从第1波打到进门）
+      probe.cjs                # 无头真渲染断言（56 项：单元级）
+      probe-endtoend.cjs       # 端到端断言（7 项：直接调 cb.update）
+      probe-appflow.cjs        # 端到端断言（5 项：走 app.step + 真的点选卡）
       _shots/                  # 截图存档
 ```
 
@@ -111,7 +112,7 @@ cd E:\Code\game-lab\echo-singularity
 $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 & 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe.cjs
 ```
-输出形如 `54/54 PASS`，截图落在 `tools/h5/_shots/`。
+输出形如 `56/56 PASS`，截图落在 `tools/h5/_shots/`。
 
 ## Stage 2 已完成（区域 / 门 / 通道 / 穿越）
 
@@ -255,18 +256,31 @@ $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 ```
 
 **两个探针分工**：
-- `probe.cjs`（54 项 PASS）—— 局部断言，每个子系统单独验，**手动构造状态**。适合快速反馈。
-- `probe-endtoend.cjs`（6 项 PASS）—— **端到端**：从第 1 波一路打到玩家钻进奇点，验证整个流程链路。慢但可信，能抓"单元都对、组合起来走不通"的 bug。
+- `probe.cjs`（56 项 PASS）—— 局部断言，每个子系统单独验，**手动构造状态**。适合快速反馈。
+- `probe-endtoend.cjs`（7 项 PASS）—— **端到端**：从第 1 波一路打到玩家钻进奇点，验证整个流程链路。慢但可信，能抓"单元都对、组合起来走不通"的 bug。
+- `probe-appflow.cjs`（5 项 PASS）—— 走 app 状态机的端到端，cardpick 真的点，跟 probe-endtoend（直接调 cb）互为对照。
 
-`probe.cjs` 的 15 项断言（40–54）覆盖：
+`probe.cjs` 的 17 项断言（40–56）覆盖：
 - 拾取物刷新 / 磁吸 / 吃到
 - 六种 buff 数值（与网页版严格对齐）
 - buff 实测生效（极速 168→252 = 1.5×、射速 4→6/秒）
 - 无敌完全免疫、屏障先扛
 - `level` 连开 24 次协同不被白送（保护核心隐喻）
 - **边缘颜色的通道验证**（朱砂 G/R=0.27 / 黄铜 G/R=0.85 区分清楚，理论值 0.33 / 0.88）
+- **55-stage-region-sync**：区域划分（REGIONS[].from）必须与奇点阶段划分（STAGES[].from）严格一致 —— 改一处忘另一处就会出现"区域横幅说视界、奇点读数还是外环"的割裂
+- **56-sing-visible**：外环阶段 R 必须 ≥ 9px（作者实测"玩到第 12 波都没见到它"，根因是 R=8.8 + 几乎不可见的填充；加了 R_MIN 保底）
 
-截图 `tools/h5/_shots/10-buffs.png`：低血 + 四个 buff + 六种拾取物同屏展示。
+截图：
+- `tools/h5/_shots/10-buffs.png`：低血 + 四个 buff + 六种拾取物同屏展示
+- `tools/h5/_shots/12-singularity-wave1.png`：第 1 波的奇点长什么样 —— 4 层可见度线索（橙色光子环 + 引力晕 + 8 道刻度 + 大虚线圈）
+
+### 节奏：缩到 5 波
+
+作者报告「玩到第 12 波都没见到可进入的奇点」。端到端测出第一个可进入奇点在游戏内 **233.6 秒 ≈ 3 分 54 秒**（无敌理想情况），而微信小游戏单次会话典型 3–5 分钟。
+
+**第一个区域从 10 波缩到 5 波**：第一个可进入奇点降到 **~92 秒（1 分 32 秒）**，新玩家基本都能玩到。
+
+`REGION_LEN` 是全局的（影响所有 3 个区域 + 无尽层循环）。boss 波直接 `BOSS_EVERY = REGION_LEN`，两者永远同步。改一处忘另一处由 `55-stage-region-sync` 盯着，FAIL 立刻报警。
 
 ## Stage 3+ 待办（不在 Stage 2 范围）
 

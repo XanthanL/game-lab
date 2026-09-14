@@ -314,6 +314,65 @@ function ok(id, cond, extra) {
   ok('54-aura-order', au.list.length === 2 && au.list[0] === 'invuln' && au.list[1] === 'boost',
     '徽章与光带同源，顺序固定 [' + au.list.join(',') + ']');
 
+  /* ── 3.10 区域划分与奇点阶段必须同步 ────────────────────────────
+     两处硬编码同一套波次划分（REGIONS[].from / STAGES[].from）。
+     改一处忘另一处 → 「区域横幅说视界、奇点读数还是外环」的割裂。 */
+  const sync = await page.evaluate(() => {
+    const RG = window.__reg.regions, SG = window.__reg.singularity;
+    const rf = RG.REGIONS.map(r => r.from);
+    const sf = SG.STAGES.map(s => s.from);
+    return {
+      rf: rf, sf: sf, len: RG.REGION_LEN,
+      same: rf.length === sf.length && rf.every((v, i) => v === sf[i]),
+      /* 波次 1..15 逐波核对：区域下标必须等于阶段下标 */
+      perWave: (function () {
+        const bad = [];
+        for (let w = 1; w <= RG.REGION_LEN * 3; w++) {
+          if (RG.regionIndex(w) !== SG.STAGES.findIndex(s => s.from > w) - 1 + 1 &&
+            RG.regionIndex(w) !== (function () {
+              let k = 0; for (let i = 0; i < SG.STAGES.length; i++) if (w >= SG.STAGES[i].from) k = i; return k;
+            })()) bad.push(w);
+        }
+        return bad;
+      })(),
+    };
+  });
+  ok('55-stage-region-sync', sync.same && sync.perWave.length === 0,
+    '区域 from[' + sync.rf.join(',') + '] ≡ 阶段 from[' + sync.sf.join(',') +
+    ']，逐波核对 1–' + (sync.len * 3) + ' 无错位');
+
+  /* ── 3.11 奇点必须看得见（作者实测到第12波都没发现它） ─────────── */
+  const vis = await page.evaluate(() => {
+    const cb = window.__ES.app.cb;
+    const out = {};
+    const r0 = (function () { cb.sing.stage = 0; cb.sing.pendingStage = 0; cb.sing.stageT = 1; cb.sing.setSynergy(0); return cb.sing.metrics().R; })();
+    const r0c = (function () { cb.sing.setSynergy(6); cb.sing.setWarp(3); return cb.sing.metrics().R; })();
+    const r1 = (function () { cb.sing.setSynergy(0); cb.sing.setWarp(0); cb.sing.stage = 1; cb.sing.pendingStage = 1; return cb.sing.metrics().R; })();
+    const r2 = (function () { cb.sing.stage = 2; cb.sing.pendingStage = 2; return cb.sing.metrics().R; })();
+    cb.sing.stage = 0; cb.sing.pendingStage = 0; cb.sing.setSynergy(0); cb.sing.setWarp(0);
+    return { r0: r0, r0c: r0c, r1: r1, r2: r2 };
+  });
+  ok('56-sing-visible', vis.r0 >= 9 && vis.r0c >= 9,
+    '外环阶段 R=' + vis.r0.toFixed(1) + '（满压缩保底 ' + vis.r0c.toFixed(1) +
+    '）· 视界 ' + vis.r1.toFixed(1) + ' · 核心 ' + vis.r2.toFixed(1) +
+    ' —— 拾取物直径约 24，外环直径 ' + (vis.r0 * 2).toFixed(0));
+
+  /* ── 3.8b 存档：第 1 波的奇点长什么样（作者说"全程没看见它"） ─── */
+  await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb;
+    a.state = 'playing';
+    cb.wave = 1; cb.sing.stage = 0; cb.sing.pendingStage = 0; cb.sing.stageT = 1;
+    cb.sing.setSynergy(0); cb.sing.setWarp(0);
+    cb.sing.x = 180; cb.sing.y = window.__reg.arena.ARENA_H * 0.40;
+    cb.pk.reset(); cb.pk.t = 1e9;
+    cb.p.hp = cb.p.maxHp; cb.p.invuln = 0; cb.p.boostT = 0; cb.p.rateT = 0;
+    cb.p.shieldTmp = 0; cb.p.shieldTmpMax = 0; cb.toasts.length = 0;
+    cb.time = 0.4;
+    a.step(1 / 60);
+  });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: path.join(SHOTS, '12-singularity-wave1.png') });
+
   /* ── 3.9 存档：多条光带同屏 + 拾取物字形 ─────────────────────── */
   await page.evaluate(() => {
     const a = window.__ES.app, cb = a.cb, p = cb.p;
@@ -426,8 +485,11 @@ function ok(id, cond, extra) {
     const a = window.__ES.app, cb = a.cb;
     const RG = window.__reg.regions, CH = window.__reg.channel;
     const out = {};
-    out.regions = [RG.regionOf(1).id, RG.regionOf(11).id, RG.regionOf(21).id];
-    out.final = [RG.isRegionFinal(5), RG.isRegionFinal(10), RG.isRegionFinal(20)];
+    /* ⚠️ 别硬编码波次 —— 区域长度会调（10 → 5），写死就得跟着改，
+       忘了就会误报 FAIL。全部从 REGION_LEN 派生。 */
+    out.len = RG.REGION_LEN;
+    out.regions = [RG.regionOf(1).id, RG.regionOf(1 + RG.REGION_LEN).id, RG.regionOf(1 + RG.REGION_LEN * 2).id];
+    out.final = [RG.isRegionFinal(1), RG.isRegionFinal(RG.REGION_LEN), RG.isRegionFinal(RG.REGION_LEN * 2)];
     out.cards = [CH.cardsFor(0), CH.cardsFor(20), CH.cardsFor(40)];
 
     /* 强制推到区域收尾 Boss 波，然后让巨像倒下。
@@ -459,7 +521,8 @@ function ok(id, cond, extra) {
     return out;
   });
   ok('21-regions', flow.regions.join(',') === 'debris,veil,sing', flow.regions.join(' / '));
-  ok('22-region-final', flow.final[0] === false && flow.final[1] === true && flow.final[2] === true, '10/20/30 是收尾波，5 不是');
+  ok('22-region-final', flow.final[0] === false && flow.final[1] === true && flow.final[2] === true,
+    '第 ' + flow.len + '/' + (flow.len * 2) + ' 波是收尾波，第 1 波不是（区域长度 ' + flow.len + '）');
   ok('23-cards-tier', flow.cards.join(',') === '1,2,3', '收集 0/20/40 → ' + flow.cards.join('/') + ' 张');
   ok('24-dormant', flow.gate1 === 1 && flow.dormant.pullA === 0 && flow.dormant.burn === 0,
      '亚稳态：无引力(' + flow.dormant.pullA + ') 不灼烧(' + flow.dormant.burn + ')');
