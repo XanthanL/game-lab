@@ -139,16 +139,23 @@ D 和 E 天然完全并行。A/B/C 三人必须靠下面两件事隔开：**分�
 复制下面对应的一段作为会话的开场白。方括号里的内容**必须替换**，
 否则 agent 会自己猜，猜错的成本很高。
 
-### 通用开头（四个角色都要带）
+### 通用开头（五个角色都要带）
 
 ```
 你是「奇点回响」项目的 [角色] 负责人。这是一个 11621 行的单文件 HTML5 游戏：
-E:\Code\game-lab\singularity-echo\index.html —— CSS、HTML、JS 全在这一个文件里，
+[你的工作目录]\singularity-echo\index.html —— CSS、HTML、JS 全在这一个文件里，
 单文件是刻意的设计主张，不要提议拆分。
 
+你的工作目录是 E:\gl-[a/b/c/d/e]，分支 agent/[x-xxx]。
+全程只在这里改文件、git add 与 commit —— 一次都不许碰 E:\Code\game-lab
+（五个会话共用一个工作区会互相踩 index，已经出过事故）。
+角色已经由人类指定，不需要认领。
+
 开工前依次读完：
-1. E:\Code\game-lab\singularity-echo\AGENTS.md   ← 并行开发手册，所有权与硬约束在这
-2. README.md · ROADMAP.md · DESIGN-SYSTEM.md · DEV-PLAN.md
+1. [你的工作目录]\singularity-echo\AGENTS.md      ← 并行开发手册，所有权与硬约束
+2. [你的工作目录]\singularity-echo\agents\README.md ← 沟通机制
+3. [你的工作目录]\singularity-echo\agents\[你的角色卡].md
+4. README.md · ROADMAP.md · DESIGN-SYSTEM.md · DEV-PLAN.md
 
 通用硬约束（违反任何一条都算没完成）：
 - 先量后改：说"慢/不对"之前先拿数字
