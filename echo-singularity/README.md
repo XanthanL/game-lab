@@ -258,7 +258,7 @@ $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 **两个探针分工**：
 - `probe.cjs`（56 项 PASS）—— 局部断言，每个子系统单独验，**手动构造状态**。适合快速反馈。
 - `probe-endtoend.cjs`（7 项 PASS）—— **端到端**：从第 1 波一路打到玩家钻进奇点，验证整个流程链路。慢但可信，能抓"单元都对、组合起来走不通"的 bug。
-- `probe-appflow.cjs`（5 项 PASS）—— 走 app 状态机的端到端，cardpick 真的点，跟 probe-endtoend（直接调 cb）互为对照。
+- `probe-appflow.cjs`（8 项 PASS，A6–A8 通道可达性）—— 走 app 状态机的端到端，cardpick 真的点，并接着把 warp → channel 走完，验证通道从 boss 倒下到折算成强化卡的整条链路。
 
 `probe.cjs` 的 17 项断言（40–56）覆盖：
 - 拾取物刷新 / 磁吸 / 吃到
@@ -273,6 +273,9 @@ $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 截图：
 - `tools/h5/_shots/10-buffs.png`：低血 + 四个 buff + 六种拾取物同屏展示
 - `tools/h5/_shots/12-singularity-wave1.png`：第 1 波的奇点长什么样 —— 4 层可见度线索（橙色光子环 + 引力晕 + 8 道刻度 + 大虚线圈）
+- `tools/h5/_shots/13-channel-enter.png`：真实进入通道瞬间（22 秒倒计时从 0 起）
+- `tools/h5/_shots/14-channel-midflight.png`：通道 8 秒后的中段画面（多簇星尘 + 多边形障碍 + 飞船 + 进度条）
+- `tools/h5/_shots/15-chanend-realplay.png`：通道结束面板「通道尽头 / CHANNEL END」+ 收集数 → 折算强化卡
 
 ### 节奏：缩到 5 波
 

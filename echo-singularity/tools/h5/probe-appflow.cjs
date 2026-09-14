@@ -59,6 +59,7 @@ function ok(id, cond, extra) {
 
     const log = [];
     let frames = 0, bossSeen = false, bossKilled = false;
+    let enteredSec = null;
     const DT = 1 / 60;
     const MAXF = 60 * 420;   // 最多 7 分钟游戏时间
 
@@ -101,6 +102,7 @@ function ok(id, cond, extra) {
       }
       if (a.state === 'warp' || a.state === 'channel') {
         log.push({ t: +(frames / 60).toFixed(1), ev: '★ 进入 ' + a.state, gate: cb.sing.gate, st: cb.state });
+        enteredSec = +(frames / 60).toFixed(1);
         break;
       }
       if (cb.wave > FINALW && !log.some(e => e.ev.indexOf('越过收尾波') >= 0)) {
@@ -110,13 +112,120 @@ function ok(id, cond, extra) {
     }
     restore();
 
+    /* ─────────────────────────────────────────────────────────────
+       通道可达性 —— 真实玩家从 warp 进入 channel 必须能玩通。
+       作者问「通道做出来了吗」，本节负责证明：
+       1) warp 过场 → channel 真的进入；
+       2) 通道里能吃到星尘；
+       3) 22 秒后 → chanend → 折算成 N 张强化。
+
+       eval 在检测到关键事件时返回 node，由 node 拍图；之后
+       再用第二次 eval 把通道走完。这样能保证截图拍到当下状态。
+       ───────────────────────────────────────────────────────────── */
+    const chanEvents = [];
+    let f2 = 0;
+    if (a.state === 'warp' || a.state === 'channel') {
+      /* 阶段 A：驱动到 state === 'channel'，给 node 拍入口图 */
+      while (a.state === 'warp' && f2 < 60 * 30) {
+        a.step(DT); f2++;
+      }
+      if (a.state === 'channel') {
+        chanEvents.push('reach');
+        log.push({ t: +((frames + f2) / 60).toFixed(1), ev: '★ 进入 channel', gate: cb.sing.gate });
+      }
+    }
+
     return {
       sec: +(frames / 60).toFixed(1), wave: cb.wave, appState: a.state, cbState: cb.state,
       gate: cb.sing.gate, bossSeen: bossSeen, bossKilled: bossKilled, finalW: FINALW,
       singR: +cb.sing.metrics().R.toFixed(1),
       log: log,
+      chanEvents: chanEvents,
+      enteredSec: enteredSec,
+      _chanFrames: frames + f2,    // 给阶段 B 接上帧计数
     };
   });
+
+  /* 阶段 A 的截图：真的进入 channel 那一刻 */
+  if (run.chanEvents.includes('reach')) {
+    await page.screenshot({ path: path.join(SHOTS, '13-channel-enter.png') });
+    console.log('    [shot] 13-channel-enter.png');
+  }
+
+  /* 阶段 B：在 node 端拍完入口图后，把通道走到 8 秒，拍 mid 截图 */
+  let chanMid = await page.evaluate((startFrame) => {
+    const a = window.__ES.app;
+    const DT = 1 / 60;
+    let frames = startFrame;
+    if (a.state !== 'channel') return { frames: frames };
+    let f = 0;
+    while (f < 60 * 12 && a.state === 'channel') {
+      if (a.chan) {
+        const ch = a.chan;
+        let best = null, bestD = 9999;
+        for (const m of ch.motes) {
+          const dx = m.x - ch.p.x, dy = m.y - ch.p.y;
+          const d = dx * dx + dy * dy;
+          if (d < bestD) { bestD = d; best = m; }
+        }
+        if (best) {
+          const dx = best.x - ch.p.x, dy = best.y - ch.p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          ch.p.vx = (dx / d) * 180; ch.p.vy = (dy / d) * 180;
+        }
+      }
+      a.step(DT); f++; frames++;
+    }
+    return { frames: frames };
+  }, run._chanFrames);
+
+  /* 在 node 端检查 mid 截图时是否仍在 channel 状态（因为 chanMid 是异步的） */
+  const midSt = await page.evaluate(() => window.__ES.app.state);
+  if (midSt === 'channel') {
+    await page.screenshot({ path: path.join(SHOTS, '14-channel-midflight.png') });
+    console.log('    [shot] 14-channel-midflight.png');
+  }
+
+  /* 阶段 C：从 mid 走完到 chanend */
+  const chanEnd = await page.evaluate((startFrame) => {
+    const a = window.__ES.app;
+    const DT = 1 / 60;
+    let frames = startFrame;
+    let f = 0;
+    const events = [];
+    while (f < 60 * 30 && (a.state === 'channel' || a.state === 'warp')) {
+      if (a.state === 'channel' && a.chan) {
+        const ch = a.chan;
+        let best = null, bestD = 9999;
+        for (const m of ch.motes) {
+          const dx = m.x - ch.p.x, dy = m.y - ch.p.y;
+          const d = dx * dx + dy * dy;
+          if (d < bestD) { bestD = d; best = m; }
+        }
+        if (best) {
+          const dx = best.x - ch.p.x, dy = best.y - ch.p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          ch.p.vx = (dx / d) * 180; ch.p.vy = (dy / d) * 180;
+        }
+      }
+      a.step(DT); f++; frames++;
+      if (a.state === 'chanend') {
+        const g = a.chan ? a.chan.got : 0;
+        const c = a.chan ? a.chan.cards() : 0;
+        events.push('end:' + g + ':' + c);
+        break;
+      }
+    }
+    return { events: events, got: a.chan ? a.chan.got : 0, cards: a.chan ? a.chan.cards() : 0, frames: frames };
+  }, chanMid.frames);
+
+  /* 中段通道截图（mid 触发时已在 node 端拍过；这里是兜底） */
+  for (const ev of chanEnd.events) {
+    if (ev.startsWith('end:')) { await page.screenshot({ path: path.join(SHOTS, '15-chanend-realplay.png') }); console.log('    [shot] 15-chanend-realplay.png'); }
+  }
+
+  /* 把阶段 B 的事件合到 chanEvents 上，断言用 */
+  const finalChanEvents = run.chanEvents.concat(chanEnd.events);
 
   console.log('\n  ── app 状态机时间线 ──');
   for (const e of run.log) console.log('    [' + e.t + 's] ' + e.ev + '   (gate=' + e.gate + ' cb.state=' + e.st + ')');
@@ -125,16 +234,25 @@ function ok(id, cond, extra) {
     ' · gate=' + run.gate + ' · 奇点视界 R=' + run.singR);
   console.log('');
 
-  const entered = run.appState === 'warp' || run.appState === 'channel';
+  const entered = run.enteredSec != null;
   ok('A1-boss-spawned', run.bossSeen, '第 ' + run.finalW + ' 波（区域收尾）出现巨像 warden');
   ok('A2-gate-opened', run.gate === 2 || entered, '奇点开门（gate=' + run.gate + '）');
-  ok('A3-entered', entered, entered ? '玩家进入 ' + run.appState : '没能进去（app=' + run.appState + '）');
+  ok('A3-entered', entered, entered ? '玩家进入 warp/channel（用时 ' + run.enteredSec + 's）' : '没能进去（app=' + run.appState + '）');
   ok('A4-not-skipped', !(run.wave > run.finalW && run.gate === 0),
     run.wave > run.finalW && run.gate === 0 ? '★复现作者报告：越过收尾波却从没开门' : '未跳过开门');
   /* 节奏：第一个可进入的奇点必须在 2 分钟量级内出现，
      否则新玩家（单次会话 3–5 分钟）很可能玩不到就退出 */
-  ok('A5-pacing', entered && run.sec <= 150,
-    '第一个可进入奇点出现在 ' + run.sec + 's（目标 ≤150s，改前 233.6s）');
+  ok('A5-pacing', entered && run.enteredSec <= 150,
+    '第一个可进入奇点出现在 ' + run.enteredSec + 's（目标 ≤150s，改前 233.6s）');
+
+  /* 通道可达性 —— 作者问「雷霆战机式奖励关做出来了吗」 */
+  const chanReach = finalChanEvents.includes('reach');
+  const chanEndEv = finalChanEvents.find(e => e.startsWith('end:'));
+  let chanGot = 0, chanCards = 0;
+  if (chanEndEv) { const [, g, c] = chanEndEv.split(':'); chanGot = +g; chanCards = +c; }
+  ok('A6-channel-reached', chanReach, chanReach ? 'warp → channel 真实进入' : '没能从 warp 进入 channel');
+  ok('A7-channel-collected', chanGot > 0, '通道里收到 ' + chanGot + ' 颗星尘');
+  ok('A8-chanend-reward', chanCards >= 1, '折算成 ' + chanCards + ' 张强化卡（最低 1 张）');
 
   if (errs.length) console.log('  异常：' + errs.slice(0, 3).join(' | '));
   const bad = results.filter(r => !r.pass).length;
