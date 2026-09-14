@@ -152,6 +152,44 @@ function _fallbackTouch(kind, cb) {
   document.addEventListener(mouse[kind], function (e) { cb(pack(e)); });
 }
 
+/* ── 键盘（PC / H5 端）────────────────────────────────────────────────────
+   ⚠️ 小游戏在手机上是**没有物理键盘**的，所以任何键盘操作都只能是**增益**，
+      不能是唯一入口 —— 触摸那条路必须始终可用（通道里 A/D 与摇杆并存就是这个道理）。
+
+   小游戏 DevTools / PC 端有 `wx.onKeyDown/onKeyUp`，能接就接；
+   接不到（手机、H5）就走 document。两种情况 `axisX()` 都是 -1/0/+1，调用方无感。
+
+   ⚠️ 失焦必须清空按键表：切窗口 / 弹通知时 keyup 收不到，会留下「一直按住」
+      的幽灵输入，表现为松手了船还在飘（跟 touchcancel 那个坑同源）。 */
+const Keys = {
+  _d: Object.create(null),
+  down: function (code) { return !!this._d[code]; },
+  /* 横向轴：A/D 与 ←/→ 等价。同时按下左右 = 0（不抖动） */
+  axisX: function () {
+    let a = 0;
+    if (this._d.KeyA || this._d.ArrowLeft) a -= 1;
+    if (this._d.KeyD || this._d.ArrowRight) a += 1;
+    return a;
+  },
+  clear: function () { this._d = Object.create(null); },
+};
+
+function _initKeys() {
+  let bound = false;
+  if (_wx && _wx.onKeyDown) {
+    _wx.onKeyDown(function (e) { if (e && e.code) Keys._d[e.code] = true; });
+    if (_wx.onKeyUp) _wx.onKeyUp(function (e) { if (e && e.code) delete Keys._d[e.code]; });
+    bound = true;
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', function (e) { if (e && e.code) Keys._d[e.code] = true; });
+    document.addEventListener('keyup', function (e) { if (e && e.code) delete Keys._d[e.code]; });
+    if (typeof window !== 'undefined') window.addEventListener('blur', Keys.clear);
+    bound = true;
+  }
+  return bound;
+}
+
 /* ── 存储（同步；小游戏可直接存对象，H5 兜底走 JSON + localStorage） ──── */
 const Store = {
   get: function (k, def) {
@@ -311,6 +349,8 @@ module.exports = {
   now: now,
   raf: _raf,
   Touch: Touch,
+  Keys: Keys,
+  initKeys: _initKeys,
   Store: Store,
   Audio: AudioCtl,
   Share: Share,

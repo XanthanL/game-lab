@@ -574,6 +574,90 @@ function ok(id, cond, extra) {
   ok('31-channel-collect', chanTest.after > chanTest.before, '收集 ' + chanTest.before + ' → ' + chanTest.after);
   ok('32-channel-hit', chanTest.hit, '撞障碍 → 减速 + 计次（不是死亡）');
 
+  /* ── 通道里的船 = 玩家自己的船（同型号 + 进场属性快照）────────────────
+     作者要求：「战机仍然是我们玩家操控的战机，一模一样，包括进入时的属性」。
+     这里盯三件事：① 型号一致 ② 属性逐字段一致 ③ 内部是**副本**，
+     通道里改它不能反向污染战斗状态（否则撞一下障碍就把玩家改残了）。 */
+  const shipTest = await page.evaluate(() => {
+    const CH = window.__reg.channel, E = window.__reg.entities;
+    const src = E.mkPlayer('nemesis');
+    src.maxSpeed = 333; src.accel = 2222; src.magnet = 99; src.dmg = 42;
+    src.maxHp = 250; src.hp = 123; src.shieldMax = 40; src.shield = 17;
+    src.boostT = 5; src.invuln = 4;                 // 战斗里的临时 buff，不该带进来
+    const ch = new CH.Channel('probe-ship', src, { onUpgrade: null });
+    let allSame = true;
+    for (let i = 0; i < CH.STAT_KEYS.length; i++) {
+      const k = CH.STAT_KEYS[i];
+      if (Math.abs(ch.p[k] - src[k]) > 1e-9) allSame = false;
+    }
+    /* 副本性：改通道里的船，源不能动 */
+    const keep = ch.p.maxSpeed;
+    ch.p.maxSpeed = 1;
+    const isolated = (src.maxSpeed === 333);
+    ch.p.maxSpeed = keep;
+    return {
+      hullId: ch.hullId, wantHull: src.hullId, allSame: allSame, isolated: isolated,
+      maxSpeed: ch.p.maxSpeed, accel: ch.p.accel, magnet: ch.p.magnet, dmg: ch.p.dmg,
+      hp: ch.p.hp, maxHp: ch.p.maxHp, shield: ch.p.shield, shieldMax: ch.p.shieldMax,
+      noBuffLeak: ch.p.boostT === 0 && ch.p.rateT === 0 && ch.p.invuln === 0 && ch.p.shieldTmp === 0,
+    };
+  });
+  ok('57-chan-ship-same',
+    shipTest.hullId === shipTest.wantHull && shipTest.allSame &&
+    shipTest.maxSpeed === 333 && shipTest.magnet === 99 && shipTest.hp === 123,
+    '机体 ' + shipTest.hullId + ' · 极速 ' + shipTest.maxSpeed + ' · 磁吸 ' + shipTest.magnet +
+    ' · 伤害 ' + shipTest.dmg + ' · 血 ' + shipTest.hp + '/' + shipTest.maxHp +
+    ' · 盾 ' + shipTest.shield + '/' + shipTest.shieldMax);
+  ok('58-chan-ship-isolated', shipTest.isolated && shipTest.noBuffLeak,
+    '通道内是副本（改它不污染战斗状态）+ 不带战斗临时 buff 进场');
+
+  /* ── 升级舱：击杀巨像的奖励本体（一个 = 一张永久强化）──────────────── */
+  const podTest = await page.evaluate(() => {
+    const a = window.__ES.app, ch = a.chan, cb = a.cb;
+    const snap = { dmg: cb.p.dmg, rate: cb.p.fireRate, spd: cb.p.maxSpeed, maxHp: cb.p.maxHp, magnet: cb.p.magnet };
+    const before = ch.upgrades.length;
+    for (let i = 0; i < 3; i++) {
+      ch.pods.push({ alive: true, x: ch.p.x, y: -ch.camY + ch.p.y, v: 0 });
+      ch.update(0.016, null);
+    }
+    const changed = cb.p.dmg !== snap.dmg || cb.p.fireRate !== snap.rate ||
+      cb.p.maxSpeed !== snap.spd || cb.p.maxHp !== snap.maxHp || cb.p.magnet !== snap.magnet;
+    return {
+      before: before, after: ch.upgrades.length, ids: ch.upgrades.slice(),
+      noSynergy: ch.upgrades.every(function (id) { return id !== 'synergy'; }),
+      wroteBack: changed,
+    };
+  });
+  ok('59-chan-pod-upgrade',
+    podTest.after === podTest.before + 3 && podTest.noSynergy && podTest.wroteBack,
+    '抢到 ' + podTest.after + ' 个升级舱 → ' + podTest.ids.join('/') +
+    '（非协同，且已写回战斗层生效）');
+
+  /* ── A/D 左右移动（作者指定的通道操控）──────────────────────────────── */
+  const adTest = await page.evaluate(() => {
+    const ch = window.__ES.app.chan, PAL = window.__reg.pal;
+    /* 清场隔离：这一项只验操控，别让星尘/障碍的碰撞力搅进来 */
+    ch.motes.length = 0; ch.rocks.length = 0; ch.pods.length = 0;
+    ch.p.x = 180; ch.p.vx = 0; ch.p.vy = 0; ch.p.inv = 0;
+    const step = function (n) { for (let i = 0; i < n; i++) ch.update(1 / 60, null); };
+    step(1);
+    const idle = ch.p.x;
+    PAL.Keys._d.KeyD = true; step(30); delete PAL.Keys._d.KeyD;
+    const right = ch.p.x;
+    ch.p.vx = 0;
+    PAL.Keys._d.KeyA = true; step(30); delete PAL.Keys._d.KeyA;
+    const left = ch.p.x;
+    /* 方向键必须等价 */
+    ch.p.x = 180; ch.p.vx = 0;
+    PAL.Keys._d.ArrowRight = true; step(30); delete PAL.Keys._d.ArrowRight;
+    const arrowRight = ch.p.x;
+    return { idle: idle, right: right, left: left, arrowRight: arrowRight };
+  });
+  ok('60-chan-ad-move',
+    adTest.right > adTest.idle + 4 && adTest.left < adTest.right - 8 && adTest.arrowRight > 180 + 4,
+    'D 右移 ' + (adTest.right - adTest.idle).toFixed(1) + 'px · A 左移 ' +
+    (adTest.right - adTest.left).toFixed(1) + 'px · → 与 D 等价');
+
   /* 快进到通道结束 */
   await page.evaluate(() => {
     const ch = window.__ES.app.chan;

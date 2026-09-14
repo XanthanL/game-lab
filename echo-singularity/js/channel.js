@@ -5,10 +5,16 @@
    ----------------------------------------------------------------------------
    定位：**打掉区域巨像的奖励**，不是普通战斗关。
      · 纵版向上卷轴（雷霆战机 bonus 关那个味道）
-     · 只做两件事：吃星尘、躲静态障碍
+     · 三样东西：吃星尘、躲静态障碍、抢升级舱
      · 巨像本身不掉任何东西 —— 所有回报都在这一段里
 
-   收集数在结束时折算成额外选卡次数（1～3 张，收集越多给越多）。
+   ★ 通道里飞的就是**玩家自己那架船**：同一型号、进场时的属性原样带进来
+     （堆过「推进喷口」的玩家在这里真的更快，磁吸更宽）。
+     做法是从 cb.p **快照**一份，不是直接持有 —— 通道里撞障碍、吃升级
+     都不该反向污染战斗状态。
+
+   ★ 升级舱是击杀巨像的**奖励本体**：一个 = 一张永久强化（非协同）。
+     星尘仍然是「分」，结束时折算成额外选卡次数（1～3 张）。
 
    为什么不在这里放敌人：放了就变成普通战斗关，跟「奖励」的定位冲突。
    障碍是静态的，赌的是走位与速度感，不是火力。
@@ -20,6 +26,9 @@ const ARENA = require('./arena.js');
 const E = require('./entities.js');
 const Combat = require('./combat.js');
 const Input = require('./input.js');
+const PK = require('./pickups.js');
+const CD = require('./cards.js');
+const PAL = require('./pal.js');
 const clamp = U.clamp, TAU = U.TAU;
 const AW = ARENA.ARENA_W, AH = ARENA.ARENA_H;
 
@@ -28,8 +37,18 @@ const SPEED = 250;         // 向上卷轴速度（px/s）
 const WALL = 34;           // 两侧管壁留白（可飞行区是 AW-2*WALL）
 const MOTE_EVERY = 130;    // 星尘簇的纵向间距
 const ROCK_EVERY = 190;    // 障碍的纵向间距
+const POD_EVERY = 1150;    // 升级舱的纵向间距（22s × 250px/s ≈ 5500px → 约 4~5 个）
 const HIT_SLOW = 0.55;     // 撞击后的减速倍率
 const HIT_SLOW_T = 0.9;    // 减速持续
+
+/* 手感放大系数 —— 基准机体（maxSpeed 168 / accel 1150 / damp 5.2）算出来
+   正好等于改前的 210 / 1437 / 6.5，所以默认手感一帧都不变；
+   而堆过「推进喷口」的玩家会真的更快 —— 这就是「进场属性带进来」的意义。 */
+const ACC_MUL = 1.25;
+const SPD_MUL = 1.25;
+const DAMP_MUL = 1.25;
+/* 磁吸半径 = 机体 magnet + 6（基准 46+6 = 52，等于改前值；nemesis / 牵引场更宽） */
+const MAGNET_ADD = 6;
 
 /* 收集数 → 额外选卡次数 */
 const TIERS = [
@@ -43,15 +62,57 @@ function cardsFor(got) {
   return c;
 }
 
-function Channel(seed, hullId) {
+/* 从玩家本体快照的机体属性。缺哪个都不会崩 —— 走 mkPlayer 的默认值。 */
+const STAT_KEYS = [
+  'maxSpeed', 'accel', 'damp',
+  'fireRate', 'dmg', 'bspd', 'crit', 'critMul',
+  'magnet', 'maxHp', 'shieldMax', 'r',
+];
+
+function Channel(seed, src, opts) {
+  opts = opts || {};
   this.rng = U.RNG(seed || 'channel');
   this.fx = new Combat.FXPool(180);
-  this.hullId = hullId || 'peregrine';
-  this.p = { x: AW / 2, y: AH * 0.74, vx: 0, vy: 0, ang: -Math.PI / 2, r: 9, inv: 0, hitFlash: 0 };
+  this.onUpgrade = opts.onUpgrade || null;   // 拿到升级舱时回写给战斗层
+
+  /* ── 机体：从玩家本体快照，一模一样 ──────────────────────────────────
+     先 mkPlayer 出一台干净的同型机（保证基础字段齐全），
+     再用玩家当前的实际属性覆盖 —— 这就是「进场时的属性」。 */
+  /* 兼容两种调用：新的是传玩家本体（对象），老的 / 探针可能只传 hullId 字符串。
+     ⚠️ 不兼容会**静默退化成 peregrine**（字符串没有 .hullId），宁可多几行也别让
+        调用方写出"以为换了机体其实没换"的 bug。 */
+  let srcObj = null;
+  if (src && typeof src === 'object') { srcObj = src; this.hullId = src.hullId || 'peregrine'; }
+  else if (typeof src === 'string' && src) { this.hullId = src; }
+  else this.hullId = 'peregrine';
+
+  const p = E.mkPlayer(this.hullId);
+  if (srcObj) {
+    for (let i = 0; i < STAT_KEYS.length; i++) {
+      const k = STAT_KEYS[i];
+      if (typeof srcObj[k] === 'number' && isFinite(srcObj[k])) p[k] = srcObj[k];
+    }
+    /* 血量 / 护盾也一起带进来 —— 这是"你的船"最直观的证据 */
+    if (typeof srcObj.hp === 'number') p.hp = srcObj.hp;
+    if (typeof srcObj.shield === 'number') p.shield = srcObj.shield;
+  }
+  p.x = AW / 2; p.y = AH * 0.74;
+  p.vx = 0; p.vy = 0; p.ang = -Math.PI / 2;
+  p.inv = 0; p.hitFlash = 0; p.cd = 0; p.alive = true;
+  /* 通道是奖励关，不该带着战斗里的**临时 buff 计时器**进来 —— 全部清零。
+     否则会出现"进场瞬间边缘光带还挂着上一场的无敌"这种割裂。 */
+  p.boostT = 0; p.rateT = 0; p.invuln = 0; p.shieldTmp = 0; p.shieldTmpMax = 0;
+  if (p.hp > p.maxHp) p.hp = p.maxHp;
+  if (p.shield > p.shieldMax) p.shield = p.shieldMax;
+  this.p = p;
+
   this.t = 0;
   this.camY = 0;            // 已飞过的距离（越大 = 越往上）
   this.motes = [];
   this.rocks = [];
+  this.pods = [];           // 升级舱
+  this.upgrades = [];       // 已拿到的强化 id
+  this.toasts = [];         // 飘字（拿到升级时）
   this.got = 0;
   this.hits = 0;
   this.combo = 0;
@@ -61,11 +122,17 @@ function Channel(seed, hullId) {
   this.bornT = 0;           // 入场（从奇点被吐出来）
   this._nextMote = -60;
   this._nextRock = -260;
+  this._nextPod = -520;
   this._trail = [];
 }
 
 Channel.prototype.progress = function () { return clamp(this.t / DUR, 0, 1); };
 Channel.prototype.cards = function () { return cardsFor(this.got); };
+
+Channel.prototype.toast = function (x, y, zh) {
+  this.toasts.push({ x: x, y: y, zh: zh, t: 1.5, max: 1.5 });
+  if (this.toasts.length > 6) this.toasts.shift();
+};
 
 /* 屏幕 y = 物体 y + camY */
 function sy(ch, y) { return y + ch.camY; }
@@ -109,11 +176,35 @@ Channel.prototype.spawnAhead = function () {
     }
     this._nextRock -= ROCK_EVERY * this.rng.range(0.75, 1.3);
   }
+  /* 升级舱：击杀巨像的奖励本体。比星尘稀有得多，位置也更靠中间好抢。 */
+  while (this._nextPod > -this.camY - AH - 200) {
+    this.pods.push({
+      alive: true,
+      x: WALL + 30 + this.rng.next() * (AW - 2 * WALL - 60),
+      y: this._nextPod,
+      v: this.rng.range(0, TAU),
+    });
+    this._nextPod -= POD_EVERY * this.rng.range(0.85, 1.2);
+  }
 };
 
 Channel.prototype.shake = function (a) {
   this.shakeA = Math.max(this.shakeA, a);
   this.shakeT = Math.max(this.shakeT, 0.22);
+};
+
+/* 拿到一个升级舱 —— 立刻给一张**非协同**永久强化。
+   协同不白送：它是直接压缩奇点的核心资源，只能玩家自己在选卡时取舍，
+   白送会破坏「构筑 = 压缩」这条隐喻的重量。（与拾取物「数据注入」同一条规则） */
+Channel.prototype.grantUpgrade = function (x, y) {
+  const pool = CD.CARDS.filter(function (cd) { return cd.id !== 'synergy'; });
+  const cd = pool[Math.floor(this.rng.next() * pool.length) % pool.length];
+  this.upgrades.push(cd.id);
+  if (this.onUpgrade) this.onUpgrade(cd);
+  this.toast(x, y - 20, cd.zh);
+  this.fx.burst(x, y, 14, 'violetHi', 170, 1);
+  this.shake(4);
+  return cd;
 };
 
 Channel.prototype.update = function (dt, input) {
@@ -130,15 +221,22 @@ Channel.prototype.update = function (dt, input) {
   this.camY += sp * dt;
   this.spawnAhead();
 
-  /* 操纵：复用同一个左下角摇杆 */
-  const s = input && input.stick ? input.stick : null;
+  /* ── 操纵 ────────────────────────────────────────────────────────────
+     A/D（含 ←/→）是横向主控。触摸时仍是左下角摇杆 —— 手机没有物理键盘，
+     键盘只能做**增益**，不能成为唯一入口。两者可以叠加（键盘 + 摇杆同时给）。
+     加速度 / 极速 / 阻尼全部来自机体属性，所以堆过速度的玩家真的更灵活。 */
+  const acc = p.accel * ACC_MUL;
+  const vmax = p.maxSpeed * SPD_MUL;
   let ax = 0, ay = 0;
-  if (s && s.active) { ax = s.dx * 1400; ay = s.dy * 1400; }
+  const kx = PAL.Keys.axisX();
+  if (kx !== 0) ax += kx * acc;
+  const s = input && input.stick ? input.stick : null;
+  if (s && s.active) { ax += s.dx * acc; ay += s.dy * acc; }
   p.vx += ax * dt; p.vy += ay * dt;
-  const k = Math.exp(-6.5 * dt);
+  const k = Math.exp(-p.damp * DAMP_MUL * dt);
   p.vx *= k; p.vy *= k;
   const v = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-  if (v > 210) { p.vx = p.vx / v * 210; p.vy = p.vy / v * 210; }
+  if (v > vmax) { p.vx = p.vx / v * vmax; p.vy = p.vy / v * vmax; }
   p.x += p.vx * dt; p.y += p.vy * dt;
 
   /* 撞管壁：软墙，把速度吃掉（不是死亡，奖励关不该有死亡） */
@@ -151,6 +249,8 @@ Channel.prototype.update = function (dt, input) {
   if (v > 8) p.ang = Math.atan2(p.vy, p.vx) + Math.PI / 2 - Math.PI / 2;
   p.ang = U.angleLerp(p.ang, -Math.PI / 2, 1 - Math.exp(-7 * dt));
 
+  const mg = p.magnet + MAGNET_ADD;
+
   /* 星尘 */
   for (let i = 0; i < this.motes.length; i++) {
     const m = this.motes[i];
@@ -160,7 +260,7 @@ Channel.prototype.update = function (dt, input) {
     const dx = m.x - p.x, dy = yy - p.y;
     /* 磁吸：靠近就吸过来，手感好很多 */
     const d2 = dx * dx + dy * dy;
-    if (d2 < 52 * 52) {
+    if (d2 < mg * mg) {
       m.x -= dx * 5.5 * dt; m.y -= dy * 5.5 * dt / Math.max(0.2, 1);
     }
     if (d2 < 16 * 16) {
@@ -168,6 +268,23 @@ Channel.prototype.update = function (dt, input) {
       this.got++;
       this.combo++;
       this.fx.burst(m.x, yy, 3, 'amberHi', 70, 1);
+    }
+  }
+
+  /* 升级舱 */
+  for (let i = 0; i < this.pods.length; i++) {
+    const q = this.pods[i];
+    if (!q.alive) continue;
+    const yy = sy(this, q.y);
+    if (yy > AH + 40) { q.alive = false; continue; }
+    const dx = q.x - p.x, dy = yy - p.y;
+    const d2 = dx * dx + dy * dy;
+    /* 判定比星尘宽一点 —— 它是奖励本体，抢到手要干脆 */
+    if (d2 < mg * mg * 1.35) { q.x -= dx * 4.2 * dt; q.y -= dy * 4.2 * dt; }
+    const gr = 18 + p.r;
+    if (d2 < gr * gr) {
+      q.alive = false;
+      this.grantUpgrade(q.x, yy);
     }
   }
 
@@ -194,9 +311,17 @@ Channel.prototype.update = function (dt, input) {
     }
   }
 
+  /* 飘字 */
+  for (let i = this.toasts.length - 1; i >= 0; i--) {
+    const q = this.toasts[i];
+    q.t -= dt; q.y -= 26 * dt;
+    if (q.t <= 0) this.toasts.splice(i, 1);
+  }
+
   /* 回收 */
   if (this.motes.length > 260) this.motes = this.motes.filter(function (m) { return m.alive; });
   if (this.rocks.length > 90) this.rocks = this.rocks.filter(function (r) { return r.alive; });
+  if (this.pods.length > 40) this.pods = this.pods.filter(function (q) { return q.alive; });
 
   this._trail.push(p.x, p.y);
   if (this._trail.length > 24 * 2) this._trail.splice(0, 2);
@@ -300,14 +425,64 @@ Channel.prototype.draw = function (c) {
   }
   c.restore();
 
-  /* 尾流 + 船 */
-  const tint = T.HULL_TINT[this.hullId] || T.HULL_TINT.peregrine;
+  /* 升级舱 —— 奖励本体，画在障碍之上，必须比星尘显眼。
+     六边舱体 + 自转刻度环 + 升级箭头（几何路径，跟 pickups 的字形同一套语言） */
+  c.save();
+  for (let i = 0; i < this.pods.length; i++) {
+    const q = this.pods[i];
+    if (!q.alive) continue;
+    const yy = sy(this, q.y);
+    if (yy < -46 || yy > AH + 46) continue;
+    const puls = 0.72 + 0.28 * Math.sin(this.t * 4 + q.v);
+    c.save();
+    c.translate(q.x, yy);
+
+    /* 自转刻度环（手写刻度，不用 setLineDash —— 少一个平台差异面） */
+    c.save();
+    c.rotate(this.t * 0.9 + q.v);
+    c.strokeStyle = T.rgba('violetHi', 0.55 * puls);
+    c.lineWidth = 1.1;
+    c.beginPath();
+    for (let k = 0; k < 8; k++) {
+      const a0 = k * TAU / 8, a1 = a0 + TAU / 8 * 0.5;
+      c.moveTo(Math.cos(a0) * 18, Math.sin(a0) * 18);
+      c.lineTo(Math.cos(a1) * 18, Math.sin(a1) * 18);
+    }
+    c.stroke();
+    c.restore();
+
+    /* 六边舱体 */
+    c.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = -Math.PI / 2 + k * TAU / 6;
+      const px = Math.cos(a) * 11.5, py = Math.sin(a) * 11.5;
+      if (k === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.closePath();
+    c.fillStyle = T.rgba('violet', 0.20 + 0.16 * puls);
+    c.fill();
+    c.strokeStyle = T.rgba('violetHi', 0.92 * puls);
+    c.lineWidth = 1.5;
+    c.stroke();
+
+    /* 升级箭头 */
+    c.strokeStyle = T.rgba('violetHi', 0.95);
+    PK.drawGlyph(c, 'level', 6.2, 1.5);
+    c.restore();
+  }
+  c.restore();
+
+  /* ── 尾流 + 船 ───────────────────────────────────────────────────────
+     ★ 与 render.js 的 drawPlayer 用**同一套画法**：尾焰公式、机身、座舱、
+       受击闪白全部对齐 —— 这就是你自己的那架船，不是"通道专用小飞机"。 */
+  const tint = T.HULL_TINT[p.hullId] || T.HULL_TINT.peregrine;
+  const glow = tint.glow;
   c.save();
   c.lineCap = 'round';
   const n = this._trail.length / 2;
   for (let i = 1; i < n; i++) {
     const t = i / n;
-    c.strokeStyle = 'rgba(' + tint.glow[0] + ',' + tint.glow[1] + ',' + tint.glow[2] + ',' + (0.06 + 0.34 * t * t) + ')';
+    c.strokeStyle = 'rgba(' + glow[0] + ',' + glow[1] + ',' + glow[2] + ',' + (0.06 + 0.34 * t * t) + ')';
     c.lineWidth = 1 + 5.5 * t * t;
     c.beginPath();
     c.moveTo(this._trail[(i - 1) * 2], this._trail[(i - 1) * 2 + 1]);
@@ -316,27 +491,45 @@ Channel.prototype.draw = function (c) {
   }
   c.restore();
 
+  /* 无敌帧闪烁：8Hz 方波（跟战场一致，别用正弦 —— 太柔和看不出"打不到"） */
+  const blink = (p.inv > 0 && Math.floor(p.inv * 16) % 2 === 0);
+
   c.save();
   c.translate(p.x, p.y);
   c.rotate(p.ang);
-  const fl = 12 + Math.sin(this.t * 22) * 2;
+  if (blink) c.globalAlpha = 0.35;
+
+  /* 尾焰：朝船尾(-x)喷，长度随速度 —— 与 drawPlayer 同公式 */
+  const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+  const fl = 8 + clamp(spd / 170, 0, 1) * 16;
   const fg = c.createLinearGradient(-8, 0, -8 - fl, 0);
-  fg.addColorStop(0, 'rgba(' + tint.glow[0] + ',' + tint.glow[1] + ',' + tint.glow[2] + ',0.6)');
-  fg.addColorStop(1, 'rgba(' + tint.glow[0] + ',' + tint.glow[1] + ',' + tint.glow[2] + ',0)');
+  fg.addColorStop(0, 'rgba(' + glow[0] + ',' + glow[1] + ',' + glow[2] + ',0.55)');
+  fg.addColorStop(1, 'rgba(' + glow[0] + ',' + glow[1] + ',' + glow[2] + ',0)');
   c.fillStyle = fg;
   c.beginPath();
   c.moveTo(-8, -3.2); c.lineTo(-8 - fl, 0); c.lineTo(-8, 3.2);
   c.closePath(); c.fill();
-  E.hullPath(c, this.hullId);
+
+  /* 出厂护盾环（堡垒有 30 护盾）—— 它是"你的船"的一部分，不能丢 */
+  if (p.shieldMax > 0 && p.shield > 0) {
+    const sr = p.r + 7;
+    c.strokeStyle = T.rgba('shieldB', 0.30 + 0.35 * clamp(p.shield / p.shieldMax, 0, 1));
+    c.lineWidth = 1.4;
+    c.beginPath(); c.arc(0, 0, sr, 0, TAU); c.stroke();
+  }
+
+  E.hullPath(c, p.hullId);
   c.fillStyle = tint.fill; c.fill();
   c.strokeStyle = tint.line; c.lineWidth = 1.5; c.stroke();
-  if (p.inv > 0 && Math.floor(p.inv * 16) % 2 === 0) c.globalAlpha = 0.35;
+
+  /* 座舱 */
   c.fillStyle = T.rgba('cyanHi', 0.6);
   c.beginPath(); c.arc(2.5, 0, 1.9, 0, TAU); c.fill();
-  c.globalAlpha = 1;
+
+  /* 受击闪白 */
   if (p.hitFlash > 0) {
-    E.hullPath(c, this.hullId);
-    c.fillStyle = T.rgba('inkHi', clamp(p.hitFlash / 0.2, 0, 1) * 0.7);
+    E.hullPath(c, p.hullId);
+    c.fillStyle = T.rgba('inkHi', clamp(p.hitFlash / 0.16, 0, 1) * 0.7);
     c.fill();
   }
   c.restore();
@@ -351,25 +544,47 @@ Channel.prototype.draw = function (c) {
     c.beginPath(); c.arc(q.x, q.y, q.r * (0.4 + 0.6 * tt), 0, TAU); c.fill();
   }
 
+  /* 飘字：拿到升级时冒出来 */
+  if (this.toasts.length) {
+    c.save();
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (let i = 0; i < this.toasts.length; i++) {
+      const q = this.toasts[i];
+      const a = clamp(q.t / q.max, 0, 1);
+      c.fillStyle = T.rgba('violetHi', a);
+      c.font = T.font('small', 'bold');
+      c.fillText(q.zh, q.x, q.y);
+    }
+    c.restore();
+  }
+
   Input.drawStick(c);
 };
 
-/* HUD：进度 + 收集 + 折算的卡数 */
+/* HUD：进度 + 收集 + 升级 + 折算的卡数 */
 Channel.prototype.drawHUD = function (c) {
   c.save();
   c.textBaseline = 'middle';
 
-  const g = c.createLinearGradient(0, 0, 0, 56);
+  const g = c.createLinearGradient(0, 0, 0, 62);
   g.addColorStop(0, T.rgba('voidDeep', 0.8));
   g.addColorStop(1, T.rgba('voidDeep', 0));
   c.fillStyle = g;
-  c.fillRect(0, 0, AW, 56);
+  c.fillRect(0, 0, AW, 62);
 
+  /* 左：关卡名 + 机体读数（"这就是你自己的船"） */
   c.textAlign = 'left';
   c.fillStyle = T.rgba('secInk', 0.9);
   c.font = T.font('tiny', 'medium');
   c.fillText('通道 · THE CHANNEL', 12, 16);
+  let hullZh = this.hullId;
+  for (let i = 0; i < E.HULLS.length; i++) if (E.HULLS[i].id === this.hullId) { hullZh = E.HULLS[i].zh; break; }
+  c.fillStyle = T.rgba('steel', 0.85);
+  c.font = T.font('micro', 'regular');
+  c.fillText(hullZh + ' · ' +
+    Math.max(0, Math.round(this.p.hp)) + '/' + Math.round(this.p.maxHp), 12, 32);
 
+  /* 中：星尘 → 折算卡数 */
   c.textAlign = 'center';
   c.fillStyle = T.rgba('amberHi', 1);
   c.font = T.font('lead', 'bold');
@@ -378,10 +593,22 @@ Channel.prototype.drawHUD = function (c) {
   c.font = T.font('micro', 'regular');
   c.fillText('星尘 · ' + this.cards() + ' 张强化', AW / 2, 38);
 
+  /* 右：倒计时 + 已拿升级 */
   c.textAlign = 'right';
   c.fillStyle = T.rgba('cyanHi', 0.95);
   c.font = T.font('small', 'medium');
   c.fillText(Math.ceil(Math.max(0, DUR - this.t)) + 's', AW - 12, 16);
+  c.fillStyle = T.rgba('violetHi', this.upgrades.length ? 1 : 0.35);
+  c.font = T.font('micro', 'bold');
+  c.fillText('升级 ×' + this.upgrades.length, AW - 12, 32);
+  c.restore();
+
+  /* 操作提示：A/D 是主控，但手机没有键盘 —— 摇杆那条路要让人看见 */
+  c.save();
+  c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillStyle = T.rgba('steel', 0.5);
+  c.font = T.font('micro', 'regular');
+  c.fillText('A / D 左右 · 或左下摇杆', AW - 12, AH - 22);
   c.restore();
 
   /* 进度条（贴底，表示飞了多远） */
@@ -402,5 +629,7 @@ Channel.prototype.drawHUD = function (c) {
 module.exports = {
   Channel: Channel, cardsFor: cardsFor,
   DUR: DUR, TIERS: TIERS,
+  POD_EVERY: POD_EVERY, ACC_MUL: ACC_MUL, SPD_MUL: SPD_MUL, MAGNET_ADD: MAGNET_ADD,
+  STAT_KEYS: STAT_KEYS,
 };
 })();

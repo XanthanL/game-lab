@@ -191,7 +191,13 @@ App.prototype.step = function (dt) {
     }
     w.draw(c);
     if (w.update(dt)) {
-      this.chan = new Channel.Channel(cb.seedStr + ':' + cb.warps, cb.p.hullId);
+      /* 通道里飞的就是玩家自己那架船 —— 把 cb.p 本体传进去做属性快照
+         （通道内部是副本，撞障碍 / 吃升级都不会反向污染战斗状态）。
+         onUpgrade 把升级舱换到的永久强化**立刻**写回战斗层，
+         这样通道一结束玩家就能感受到自己变强了。 */
+      this.chan = new Channel.Channel(cb.seedStr + ':' + cb.warps, cb.p, {
+        onUpgrade: function (card) { cb.applyCard(card); },
+      });
       this.warp = null;
       this.state = 'channel';
       this.resetClock();
@@ -316,6 +322,7 @@ App.prototype.start = function () {
   if (this.started) return;
   this.started = true;
   Input.init();
+  PAL.initKeys();   // 键盘是增益输入，手机无键盘时静默降级（不报错、不影响触摸）
   this.setupShare();
 
   const self = this;

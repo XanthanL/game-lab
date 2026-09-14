@@ -14,6 +14,7 @@ const ARENA = require('./arena.js');
 const SG = require('./singularity.js');
 const RG = require('./regions.js');
 const PK = require('./pickups.js');
+const CD = require('./cards.js');
 const Aura = require('./aura.js');
 const Input = require('./input.js');
 const clamp = U.clamp, TAU = U.TAU;
@@ -400,16 +401,25 @@ function drawOver(c, cb, best) {
 /* ── 通道结算 ─────────────────────────────────────────────────────────── */
 function drawChannelEnd(c, ch) {
   scrim(c, 0.86);
-  const w = 258, h = 214, x = (AW - w) / 2, y = (AH - h) / 2;
+  const w = 258, h = 248, x = (AW - w) / 2, y = (AH - h) / 2;
   panelBox(c, x, y, w, h);
-  title(c, y + 34, '通道尽头', 'CHANNEL END');
+  title(c, y + 32, '通道尽头', 'CHANNEL END');
+
+  /* 升级舱换到的永久强化（ch.upgrades 是卡 id 数组） */
+  const ups = ch.upgrades || [];
+  const upNames = [];
+  for (let i = 0; i < ups.length; i++) {
+    const cd = CD.byId(ups[i]);
+    if (cd) upNames.push(cd.zh);
+  }
 
   c.save();
   c.textBaseline = 'middle';
-  let ry = y + 76;
+  let ry = y + 70;
   const rows = [
     ['收集星尘', String(ch.got)],
     ['撞击', String(ch.hits)],
+    ['抢到升级舱', ups.length + ' 项'],
     ['折算强化', ch.cards() + ' 张'],
   ];
   for (let i = 0; i < rows.length; i++) {
@@ -418,15 +428,23 @@ function drawChannelEnd(c, ch) {
     c.font = T.font('small', 'regular');
     c.fillText(rows[i][0], x + 30, ry);
     c.textAlign = 'right';
-    c.fillStyle = T.rgba(i === 2 ? 'amberHi' : 'inkHi', 1);
+    c.fillStyle = T.rgba(i === 2 ? 'violetHi' : (i === 3 ? 'amberHi' : 'inkHi'), 1);
     c.font = T.font('small', 'bold');
     c.fillText(rows[i][1], x + w - 30, ry);
     ry += 24;
   }
+
+  /* 拿到升级就报名字（玩家要看见"我变强在哪"）；没拿到才讲设计哲学 */
   c.textAlign = 'center';
-  c.fillStyle = T.rgba('steel', 0.9);
-  c.font = T.font('micro', 'regular');
-  c.fillText('巨像不掉东西 —— 回报都在这一段里', AW / 2, ry + 2);
+  if (upNames.length) {
+    c.fillStyle = T.rgba('violetHi', 0.95);
+    c.font = T.font('micro', 'bold');
+    c.fillText(upNames.join(' · '), AW / 2, ry + 2);
+  } else {
+    c.fillStyle = T.rgba('steel', 0.9);
+    c.font = T.font('micro', 'regular');
+    c.fillText('巨像不掉东西 —— 回报都在这一段里', AW / 2, ry + 2);
+  }
   c.restore();
 
   return button(c, x + 30, y + h - 62, w - 60, 42, '继续', 'CONTINUE', true);
