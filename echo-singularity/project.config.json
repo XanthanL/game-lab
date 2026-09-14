@@ -1,0 +1,28 @@
+{
+  "description": "奇点回响 · 微信小游戏版（echo-singularity）",
+  "appid": "touristappid",
+  "projectname": "echo-singularity",
+  "miniprogramRoot": "./",
+  "compileType": "game",
+  "libVersion": "3.5.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": true,
+    "newFeature": true,
+    "coverView": false,
+    "nodeModules": false,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": false,
+    "scopeDataCheck": false,
+    "useCompilerModule": true,
+    "userConfirmedUseCompilerModuleSwitch": false
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

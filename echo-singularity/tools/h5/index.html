@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>奇点回响 · H5 预览</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#070b12;overflow:hidden;
+            -webkit-user-select:none;user-select:none;touch-action:none;}
+  #hint{position:fixed;left:0;right:0;bottom:0;z-index:9;color:#8d99a8;
+        font:11px/1.7 sans-serif;text-align:center;padding:6px;pointer-events:none;opacity:.75}
+</style>
+</head>
+<body>
+
+<div id="hint">H5 预览（非微信环境） · 拖动=移动 &nbsp;·&nbsp; 点击=确认 &nbsp;·&nbsp; 右上角圆钮=暂停</div>
+
+<!-- ══ 假 wx ══ -->
+<script src="wx-shim.js"></script>
+
+<!-- ══ 迷你 CommonJS 装载器 ══
+     浏览器不认 require，这里用「每段脚本前后各插一个 __begin/__end」的办法，
+     给每个文件一个独立的 module 对象。无需打包器，file:// 直接双击可跑。 -->
+<script>
+(function () {
+  var reg = {}, pending = null, cur = null;
+  Object.defineProperty(window, 'module', {
+    configurable: true,
+    get: function () { return cur; }
+  });
+  window.__begin = function (name) { cur = { exports: {} }; pending = name; };
+  window.__end = function () {
+    if (pending) reg[pending] = cur.exports;
+    pending = null; cur = null;
+  };
+  window.require = function (p) {
+    var m = String(p).replace(/^.*\//, '').replace(/\.js$/, '');
+    var v = reg[m];
+    if (!v) throw new Error('模块未加载: ' + p + '（登记名 ' + m + '）');
+    return v;
+  };
+  window.__reg = reg;
+})();
+</script>
+
+<!-- ══ 游戏模块（顺序 = 依赖顺序） ══ -->
+<script>__begin('util')</script>
+<script src="../../js/util.js"></script>
+<script>__end()</script>
+
+<script>__begin('tokens')</script>
+<script src="../../js/tokens.js"></script>
+<script>__end()</script>
+
+<script>__begin('pal')</script>
+<script src="../../js/pal.js"></script>
+<script>__end()</script>
+
+<script>__begin('arena')</script>
+<script src="../../js/arena.js"></script>
+<script>__end()</script>
+
+<script>__begin('singularity')</script>
+<script src="../../js/singularity.js"></script>
+<script>__end()</script>
+
+<script>__begin('input')</script>
+<script src="../../js/input.js"></script>
+<script>__end()</script>
+
+<script>__begin('entities')</script>
+<script src="../../js/entities.js"></script>
+<script>__end()</script>
+
+<script>__begin('regions')</script>
+<script src="../../js/regions.js"></script>
+<script>__end()</script>
+
+<script>__begin('combat')</script>
+<script src="../../js/combat.js"></script>
+<script>__end()</script>
+
+<script>__begin('render')</script>
+<script src="../../js/render.js"></script>
+<script>__end()</script>
+
+<script>__begin('warp')</script>
+<script src="../../js/warp.js"></script>
+<script>__end()</script>
+
+<script>__begin('channel')</script>
+<script src="../../js/channel.js"></script>
+<script>__end()</script>
+
+<script>__begin('ui')</script>
+<script src="../../js/ui.js"></script>
+<script>__end()</script>
+
+<script>__begin('app')</script>
+<script src="../../js/app.js"></script>
+<script>__end()</script>
+
+<!-- ══ 入口 ══ -->
+<script>__begin('game')</script>
+<script src="../../game.js"></script>
+<script>__end()</script>
+
+</body>
+</html>
