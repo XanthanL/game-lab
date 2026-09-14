@@ -1935,7 +1935,7 @@ const LV_EN={
  twin:['Add one barrel','+6% fire rate','Add one barrel','+6% rate, tighter spread','+12% bullet speed','MAX: 4th barrel + 12% rate — golden tracer salvo'],
  pierce:['Pierce +1 target','Pierce +1 target','Pierce +1 target','Pierce +1 target','Pierce +1 target','MAX: +3 more pierce — gilded core, straight through'],
  ricochet:['Bullets bounce off walls +1 time','Bounce +1','Bounce +1','Bounce +1','Bounce +1','MAX: +3 bounces — every wall is a weapon'],
- frag:['Hits explode: radius 52, 55% splash','Radius 64, splash 70%','Radius 78, splash 85%','Radius 92, splash 100%','Radius 108, splash 120%','MAX: radius 150, splash 180% — golden shockwave'],
+ frag:['Hits explode: radius 52, 55% splash','Radius 64, splash 70%','Radius 78, splash 85%','Radius 92, splash 100%','Radius 108, splash 120%','MAX: radius 150, splash 180% — white-hot shockwave'],
  guided:['Bullets steer toward the nearest enemy','Guidance search +80','Sharper steering','Search range +100','Sharper steering still','MAX: near-fullscreen search, extreme turn — nothing escapes'],
  crit:['+8% crit chance','+8% crit chance','+8% crit chance','+8% crit chance','+8% crit chance','MAX: +15% crit, crit damage 3x to 4.5x'],
  magnet:['+22% XP & pickup radius','+22% pickup radius','+22% pickup radius','+22% pickup radius','+22% pickup radius','MAX: +55% more — nothing in the sector is out of reach'],
@@ -3121,6 +3121,7 @@ const G={
   gdt:0.1,gpts:null,gn:0,gplay:null, // 6.5 幽灵：录制步长 / 轨迹扁平数组 / 已录点数 / 本局影子
   gsrc:'',pendingGhost:null,         // 6.6 轨迹码：本局影子来源 '' | 'best' | 'link' / 待注入的外来影子
   taMode:false,taT:0,                 // 7 冲刺赛：模式开关 / 倒计时（秒，0=非 TA 局）
+  gate:null,warpT:0,chAfter:false,    // 7.12 奇点门：门状态 / 跃迁计时 / 「通道卡片发完再推进波次」标志
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
@@ -3190,6 +3191,7 @@ function resumeRun(){
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.lances.length=0;G.ghosts.length=0;
   G.pending=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
+  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12 奇点门：续档不继承上一局的门
   G.build=Object.assign({},s.b||{});
   P=newPlayer();G.player=P;
   G.lastHull=HULLS[s.h]||HULLS[0];G.lastHull.apply();
@@ -3523,7 +3525,7 @@ const MODULES=[
     apply:n=>{P.ricochet+=n<6?1:3;}},
   {id:'frag',zh:'高爆弹',en:'Fragmentation',g:'✳',rarity:'common',max:6,type:'ability',
     lv:['命中爆炸：范围 52、溅射 55% 伤害','爆炸范围 64、溅射 70%','爆炸范围 78、溅射 85%',
-        '爆炸范围 92、溅射 100%','爆炸范围 108、溅射 120%','MAX：范围 150、溅射 180% —— 金色冲击波'],
+        '爆炸范围 92、溅射 100%','爆炸范围 108、溅射 120%','MAX：范围 150、溅射 180% —— 白热冲击波'],
     apply:n=>{const T=FRAG_LV[n-1];
       P.splashR=T[0];P.splashDmg=T[1]*P.dmg;if(n===6)P.fragMax=true;}},
   {id:'guided',zh:'制导弹药',en:'Guided Ammo',g:'⌖',rarity:'rare',max:6,type:'ability',
@@ -5010,7 +5012,10 @@ function setTouch(v){
   guideRefresh(); // 引导文案分键鼠 / 触屏两套，切换输入方式要立刻换过来
   orientHint();   // 5.5 竖屏提示依赖 isTouch，切换输入方式同样要立刻重算
 }
-function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying';}
+/* 7.12：warp / channel 也算"在局中" —— 否则摇杆与触屏在这两段里会被判成局外而失效，
+   手机上就彻底没法在通道里机动了。 */
+function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying'
+  ||G.mode==='warp'||G.mode==='channel';}
 /* ---- 7.9 摇杆底盘显隐 ----
    浮动杆不存在"待机可见"这回事：**有手指才有杆**。所以显隐归 touchstart / touchend 管，
    这里每帧只做兜底 —— 不在对局中（或切回键鼠）时把杆收掉，避免残留状态。
@@ -6034,7 +6039,8 @@ function director(dt){
     }
   }
   if(!Wv.cleared&&!Wv.qA.length&&!Wv.qE.length&&!G.warns.length&&!G.asteroids.length&&!G.enemies.length){
-    waveClear();
+    /* 7.12：有未激发奇点时，清场的意义从"开下一波"变成"把门点亮" */
+    if(!gateArm())waveClear();
   }
 }
 function waveClear(){
@@ -6198,8 +6204,8 @@ function killAst(a){
     G.pickups.push({type:'heal',x:a.x+rand(-20,20),y:a.y+rand(-20,20),t:0,life:15});
     banner('COLOSSUS DOWN',T('精英巨像已击碎 —— 厚赏已结算','Champion colossus shattered — rich salvage settled'));
   }
-  if(a.boss){ // Boss：必掉 2 个数据注入（直升两级）
-    for(let k=0;k<2;k++)G.pickups.push({type:'level',x:a.x+rand(-34,34),y:a.y+rand(-34,34),t:0,life:20});
+  if(a.boss){ // 7.12：Boss 不再掉两级 —— 它死的地方塌出一个奇点，奖励改由奇点通道发
+    gateSpawn(a.x,a.y,a.bossKind);
     for(let k=0;k<3;k++)spawnAst(2,a.x+rand(-40,40),a.y+rand(-40,40));
     for(let k=0;k<5;k++)spawnAst(1,a.x+rand(-50,50),a.y+rand(-50,50));
     G.slowT=0.55;AU.setMuffle(1); // 子弹时间：同步闷化 sfx（低通截止滑向 700Hz）
@@ -6223,7 +6229,9 @@ function killAst(a){
       if(unlockHull('forge'))banner('HULL UNLOCKED',T('新船体「熔炉」已解锁 —— 机库中查看','New hull FORGE unlocked — check the hangar'));
     }
     else banner('MOTHER ROCK DOWN',T('母岩已击碎','The Mother Rock is shattered'));
-    if(Wv.n>=WIN_WAVE&&!G.endless){sweepField();G.winT=1.6;}
+    /* 7.12：有奇点门时不在这里结算胜利 —— 门后通道跑完再收（见 chEnd）。
+       否则玩家会被"通关"弹窗挡在门外，整段新流程白做。 */
+    if(Wv.n>=WIN_WAVE&&!G.endless){if(G.gate)G.gate.win=1;else{sweepField();G.winT=1.6;}}
   }
 }
 function sweepField(){
@@ -7599,9 +7607,16 @@ function updateEnemies(dt){
 }
 
 function splashAt(x,y,r,dmg,from){
-  const c=P.fragMax?'236,208,138':'255,180,90';
+  /* 7.11：爆炸取**当前船体的辉光色**，不再写死橙色。
+     高爆弹是玩家自己打出去的 —— 爆开的光跟着自己的船色，读起来才像"我的火力"，
+     而不是一个谁都能放出来的通用爆炸。走 hullGlow()（已有按船体缓存，
+     与护盾环 / 默认弹体同一条取色路径）—— 不要为它另开一张颜色表。
+     MAX 级：色相不变，改加一道**白热内环** —— 保留"更猛"的信号，
+     但不再冒出与船身无关的金（原实现是 MAX 236,208,138 金 / 其余 255,180,90 橙）。 */
+  const c=hullGlow();
   ring(x,y,r,c);
-  burst(x,y,10,220,0.4,c,2);
+  if(P.fragMax)ring(x,y,r*0.52,'255,246,225');   // 白热芯：更猛，但仍是你自己的色系
+  burst(x,y,10,220,0.4,P.fragMax?'255,246,225':c,2);
   for(const t of G.asteroids){
     if(t===from)continue;
     if(d2(x,y,t.x,t.y)<(r+t.r)*(r+t.r))hurtAst(t,dmg,t.x,t.y,false);
@@ -8014,7 +8029,10 @@ function resolveCard(i){
   G.pending--;
   el.cards.hidden=true;
   if(G.pending>0)openLevelUp();
-  else G.mode=G.prevMode;
+  else{
+    G.mode=G.prevMode;
+    chAdvance();   // 7.12：奇点通道攒下的卡片发完，才推进下一波
+  }
   saveRun();
 }
 
@@ -8041,6 +8059,7 @@ function startGame(hull,seed){
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.lances.length=0;G.ghosts.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
+  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12 奇点门：新局从零开始
   G.lastHit=null;G.cause=null; // 新一局：清空上一局的死因
   /* 每日挑战：daily 模式由 startDaily 设 G.dailyMode=true 后再调 startGame，
      此处仅在非 daily 模式下重置 G.daily；dailyMode 用完即清。 */
@@ -8613,6 +8632,7 @@ function toMenu(){
      实测（probe74.js）：回菜单 taMode=true → 直接开一局 taT=180 / diff=standard。
      回标题 = 退出冲刺，这是唯一符合直觉的复位时机。 */
   G.taMode=false;
+  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12：回标题就是放弃当前这扇门
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
@@ -10130,7 +10150,320 @@ function updateWorld(dt){
   updateShards(dt);
   updatePickups(dt);
   if(G.mode==='play'||G.mode==='inter')collidePlayer();
+  if(G.mode==='play')gateUpdate(dt);
   updateParts(dt);
+}
+
+/* ================= 7.12 奇点门 · 亚稳态 → 激发 → 跃迁 → 通道 =================
+   旧流程：Boss 死 → 掉两级 → 2.6s 后直接开下一波。Boss 战因此只是「一只血厚点的怪」，
+   打完和清完一波小怪在节奏上没有区别。
+   新流程：
+     ① 亚稳态：Boss 死的地方塌出一个奇点（灰冷环）。场上还有残敌时它不认你，
+        撞上去没反应 —— 这一段是「打扫战场」，玩家因此有明确动机去清场。
+     ② 激发态：残敌肃清 → 白热核点亮，开始把你往里拽 —— 一个看得见的邀请。
+     ③ 跃迁：驶入 → 1.7s 隧道过场（世界冻住，只留镜头与奇点）。
+     ④ 通道（纵版）：22s 奖励关。A/D 左右机动，捡星尘、打残骸与回响残机、
+        吃永久属性加成 / 升级道具。撞了不致死，只掉星尘 + 减速。
+     ⑤ 收束：星尘换 1~3 张三选一 —— **它取代了 Boss 原本掉的那两级**。
+   ⚠️ 通道内的随机一律用 Math.random()：本局 RND 是种子化的（幽灵回放 / 同种子同局
+      都依赖它的序列），在这里调 rand() 会污染序列（同 6-1-07 的坑）。
+      同理 sfx 也只用不带 rand() 的那几个（droneShot / hit / pickup）。 */
+const GATE_R=46;               // 门的本体半径
+const GATE_ENTER=30;           // 驶入判定：飞船中心进到这里就算穿过视界
+const GATE_PULL=430;           // 激发态引力加速度（px/s²）
+const GATE_GRAV_R=560;         // 引力作用半径
+const GATE_AUTO=30;            // 安全阀：激发后这么久还没驶入就强制收束，避免卡流程
+const WARP_DUR=1.7;            // 跃迁过场时长
+const CH_DUR=22;               // 通道时长（秒）
+const CH_SPD=250;              // 通道上卷速度（px/s）
+const CH_WALL=34;              // 侧壁厚度
+const CH_ACC=1250,CH_VDAMP=5.2,CH_SPD_MUL=1.25;  // 通道操控：比主玩法更跟手（无惯性漂移）
+const CH_DMG_MUL=13;           // 子弹伤害系数：主玩法 dmg 基数是 1.0，不放大打不动残骸
+const CH_TIERS=[[0,1],[15,2],[30,3]];            // 星尘 → 三选一张数
+let CH=null;                   // 通道状态；null = 不在通道里
+
+/* ① Boss 死 → 生成未激发奇点 */
+function gateSpawn(x,y,kind){
+  if(G.gate)return;
+  G.gate={x:clamp(x,GATE_R+24,WORLD.w-GATE_R-24),
+          y:clamp(y,GATE_R+24,WORLD.h-GATE_R-24),
+          state:1,t:0,spin:0,kind:kind||'rock',win:0};
+  addScore(40*Wv.n);
+  banner(T('奇点残余','SINGULARITY REMNANT'),
+    T('巨像崩解处塌出一个未激发的奇点 —— 肃清残敌以激发它',
+      'A dormant singularity has collapsed open where it fell — clear the field to excite it'),1);
+  sfx.level();ppGlitch(1);shake(12);
+}
+/* ② 残敌肃清 → 激发。返回 true 表示这一帧由奇点接管，不许走 waveClear */
+function gateArm(){
+  const g=G.gate;
+  if(!g||g.state!==1)return false;
+  g.state=2;g.t=0;
+  /* 冻结 director：不再补怪，也不结算 waveClear —— 波次就此停住，等玩家进门 */
+  Wv.cleared=true;
+  addScore(60*Wv.n);
+  ftext(P.x,P.y-44,'+'+60*Wv.n,'236,208,138');
+  banner('SINGULARITY OPEN',T('奇点已激发 —— 驶入其中','Singularity excited — fly into it'),1);
+  sfx.max();ppGlitch(1);camKick(0.03);shake(8);
+  return true;
+}
+/* 每帧：自转 / 激发态引力 / 驶入判定 */
+function gateUpdate(dt){
+  const g=G.gate;if(!g||!P)return;
+  g.t+=dt;
+  g.spin+=(g.state===2?1.5:0.34)*dt;
+  if(g.state!==2)return;
+  const dx=g.x-P.x,dy=g.y-P.y,d=Math.hypot(dx,dy)||1;
+  if(d<GATE_GRAV_R){
+    const k=1-d/GATE_GRAV_R;          // 边缘趋零、中心最强
+    P.vx+=dx/d*GATE_PULL*k*dt;P.vy+=dy/d*GATE_PULL*k*dt;
+  }
+  if(d<GATE_ENTER||g.t>GATE_AUTO)warpStart();
+}
+/* ③ 驶入 → 跃迁 */
+function warpStart(){
+  if(G.mode!=='play'||!G.gate)return;
+  G.mode='warp';G.warpT=0;G.hitstop=0;
+  P.vx*=0.2;P.vy*=0.2;
+  sfx.boom(3);ppGlitch(1);ppBloom(1);shake(16);AU.setMuffle(1);
+  banner(T('奇点跃迁','SINGULARITY TRANSIT'),
+    T('穿越通道稳定中……','Stabilising the transit corridor…'),1);
+}
+function warpUpdate(dt){
+  G.warpT+=dt;
+  const g=G.gate;
+  if(g){   // 镜头与飞船一起被拽进视界：读起来是"被吸进去"，不是"瞬移"
+    cam.x+=(g.x-cam.x)*Math.min(1,3.4*dt);
+    cam.y+=(g.y-cam.y)*Math.min(1,3.4*dt);
+    if(P){P.x+=(g.x-P.x)*Math.min(1,2.6*dt);P.y+=(g.y-P.y)*Math.min(1,2.6*dt);}
+  }
+  if(G.warpT>=WARP_DUR)chStart();
+}
+
+/* ---------------- ④ 通道：纵版奖励关 ---------------- */
+/* 永久加成道具：七种属性 + 一种升级。都是「本局内永久」，不随通道结束失效。 */
+const CH_POD={
+  dmg:  {zh:'弹头校准',en:'WARHEAD CALIB.', c:'255,150,110',g:'◆'},
+  rate: {zh:'射控同步',en:'FIRE SYNC',      c:'150,225,255',g:'↻'},
+  hp:   {zh:'装甲加厚',en:'PLATING',        c:'255,140,150',g:'✚'},
+  spd:  {zh:'引擎调校',en:'ENGINE TUNE',    c:'110,255,180',g:'≫'},
+  mag:  {zh:'磁引增强',en:'MAGNET COIL',    c:'196,148,255',g:'◎'},
+  crit: {zh:'弱点解析',en:'CRIT ANALYSIS',  c:'236,208,138',g:'✧'},
+  vel:  {zh:'加速膛线',en:'BARREL RIFLING', c:'170,200,230',g:'↑'},
+  level:{zh:'数据注入',en:'DATA INJECTION', c:'150,255,220',g:'L'},
+};
+const CH_POD_KEYS=Object.keys(CH_POD).filter(k=>k!=='level');
+function chPodApply(k){
+  const d=CH_POD[k]||CH_POD.dmg;
+  if(k==='dmg'){P.dmg=+(P.dmg+0.10).toFixed(4);return T('伤害 +10%','DAMAGE +10%');}
+  if(k==='rate'){P.fireRate=+(P.fireRate*1.07).toFixed(4);return T('射速 +7%','FIRE RATE +7%');}
+  if(k==='hp'){P.maxHp+=14;P.hp=Math.min(P.maxHp,P.hp+14);return T('结构上限 +14','HULL +14');}
+  if(k==='spd'){P.maxSpeed+=16;P.accel+=30;return T('极速 +16 · 加速度 +30','SPEED +16 · ACCEL +30');}
+  if(k==='mag'){P.magnet+=28;return T('磁引 +28','MAGNET +28');}
+  if(k==='crit'){P.crit=+Math.min(0.75,P.crit+0.03).toFixed(4);return T('暴击率 +3%','CRIT +3%');}
+  if(k==='vel'){P.bspd+=60;return T('弹速 +60','BULLET SPEED +60');}
+  /* 升级道具 = 直接升一级。⚠️ 不能当场 openLevelUp() —— 那会把 22 秒的通道拦腰打断。
+     gainXp 在非 play/inter 模式下只累加 G.pending，卡片由通道收束时统一发。 */
+  gainXp(Math.max(1,P.xpNext-P.xp));
+  return T('等级 +1','LEVEL +1');
+}
+function chStart(){
+  if(!P){G.mode='play';return;}
+  G.mode='channel';
+  CH={t:0,camY:0,dust:0,fire:0,inv:0,slow:0,hits:0,kills:0,
+      psx:VW/2,psy:VH*0.78,vx:0,vy:0,
+      motes:[],rocks:[],foes:[],pods:[],bl:[],eb:[],fx:[],
+      moteT:0.5,rockT:1.0,foeT:1.6,podT:3.4,stars:[]};
+  for(let i=0;i<90;i++)CH.stars.push({x:Math.random(),y:Math.random(),s:0.6+Math.random()*1.7,f:0.22+Math.random()*0.78});
+  P.invuln=Math.max(P.invuln,1.4);
+  AU.setMuffle(0);sfx.boom(2);ppBloom(1);
+  banner(T('奇点通道','SINGULARITY CHANNEL'),
+    T('A / D 机动 —— 收集星尘，夺取永久加成','A / D to steer — gather stardust, seize permanent boons'),1);
+}
+/* 世界 y 越大 = 越靠前（上方）。屏幕 y 与之反向：sy = VH - (wy - camY) */
+function chSY(y){return VH-(y-CH.camY);}
+function chSpawnMotes(){
+  const c=CH,n=3+(Math.random()*3|0),wy=c.camY+VH+50;
+  const bx=CH_WALL+34+Math.random()*(VW-CH_WALL*2-68);
+  for(let i=0;i<n;i++)
+    c.motes.push({x:clamp(bx+(i-(n-1)/2)*27,CH_WALL+20,VW-CH_WALL-20),y:wy+i*24,ph:Math.random()*TAU});
+}
+function chSpawnRock(){
+  const c=CH,hp=38+Wv.n*3.2;
+  c.rocks.push({x:CH_WALL+22+Math.random()*(VW-CH_WALL*2-44),y:c.camY+VH+40,
+    r:16+Math.random()*20,hp,max:hp,rot:Math.random()*TAU,rv:(Math.random()-0.5)*1.3,
+    vy:-(4+Math.random()*12),flash:0});
+}
+function chSpawnFoe(){
+  const c=CH,hp=26+Wv.n*2.6;
+  c.foes.push({x:CH_WALL+28+Math.random()*(VW-CH_WALL*2-56),y:c.camY+VH+40,
+    hp,max:hp,vy:-(22+Math.random()*30),fire:0.8+Math.random()*0.9,ph:Math.random()*TAU,flash:0});
+}
+function chSpawnPod(k){
+  const c=CH;
+  /* 32% 出升级道具，其余在七种永久属性里等概率抽 —— 升级更值钱，所以更稀有 */
+  const key=k||(Math.random()<0.32?'level':CH_POD_KEYS[(Math.random()*CH_POD_KEYS.length)|0]);
+  c.pods.push({x:CH_WALL+34+Math.random()*(VW-CH_WALL*2-68),y:c.camY+VH+40,k:key,ph:Math.random()*TAU});
+}
+function chHurt(){
+  const c=CH;
+  c.inv=1.0;c.slow=0.9;c.hits++;
+  c.dust=Math.max(0,c.dust-5);          // 代价是星尘，不是命 —— 奖励关不该劝退
+  c.vy+=200;
+  shake(9);ppGlitch(1);sfx.hurt();
+  c.fx.push({x:c.psx,y:c.camY+(VH-c.psy),t:0,max:0.4,r:26,c:'255,120,110'});
+}
+function chUpdate(dt){
+  const c=CH;if(!c||!P)return;
+  c.t+=dt;
+  const sc=c.slow>0?0.45:1;
+  c.slow=Math.max(0,c.slow-dt);
+  c.inv=Math.max(0,c.inv-dt);
+  c.camY+=CH_SPD*dt*sc;
+  const pwy=c.camY+(VH-c.psy);          // 玩家的世界 y
+
+  /* 输入：A/D 为主（keyDown 走 KEYMAP，玩家改键也生效），W/S 辅助微调，
+     触屏走摇杆、手柄走左摇杆 —— 三条路叠加后统一钳位。 */
+  joyRead();
+  let ax=(keyDown('right')?1:0)-(keyDown('left')?1:0)+PAD.ax;
+  let ay=((keys['KeyS']||keys['ArrowDown'])?1:0)-((keys['KeyW']||keys['ArrowUp'])?1:0)+PAD.ay;
+  if(joy.mag>0){ax+=joy.dx/JOY_R;ay+=joy.dy/JOY_R;}
+  ax=clamp(ax,-1,1);ay=clamp(ay,-1,1);
+  c.vx+=ax*CH_ACC*dt;c.vy+=ay*CH_ACC*0.8*dt;
+  const dmp=Math.exp(-CH_VDAMP*dt);c.vx*=dmp;c.vy*=dmp;
+  const cap=P.maxSpeed*CH_SPD_MUL,sp=Math.hypot(c.vx,c.vy);
+  if(sp>cap){c.vx*=cap/sp;c.vy*=cap/sp;}
+  c.psx+=c.vx*dt;c.psy+=c.vy*dt;
+  const L=CH_WALL+16,R=VW-CH_WALL-16;
+  if(c.psx<L){c.psx=L;c.vx=Math.abs(c.vx)*0.4;}
+  if(c.psx>R){c.psx=R;c.vx=-Math.abs(c.vx)*0.4;}
+  if(c.psy<VH*0.26){c.psy=VH*0.26;c.vy=Math.abs(c.vy)*0.4;}
+  if(c.psy>VH-64){c.psy=VH-64;c.vy=-Math.abs(c.vy)*0.4;}
+
+  /* 自动开火：雷霆战机的手感来自「一直有弹幕往前铺」，手动点火会让这 22 秒空掉一半 */
+  c.fire-=dt;
+  if(c.fire<=0){
+    c.fire=1/Math.max(0.7,P.fireRate*1.5);
+    const n=Math.min(5,Math.max(1,P.barrels));
+    for(let i=0;i<n;i++)
+      c.bl.push({x:c.psx+(i-(n-1)/2)*9,y:pwy+16,vy:Math.max(760,P.bspd*1.25),r:3.4,dmg:P.dmg*CH_DMG_MUL});
+    sfx.droneShot();
+  }
+  /* 前方投放 */
+  c.moteT-=dt;if(c.moteT<=0){c.moteT=0.7+Math.random()*0.5;chSpawnMotes();}
+  c.rockT-=dt;if(c.rockT<=0){c.rockT=0.75+Math.random()*0.65;chSpawnRock();}
+  c.foeT -=dt;if(c.foeT <=0){c.foeT =1.5+Math.random()*1.3;chSpawnFoe();}
+  c.podT -=dt;if(c.podT <=0){c.podT =4.6+Math.random()*1.8;chSpawnPod();}
+
+  /* 子弹 */
+  for(let i=c.bl.length-1;i>=0;i--){
+    const b=c.bl[i];b.y+=b.vy*dt;
+    if(b.y>c.camY+VH+50){c.bl.splice(i,1);continue;}
+    let gone=false;
+    for(let j=c.rocks.length-1;j>=0;j--){
+      const o=c.rocks[j];
+      if(d2(b.x,b.y,o.x,o.y)<(o.r+b.r)*(o.r+b.r)){
+        o.hp-=b.dmg;o.flash=0.08;gone=true;
+        if(o.hp<=0){
+          c.rocks.splice(j,1);addScore(25);
+          c.fx.push({x:o.x,y:o.y,t:0,max:0.36,r:o.r*1.6,c:'150,200,255'});
+          sfx.hit();
+        }
+        break;
+      }
+    }
+    if(gone){c.bl.splice(i,1);continue;}
+    for(let j=c.foes.length-1;j>=0;j--){
+      const f=c.foes[j];
+      if(d2(b.x,b.y,f.x,f.y)<(18+b.r)*(18+b.r)){
+        f.hp-=b.dmg;f.flash=0.08;gone=true;
+        if(f.hp<=0){
+          c.foes.splice(j,1);c.kills++;addScore(60);
+          c.fx.push({x:f.x,y:f.y,t:0,max:0.42,r:30,c:'255,150,110'});
+          if(Math.random()<0.34)chSpawnPod();   // 残机残骸里 occasionally 崩出一件道具
+          sfx.boom(1);
+        }
+        break;
+      }
+    }
+    if(gone)c.bl.splice(i,1);
+  }
+  /* 残骸 / 残机 / 敌弹 */
+  for(let j=c.rocks.length-1;j>=0;j--){
+    const o=c.rocks[j];o.y+=o.vy*dt;o.rot+=o.rv*dt;o.flash=Math.max(0,(o.flash||0)-dt);
+    if(o.y<c.camY-90)c.rocks.splice(j,1);
+  }
+  for(let j=c.foes.length-1;j>=0;j--){
+    const f=c.foes[j];f.y+=f.vy*dt;f.ph+=dt*2.2;f.flash=Math.max(0,(f.flash||0)-dt);
+    f.x+=Math.sin(f.ph)*28*dt;
+    f.x=clamp(f.x,CH_WALL+18,VW-CH_WALL-18);
+    f.fire-=dt;
+    if(f.fire<=0&&f.y<c.camY+VH-20){
+      f.fire=1.0+Math.random()*0.9;
+      c.eb.push({x:f.x,y:f.y-14,vy:-(200+Wv.n*2),r:4});
+      sfx.eshoot();
+    }
+    if(f.y<c.camY-70)c.foes.splice(j,1);
+  }
+  for(let j=c.eb.length-1;j>=0;j--){const b=c.eb[j];b.y+=b.vy*dt;if(b.y<c.camY-40)c.eb.splice(j,1);}
+  /* 星尘：磁吸 + 拾取 */
+  for(let j=c.motes.length-1;j>=0;j--){
+    const m=c.motes[j];
+    if(m.y<c.camY-70){c.motes.splice(j,1);continue;}
+    const dd=Math.hypot(m.x-c.psx,m.y-pwy)||1;
+    if(dd<96){const s=300+(96-dd)*3.2;m.x+=(c.psx-m.x)/dd*s*dt;m.y+=(pwy-m.y)/dd*s*dt;}
+    if(dd<20){c.motes.splice(j,1);c.dust++;addScore(6);sfx.pickup();
+      c.fx.push({x:m.x,y:m.y,t:0,max:0.26,r:14,c:'236,208,138'});}
+  }
+  /* 道具：磁吸 + 拾取 */
+  for(let j=c.pods.length-1;j>=0;j--){
+    const u=c.pods[j];
+    if(u.y<c.camY-70){c.pods.splice(j,1);continue;}
+    const dd=Math.hypot(u.x-c.psx,u.y-pwy)||1;
+    if(dd<110){const s=280+(110-dd)*3;u.x+=(c.psx-u.x)/dd*s*dt;u.y+=(pwy-u.y)/dd*s*dt;}
+    if(dd<24){
+      c.pods.splice(j,1);
+      const txt=chPodApply(u.k),d=CH_POD[u.k]||CH_POD.dmg;
+      c.fx.push({x:u.x,y:u.y,t:0,max:0.5,r:30,c:d.c});
+      c.fx.push({x:u.x,y:u.y,t:0,max:0.9,r:0,c:d.c,txt:T(d.zh,d.en)+' · '+txt});
+      sfx.max();ppBloom(0.8);
+    }
+  }
+  /* 受击：撞残骸 / 撞残机 / 吃敌弹 —— 不致死，扣星尘 + 减速 */
+  if(c.inv<=0){
+    let hit=false;
+    for(const o of c.rocks){if(d2(c.psx,pwy,o.x,o.y)<(o.r+15)*(o.r+15)){hit=true;break;}}
+    if(!hit)for(const f of c.foes){if(d2(c.psx,pwy,f.x,f.y)<33*33){hit=true;break;}}
+    if(!hit)for(const b of c.eb){if(d2(c.psx,pwy,b.x,b.y)<19*19){hit=true;break;}}
+    if(hit)chHurt();
+  }
+  for(let j=c.fx.length-1;j>=0;j--){c.fx[j].t+=dt;if(c.fx[j].t>=c.fx[j].max)c.fx.splice(j,1);}
+  if(c.t>=CH_DUR)chEnd();
+}
+/* ⑤ 收束：星尘换卡 + 发掉攒下的升级 → 下一波 */
+function chEnd(){
+  const c=CH;if(!c)return;
+  const dust=c.dust;
+  let cards=1;
+  for(const t of CH_TIERS)if(dust>=t[0])cards=t[1];
+  const win=!!(G.gate&&G.gate.win);
+  G.gate=null;CH=null;
+  G.mode='play';AU.setMuffle(0);
+  addScore(dust*8+c.kills*10);
+  if(win){sweepField();G.winT=1.6;return;}
+  /* 卡片与「通道中吃到的升级」一起进 G.pending，由 openLevelUp 逐个发完再推进波次 */
+  G.pending+=cards;
+  G.chAfter=true;
+  banner(T('通道收束','CHANNEL CLOSED'),
+    T('星尘 '+dust+' → 三选一 ×'+cards,'Stardust '+dust+' → pick 1 of 3 ×'+cards),1);
+  if(G.pending>0)openLevelUp();
+  else chAdvance();
+}
+/* 卡片发完后才推进波次 —— 否则三选一面板会盖在已经开打的第 N+1 波上 */
+function chAdvance(){
+  if(!G.chAfter)return;
+  G.chAfter=false;
+  buildWave(Wv.n+1);
 }
 
 /* ============================== draw ============================== */
@@ -11189,6 +11522,7 @@ function edgeHints(){
   return out;
 }
 function draw(){
+  if(G.mode==='channel'){drawChannel();return;}   // 7.12：通道是独立场景，不复用世界变换
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle=RGBA('void',1);ctx.fillRect(0,0,VW,VH);
   drawStars();
@@ -11275,6 +11609,7 @@ function draw(){
   for(const e of G.enemies){drawEnemy(e);if(e.affix)drawAffixRing(e);}
   drawDebris();
   drawDeathTrail();
+  if(G.gate)drawGate();   // 7.12 奇点门：画在船体之下，被玩家压住才有"我在它前面"的层次
   for(const d of G.drones){
     if(d.x===undefined)continue;
     // 无人机配色跟随当前船体
@@ -11446,6 +11781,8 @@ function draw(){
     if(need)ctx.restore();
   }
   ctx.restore();
+  if(G.mode==='warp')drawWarp();      // 7.12 跃迁：屏幕坐标的隧道过场
+  else drawGateHint();                // 7.12 激发态奇点在视野外时的边缘指引
   for(const h of edgeHints()){
     if(h.boss){
       const pl=0.5+0.4*Math.sin(G.t*5);
@@ -11496,10 +11833,288 @@ function draw(){
   }
 }
 
+/* ---------------- 7.12 奇点门 / 跃迁 / 通道：绘制 ----------------
+   奇点画在世界坐标（跟着相机走），跃迁与通道画在屏幕坐标（各是一块独立的"场景"）。 */
+function drawGate(){
+  const g=G.gate;if(!g)return;
+  const on=g.state===2;
+  const hot=on?'255,246,225':'126,156,186';      // 激发 = 白热；亚稳 = 灰冷（同色系，不改语言）
+  const cool=on?'150,225,255':'96,124,156';
+  const pu=0.5+0.5*Math.sin(g.t*(on?5.4:1.6));
+  ctx.save();ctx.translate(g.x,g.y);
+  if(on){   // 引力范围：三道向外收缩的同心环，读作"它在吸东西"
+    ctx.strokeStyle=`rgba(${cool},0.09)`;ctx.lineWidth=1;
+    for(let i=1;i<=3;i++){
+      const rr=GATE_ENTER+(GATE_GRAV_R-GATE_ENTER)*(i/3);
+      ctx.beginPath();ctx.arc(0,0,rr*(0.93+0.07*Math.sin(g.t*2.2+i)),0,TAU);ctx.stroke();
+    }
+  }
+  /* 吸积盘：三段反向自转的弧，方向相反才读得出"被撕碎、在转" */
+  ctx.rotate(g.spin);
+  ctx.lineCap='round';
+  for(let i=0;i<3;i++){
+    const r=GATE_R*(0.62+i*0.20);
+    ctx.strokeStyle=`rgba(${cool},${(0.5-i*0.12).toFixed(3)})`;
+    ctx.lineWidth=on?3.2-i*0.7:2.2-i*0.4;
+    ctx.beginPath();ctx.arc(0,0,r,g.t*(i%2?1.4:-1.9)+i*2.1,g.t*(i%2?1.4:-1.9)+i*2.1+1.5);ctx.stroke();
+  }
+  ctx.lineCap='butt';
+  ctx.rotate(-g.spin);
+  /* 视界：纯黑实心 —— 与背景同色就等于没画，必须比 void 更深 */
+  const gr=ctx.createRadialGradient(0,0,0,0,0,GATE_ENTER);
+  gr.addColorStop(0,'rgba(3,5,9,1)');
+  gr.addColorStop(0.72,'rgba(3,5,9,1)');
+  gr.addColorStop(1,'rgba(3,5,9,0)');
+  ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,GATE_ENTER,0,TAU);ctx.fill();
+  /* 光子环 */
+  ctx.strokeStyle=`rgba(${hot},${(on?0.55+0.45*pu:0.30).toFixed(3)})`;
+  ctx.lineWidth=on?2.6:1.6;
+  ctx.beginPath();ctx.arc(0,0,GATE_ENTER-1,0,TAU);ctx.stroke();
+  if(!on){
+    /* 亚稳态：冷色虚线环 + 四段缺口刻度 —— 明确"还没开" */
+    ctx.setLineDash([5,7]);
+    ctx.strokeStyle=`rgba(${cool},0.5)`;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.arc(0,0,GATE_R,0,TAU);ctx.stroke();
+    ctx.setLineDash([]);
+    for(let i=0;i<4;i++){
+      const a=i/4*TAU+g.spin*0.5;
+      ctx.strokeStyle=`rgba(${cool},0.7)`;ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*(GATE_R-7),Math.sin(a)*(GATE_R-7));
+      ctx.lineTo(Math.cos(a)*(GATE_R+5),Math.sin(a)*(GATE_R+5));ctx.stroke();
+    }
+  }else{
+    /* 激发态：四个向内收的箭头 —— "往里开" */
+    for(let i=0;i<4;i++){
+      const a=i/4*TAU-g.t*1.1;
+      const r0=GATE_R+16+pu*10,r1=r0-13;
+      ctx.strokeStyle=`rgba(${hot},${(0.35+0.5*pu).toFixed(3)})`;ctx.lineWidth=2.4;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);
+      ctx.lineTo(Math.cos(a)*r1,Math.sin(a)*r1);ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);
+      ctx.lineTo(Math.cos(a)*r1-Math.cos(a-0.5)*7,Math.sin(a)*r1-Math.sin(a-0.5)*7);
+      ctx.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);
+      ctx.lineTo(Math.cos(a)*r1-Math.cos(a+0.5)*7,Math.sin(a)*r1-Math.sin(a+0.5)*7);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+  /* 状态读数：贴在门下方，省得玩家猜 */
+  ctx.font=monoFont(11);ctx.textAlign='center';
+  ctx.fillStyle=`rgba(${hot},${(on?0.5+0.5*pu:0.36).toFixed(3)})`;
+  ctx.fillText(on?T('激发态 · 驶入','EXCITED · ENTER'):T('未激发 · 肃清残敌','DORMANT · CLEAR THE FIELD'),g.x,g.y+GATE_R+22);
+  ctx.textAlign='left';
+}
+/* 屏外指引：激发态奇点在视野外时，屏幕边缘给一个指向它的箭头 */
+function drawGateHint(){
+  const g=G.gate;if(!g||g.state!==2)return;
+  const sx=VW/2+(g.x-cam.x)*cam.zoom+(-cam.ox),sy=VH/2+(g.y-cam.y)*cam.zoom+(-cam.oy);
+  if(sx>34&&sx<VW-34&&sy>34&&sy<VH-34)return;
+  const cx=VW/2,cy=VH/2,a=Math.atan2(sy-cy,sx-cx);
+  const px=cx+Math.cos(a)*Math.min(VW,VH)*0.40,py=cy+Math.sin(a)*Math.min(VW,VH)*0.40;
+  ctx.save();ctx.translate(px,py);ctx.rotate(a);
+  const pl=0.5+0.5*Math.sin(G.t*6);
+  ctx.fillStyle=`rgba(255,246,225,${(0.35+0.5*pl).toFixed(3)})`;
+  ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-7,-7.5);ctx.lineTo(-7,7.5);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+/* 跃迁：同心环向外涌 + 径向速度线 + 白闪（2D 版的"隧道"） */
+function drawWarp(){
+  const p=clamp(G.warpT/WARP_DUR,0,1);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const cx=VW/2,cy=VH/2,R=Math.max(VW,VH)*0.72;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<16;i++){
+    const f=((i/16)+p*1.6)%1;
+    const r=Math.pow(f,2.2)*R;
+    const a=(1-f)*0.5*Math.min(1,p*4);
+    ctx.strokeStyle=`rgba(150,225,255,${a.toFixed(3)})`;
+    ctx.lineWidth=1+f*3;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
+  }
+  ctx.strokeStyle=`rgba(200,240,255,${(0.14+0.28*p).toFixed(3)})`;ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<48;i++){
+    const a=i/48*TAU+G.t*0.6;
+    const r0=Math.pow((i*0.37+p*2.2)%1,2.0)*R,r1=r0+26+100*p;
+    ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);
+    ctx.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+  }
+  ctx.stroke();
+  ctx.restore();
+  const core=Math.pow(p,3.2);
+  const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,R*(0.3+core));
+  gr.addColorStop(0,`rgba(255,255,255,${(0.14+0.8*core).toFixed(3)})`);
+  gr.addColorStop(0.5,`rgba(160,225,255,${(0.09+0.32*core).toFixed(3)})`);
+  gr.addColorStop(1,'rgba(8,13,22,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,VW,VH);
+  if(p>0.86){ctx.fillStyle=`rgba(255,255,255,${((p-0.86)/0.14).toFixed(3)})`;ctx.fillRect(0,0,VW,VH);}
+  ctx.font=monoFont(13);ctx.textAlign='center';
+  ctx.fillStyle=`rgba(220,245,255,${(0.4+0.5*p).toFixed(3)})`;
+  ctx.fillText(T('跃迁中','TRANSIT')+'  '+Math.round(p*100)+'%',cx,cy+Math.min(VW,VH)*0.34);
+  ctx.textAlign='left';
+}
+/* 通道：一整块自绘场景（不复用主战场的世界变换） */
+function drawChannel(){
+  const c=CH;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle=RGBA('void',1);ctx.fillRect(0,0,VW,VH);
+  if(!c)return;
+  /* 星轨：三层视差，越快的一层拖得越长 */
+  for(const s of c.stars){
+    const y=mod(s.y*VH*2-c.camY*s.f,VH+40)-20;
+    ctx.fillStyle=`rgba(150,190,235,${(0.12+0.42*s.f).toFixed(3)})`;
+    ctx.fillRect(s.x*VW,y,s.s,s.s*(1.4+2.6*s.f));
+  }
+  const wl=CH_WALL;
+  let g1=ctx.createLinearGradient(0,0,wl,0);
+  g1.addColorStop(0,'rgba(90,150,200,0.32)');g1.addColorStop(1,'rgba(90,150,200,0)');
+  ctx.fillStyle=g1;ctx.fillRect(0,0,wl,VH);
+  g1=ctx.createLinearGradient(VW,0,VW-wl,0);
+  g1.addColorStop(0,'rgba(90,150,200,0.32)');g1.addColorStop(1,'rgba(90,150,200,0)');
+  ctx.fillStyle=g1;ctx.fillRect(VW-wl,0,wl,VH);
+  ctx.strokeStyle='rgba(150,225,255,0.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(wl,0);ctx.lineTo(wl,VH);ctx.moveTo(VW-wl,0);ctx.lineTo(VW-wl,VH);ctx.stroke();
+  ctx.strokeStyle='rgba(150,225,255,0.16)';ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<12;i++){const y=mod(i*(VH/12)-c.camY*0.5,VH);
+    ctx.moveTo(0,y);ctx.lineTo(wl,y);ctx.moveTo(VW-wl,y);ctx.lineTo(VW,y);}
+  ctx.stroke();
+  const sy=y=>VH-(y-c.camY);
+  /* 星尘 */
+  ctx.globalCompositeOperation='lighter';
+  for(const m of c.motes){
+    const y=sy(m.y);if(y<-30||y>VH+30)continue;
+    const pl=0.6+0.4*Math.sin(G.t*6+m.ph);
+    ctx.fillStyle=`rgba(236,208,138,${(0.55*pl).toFixed(3)})`;
+    ctx.save();ctx.translate(m.x,y);ctx.rotate(G.t*1.6+m.ph);
+    ctx.beginPath();ctx.moveTo(0,-5.5);ctx.lineTo(4,0);ctx.lineTo(0,5.5);ctx.lineTo(-4,0);ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalCompositeOperation='source-over';
+  /* 残骸 */
+  for(const o of c.rocks){
+    const y=sy(o.y);if(y<-60||y>VH+60)continue;
+    ctx.save();ctx.translate(o.x,y);ctx.rotate(o.rot);
+    ctx.beginPath();
+    for(let i=0;i<7;i++){
+      const a=i/7*TAU,r=o.r*(0.78+0.30*Math.sin(i*2.7+o.rot*3));
+      if(i===0)ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);else ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba(28,38,52,0.95)';ctx.fill();
+    ctx.strokeStyle='rgba(150,200,255,'+(o.flash>0?0.95:0.55)+')';ctx.lineWidth=1.8;ctx.stroke();
+    if(o.max>0){
+      const f=clamp(o.hp/o.max,0,1);
+      if(f<1){ctx.strokeStyle='rgba(255,160,120,0.85)';ctx.lineWidth=3;
+        ctx.beginPath();ctx.arc(0,0,o.r+6,-Math.PI/2,-Math.PI/2+f*TAU);ctx.stroke();}
+    }
+    ctx.restore();
+  }
+  /* 回响残机 */
+  for(const f of c.foes){
+    const y=sy(f.y);if(y<-50||y>VH+50)continue;
+    ctx.save();ctx.translate(f.x,y);
+    ctx.beginPath();ctx.moveTo(0,12);ctx.lineTo(9,-4);ctx.lineTo(16,0);ctx.lineTo(9,4);
+    ctx.lineTo(0,12);ctx.closePath();
+    ctx.moveTo(0,12);ctx.lineTo(-9,-4);ctx.lineTo(-16,0);ctx.lineTo(-9,4);ctx.closePath();
+    ctx.fillStyle='rgba(60,28,34,0.95)';ctx.fill();
+    ctx.strokeStyle=f.flash>0?'rgba(255,220,200,0.95)':'rgba(255,140,110,0.7)';ctx.lineWidth=1.6;ctx.stroke();
+    ctx.fillStyle='rgba(255,190,150,0.9)';ctx.beginPath();ctx.arc(0,1,3.2,0,TAU);ctx.fill();
+    const hf=clamp(f.hp/f.max,0,1);
+    if(hf<1){ctx.strokeStyle='rgba(255,160,120,0.8)';ctx.lineWidth=2.6;
+      ctx.beginPath();ctx.arc(0,0,22,-Math.PI/2,-Math.PI/2+hf*TAU);ctx.stroke();}
+    ctx.restore();
+  }
+  /* 敌弹 */
+  ctx.fillStyle='rgba(255,120,110,0.9)';
+  for(const b of c.eb){const y=sy(b.y);if(y<-20||y>VH+20)continue;
+    ctx.beginPath();ctx.arc(b.x,y,b.r,0,TAU);ctx.fill();}
+  /* 道具 */
+  for(const u of c.pods){
+    const y=sy(u.y);if(y<-40||y>VH+40)continue;
+    const d=CH_POD[u.k]||CH_POD.dmg;
+    ctx.save();ctx.translate(u.x,y);
+    ctx.strokeStyle=`rgba(${d.c},0.28)`;ctx.lineWidth=5;
+    ctx.beginPath();ctx.arc(0,0,15,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(${d.c},0.95)`;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(0,0,15,0,TAU);ctx.stroke();
+    ctx.fillStyle=`rgba(${d.c},0.95)`;ctx.font=monoFont(13);ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(d.g,0,0.5);ctx.textBaseline='alphabetic';ctx.textAlign='left';
+    ctx.restore();
+  }
+  /* 弹幕 */
+  ctx.globalCompositeOperation='lighter';
+  const hullC=hullGlow();
+  for(const b of c.bl){const y=sy(b.y);if(y<-20||y>VH+20)continue;
+    ctx.fillStyle=`rgba(${hullC},0.28)`;ctx.beginPath();ctx.arc(b.x,y,b.r*2.3,0,TAU);ctx.fill();
+    ctx.fillStyle=`rgba(${hullC},0.95)`;ctx.beginPath();ctx.arc(b.x,y,b.r,0,TAU);ctx.fill();}
+  ctx.globalCompositeOperation='source-over';
+  /* 玩家：机头朝上（hullPath 的机头在 +x，故 -90°） */
+  const hid=(G.lastHull&&G.lastHull.id)||'peregrine';
+  const tint=HULL_TINT[hid]||HULL_TINT.peregrine;
+  ctx.save();ctx.translate(c.psx,c.psy);ctx.rotate(-Math.PI/2);
+  ctx.beginPath();ctx.moveTo(-7,4);ctx.quadraticCurveTo(-7-18,2,-7-30,0);
+  ctx.quadraticCurveTo(-7-18,-2,-7,-4);ctx.closePath();
+  ctx.fillStyle='rgba(255,236,190,0.5)';ctx.fill();
+  hullPath(ctx,hid);
+  ctx.fillStyle=tint.fill;ctx.fill();
+  ctx.strokeStyle=`rgba(${tint.glow},0.32)`;ctx.lineWidth=4;ctx.stroke();
+  ctx.strokeStyle=tint.line;ctx.lineWidth=1.3;ctx.stroke();
+  ctx.restore();
+  if(c.inv>0&&Math.floor(G.t*20)%2===0){
+    ctx.strokeStyle='rgba(255,120,110,0.7)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(c.psx,c.psy,22,0,TAU);ctx.stroke();
+  }
+  /* 爆散 / 拾取飘字（fx 里带 txt 的就是飘字） */
+  for(const f of c.fx){
+    const k=1-f.t/f.max,y=sy(f.y);
+    if(f.txt){
+      ctx.font=monoFont(13);ctx.textAlign='center';
+      ctx.fillStyle=`rgba(${f.c},${k.toFixed(3)})`;
+      ctx.fillText(f.txt,f.x,y-f.max*40-14);
+      ctx.textAlign='left';
+    }else if(f.r>0){
+      ctx.strokeStyle=`rgba(${f.c},${(k*0.8).toFixed(3)})`;ctx.lineWidth=2+f.r*0.06;
+      ctx.beginPath();ctx.arc(f.x,y,f.r*(1.4-k*0.5),0,TAU);ctx.stroke();
+    }
+  }
+  /* HUD：剩余时间 / 星尘 / 操作提示 */
+  const left=Math.max(0,CH_DUR-c.t);
+  ctx.font=monoFont(12);
+  ctx.fillStyle='rgba(210,235,255,0.85)';
+  ctx.fillText(T('奇点通道','CHANNEL'),wl+12,26);
+  ctx.fillStyle='rgba(150,190,235,0.5)';
+  ctx.fillRect(wl+12,32,VW-wl*2-24,4);
+  ctx.fillStyle='rgba(236,208,138,0.9)';
+  ctx.fillRect(wl+12,32,(VW-wl*2-24)*clamp(left/CH_DUR,0,1),4);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(236,208,138,0.95)';ctx.font=monoFont(16);
+  ctx.fillText('✦ '+c.dust,VW-wl-12,30);
+  ctx.font=monoFont(11);ctx.fillStyle='rgba(150,190,235,0.7)';
+  ctx.fillText(T('星尘','STARDUST'),VW-wl-12,45);
+  ctx.textAlign='left';
+  if(c.t<7){
+    ctx.textAlign='center';ctx.font=monoFont(12);
+    ctx.fillStyle=`rgba(210,235,255,${(0.7*clamp(7-c.t,0,1)).toFixed(3)})`;
+    ctx.fillText(T('A / D 或摇杆左右机动 · 自动开火','A / D or stick to steer · auto-fire'),VW/2,VH-26);
+    ctx.textAlign='left';
+  }
+}
+
 /* ============================== hud ============================== */
 const HUDC={};
 function hudW(k,v){const s=v.toFixed(1)+'%';if(HUDC[k]!==s){HUDC[k]=s;return true;}return false;}
 function updateHUD(){
+  /* 7.12：跃迁与通道期间用画布自绘 HUD，DOM 那套让位（它的读数全是主战场的，
+     留在屏上只会显示一堆过期数字）。⚠️ 只在必要时写 hidden，别每帧无条件赋值。 */
+  if(G.mode==='warp'||G.mode==='channel'){
+    if(!el.hud.hidden)el.hud.hidden=true;
+    return;
+  }
+  if((G.mode==='play'||G.mode==='inter')&&el.hud.hidden)el.hud.hidden=false;
   if(!inRun()||!P)return;
   let w=hudW('hp',clamp(P.hp/P.maxHp*100,0,100));
   if(w)el.hp.style.width=HUDC.hp;
@@ -11751,6 +12366,8 @@ function frame(now){
     if(G.deathT<=0)showOver();
   }
   else if(G.mode==='levelup')updateParts(raw*0.3);
+  else if(G.mode==='warp')warpUpdate(raw);        // 7.12 跃迁过场
+  else if(G.mode==='channel')chUpdate(raw);       // 7.12 奇点通道
   draw();
   FX.frame(realDt,G.mode);
   qualityWatch(wallDt);
@@ -11947,6 +12564,61 @@ window.NOVA={
     show:i=>{G.guideOn=true;G.guideIdx=i|0;guideShow(GUIDE_STEPS[i|0],i|0);},
   },
   winWave:()=>WIN_WAVE,
+  /* 7.12 奇点门测试钩子 —— 无头环境没人按键也等不起 22 秒，
+     所以每一步都给一个「走真实函数、但把时间/输入压缩掉」的入口。
+     原则是**不绕过被测路径**：killBoss 走 killAst，chStep 走 chUpdate，chEnd 走 chEnd。 */
+  gate:{
+    state:()=>({mode:G.mode,warpT:G.warpT,chAfter:G.chAfter,pending:G.pending,
+      wave:Wv.n,cleared:Wv.cleared,asts:G.asteroids.length,foes:G.enemies.length,
+      gate:G.gate?{x:Math.round(G.gate.x),y:Math.round(G.gate.y),state:G.gate.state,win:G.gate.win,t:+G.gate.t.toFixed(2)}:null,
+      ch:CH?{t:+CH.t.toFixed(2),dust:CH.dust,kills:CH.kills,hits:CH.hits,motes:CH.motes.length,
+             rocks:CH.rocks.length,foes:CH.foes.length,pods:CH.pods.length,bl:CH.bl.length,
+             psx:+CH.psx.toFixed(1),psy:+CH.psy.toFixed(1)}:null}),
+    boss:()=>{const a=G.asteroids.find(x=>x.boss);
+      return a?{kind:a.bossKind,hp:+a.hp.toFixed(1),x:Math.round(a.x),y:Math.round(a.y)}:null;},
+    killBoss:()=>{const a=G.asteroids.find(x=>x.boss);if(!a)return null;
+      const bx=Math.round(a.x),by=Math.round(a.y);killAst(a);
+      return G.gate?{x:Math.round(G.gate.x),y:Math.round(G.gate.y),state:G.gate.state,
+                     atBoss:Math.abs(G.gate.x-bx)<2&&Math.abs(G.gate.y-by)<2}:null;},
+    killAll:()=>{G.asteroids.length=0;G.enemies.length=0;G.warns.length=0;
+      Wv.qA.length=0;Wv.qE.length=0;return G.asteroids.length+G.enemies.length;},
+    /* 只推进"波次检查"那一帧：清场 → 门是否激发，全靠真实的 director 收尾逻辑 */
+    clearTick:()=>{if(G.mode==='play')updateWorld(1/60);return G.gate?G.gate.state:0;},
+    enter:()=>{if(!G.gate||!P)return null;P.x=G.gate.x;P.y=G.gate.y;P.vx=0;P.vy=0;
+      gateUpdate(1/60);return G.mode;},
+    warpStep:(sec)=>{const n=Math.round((sec||2)*60);
+      for(let i=0;i<n;i++){if(G.mode!=='warp')break;warpUpdate(1/60);}return G.mode;},
+    /* 按住 A / D 推进通道若干秒：验证「靠 A/D 移动」真的成立 */
+    chStep:(ax,sec)=>{const n=Math.round((sec||0.5)*60);
+      if(ax)keys[ax>0?'KeyD':'KeyA']=true;
+      for(let i=0;i<n;i++){if(G.mode!=='channel')break;chUpdate(1/60);}
+      keys.KeyA=false;keys.KeyD=false;
+      return CH?+CH.psx.toFixed(1):null;},
+    /* 在机头正前方摆一块残骸，看弹幕能不能真把它打掉（验证"自动开火有效"，
+       而不是只看数组里有没有子弹元素） */
+    chKill:()=>{if(!CH||!P)return null;
+      chSpawnRock();
+      const o=CH.rocks[CH.rocks.length-1];
+      o.x=CH.psx;o.r=20;o.hp=20;o.max=20;o.vy=0;o.rv=0;
+      let n=0;
+      for(let i=0;i<300;i++){if(!CH||CH.rocks.indexOf(o)<0)break;chUpdate(1/60);n++;}
+      return {gone:!(CH&&CH.rocks.indexOf(o)>=0),frames:n};},
+    chTick:(sec)=>{const n=Math.round((sec||1)*60);
+      for(let i=0;i<n;i++){if(G.mode!=='channel')break;chUpdate(1/60);}
+      return CH?{t:+CH.t.toFixed(2),dust:CH.dust,kills:CH.kills}:null;},
+    /* 把一个道具塞到脸上：验证永久加成 / 升级道具真的生效 */
+    pod:(k)=>{if(!CH||!P)return null;chSpawnPod(k||'dmg');
+      const u=CH.pods[CH.pods.length-1];u.x=CH.psx;u.y=CH.camY+(VH-CH.psy);
+      chUpdate(1/60);return {dust:CH.dust,level:P.level,dmg:+P.dmg.toFixed(3),
+        maxHp:P.maxHp,maxSpeed:Math.round(P.maxSpeed),magnet:Math.round(P.magnet),
+        crit:+P.crit.toFixed(3),bspd:P.bspd,fireRate:+P.fireRate.toFixed(3),pending:G.pending};},
+    chEnd:()=>{if(!CH)return null;CH.t=CH_DUR;chUpdate(1/60);
+      return {mode:G.mode,pending:G.pending,chAfter:G.chAfter,wave:Wv.n};},
+    stat:()=>P?{dmg:+P.dmg.toFixed(3),fireRate:+P.fireRate.toFixed(3),maxHp:P.maxHp,
+      maxSpeed:Math.round(P.maxSpeed),magnet:Math.round(P.magnet),crit:+P.crit.toFixed(3),
+      bspd:P.bspd,level:P.level}:null,
+    consts:()=>({GATE_ENTER,WARP_DUR,CH_DUR,VW:Math.round(VW),VH:Math.round(VH)}),
+  },
   /* 航行日志测试钩子：counts 返回图鉴条目数；ach 返回成就树状态；open 打开日志面板 */
   logbook:{
     /* 7.9：日志 / 图鉴 / 星图已三分。这里三个 open 各自打开对应那个面板 ——

@@ -414,4 +414,38 @@ await run('4-4-16-live', ...D, async p => {
   return `${ok ? 'PASS' : 'FAIL'} 3 秒满配峰值弹幕${r.peak} 当前${r.now}(弹片${r.shards}) 未裂${r.spLeft}`;
 });
 
+/* ── 17 高爆弹爆炸色跟随船体（7.11） ─────────────────── */
+await run('4-4-17-splash-hull-color', ...D, async p => {
+  /* 原实现把爆炸色写死成橙 255,180,90（MAX 金 236,208,138）——
+     高爆弹是玩家自己打出去的，爆开的光跟船身同色才读得出"这是我的火力"。
+     验两件事：① 爆炸粒子的 c 等于当前船体辉光；② 换一艘船，色真的跟着变
+     （只验"等于某值"会被写死的常量蒙混过去，换船不变色说明取色没接上）。 */
+  const r = JSON.parse(await ev(p, `(function(){
+    const probe=(hullId,fragLv)=>{
+      startGame(HULLS.find(h=>h.id===hullId));
+      G.build={frag:fragLv};
+      const m=MOD_BY_ID.frag;
+      for(let k=1;k<=fragLv;k++)m.apply(k);
+      recountMax();
+      const before=G.parts.length;
+      splashAt(P.x+60,P.y,80,10,null);
+      const spawned=G.parts.slice(before);
+      return {hull:hullId,expect:hullGlow(),
+        got:[...new Set(spawned.map(q=>q.c))],
+        n:spawned.length,
+        fragMax:!!P.fragMax};
+    };
+    return JSON.stringify({a:probe('rapier',3),b:probe('bulwark',3),
+      c:probe('raven',6),d:probe('peregrine',1)});})()`));
+  const s = [r.a, r.b, r.c, r.d];
+  // 每艘船：爆炸色必须命中该船辉光（MAX 额外多一道白热芯 255,246,225，也要认）
+  const hit = s.every(x => x.got.includes(x.expect) && x.n > 0);
+  const changed = r.a.expect !== r.b.expect && r.a.got[0] !== r.b.got[0];
+  const maxed = r.c.fragMax && r.c.got.includes('255,246,225');
+  const ok = hit && changed && maxed;
+  return `${ok ? 'PASS' : 'FAIL'} ` +
+    s.map(x => `${x.hull}:${x.got.join('+')}${x.got.includes(x.expect) ? '✓' : '(应' + x.expect + ')'}`).join(' ') +
+    ` · 换船变色=${changed} · MAX 白热芯=${maxed}`;
+});
+
 })();
