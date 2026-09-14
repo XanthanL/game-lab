@@ -150,6 +150,194 @@ function ok(id, cond, extra) {
   await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(SHOTS, '03b-lens.png') });
 
+  /* ── 3.6 拾取物：刷新 / 磁吸 / 吃到 ───────────────────────────── */
+  const pk = await page.evaluate(() => {
+    const cb = window.__ES.app.cb;
+    const out = {};
+    const noop = function () { };
+
+    cb.pk.reset();
+    cb.pk.t = 0.001;
+    cb.pk.update(0.02, cb.p, cb.sing, cb.rng, cb.fx, noop);
+    out.spawned = cb.pk.a.length;
+    if (!out.spawned) return out;
+
+    /* 磁吸：放进磁吸圈内、拾取圈外（磁吸 ≈37、拾取 26） */
+    const u = cb.pk.a[0];
+    u.x = cb.p.x + 30; u.y = cb.p.y;
+    const d0 = Math.hypot(u.x - cb.p.x, u.y - cb.p.y);
+    cb.pk.update(0.016, cb.p, cb.sing, cb.rng, cb.fx, noop);
+    const d1 = Math.hypot(u.x - cb.p.x, u.y - cb.p.y);
+    out.magnet = { d0: d0, d1: d1, ok: d1 < d0 - 0.5 };
+
+    /* 吃到：贴到玩家身上 */
+    u.x = cb.p.x; u.y = cb.p.y;
+    const got = [];
+    cb.pk.update(0.016, cb.p, cb.sing, cb.rng, cb.fx, function (t) { got.push(t); });
+    out.grabbed = got.length;
+    out.left = cb.pk.a.length;
+    return out;
+  });
+  ok('40-pickup-spawn', pk.spawned >= 1, '刷新出 ' + pk.spawned + ' 个');
+  ok('41-pickup-magnet', !!(pk.magnet && pk.magnet.ok),
+    pk.magnet ? ('磁吸 ' + pk.magnet.d0.toFixed(1) + ' → ' + pk.magnet.d1.toFixed(1)) : '未测到');
+  ok('42-pickup-grab', pk.grabbed >= 1 && pk.left === 0, '吃到 ' + pk.grabbed + ' 个，场上剩 ' + pk.left);
+
+  /* ── 3.7 buff 数值（与网页版对齐）─────────────────────────────── */
+  const bf = await page.evaluate(() => {
+    const cb = window.__ES.app.cb, p = cb.p;
+    const AHv = window.__reg.arena.ARENA_H;
+    const out = {};
+
+    cb.applyPickup('boost', 100, 100); out.boostT = p.boostT;
+    cb.applyPickup('rate', 100, 100); out.rateT = p.rateT;
+    cb.applyPickup('invuln', 100, 100); out.invuln = p.invuln;
+    cb.applyPickup('shield', 100, 100); out.shieldAmt = p.shieldTmp;
+
+    /* 回血 +30% 上限 */
+    p.hp = 40; p.maxHp = 100;
+    cb.applyPickup('heal', 100, 100);
+    out.heal = p.hp;
+
+    /* 极速实测：远离奇点，避免引力干扰 */
+    const stick = { active: true, dx: 1, dy: 0 };
+    function run(n, dt) { for (let i = 0; i < n; i++) cb.updatePlayer(dt, { stick: stick }); }
+    function reset() { p.x = 40; p.y = AHv - 60; p.vx = 0; p.vy = 0; }
+    p.boostT = 0; reset(); run(60, 1 / 60);
+    out.spd0 = Math.hypot(p.vx, p.vy);
+    p.boostT = 7; reset(); run(60, 1 / 60);
+    out.spd1 = Math.hypot(p.vx, p.vy);
+
+    /* 射速实测：数 1 秒里打出多少发 */
+    p.boostT = 0;
+    p.rateT = 0; p.cd = 0; cb.pb.clear(); run(60, 1 / 60);
+    out.n0 = cb.pb.count();
+    p.rateT = 7; p.cd = 0; cb.pb.clear(); run(60, 1 / 60);
+    out.n1 = cb.pb.count();
+
+    /* 无敌力场：受击应完全无效 */
+    p.rateT = 0; p.hp = 100; p.inv = 0; p.shield = 0; p.shieldTmp = 0; p.invuln = 4;
+    cb.hurtPlayer(50);
+    out.invulnHp = p.hp;
+
+    /* 相位屏障先扛，船体不掉 */
+    p.invuln = 0; p.hp = 100; p.inv = 0; p.shield = 0;
+    cb.applyPickup('shield', 100, 100);
+    const s0 = p.shieldTmp;
+    cb.hurtPlayer(20);
+    out.shield0 = s0; out.shieldLeft = p.shieldTmp; out.shieldHp = p.hp;
+
+    /* 「数据注入」连开 24 次，协同不能被白送 */
+    const syn0 = cb.synergy;
+    for (let i = 0; i < 24; i++) cb.applyPickup('level', 100, 100);
+    out.synDelta = cb.synergy - syn0;
+
+    /* 收尾清干净，别污染后续用例 */
+    p.boostT = 0; p.rateT = 0; p.invuln = 0; p.shieldTmp = 0; p.shieldTmpMax = 0;
+    p.hp = p.maxHp; cb.toasts.length = 0; cb.pk.reset();
+    return out;
+  });
+  ok('43-buff-values', bf.boostT === 7 && bf.rateT === 7 && bf.invuln === 4 && bf.shieldAmt === 40,
+    'boost 7s / rate 7s / invuln 4s / 屏障 40');
+  ok('44-buff-heal', Math.abs(bf.heal - 70) < 0.6, '回血 40 → ' + bf.heal.toFixed(0) + '（+30% 上限）');
+  ok('45-buff-speed', bf.spd1 > bf.spd0 * 1.25, '极速 ' + bf.spd0.toFixed(0) + ' → ' + bf.spd1.toFixed(0));
+  ok('46-buff-rate', bf.n1 > bf.n0 * 1.3, '1 秒弹量 ' + bf.n0 + ' → ' + bf.n1);
+  ok('47-buff-invuln', bf.invulnHp === 100, '无敌力场下受击 50，船体仍是 ' + bf.invulnHp);
+  ok('48-buff-shield', bf.shieldHp === 100 && Math.abs(bf.shieldLeft - (bf.shield0 - 20)) < 0.01,
+    '屏障先扛：' + bf.shield0 + ' → ' + bf.shieldLeft + '，船体未掉血');
+  ok('49-level-no-syn', bf.synDelta === 0, '连开 24 次数据注入，协同未被白送（+' + bf.synDelta + '）');
+
+  /* ── 3.8 屏幕边缘状态层 ────────────────────────────────────────
+     判据不是"画面变了"，而是"哪个通道涨得最多" —— 这样颜色错了也能抓到：
+       朱砂 danger  R 主导且 G/R≈0.33 · 石绿 puBoost G 主导
+       黄铜 amberHi R 主导但 G/R≈0.88（靠这个比值跟朱砂区分开）· 冰蓝 cyanHi B 最亮 */
+  const au = await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    const AR = window.__reg.arena, RD = window.__reg.render, AU = window.__reg.aura;
+    const cv = window.__ES.PAL.canvas, c = cv.getContext('2d');
+
+    cb.pk.reset(); cb.pk.t = 1e9;    // 别让拾取物刷在采样点附近污染读数
+
+    /* 采样点：屏幕顶部边缘内侧 y=6（世界单位）—— 最外那条带就落在这儿 */
+    const pt = AR.toPx(AR.ARENA_W / 2, 6);
+    const sx = Math.max(0, Math.min(cv.width - 12, Math.round(pt.x) - 6));
+    const sy = Math.max(0, Math.min(cv.height - 12, Math.round(pt.y) - 6));
+    function samp() {
+      const d = c.getImageData(sx, sy, 12, 12).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      return { r: r / n, g: g / n, b: b / n };
+    }
+    function frame() { RD.drawWorld(c, cb, a.stars); AU.draw(c, cb); }
+    /* 扫 16 帧取峰值：低血带是脉动的，单帧可能正好落在波谷 */
+    function peak(setup) {
+      setup();
+      let best = { r: 0, g: 0, b: 0 }, bestSum = -1;
+      for (let k = 0; k < 16; k++) {
+        cb.time = k * 0.05;
+        frame();
+        const s = samp(), sum = s.r + s.g + s.b;
+        if (sum > bestSum) { bestSum = sum; best = s; }
+      }
+      return best;
+    }
+    function clean() {
+      p.hp = p.maxHp; p.boostT = 0; p.rateT = 0; p.invuln = 0;
+      p.shieldTmp = 0; p.shieldTmpMax = 0; p.alive = true;
+    }
+
+    const base = peak(clean);
+    const low = peak(function () { clean(); p.hp = p.maxHp * 0.12; });
+    const boost = peak(function () { clean(); p.boostT = 7; });
+    const inv = peak(function () { clean(); p.invuln = 4; });
+    const rate = peak(function () { clean(); p.rateT = 7; });
+
+    /* 数据源一致性：边缘光带与 HUD 徽章必须读同一份 list，顺序也固定 */
+    clean(); p.invuln = 4; p.boostT = 7;
+    const list = AU.buffList(cb).map(function (x) { return x.id; });
+    clean(); frame();
+    return { base: base, low: low, boost: boost, inv: inv, rate: rate, list: list };
+  });
+  const dLow = { r: au.low.r - au.base.r, g: au.low.g - au.base.g, b: au.low.b - au.base.b };
+  const dBst = { r: au.boost.r - au.base.r, g: au.boost.g - au.base.g, b: au.boost.b - au.base.b };
+  const dInv = { r: au.inv.r - au.base.r, g: au.inv.g - au.base.g, b: au.inv.b - au.base.b };
+  const dRte = { r: au.rate.r - au.base.r, g: au.rate.g - au.base.g, b: au.rate.b - au.base.b };
+  ok('50-aura-low', dLow.r > 3 && dLow.r > dLow.g && dLow.r > dLow.b,
+    '低血边缘转朱砂 ΔRGB(' + dLow.r.toFixed(1) + ',' + dLow.g.toFixed(1) + ',' + dLow.b.toFixed(1) + ')');
+  ok('51-aura-boost', dBst.g > 3 && dBst.g > dBst.r,
+    '推进超频边缘转石绿 ΔRGB(' + dBst.r.toFixed(1) + ',' + dBst.g.toFixed(1) + ',' + dBst.b.toFixed(1) + ')');
+  ok('52-aura-invuln', dInv.r > 3 && (dInv.g / Math.max(0.01, dInv.r)) > 0.5,
+    '无敌力场边缘转黄铜 ΔRGB(' + dInv.r.toFixed(1) + ',' + dInv.g.toFixed(1) + ',' + dInv.b.toFixed(1) +
+    ') G/R=' + (dInv.g / Math.max(0.01, dInv.r)).toFixed(2) + '（朱砂仅 ≈0.33）');
+  ok('53-aura-rate', dRte.b > 3 && dRte.b >= dRte.r,
+    '火力超频边缘转冰蓝 ΔRGB(' + dRte.r.toFixed(1) + ',' + dRte.g.toFixed(1) + ',' + dRte.b.toFixed(1) + ')');
+  ok('54-aura-order', au.list.length === 2 && au.list[0] === 'invuln' && au.list[1] === 'boost',
+    '徽章与光带同源，顺序固定 [' + au.list.join(',') + ']');
+
+  /* ── 3.9 存档：多条光带同屏 + 拾取物字形 ─────────────────────── */
+  await page.evaluate(() => {
+    const a = window.__ES.app, cb = a.cb, p = cb.p;
+    cb.pk.reset(); cb.pk.t = 1e9;      // 关掉自动刷新，摆固定的一组
+    a.state = 'playing';
+    /* 低血 + 四个 buff = 五条带（低血在最外，最厚） */
+    p.hp = p.maxHp * 0.22;
+    p.invuln = 4; p.boostT = 7; p.rateT = 7;
+    cb.applyPickup('shield', 100, 100);
+    /* 六种拾取物各摆一个 —— 主要用来检查几何字形缩到 10px 还认不认得出 */
+    const mk = (t, x, y) => ({ type: t, x: x, y: y, t: 0.6, life: 12, tr: 0, pulled: false });
+    cb.pk.a.push(mk('boost', 90, 250), mk('heal', 180, 250), mk('rate', 270, 250));
+    cb.pk.a.push(mk('shield', 135, 340), mk('invuln', 225, 340), mk('level', 180, 420));
+    cb.time = 0.2;
+    a.step(1 / 60);
+  });
+  await page.waitForTimeout(220);
+  await page.screenshot({ path: path.join(SHOTS, '10-buffs.png') });
+  await page.evaluate(() => {
+    const cb = window.__ES.app.cb, p = cb.p;
+    p.hp = p.maxHp; p.invuln = 0; p.boostT = 0; p.rateT = 0;
+    p.shieldTmp = 0; p.shieldTmpMax = 0; cb.toasts.length = 0; cb.pk.reset();
+  });
+
   /* ── 4. 左下角固定摇杆 + touchcancel 延迟拆除 ──────────────────── */
   const tc = await page.evaluate(async () => {
     const In = window.__reg.input;

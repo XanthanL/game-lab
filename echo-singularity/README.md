@@ -26,12 +26,18 @@ echo-singularity/
     tokens.js       ★ 设计 token（颜色 / 字号 / 时长 / 缓动）单一事实源
     util.js           数学 / 种子化随机 / 缓动
     arena.js          战场尺寸 / 视口变换 / 星空（过引力透镜）
-    singularity.js  ★ 奇点系统（B+C）—— 本作核心创意
+    singularity.js  ★ 奇点系统（B+C）—— 本作核心创意 + 黑洞透镜
     input.js        ★ 触摸输入（左下角固定摇杆）
     entities.js      玩家 / 弹丸池 / 敌机池 / 机型几何
-    combat.js        战斗核心 + 波次 + 选卡 + 协同压缩挂钩
-    render.js        世界绘制（星 / 网格 / 奇点底层 → 实体 → 奇点面层 → 摇杆）
-    ui.js            HUD / 暂停 / 结算 / 选卡 / 主菜单
+    regions.js        区域表 + 区域判定 + 无尽层
+    pickups.js      ★ 拾取物系统（6 种 buff，移植自网页版）
+    cards.js          强化卡池（独立成模块，Stage 3 扩展点）
+    combat.js        战斗核心 + 波次 + 协同压缩 + 拾取生效
+    warp.js           穿越过场（隧道环 + 速度线 + 白闪 + 旋转）
+    channel.js        通道奖励关（向上卷轴 + 星尘 + 障碍 + 折算选卡）
+    render.js        世界绘制（星 / 网格 / 奇点底层 → 实体 → 拾取 → 奇点面层 → 飘字 → 摇杆）
+    aura.js        ★ 屏幕边缘状态层（低血 + buff 光带）
+    ui.js            HUD / 暂停 / 结算 / 选卡 / 主菜单 / buff 徽章
     app.js           状态机 + 主循环
   tools/
     h5/
@@ -104,7 +110,7 @@ cd E:\Code\game-lab\echo-singularity
 $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 & 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe.cjs
 ```
-输出形如 `39/39 PASS`，截图落在 `tools/h5/_shots/`。
+输出形如 `54/54 PASS`，截图落在 `tools/h5/_shots/`。
 
 ## Stage 2 已完成（区域 / 门 / 通道 / 穿越）
 
@@ -188,9 +194,73 @@ $env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
 & 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe.cjs
 ```
 
-`39/39 PASS`（新增 `38-lens-differs`：对比 lens 开/关两帧，确认画面**真的不同**）。
+`54/54 PASS`（含 38-lens-differs，对比 lens 开/关两帧确认画面**真的不同**）。
 截图见 `tools/h5/_shots/03b-lens.png`：网格线在奇点周围被肉眼可见地折弯成同心环，
 星点被拉向视界方向。
+
+## Stage 2.5：拾取物系统 + 屏幕边缘状态层
+
+> 作者原话：「当玩家见到加攻速、加速、护盾、无敌等 buff，能不能也给屏幕边缘来一圈符合其的滤镜效果？」
+
+### 拾取物（移植自网页版，原 `index.html:5930`）
+
+网页版就有完整掉落系统，移植时整块漏了——`p.magnet` 定义了却**从没被读过**。这次补齐。
+
+| id | 中文 | 效果 | 时长 | 权重 | 主色 |
+|---|---|---|---:|---:|---|
+| `boost` | 推进超频 | accel ×1.5 / maxSpeed ×1.5 | 7s | 30% | 石绿 `puBoost` |
+| `heal` | 应急修复 | 回血 +30% maxHp | 即时 | 26% | 暖粉 `puHeal` |
+| `rate` | 火力超频 | 射速 ×1.6 | 7s | 20% | 冰蓝 `cyanHi` |
+| `shield` | 相位屏障 | 屏障 40 点，每秒自减 7 | ~5.7s | 13% | 屏障青 `shieldB` |
+| `invuln` | 无敌力场 | 完全免疫伤害 | 4s | 6% | 黄铜 `amberHi` |
+| `level` | 数据注入 | 立刻白给一张非协同永久卡 | 即时 | 5% | 锰紫 `violetHi` |
+
+刷新间隔 7–12 秒、场上最多 3 个、存活 12 秒、磁吸 `magnet² × 0.64`、磁吸速度 320。
+
+唯一改造：`level` 在网页版是 +1 LV，但本作没有 XP/等级系统，改为**立即随机白给一张非协同永久强化卡**。协同卡不能白送——它是直接压缩奇点的核心资源，只能玩家自己在选卡时取舍。
+
+⚠️ **顺手修了一个历史遗留**：原来 `p.magnet` 从没被读过，「牵引场」卡选了完全没效果。这次磁吸生效后，这张卡从废卡变活卡——但单卡 +35% 不够看，建议 Stage 3 卡池重构时把 magnet 卡的描述改成"+35% 拾取磁吸"。
+
+### 屏幕边缘状态层（`js/aura.js`）
+
+**为什么放在边缘**：玩家 90% 注意力在准星附近，边缘是余光能收到但不抢戏的位置。血量、buff 这类"持续中的状态"正适合放这儿——不用低头看 HUD，也不用弹横幅打断节奏。
+
+**视觉语法**：每个激活状态占**一条从边缘向内渐隐的光带**（4 边线性渐变）。多条从外向内依次排列——像测绘仪的多层读数环，**数得清有几个、看得出各是什么颜色**。
+
+**为什么不用整屏叠加一层色**：多个 buff 同时开时颜色会混成一坨，玩家分不出自己身上挂了什么。分带排列天生可数。
+
+**排序规则**：
+- **低血量固定占最外一条**（slot 0），且比 buff 带更厚（26 vs 13）、随心跳脉动（`sin³` 模拟收缩快舒张慢）、血越少越浓（0.10→0.42）心跳越快（5→12 BPM）
+- buff 在它内侧紧凑排列：`invuln → rate → boost → shield`（固定顺序，便于形成肌肉记忆）
+- buff 剩余 < 1.5s 开始闪烁（11Hz），提醒"要没了"
+
+**与 HUD 徽章的分工**（`js/ui.js → drawBuffs`）：
+- 边缘光带回答"有 / 没有"和"大致是哪一类"
+- HUD 徽章（字形 + 倒计时弧）负责精确辨识
+- **两边读同一份数据** `Aura.buffList(cb)`——判定逻辑只写一遍，避免一边有一边没有的割裂
+
+**何时不画**：低血 buff 在 `p.alive && hp/maxHp < 0.35` 时才出现。常驻护盾不画（它是状态不是 buff，走 HUD 血条），只有拾取来的临时屏障（`p.shieldTmp`）才挂边缘。
+
+### 副作用：卡片池独立成 `js/cards.js`
+
+为了不产生"逻辑层依赖渲染层"的脆弱加载顺序，把 `CARDS` 从 `ui.js` 抽到 `cards.js`。`combat`（拾取白送卡用）和 `app`（选卡用）都直接 require cards，不再借道 ui。**这正好是 Stage 3「工坊式卡池」的扩展点**。
+
+### 验证
+
+```
+$env:NODE_PATH='C:\Users\www27\.workbuddy\binaries\node\workspace\node_modules'
+& 'C:/Users/www27/.workbuddy/binaries/node/versions/22.22.2-3/node.exe' tools/h5/probe.cjs
+```
+
+`54/54 PASS`。新增 15 项断言（40–54），覆盖：
+- 拾取物刷新 / 磁吸 / 吃到
+- 六种 buff 数值（与网页版严格对齐）
+- buff 实测生效（极速 168→252 = 1.5×、射速 4→6/秒）
+- 无敌完全免疫、屏障先扛
+- `level` 连开 24 次协同不被白送（保护核心隐喻）
+- **边缘颜色的通道验证**（朱砂 G/R=0.27 / 黄铜 G/R=0.85 区分清楚，理论值 0.33 / 0.88）
+
+截图 `tools/h5/_shots/10-buffs.png`：低血 + 四个 buff + 六种拾取物同屏展示。
 
 ## Stage 3+ 待办（不在 Stage 2 范围）
 
