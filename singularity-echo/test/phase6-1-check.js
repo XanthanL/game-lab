@@ -220,7 +220,9 @@ try{
   const enBtn=(await p.locator('#btnSeed').textContent())||'';
   const enSub=(await p.locator('#seedpanel h2 span').textContent())||'';
   const enHint=(await p.locator('#seedpanel .sdhint').textContent())||'';
-  ok('6-1-12-i18n', zhBtn.includes('自定义种子')&&enBtn.includes('CUSTOM SEED')&&
+  /* 7.7：菜单工具排把按钮压成短芯片（「自定义种子」→「种子」），
+     完整的说法仍在种子面板的副标题里 —— 所以这里芯片只比对简称。 */
+  ok('6-1-12-i18n', zhBtn.includes('种子')&&enBtn.includes('SEED')&&
      zhSub.includes('同一个种子')&&enSub.includes('Same seed')&&enHint.length>20,
      `中「${zhBtn.trim()}」/ 英「${enBtn.trim()}」· 副标题「${enSub.trim()}」`);
   await p.close();

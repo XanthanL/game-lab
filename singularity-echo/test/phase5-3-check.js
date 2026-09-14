@@ -264,7 +264,8 @@ await run('5-3-11-i18n', ...D, async p => {
     const cjk=/[\\u4e00-\\u9fa5]/.test(qen.join('')+fen.join('')+rmen);
     NOVA.death.lang('zh');NOVA.opts.ui();
     return {zh,qzh,czh,fzh,rmzh,en,qen,fen,rmen,cjk};})()`);
-  const ok = r.zh.length >= 3 && r.qzh.length === 4 && r.czh.length === 3 && r.fzh.length === 5
+  /* 7.7：设置分页后各页自带标签，.sec-head 只剩键位 / 触屏两节 —— 阈值降到 2 */
+  const ok = r.zh.length >= 2 && r.qzh.length === 4 && r.czh.length === 3 && r.fzh.length === 5
     && r.qen.join(',') === 'AUTO,HIGH,MED,LOW' && r.fen.length === 5
     && r.rmen === 'Reduce motion' && !r.cjk;
   return `${ok ? 'PASS' : 'FAIL'} 分节${r.zh.length}个 ${JSON.stringify(r.zh.slice(0, 2))}`
@@ -278,7 +279,9 @@ await run('5-3-12-pad', ...D, async p => {
   const r = await evj(p, `(()=>{
     NOVA.pad.hold(0,0,0);toMenu();openSettings();NOVA.opts.ui();
     const list=padTargets();               /* NOVA.pad.targets() 返回的是 id 字符串，这里要元素本身 */
-    const nOpt=list.filter(b=>b.dataset&&b.dataset.opt).length;
+    /* 7.7：设置分页后一屏只显示一页，padTargets() 只收得到当页的控件 ——
+       要断言「13 个设置项全都可聚焦」就得跨页统计（每页各自进 padTargets）。 */
+    const nOpt=[...document.querySelectorAll('#settings [data-opt]')].length;
     const before=OPTS.quality;
     NOVA.opts.click('#optQuality .segb[data-val="low"]');
     const after=OPTS.quality;
@@ -320,8 +323,16 @@ await run('5-3-14-mobile', ...M, async p => {
     NOVA.opts.ui();openSettings();
     const rows=[...document.querySelectorAll('#settings .optrow')];
     const boxes=rows.map(e=>{const b=e.getBoundingClientRect();return [Math.round(b.width),Math.round(b.right)];});
-    const btns=[...document.querySelectorAll('#settings [data-opt]')]
-      .map(e=>{const b=e.getBoundingClientRect();return [+b.width.toFixed(1),+b.height.toFixed(1)];});
+    /* 7.7：控件分散在四页里，隐藏页的元素尺寸恒为 0 —— 必须逐页点亮再量，
+       否则「太小 13 个」是量法的问题，不是控件真的没尺寸。 */
+    const btns=[];
+    for(const t of ['audio','display','access','ctrl']){
+      pickSetTab(t);
+      for(const e of document.querySelectorAll('#settings .setpane.on [data-opt]')){
+        const b=e.getBoundingClientRect();btns.push([+b.width.toFixed(1),+b.height.toFixed(1)]);
+      }
+    }
+    pickSetTab('audio');
     const tooSmall=btns.filter(b=>b[0]<2||b[1]<2).length;
     const over=boxes.filter(b=>b[1]>390).length;
     const w=document.documentElement.scrollWidth;

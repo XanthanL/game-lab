@@ -101,36 +101,47 @@ await run('5-5-03-brake', ...P, async p => {
      ① 四次采样的 rect 必须完全相同；
      ② style.left / style.top 必须始终是空串（有人再写就是回退）；
      ③ 杆量仍按「固定圆心 → 手指」算并钳到 JOY_R，推远 = 满舵而不是归零。 */
-await run('5-5-04-fixed-base', ...P, async p => {
+await run('5-5-04-float-base', ...P, async p => {
   await play(p);
+  /* 7.9 回滚：浮动基座。
+     要验三件事 ——
+       ① 圆心 = 手指落点（按下即满量程，不再只有 46px 的杠杆臂）；
+       ② 整根手指期间**不再重锚**（7.7 之前"位置老是会变"的病根就是拖远时瞬移）；
+       ③ 松手即收杆（浮动杆没有待机态）。 */
   const r = await evj(p, `(()=>{
-    const B=NOVA.touch.base(), cx=B.l+B.w/2, cy=B.t+B.h/2;
     const T=(x,y)=>new Touch({identifier:7,target:document.body,clientX:x,clientY:y});
     const fire=(type,x,y)=>{const t=T(x,y);
       window.dispatchEvent(new TouchEvent(type,{changedTouches:[t],touches:[t],bubbles:true}));};
-    const snap=()=>{const b=NOVA.touch.base();return b.l+'x'+b.t+'|'+b.lx+'|'+b.ty;};
-    const before=snap();
-    fire('touchstart',cx+5,cy);            // 死区内：不该有任何杆量
-    const dz=NOVA.touch.state();
-    fire('touchmove',cx+30,cy);            // 往右推 30px
-    const right=NOVA.touch.state(), sRight=snap();
-    fire('touchmove',cx+400,cy);           // 推出捕获区外：钳满舵，底盘不动
-    const far=NOVA.touch.state(), sFar=snap();
-    fire('touchmove',cx,cy-400);           // 改往上推：方向要跟着变
-    const up=NOVA.touch.state(), sUp=snap();
-    fire('touchend',cx,cy-400);
-    return {before,dz,right,sRight,far,sFar,up,sUp,after:snap(),
-            afterB:NOVA.touch.base(),clean:joy.on===false};})()`);
-  const same = r.before === r.sRight && r.sRight === r.sFar && r.sFar === r.sUp && r.sUp === r.after;
-  const noInline = /\|\|$/.test(r.before) && /\|\|$/.test(r.after);
-  const ok = same && noInline && r.dz.mag === 0 && r.right.dx > 0 && r.right.mag > 0 &&
-    r.right.mag < 1 && r.far.mag === 1 && r.far.dx === 46 &&
-    r.up.mag === 1 && r.up.dy === -46 && r.clean &&
-    r.afterB.hidden === false && r.afterB.on === false;
-  return `${ok ? 'PASS' : 'FAIL'} 四次采样 rect 全等=${same}(${r.before})` +
-    ` · 无内联 left/top=${noInline} · 死区 mag=${r.dz.mag} · 推 30px mag=${r.right.mag}` +
-    ` · 推远满舵 dx=${r.far.dx} · 上推 dy=${r.up.dy}` +
-    ` · 松手后仍可见(hidden=${r.afterB.hidden},on=${r.afterB.on})`;
+    const AX=90, AY=innerHeight-140;         // 左下自然握持位（离屏幕边还有一段）
+    const hiddenBefore=NOVA.touch.base().hidden;
+    fire('touchstart',AX,AY);                // 落锚：圆心应等于这一点
+    const b0=NOVA.touch.base();
+    const dz=NOVA.touch.state();             // 死区内
+    fire('touchmove',AX+30,AY);
+    const right=NOVA.touch.state(), b1=NOVA.touch.base();
+    fire('touchmove',AX+400,AY);             // 拖到 8.7R 外：旧版在这里会瞬移底盘
+    const far=NOVA.touch.state(), b2=NOVA.touch.base();
+    fire('touchmove',AX-400,AY-400);         // 反向大幅拖：仍不许重锚
+    const up=NOVA.touch.state(), b3=NOVA.touch.base();
+    fire('touchend',AX-400,AY-400);
+    const after=NOVA.touch.base();
+    return {hiddenBefore,b0,dz,right,b1,far,b2,up,b3,after,ax:AX,ay:AY,
+            clean:joy.on===false};})()`);
+  /* 圆心由 ox/oy 表达，不再看 style 是否被写过（浮动杆必然要写） */
+  const c0=r.b0.ox+','+r.b0.oy, c1=r.b1.ox+','+r.b1.oy, c2=r.b2.ox+','+r.b2.oy, c3=r.b3.ox+','+r.b3.oy;
+  const anchored = c0 === r.ax+','+r.ay;
+  const still = c0 === c1 && c1 === c2 && c2 === c3;
+  const ok = r.hiddenBefore && anchored && still &&
+    r.dz.mag === 0 && r.right.dx > 0 && r.right.mag > 0 && r.right.mag < 1 &&
+    r.far.mag === 1 && r.far.dx === 46 &&
+    /* 反向是 45° 斜推：模长顶到 1，两个分量各 46/√2 ≈ 32.53（不是 46） */
+    r.up.mag === 1 && Math.abs(r.up.dx + 32.53) < .01 && Math.abs(r.up.dy + 32.53) < .01 &&
+    r.clean && r.after.hidden === true;
+  return `${ok ? 'PASS' : 'FAIL'} 待机隐藏=${r.hiddenBefore} · 圆心=落点(${c0} vs ${r.ax},${r.ay})=${anchored}` +
+    ` · 全程不重锚=${still}(${c0}→${c1}→${c2}→${c3})` +
+    ` · 死区 mag=${r.dz.mag} · 推 30px mag=${r.right.mag}` +
+    ` · 推远满舵 dx=${r.far.dx} · 反向斜推 dx/dy=${r.up.dx}/${r.up.dy}` +
+    ` · 松手收杆(hidden=${r.after.hidden},on=${r.clean===false?'有残留':'已清零'})`;
 });
 
 /* ── 05 安全区变量链路 + FIRE 按钮用 calc 避让 ─────────── */

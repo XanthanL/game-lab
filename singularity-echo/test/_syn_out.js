@@ -389,6 +389,10 @@ const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 /* ============================== dom ============================== */
 const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx=cv.getContext('2d');
+/* 主画布上下文的别名：drawEnemy / drawAst 里所有 ctx.* 指的是**参数** ctx（可选第二参），
+   不传时回落到这个主上下文 —— 于是同一段绘制代码既能画在主画布上，
+   也能画进图鉴的小画布里（见 drawFoeCodex）。改名为 CTX_MAIN 只为在参数遮蔽后仍能取到。 */
+const CTX_MAIN=ctx;
 const el={
   hud:$('hud'),hp:$('hpbar'),shield:$('shieldbar'),shieldFill:$('shieldbar').querySelector('i'),
   lv:$('lv'),xp:$('xpbar'),abrow:$('abrow'),strow:$('strow'),heatrow:$('heatrow'),heatbar:$('heatbar'),
@@ -1746,10 +1750,18 @@ function dailySeed(){
   return h;
 }
 function pickDailyRules(seed){
+  /* 7.9：算每日规则必须**还原**全局 RNG。
+     实测（6-1-07）：菜单渲染一次每日规则，RND.on 就永久停在 true ——
+     之后任何一局「随机漂移」其实都在跑每日那颗种子，每局完全一样。
+     玩家正常玩碰不到（renderDaily 只在进菜单 / 启动时调），但这是颗定时炸弹：
+     开局时序一变就会被踩。算完必须把 RND 恢复原样。 */
+  const bak={on:RND.on,s:RND.s,s0:RND.s0};
   setSeed(seed);
   const ids=DAILY_RULES.map(r=>r.id);
   shuffle(ids);
-  return ids.slice(0,2).map(id=>DAILY_RULES.find(r=>r.id===id));
+  const out=ids.slice(0,2).map(id=>DAILY_RULES.find(r=>r.id===id));
+  RND.on=bak.on;RND.s=bak.s;RND.s0=bak.s0;
+  return out;
 }
 function startDaily(hull){
   const seed=dailySeed();
@@ -3272,20 +3284,11 @@ const JOY_R=46,             // 杆最大位移 px（与 #joyknob 直径对齐，
       JOY_TURN_MAX=2.2,     // 满舵倍率：4.4 rad/s × 2.2 ≈ 旧的 10 rad/s，手感不变
       JOY_BRK=0.62,         // 下拉超过此比例算刹车（对齐 5.2 手柄 ay>0.5）
       JOY_THR=0.12,         // 推进阈值：刚出死区就点火太敏感
-   /* 7.7 固定摇杆的捕获区：左 55% 宽、HUD 顶栏以下。
-      为什么不是整屏 —— 右半屏留给 FIRE 按钮和「只想开火不想转向」的误触余量；
-      为什么给这么宽 —— 固定杆不会跟着落点走，拇指落点必须留足容错。 */
-      JOY_ZONE=0.55,        // 捕获区宽度（占 VW）
-      JOY_ZONE_T=86;        // 捕获区上边界（让开顶部 HUD 按钮）
-const joy={id:null,dx:0,dy:0,on:false,mag:0,nx:0,ny:0,endT:0};
-/* 底盘圆心缓存：fixed 元素不随滚动变，只在 resize / 转屏 / 由隐转显时重量一次。
-   别在 touchmove 里 getBoundingClientRect —— 每次都会强制重排。 */
-let joyCX=0,joyCY=0,joyCDirty=true;
-function joyCenter(){
-  if(!joyCDirty)return;
-  const r=el.joybase.getBoundingClientRect();
-  joyCX=r.left+r.width/2;joyCY=r.top+r.height/2;joyCDirty=false;
-}
+   /* 捕获区只用来**排除**顶部 HUD 与 FIRE 按钮：浮动杆按哪哪是圆心，
+      不需要再划一块"左边才有效"的地盘 —— 那样右半屏按下去没反应才像坏了。 */
+      JOY_HUD_T=70,         // 顶部 HUD 按钮带高度
+      JOY_HUD_W=120;        // 顶部 HUD 按钮带宽度（右上角）
+const joy={id:null,ox:0,oy:0,dx:0,dy:0,on:false,mag:0,nx:0,ny:0,endT:0};
 /* 死区 → 重映射 → 归一化，与 5.2 padScan 同一套做法：
    两种模拟量输入（手柄 / 触屏）的语义必须一致，否则玩家换个设备手要重新学。 */
 function joyRead(){
@@ -3309,38 +3312,45 @@ function setTouch(v){
   orientHint();   // 5.5 竖屏提示依赖 isTouch，切换输入方式同样要立刻重算
 }
 function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying';}
-/* ---- 7.7 摇杆底盘显隐 ----
-   固定杆要在整局里**一直可见**（不然玩家又得猜它在哪），所以显隐不再跟着手指走，
-   只跟「触屏 + 对局中」走；每帧由 updateAim() 驱动，状态不变就不写 DOM。 */
+/* ---- 7.9 摇杆底盘显隐 ----
+   浮动杆不存在"待机可见"这回事：**有手指才有杆**。所以显隐归 touchstart / touchend 管，
+   这里每帧只做兜底 —— 不在对局中（或切回键鼠）时把杆收掉，避免残留状态。
+   FIRE 按钮仍按「触屏 且 对局中」常显。 */
 function joyUI(){
   const on=isTouch&&inRun();
-  /* 显隐每帧都写（写同值不触发重排），这样别处手写的 hidden 不会把状态卡死 ——
-     底盘 / FIRE 的可见性只有一个真源：「触屏 且 对局中」。 */
-  if(el.joybase.hidden!==(!on))joyCDirty=true;  // 刚由隐转显，rect 要重新量
-  el.joybase.hidden=!on;
   el.firebtn.hidden=!on;
-  if(!on)joyRelease();
+  if(!on){el.joybase.hidden=true;joyRelease();}
 }
-/* 收杆：量归零 + knob 回中 + 底盘转暗。touchend / 延迟收尾 / 切回键鼠都走这里。 */
+/* 落锚 + 显形：整根手指期间圆心就固定在这里，绝不中途挪动（7.9 回滚的核心）。 */
+function joyAnchor(x,y){
+  joy.ox=x;joy.oy=y;
+  el.joybase.style.left=x+'px';el.joybase.style.top=y+'px';
+  el.joybase.hidden=false;
+  el.joybase.classList.add('on');
+  if(el.joyknob)el.joyknob.style.transform='translate(-50%,-50%)';
+}
+/* 收杆：量归零 + knob 回中 + 底盘收起。touchend / 延迟收尾 / 切回键鼠都走这里。 */
 function joyRelease(){
   if(joy.id===null&&!joy.on&&!joy.dx&&!joy.dy&&!el.joybase.classList.contains('on'))return;
   clearTimeout(joy.endT);joy.endT=0;
   joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();
   el.joybase.classList.remove('on');
+  el.joybase.hidden=true;
   if(el.joyknob)el.joyknob.style.transform='translate(-50%,-50%)';
 }
-/* 以**固定圆心**算杆量：位置恒定，方向连续，不再有任何重锚跳变。 */
+/* 以**落点圆心**算杆量。⚠️ 这里只有钳位（超出 R 就贴边），
+   没有任何"把底盘挪过来"的逻辑 —— 那正是 7.7 之前杆会瞬移的原因。 */
 function joyMove(x,y){
-  joyCenter();
-  let dx=x-joyCX,dy=y-joyCY,m=Math.hypot(dx,dy);
+  let dx=x-joy.ox,dy=y-joy.oy,m=Math.hypot(dx,dy);
   if(m>JOY_R){dx*=JOY_R/m;dy*=JOY_R/m;}
   joy.dx=dx;joy.dy=dy;
   el.joyknob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
   joyRead();
 }
-/* 落点是否在捕获区内：左 JOY_ZONE 宽、HUD 顶栏以下、且不在 FIRE 按钮上。 */
+/* 落点能否起杆：排除顶部 HUD 按钮带与 FIRE 按钮，其余全屏都可以。 */
 function inJoyZone(x,y){
-  return y>=JOY_ZONE_T&&x<=VW*JOY_ZONE;
+  if(y<JOY_HUD_T&&x>VW-JOY_HUD_W)return false;
+  return !isFireBtn(x,y);
 }
 /* ---- 5.5 竖屏提示 ----
    ⚠️ 不能从 resize() 里调：resize() 在脚本求值时就跑了一次，那时 G 还在 TDZ，
@@ -3357,8 +3367,10 @@ el.orhint.addEventListener('click',()=>{
   orHidden=true;try{localStorage.setItem(OR_KEY,'1');}catch(e){}orientHint();
 });
 /* 7.7：fixed 元素的 rect 只在视口变化时变 —— resize / 转屏后必须重新量圆心 */
-window.addEventListener('resize',()=>{joyCDirty=true;orientHint();});
-window.addEventListener('orientationchange',()=>{joyCDirty=true;resize();orientHint();});
+window.addEventListener('resize',()=>{orientHint();});
+/* 7.9：转屏时正在操杆的那根手指坐标已经失效（圆心是旧屏的落点），
+   直接收杆比留着一根指错方向的杆安全 —— 玩家抬手重按即可。 */
+window.addEventListener('orientationchange',()=>{joyRelease();resize();orientHint();});
 // 判断触点是否落在 FIRE 按钮上（含少量容差），按钮外一律归为方向/推力
 function isFireBtn(x,y){
   if(el.firebtn.hidden)return false;
@@ -3493,14 +3505,12 @@ window.addEventListener('touchstart',e=>{
     if(t.clientY<70&&t.clientX>VW-120)continue; // hud buttons
     // FIRE 按钮 = 唯一开火开关，任何情况下都不参与操杆
     if(isFireBtn(t.clientX,t.clientY)){fireOn=!fireOn;el.firebtn.classList.toggle('hot',fireOn);continue;}
-    /* 7.7：固定摇杆 —— 底盘不动，落点只要进捕获区就立刻按「相对圆心」给出杆量。
-       捕获区外（右半屏 / HUD 顶栏）一律不接管，避免误触让船乱转。 */
     if(!inRun()||!inJoyZone(t.clientX,t.clientY))continue;
     /* 7.6：joy.endT 待收尾 = 上一根手指已被 touchcancel，玩家立刻重新触摸时让新手指接管 */
     if(joy.id!==null&&!joy.endT)continue;   // 已有手指在操杆，第二根不抢
     clearTimeout(joy.endT);joy.endT=0;
     joy.id=t.identifier;joy.on=true;
-    el.joybase.classList.add('on');
+    joyAnchor(t.clientX,t.clientY);   // 7.9：圆心 = 落点，这一次触摸内不再变
     joyMove(t.clientX,t.clientY);
   }
 },{passive:true});
@@ -6961,6 +6971,7 @@ function pickCodexTab(t){
   const ps=el.codex.querySelectorAll('.setpane');
   for(let i=0;i<ps.length;i++)ps[i].classList.toggle('on',ps[i].dataset.pane===t);
   if(t==='hull')drawHullCodex();     // canvas 模型：面板可见才画得出，切到再画
+  if(t==='foe')drawFoeCodex();       // 7.11 敌人建模：同上，切到再画
   sfx.ui();
 }
 function openCodex(){
@@ -7540,8 +7551,9 @@ function drawLogbook(){
   if(el.lbEnemies)el.lbEnemies.innerHTML=EN_LIST.map(t=>{
     const need=EN_UNLOCK[t],ok=reached>=need,d=ENEMY_DEFS[t]||{};
     const c=d.c||'192,64,43';
+    /* 7.11：色点方块换成 canvas 建模（drawFoeCodex 稍后填）。data-foe 是绘制的取型键 */
     return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})">
-      <span class="lbdot" style="border-color:rgba(${c},${ok?.85:.3});background:rgba(${c},${ok?.14:0})"></span>
+      <canvas class="cxmodel" width="180" height="120" data-foe="${t}"></canvas>
       <span style="min-width:0;flex:1">
         <span class="lbname">${T(EN_ZH[t]||t,EN_EN[t]||t)}</span>
         <span class="lben">${(EN_EN[t]||t).toUpperCase()}</span>
@@ -7555,7 +7567,7 @@ function drawLogbook(){
   if(el.lbBosses)el.lbBosses.innerHTML=Object.keys(BOSS_AT).sort((a,b)=>a-b).map(w=>{
     const k=BOSS_AT[w],need=+w,ok=reached>=need,st=BOSS_STYLE[k]||{c:'192,64,43'};
     return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})">
-      <span class="lbdot" style="border-color:rgba(${st.c},${ok?.85:.3});background:rgba(${st.c},${ok?.14:0})"></span>
+      <canvas class="cxmodel" width="180" height="120" data-boss="${k}"></canvas>
       <span style="min-width:0;flex:1">
         <span class="lbname">${T(BOSS_ZH[k]||k,BOSS_NAME[k]||k)}</span>
         <span class="lben">${(BOSS_NAME[k]||'').toUpperCase()}</span>
@@ -7577,6 +7589,7 @@ function drawLogbook(){
   }).join('');
   /* 7.9：船体 chips 与蜂群进度条已从日志移除 —— 图鉴的「战机」页有 canvas 模型 + 详解，
      比这两行文字强得多。整段删掉，不留空壳。 */
+  drawFoeCodex(); // 敌型 / 巨像的 canvas 模型（innerHTML 刚重建过，必须重画一遍）
   drawAch(s);
   drawMeta(); // 局外解锁树
   resetAchPan(); // 重新量视窗并套用自动适配缩放（面板此刻已可见）
@@ -7602,7 +7615,69 @@ const SING={
   st:{},            // id -> {c,g,w,h}
   tx:.5,ty:.5,cx:.5,cy:.5,   // 指针目标 / 当前（归一化）
   t:0,last:0,raf:0,waves:[],
+  spd:0,            // 7.10：指针移动速度（0~1），拖得越快盘转得越快 —— 互动感的来源
 };
+/* 7.10 远景两层：星场 + 星云。
+   原先奇点只有「盘 + 环 + 十字」，是浮在纯黑上的几何图形，没有纵深。
+   加底景之后加载页与主界面才真的像「在深空里」。两条省算的规矩：
+     · 星点坐标一次生成（FNV 派生而非 Math.random —— 每次刷新是同一片星空，
+       玩家会觉得那是"自己的星图"，而不是噪点）；逐帧只做位移与呼吸。
+     · 星云预渲染进 192×192 的离屏画布，逐帧只 drawImage 拉伸一次 ——
+       四团大半径径向渐变每帧重画等于整屏四遍填充，中低端手机直接掉帧。 */
+const SING_STARS=(()=>{
+  let s=2166136261>>>0;
+  const rnd=()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};
+  const a=[];
+  for(let i=0;i<170;i++)a.push({x:rnd(),y:rnd(),z:.22+rnd()*.78,tw:rnd()*6.283,sp:.4+rnd()*1.1});
+  return a;
+})();
+const SING_NEB=[ // 坐标 / 半径归一化；钢蓝为主，掺一点紫 —— 只在极低透明度上出现
+  {x:.18,y:.26,r:.42,c:'40 92 132',a:.30,ph:0},
+  {x:.84,y:.72,r:.46,c:'28 62 96', a:.26,ph:1.7},
+  {x:.52,y:.08,r:.34,c:'64 48 96', a:.18,ph:3.1},
+  {x:.22,y:.88,r:.36,c:'30 74 110',a:.20,ph:4.6},
+];
+let SING_NEBC=null;
+function singNebMake(){
+  if(SING_NEBC)return SING_NEBC;
+  const N=192,c=document.createElement('canvas');c.width=N;c.height=N;
+  const g=c.getContext('2d');
+  for(const n of SING_NEB){
+    const x=n.x*N,y=n.y*N,r=n.r*N*1.5;
+    /* c 是 "40 92 132" 这种空格分隔的三元组（与 --c-*-rgb 同 convention），
+       喂给 rgba() 前必须换成逗号 —— 否则 addColorStop 直接抛 SyntaxError。 */
+    const c3=n.c.replace(/\s+/g,',');
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba('+c3+','+n.a+')');
+    gr.addColorStop(.5,'rgba('+c3+','+(n.a*.32).toFixed(3)+')');
+    gr.addColorStop(1,'rgba('+c3+',0)');
+    g.fillStyle=gr;g.fillRect(0,0,N,N);
+  }
+  SING_NEBC=c;return c;
+}
+function singBg(g,w,H,dpr,A,t,px,py,neb){
+  const ink=(SING_C.ink||'228 233 240').replace(/\s+/g,',');
+  if(neb&&typeof OPTS!=='undefined'&&OPTS.nebula){
+    const c=singNebMake(),k=1.18;
+    /* 极慢漂移 + 指针视差：整块底景比前景慢一个量级，纵深就是这么读出来的 */
+    const dx=-(px-.5)*.05*w+Math.sin(t*.043)*.012*w;
+    const dy=-(py-.5)*.05*H+Math.cos(t*.036)*.012*H;
+    g.globalAlpha=A;
+    g.drawImage(c,dx-(k-1)/2*w,dy-(k-1)/2*H,w*k,H*k);
+    g.globalAlpha=1;
+  }
+  for(const s of SING_STARS){
+    /* 三层视差由 z 决定：越亮的星越近、跟指针走得越多 */
+    const x=(((s.x*w+(px-.5)*30*dpr*s.z)%w)+w)%w;
+    const y=(((s.y*H+(py-.5)*20*dpr*s.z)%H)+H)%H;
+    const tw=.55+.45*Math.sin(t*s.sp+s.tw);
+    const a=A*(.09+.28*s.z)*tw;
+    if(a<=.012)continue;
+    const sz=Math.max(1,dpr*(.5+s.z*.85));
+    g.fillStyle='rgba('+ink+','+a.toFixed(3)+')';
+    g.fillRect(x,y,sz,sz);
+  }
+}
 function singSt(id){
   const c=document.getElementById(id);if(!c)return null;
   return SING.st[id]||(SING.st[id]={c,g:c.getContext('2d'),w:0,h:0});
@@ -7626,10 +7701,14 @@ function singPaint(st,t,o){
   g.setTransform(1,0,0,1,0,0);
   g.clearRect(0,0,w,H);
   const R=(o.R||140)*dpr;
+  /* ⓪ 远景（屏幕空间）：星云 + 三层视差星场 —— 见 singBg */
+  if(o.bg)singBg(g,w,H,dpr,A,t,SING.cx,SING.cy,1);
   /* 指针牵引：只让中心偏移 ±6%，且缓动 —— 见上面 ① */
   const ox=(SING.cx-.5)*w*.12, oy=(SING.cy-.5)*H*.12;
   const cx=w*o.cx+ox, cyy=H*o.cy+oy;
-  const spin=t*(o.spin||.14), prog=o.prog==null?.5:o.prog;
+  /* 7.10：拖动 / 划动会额外加速自转（spd 由 pointermove 累积、逐帧衰减）。
+     加载页等几秒本来很枯燥 —— 手一划盘就转起来，等待变成可以"拨弄"的东西。 */
+  const spin=t*(o.spin||.14)*(1+SING.spd*2.4), prog=o.prog==null?.5:o.prog;
   g.save();
   g.translate(cx,cyy);
   // ① 吸积盘：7 圈虚线椭圆
@@ -7687,7 +7766,50 @@ function singPaint(st,t,o){
   g.moveTo(br-bl,br*(o.flat||.32));g.lineTo(br,br*(o.flat||.32));g.lineTo(br,br*(o.flat||.32)-bl);
   g.moveTo(-br+bl,br*(o.flat||.32));g.lineTo(-br,br*(o.flat||.32));g.lineTo(-br,br*(o.flat||.32)-bl);
   g.stroke();
-  // ⑤ 冲击波（点击 / 触摸放出的环）
+  /* ⑤ 测绘环：两道同心测距环 + 每 15° 一根刻度（长刻度每 90°）。
+     这是全场「星图测绘」语言的另一半 —— 十字给方向，刻度环给尺度。 */
+  if(o.ring){
+    const rr0=R*2.34;
+    g.strokeStyle='rgba('+cy+','+(0.13*A).toFixed(3)+')';
+    g.lineWidth=Math.max(1,dpr*0.8);
+    g.beginPath();g.arc(0,0,rr0,0,Math.PI*2);g.stroke();
+    for(let i=0;i<24;i++){
+      const a=i*Math.PI/12, long=(i%6===0);
+      const L=long?R*0.20:R*0.10;
+      g.beginPath();
+      g.moveTo(Math.cos(a)*rr0,Math.sin(a)*rr0*(o.flat||1));
+      g.lineTo(Math.cos(a)*(rr0+L),Math.sin(a)*(rr0+L)*(o.flat||1));
+      g.strokeStyle='rgba('+cy+','+((long?0.30:0.16)*A).toFixed(3)+')';
+      g.stroke();
+    }
+    /* 进度弧：加载页那条进度条在这儿有个"仪表"版本 —— 同一份 bootVal，
+       读数从条形变成刻度环上的一段黄铜弧，等待过程就有了明确的可视进度。 */
+    g.beginPath();
+    g.arc(0,0,rr0*1.055,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,Math.min(1,prog)));
+    g.lineWidth=Math.max(1,dpr*2);
+    g.strokeStyle='rgba('+am+','+(0.55*A).toFixed(3)+')';
+    g.stroke();
+  }
+  /* ⑥ 扫描扫掠：一道缓慢旋转的径向亮线 + 一小段余晖扇形。
+     雷达扫针是"仪器在工作"最直白的信号 —— 加载页静止的画面会显得卡死。 */
+  if(o.sweep){
+    const sw=(t*(o.sweep===1?0.55:0.28))%(Math.PI*2);
+    const rr1=R*3.4;
+    const grd=g.createLinearGradient(0,0,Math.cos(sw)*rr1,Math.sin(sw)*rr1*(o.flat||1));
+    grd.addColorStop(0,'rgba('+cy+','+(0.30*A).toFixed(3)+')');
+    grd.addColorStop(1,'rgba('+cy+',0)');
+    g.strokeStyle=grd;g.lineWidth=Math.max(1,dpr*1.1);
+    g.beginPath();g.moveTo(0,0);
+    g.lineTo(Math.cos(sw)*rr1,Math.sin(sw)*rr1*(o.flat||1));g.stroke();
+    g.beginPath();g.moveTo(0,0);
+    g.arc(0,0,rr1*.92,sw-0.30,sw);
+    g.closePath();
+    const wg=g.createRadialGradient(0,0,0,0,0,rr1);
+    wg.addColorStop(0,'rgba('+cy+','+(0.10*A).toFixed(3)+')');
+    wg.addColorStop(1,'rgba('+cy+',0)');
+    g.fillStyle=wg;g.fill();
+  }
+  // ⑦ 冲击波（点击 / 触摸放出的环）
   for(const wv of SING.waves){
     const k=(t-wv.t)/1.1;if(k<0||k>1)continue;
     const rr=R*(0.8+k*4.2),a=(1-k)*0.45*A;
@@ -7709,26 +7831,45 @@ function singLoop(ts){
   // 中心缓动追指针
   SING.cx+=(SING.tx-SING.cx)*Math.min(1,dt*3.2);
   SING.cy+=(SING.ty-SING.cy)*Math.min(1,dt*3.2);
+  // 7.10：手一停，额外的转速要很快泄掉（约 0.3s 归零），否则盘会一直"超速"
+  SING.spd*=Math.pow(0.02,dt);
+  if(SING.spd<0.001)SING.spd=0;
   // 过期的冲击波清掉，数组不无限长
   if(SING.waves.length)SING.waves=SING.waves.filter(w=>SING.t-w.t<1.2);
   const boot=singSt('bootcv'),menu=singSt('menucv');
   const bootOn=boot&&boot.c.offsetParent!==null&&!document.getElementById('boot').classList.contains('out');
   const menuOn=menu&&menu.c.offsetParent!==null;
   if(bootOn)singPaint(boot,SING.t,{cx:.5,cy:.5,R:Math.min(boot.w,boot.h)*0.10,
-    spin:.30,alpha:1,prog:bootVal,dust:56});
+    spin:.30,alpha:1,prog:bootVal,dust:56,bg:1,ring:1,sweep:1});
   if(menuOn)singPaint(menu,SING.t,{cx:.5,cy:.40,R:Math.min(menu.w,menu.h)*0.13,
-    spin:.10,alpha:.62,prog:.5,dust:34,flat:.28});
+    spin:.10,alpha:.62,prog:.5,dust:34,flat:.28,bg:1,sweep:1});
   if(!bootOn&&!menuOn&&SING.raf){cancelAnimationFrame(SING.raf);SING.raf=0;SING.last=0;}
 }
 function singKick(){
-  if(SING_RED)return;                       // 减弱动态：不跑动画，只画一帧
+  /* 减弱动态：不跑动画，但要**画一帧静态** —— 原先直接 return，
+     开了这个开关的玩家看到的是一块全黑背景（星空 / 星云全没画）。 */
+  if(SING_RED){
+    const boot=singSt('bootcv'),menu=singSt('menucv');
+    const bEl=document.getElementById('boot');
+    if(boot&&bEl&&!bEl.hidden&&!bEl.classList.contains('out'))
+      singPaint(boot,0,{cx:.5,cy:.5,R:Math.min(boot.w,boot.h)*0.10,spin:0,alpha:1,
+        prog:bootVal,dust:56,bg:1,ring:1,sweep:0});
+    if(menu&&menu.c.offsetParent!==null)
+      singPaint(menu,0,{cx:.5,cy:.40,R:Math.min(menu.w,menu.h)*0.13,spin:0,alpha:.62,
+        prog:.5,dust:34,flat:.28,bg:1,sweep:0});
+    return;
+  }
   if(!SING.raf){SING.last=0;SING.raf=requestAnimationFrame(singLoop);}
 }
 /* 指针 / 触摸：牵引 + 冲击波。挂在 window 上（画布 pointer-events:none，收不到事件），
    坐标换算回归一化 —— 两块画布尺寸不同，只有归一化值才能共用。 */
 window.addEventListener('pointermove',e=>{
-  SING.tx=e.clientX/ Math.max(1,window.innerWidth);
-  SING.ty=e.clientY/ Math.max(1,window.innerHeight);
+  const nx=e.clientX/Math.max(1,window.innerWidth);
+  const ny=e.clientY/Math.max(1,window.innerHeight);
+  /* 7.10：把「移动得多快」也记下来 —— spd 驱动吸积盘额外加速。
+     用增量而不是绝对位置：位置只决定盘往哪偏，速度决定它转得多急。 */
+  SING.spd=Math.min(1,SING.spd+Math.hypot(nx-SING.tx,ny-SING.ty)*7);
+  SING.tx=nx;SING.ty=ny;
 },{passive:true});
 window.addEventListener('pointerdown',e=>{
   // 只认落在加载页 / 主界面上的点击 —— 别的面板上点一下不该在背景里放环
@@ -7802,6 +7943,87 @@ function drawHullCodex(){
       g.translate(75,46);g.rotate(-Math.PI/2);g.scale(2,2);drawHullBody(g,h.id,ok?1:0);
     }
   });
+}
+/* ===================== 7.11 敌人图鉴建模 =====================
+   图鉴的意义是「我在游戏里撞上的那个东西叫什么」—— 所以模型不另画一套简笔图，
+   直接把主渲染函数（drawEnemy / drawAst）画进格子上的小画布。两套美术必然走样
+   （改了敌型忘了改图鉴是迟早的事），一套则改外形时图鉴自动跟着改。
+   三处必须伪造的运行时状态：
+     · age 给足 → grow=1，不画出生放大动画；
+     · state 一律取「静态档」—— dart/lancer 进 aim/charge 会拖出 240 / 560px 的瞄准线，
+       mine 非 idle 会画出 120px 的引爆范围环，在 180×120 的格子里都只会糊成一团；
+     · P 为 null（菜单态打开图鉴）时朝向玩家的几型读不到 P.x —— drawEnemy 里用 _P 兜底，
+       且把假想玩家放在正上方，于是 gunner / weaver / orbiter 在图鉴里一律朝上，
+       与战机页模型的朝向一致。 */
+/* 取景半径：不是碰撞半径，是「这一型画出来最远伸到哪」。
+   两者差得很远（蝌蚪 r=9 但尾巴甩到 22，牧者 r=18 但实战光环 330），
+   不单独给一张表就会有的撑出格子、有的小成一个点。 */
+const CX_FOE_R={seeker:16,dart:16,gunner:22,splitter:24,weaver:18,reaver:16,tadpole:23,
+  bastion:26,shifter:16,wraith:17,stalker:23,lancer:20,mine:17,orbiter:21,leech:17,
+  mimic:19,prism:16,bulwark:27,shepherd:18,nova:22,sower:20,jammer:21,brood:27,sunder:20};
+const CX_FOE_STATE={dart:'chase',lancer:'idle',mine:'idle',stalker:'reveal',
+  shifter:'phase',mimic:'hunt',sunder:'hunt'};
+function cxFoeStub(t){
+  const d=ENEMY_DEFS[t]||{};
+  return {type:t,x:0,y:0,vx:0,vy:-1,ang:-Math.PI/2,age:2,flash:0,
+    hp:d.hp||5,maxHp:d.hp||5,
+    state:CX_FOE_STATE[t]||'idle',st:0,fireT:0,wob:0.6,pulse:1.2,stick:0,
+    auraR:18,jamR:20,   // 光环 / 干扰场收到机体尺度（实战 330 / 230 会把格子撑爆）
+    hatchT:1,hatchMax:2,hatched:0,life:9,refrT:0};
+}
+/* 巨像：形状是程序生成的、且完全随 a.r 等比缩放，所以显示半径不必是实战的
+   AST_R[4]=105 —— 那个尺寸下坍缩之核的吸积盘会甩到 230px 外，格子里只剩几条弧。
+   顶点用确定性三角函数派生：这里**不能**调 rand()，那会推走 RND 序列
+   （6-1-07 那个坑：图鉴开一次就把每日挑战的种子序列挪了一格）。 */
+/* 取景倍率（相对显示半径 r）：不再是同一套多边形，各 kind 的"最远伸到哪"也不同 ——
+   nemesis 的镜像残影到 1.26r、monolith 碑体高 1.16r、collapse 吸积盘甩到 2.19r。 */
+const CX_BOSS_EXT={collapse:1.5,monolith:1.22,nemesis:1.32,twin:1.28,hydra:1.14,eye:1.10};
+function cxBossStub(kind){
+  const nv=16,verts=[];
+  for(let i=0;i<nv;i++)verts.push({a:i/nv*TAU+Math.sin(i*2.7)*0.10,r:0.86+0.14*Math.cos(i*3.1)});
+  const a={size:4,x:0,y:0,r:30,hp:1,maxHp:1,vx:0,vy:0,rot:0.35,vrot:0,verts,
+    flash:0,age:2,boss:true,elite:false,champ:false,bossKind:kind,stage:0,invT:0,
+    rings:null,beamT:0,sweepA:0,fieldR:0,fieldOn:true,flipT:0,disk:0.8};
+  if(kind==='warden'){
+    a.rings=[];
+    const cfg=[[0.60,0.36],[0.80,0.30],[1.02,0.25]];
+    for(let i=0;i<cfg.length;i++)a.rings.push({rr:cfg[i][0],gapW:cfg[i][1],
+      ang:i*1.1,gap:i*2.1,spin:0,gapSpin:0,hp:1,maxHp:1});
+  }
+  if(kind==='monolith'){a.fieldR=a.r*1.1;a.fieldOn=true;}
+  return a;
+}
+/* 通用：把 draw(g) 画进一块以中心为原点、整体缩放 ext 倍的画布。
+   关键：边内缩 2 px 做 clip —— drawEnemy 的外发描边是 5 px（不是 1.6），
+   经缩放后能伸到 14~16 px，比 16 px 的 margin 还宽。即使算尽 margin，
+   抗锯齿边缘也会渗出。clip 是兜底：超出安全区的描边像素被剪掉，
+   视觉上是画布边线压住，看不出截断。 */
+function cxModelPaint(cvs,draw,ext){
+  const g=cvs.getContext('2d');
+  g.setTransform(1,0,0,1,0,0);
+  g.clearRect(0,0,cvs.width,cvs.height);
+  g.save();
+  g.beginPath();
+  g.rect(2,2,cvs.width-4,cvs.height-4);
+  g.clip();
+  g.translate(cvs.width/2,cvs.height/2);
+  g.scale(ext,ext);
+  draw(g);
+  g.restore();
+}
+function drawFoeCodex(){
+  if(el.lbEnemies)for(const c of el.lbEnemies.querySelectorAll('canvas[data-foe]')){
+    const t=c.dataset.foe;
+    /* drawEnemy 的外发描边是 5 px（不是 1.6）—— 缩放后能伸到 13~16 px，远大于「机体半径」。
+       这层半透光晕正是敌型辨识度的一部分，不能切。所以 margin 要按「缩放后的描边宽度」算，
+       不是按 R：直接留画布高度的 16/60 ≈ 1/4 当安全区，最大体型（如 bulwark r=27 → 缩放 1.6×
+       → 描边 8 px）也稳稳落在内。 */
+    cxModelPaint(c,g=>drawEnemy(cxFoeStub(t),g),(c.height/2-16)/(CX_FOE_R[t]||20));
+  }
+  if(el.lbBosses)for(const c of el.lbBosses.querySelectorAll('canvas[data-boss]')){
+    const k=c.dataset.boss;
+    cxModelPaint(c,g=>drawAst(cxBossStub(k),g),(c.height/2-16)/(30*(CX_BOSS_EXT[k]||1.06)));
+  }
 }
 /* 升级页：全部模块（首级效果 + 满级上限）+ 全部协同。
    模块英文走 LV_EN，协同走 SYN_EN —— 都是既有表，零新增数据。 */
@@ -8241,7 +8463,134 @@ function drawArena(){
   ctx.strokeStyle=RGBA('cyan',0.1);ctx.lineWidth=8;
   ctx.strokeRect(-6,-6,WORLD.w+12,WORLD.h+12);
 }
-function drawAst(a){
+/* ================= 7.11 巨像外形：8 个 kind 各自一套轮廓 + 细节 =================
+   改之前 8 只里 rock / eye / twin / hydra / nemesis 是**同一套随机 16 边多边形**，
+   颜色也全是红系 —— 玩法上靠弹幕区分，但撞上去那一刻分不出是谁，图鉴里更是
+   5 张一模一样的卡。现在按各自的设定给形：
+     rock     母岩     —— 不规则岩块 + 内部矿脉裂纹（基准形态，这个家族的脸）
+     eye      虚空之眼 —— 岩壳 + 中央巨眼（杏仁眼廓 / 虹膜环 / 竖瞳 / 高光）
+     twin     双子母岩 —— 岩块 + 一道贯穿的明亮裂隙（"被劈成两半"留下的痕）
+     hydra    九首巨兽 —— 岩块 + 三颗等分核心 + 生命网络连线（设定即三核共享）
+     warden   环带狱卒 —— 正八角站体 + 十字支撑 + 三重护盾环（工业造物，非岩石）
+     nemesis  终焉回响 —— 玩家战机的暗色镜像 + 外侧残影（设定：它模仿你的一切）
+     monolith 静默方碑 —— 高耸方碑 + 碑面刻痕（碑就该是碑，不该是块石头）
+     collapse 坍缩之核 —— 正圆视界 + 吸积盘（它是黑洞核心，不该有棱角）
+   ⚠️ 这些形状同时作用于游戏内与图鉴 —— 图鉴借的就是主渲染函数，没有第二套美术。
+      改这里等于同时改实战外观，是有意为之（实战里 5 只长一样本来就是弱点）。 */
+/* 战机镜像：与玩家机头同向的暗色箭形 —— nemesis 的本体与残影共用同一条路径 */
+function nemePath(ctx,r){
+  ctx.beginPath();
+  ctx.moveTo(r*1.02,0);ctx.lineTo(r*0.10,r*0.32);ctx.lineTo(-r*0.36,r*0.94);
+  ctx.lineTo(-r*0.16,r*0.30);ctx.lineTo(-r*0.64,r*0.44);ctx.lineTo(-r*0.54,0);
+  ctx.lineTo(-r*0.64,-r*0.44);ctx.lineTo(-r*0.16,-r*0.30);ctx.lineTo(-r*0.36,-r*0.94);
+  ctx.lineTo(r*0.10,-r*0.32);ctx.closePath();
+}
+/* 多叶体（twin 双子 / hydra 三首）：n 个等分圆近似交叠。
+   ⚠️ 每个 arc 前必须 moveTo 到弧起点 —— 否则 canvas 会从当前点拉一条直线过去，
+      画出来是"糖葫芦"而不是融合体。同向 arc + nonzero 填充 = 并集，不会挖洞。 */
+function lobePath(ctx,r,n,d,rr){
+  ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const t=i/n*TAU,cx=Math.cos(t)*d,cy=Math.sin(t)*d;
+    ctx.moveTo(cx+rr,cy);ctx.arc(cx,cy,rr,0,TAU);
+  }
+}
+function bossBody(ctx,a,r){
+  const k=a.bossKind||'rock';
+  if(k==='collapse'){ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.closePath();return;}
+  if(k==='monolith'){            // 高耸方碑：竖长碑体 + 四角斜切
+    const w=r*0.60,h=r*1.16,be=r*0.24;
+    ctx.beginPath();
+    ctx.moveTo(-w,-h+be);ctx.lineTo(-w+be,-h);ctx.lineTo(w-be,-h);ctx.lineTo(w,-h+be);
+    ctx.lineTo(w,h-be);ctx.lineTo(w-be,h);ctx.lineTo(-w+be,h);ctx.lineTo(-w,h-be);
+    ctx.closePath();return;
+  }
+  if(k==='warden'){              // 正八角站体
+    ctx.beginPath();
+    for(let i=0;i<8;i++){const t=i/8*TAU+Math.PI/8;
+      const x=Math.cos(t)*r,y=Math.sin(t)*r;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+    ctx.closePath();return;
+  }
+  if(k==='nemesis'){nemePath(ctx,r);return;}
+  if(k==='eye'){                 // 杏仁眼廓：本体就是那只眼，扁而宽
+    const ew=r*1.02,eh=r*0.66;
+    ctx.beginPath();ctx.moveTo(-ew,0);
+    ctx.quadraticCurveTo(0,-eh*1.55,ew,0);
+    ctx.quadraticCurveTo(0,eh*1.55,-ew,0);ctx.closePath();return;
+  }
+  if(k==='twin'){lobePath(ctx,r,2,r*0.60,r*0.62);return;}   // 双子：两团几乎相切
+  if(k==='hydra'){lobePath(ctx,r,3,r*0.52,r*0.56);return;}  // 三首：三团等分交叠
+  ctx.beginPath();               // rock（与普通小行星）：随机岩块（verts）
+  for(let i=0;i<a.verts.length;i++){
+    const v=a.verts[i];
+    const x=Math.cos(v.a)*v.r*r,y=Math.sin(v.a)*v.r*r;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+/* 轮廓之上的辨识细节。画在 fill+stroke 之后，所以压在本体线之上。 */
+function bossDetail(ctx,a,r,c){
+  const k=a.bossKind||'rock',t=G.t;
+  if(k==='rock'){                     // 矿脉：三条自中心向外的折线
+    ctx.strokeStyle=`rgba(${c},0.30)`;ctx.lineWidth=1.1;
+    for(let i=0;i<3;i++){
+      const t0=i/3*TAU+0.45;
+      ctx.beginPath();ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(t0)*r*0.46,Math.sin(t0)*r*0.46);
+      ctx.lineTo(Math.cos(t0+0.55)*r*0.84,Math.sin(t0+0.55)*r*0.84);
+      ctx.stroke();
+    }
+  }else if(k==='eye'){                // 虹膜 + 竖瞳 + 高光（本体已是杏仁眼廓）
+    const pu=0.5+0.5*Math.sin(t*1.6);
+    ctx.fillStyle=`rgba(${c},${0.18+0.32*pu})`;
+    ctx.beginPath();ctx.arc(0,0,r*0.28,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(${c},0.95)`;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.arc(0,0,r*0.28,0,TAU);ctx.stroke();
+    ctx.fillStyle='rgba(6,3,2,0.92)';
+    ctx.beginPath();ctx.ellipse(0,0,r*0.09,r*0.24*(0.55+0.45*pu),0,0,TAU);ctx.fill();
+    ctx.fillStyle=`rgba(255,238,220,${0.45+0.35*pu})`;
+    ctx.beginPath();ctx.arc(-r*0.11,-r*0.11,r*0.05,0,TAU);ctx.fill();
+  }else if(k==='twin'){               // 接缝：两团之间的那道"被劈开"的痕
+    const g=0.5+0.5*Math.sin(t*3);
+    ctx.beginPath();ctx.moveTo(0,-r*0.52);ctx.lineTo(0,r*0.52);
+    ctx.strokeStyle=`rgba(${c},${0.35+0.45*g})`;ctx.lineWidth=2.4;ctx.stroke();
+    ctx.strokeStyle=`rgba(255,224,186,${0.30+0.40*g})`;ctx.lineWidth=1;ctx.stroke();
+  }else if(k==='hydra'){              // 生命网络：三核之间的连线（核心由下面的 cores 循环画）
+    ctx.strokeStyle=`rgba(${c},0.30)`;ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<3;i++){
+      const t1=i/3*TAU,t2=(i+1)/3*TAU;
+      ctx.moveTo(Math.cos(t1)*r*0.52,Math.sin(t1)*r*0.52);
+      ctx.lineTo(Math.cos(t2)*r*0.52,Math.sin(t2)*r*0.52);
+    }
+    ctx.stroke();
+  }else if(k==='warden'){             // 十字支撑 + 内环：读成"站体"而不是石头
+    ctx.strokeStyle=`rgba(${c},0.30)`;ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.74,-r*0.74);ctx.lineTo(r*0.74,r*0.74);
+    ctx.moveTo(r*0.74,-r*0.74);ctx.lineTo(-r*0.74,r*0.74);
+    ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,r*0.54,0,TAU);ctx.stroke();
+  }else if(k==='nemesis'){            // 镜像残影：外侧一圈同形淡影（"它在模仿你"）
+    const g=0.5+0.5*Math.sin(t*2.2);
+    ctx.save();ctx.scale(1.26,1.26);nemePath(ctx,r);
+    ctx.strokeStyle=`rgba(${c},${0.16+0.24*g})`;ctx.lineWidth=1.3;ctx.stroke();ctx.restore();
+    ctx.strokeStyle=`rgba(${c},0.5)`;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(-r*0.50,0);ctx.lineTo(r*0.86,0);ctx.stroke();
+  }else if(k==='monolith'){           // 碑面刻痕 + 中缝：读成人工造物
+    ctx.strokeStyle=`rgba(${c},0.26)`;ctx.lineWidth=1;
+    for(let i=-2;i<=2;i++){
+      const y=i*r*0.30;
+      ctx.beginPath();ctx.moveTo(-r*0.40,y);ctx.lineTo(r*0.40,y);ctx.stroke();
+    }
+    ctx.strokeStyle=`rgba(${c},0.40)`;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(0,-r*1.02);ctx.lineTo(0,r*1.02);ctx.stroke();
+  }
+  // collapse：正圆视界 + 吸积盘已是它的签名，再加细节只会糊 —— 此处刻意留白
+}
+function drawAst(a,ctx){
+  if(!ctx)ctx=CTX_MAIN;   // 参数遮蔽全局：不传第二参就是主画布，传了就画进指定画布（图鉴建模）
   const grow=Math.min(1,a.age/0.5);
   const st=BOSS_STYLE[a.bossKind]||BOSS_STYLE.rock;
   const big=a.boss||a.champ;
@@ -8251,13 +8600,7 @@ function drawAst(a){
   ctx.rotate(a.rot);ctx.scale(grow,grow);
   ctx.globalAlpha=a.age<0.5?a.age*2:1;
   if(a.invT>0)ctx.globalAlpha*=0.45+0.55*(Math.floor(G.t*18)%2); // 换阶段无敌：闪烁
-  ctx.beginPath();
-  for(let i=0;i<a.verts.length;i++){
-    const v=a.verts[i];
-    const x=Math.cos(v.a)*v.r*a.r,y=Math.sin(v.a)*v.r*a.r;
-    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-  }
-  ctx.closePath();
+  bossBody(ctx,a,a.r);            // 7.11：轮廓按 kind 分派（不再一律随机多边形）
   ctx.fillStyle=big?st.fill:'#0a111d';
   ctx.fill();
   const c=a.flash>0?'255,255,255':a.elite?'236,208,138':big?st.c:'150,175,210';
@@ -8269,18 +8612,23 @@ function drawAst(a){
   ctx.strokeStyle=`rgba(${c},0.25)`;ctx.lineWidth=5;ctx.stroke();
   ctx.strokeStyle=`rgba(${c},0.9)`;ctx.lineWidth=1.6;ctx.stroke();
   if(big){
-    ctx.strokeStyle=`rgba(${c},0.35)`;ctx.lineWidth=1.2;
-    ctx.beginPath();
-    for(let i=0;i<5;i++){
-      const v1=a.verts[(i*3)%a.verts.length],v2=a.verts[(i*3+6)%a.verts.length];
-      ctx.moveTo(Math.cos(v1.a)*v1.r*a.r*0.9,Math.sin(v1.a)*v1.r*a.r*0.9);
-      ctx.lineTo(Math.cos(v2.a)*v2.r*a.r*0.9,Math.sin(v2.a)*v2.r*a.r*0.9);
+    if((a.bossKind||'rock')==='rock'){ // 内部弦线：只有岩块本体才用（碑/核/镜像画上会脏）
+      ctx.strokeStyle=`rgba(${c},0.35)`;ctx.lineWidth=1.2;
+      ctx.beginPath();
+      for(let i=0;i<5;i++){
+        const v1=a.verts[(i*3)%a.verts.length],v2=a.verts[(i*3+6)%a.verts.length];
+        ctx.moveTo(Math.cos(v1.a)*v1.r*a.r*0.9,Math.sin(v1.a)*v1.r*a.r*0.9);
+        ctx.lineTo(Math.cos(v2.a)*v2.r*a.r*0.9,Math.sin(v2.a)*v2.r*a.r*0.9);
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
-    // 核心：狂暴阶段随阶段数增亮、增核
-    const cores=a.bossKind==='nemesis'?(a.stage+1):1;
+    bossDetail(ctx,a,a.r,c);       // 7.11：种类辨识细节
+    // 核心：狂暴阶段随阶段数增亮、增核（hydra 设定就是三核共享生命网络 → 常驻 3 核）
+    const cores=a.bossKind==='nemesis'?(a.stage+1):(a.bossKind==='hydra'?3:1);
     for(let k=0;k<cores;k++){
-      const da=a.stage?G.t*1.4:0,ang=da+k/cores*TAU,rr=cores>1?a.r*0.42:0;
+      /* hydra 的三核要落在三个叶团中心（本体就是三叶），否则核与叶错位看着像 bug */
+      const da=a.stage?G.t*1.4:0,ang=da+k/cores*TAU,
+            rr=cores>1?a.r*(a.bossKind==='hydra'?0.52:0.42):0;
       const cx=Math.cos(ang)*rr,cy=Math.sin(ang)*rr;
       const pl=0.55+0.45*Math.sin(G.t*(a.stage>=1?9:4)+k);
       ctx.strokeStyle=`rgba(${c},${0.4+0.5*pl})`;ctx.lineWidth=2;
@@ -8332,7 +8680,9 @@ function drawAst(a){
   }
   ctx.restore();ctx.globalAlpha=1;
 }
-function drawEnemy(e){
+function drawEnemy(e,ctx){
+  if(!ctx)ctx=CTX_MAIN;   // 同 drawAst：可选第二参 = 画到别的画布（图鉴建模复用同一套美术）
+  const _P=P||{x:0,y:-9999,jamT:0}; // 图鉴在菜单态打开时 P 还是 null，朝向玩家的几型需要兜底
   const grow=Math.min(1,e.age/0.4);
   ctx.save();ctx.translate(e.x,e.y);ctx.scale(grow,grow);
   const baseC=(ENEMY_DEFS[e.type]&&ENEMY_DEFS[e.type].c)||'192,64,43'; // 配色查同一张敌型表
@@ -8356,7 +8706,7 @@ function drawEnemy(e){
     ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-6,5);ctx.lineTo(-12,0);ctx.lineTo(-6,-5);ctx.closePath();
     ctx.fillStyle='#221008';ctx.fill();stroke();
   }else if(e.type==='gunner'){
-    const a=angTo(e.x,e.y,P.x,P.y);
+    const a=angTo(e.x,e.y,_P.x,_P.y);
     ctx.rotate(a);
     ctx.beginPath();ctx.moveTo(10,14);ctx.lineTo(22,0);ctx.lineTo(10,-14);ctx.stroke();
     ctx.beginPath();
@@ -8374,7 +8724,7 @@ function drawEnemy(e){
       if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
     ctx.closePath();stroke();
   }else if(e.type==='weaver'){
-    ctx.rotate(angTo(e.x,e.y,P.x,P.y));
+    ctx.rotate(angTo(e.x,e.y,_P.x,_P.y));
     ctx.beginPath();
     for(let i=0;i<6;i++){const t=i/6*TAU+Math.PI/6;const x=Math.cos(t)*17,y=Math.sin(t)*17;
       if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
@@ -8476,7 +8826,7 @@ function drawEnemy(e){
       ctx.beginPath();ctx.arc(0,0,120,0,TAU);ctx.stroke();
     }
   }else if(e.type==='orbiter'){
-    ctx.rotate(angTo(e.x,e.y,P.x,P.y));
+    ctx.rotate(angTo(e.x,e.y,_P.x,_P.y));
     ctx.beginPath();ctx.arc(0,0,12,0,TAU);
     ctx.fillStyle='#0c1626';ctx.fill();stroke();
     ctx.beginPath();ctx.arc(0,0,5,0,TAU);stroke();
@@ -8553,13 +8903,13 @@ function drawEnemy(e){
       ctx.beginPath();ctx.arc(Math.cos(t)*19,Math.sin(t)*19,3.2,0,TAU);ctx.fill();}
   }else if(e.type==='jammer'){
     // 干扰者：虚线干扰场 + 菱形机身 + 三根天线；玩家在场内时再画一道绕玩家的虚环
-    const on=P.jamT>0;
+    const on=_P.jamT>0;
     ctx.save();ctx.setLineDash([9,7]);
     ctx.strokeStyle=`rgba(${c},${on?0.34:0.16})`;ctx.lineWidth=on?2:1.2;
     ctx.beginPath();ctx.arc(0,0,e.jamR,0,TAU);ctx.stroke();
     ctx.restore();
     if(on){ // 明确「是它在影响你」—— 与状态/光环的实线视觉区分开
-      ctx.save();ctx.translate(P.x-e.x,P.y-e.y);ctx.setLineDash([5,6]);
+      ctx.save();ctx.translate(_P.x-e.x,_P.y-e.y);ctx.setLineDash([5,6]);
       ctx.strokeStyle=`rgba(${c},${0.32+0.22*Math.sin(G.t*8)})`;ctx.lineWidth=1.6;
       ctx.beginPath();ctx.arc(0,0,26,0,TAU);ctx.stroke();ctx.restore();
     }
@@ -9812,6 +10162,29 @@ window.NOVA={
     switchTo:id=>{BGM.switchTo(id);return BGM.group;},
     urls:id=>BGM.groups[id]?BGM.groups[id].urls.slice():null,
   },
+  /* 7.10 奇点视界（加载页 / 主界面画布）+ 音乐鉴赏 —— 探针用 */
+  sing:{
+    kick:()=>{singKick();return 1;},
+    state:()=>({t:+SING.t.toFixed(2),cx:+SING.cx.toFixed(3),cy:+SING.cy.toFixed(3),
+      waves:SING.waves.length,red:SING_RED,raf:!!SING.raf}),
+    /* 数「有多少个像素不是全透明」—— 断言画布真的画了东西，不只是挂了个元素 */
+    px:id=>{
+      const c=document.getElementById(id);
+      if(!c||!c.width||!c.height)return -1;
+      const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+      let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>6)n++;
+      return n;
+    },
+    wave:(x,y,hot)=>{singWave(x,y,hot);return SING.waves.length;},
+  },
+  music:{
+    list:()=>muList().map(r=>({id:r.id,u:r.u,zh:r.n.zh,en:r.n.en})),
+    cur:()=>muCur,
+    preview:()=>BGM.previewUrl,
+    now:()=>el.muNow?el.muNow.textContent.trim():'',
+    stop:()=>{muStop();return 1;},
+    open:()=>{openMusic();return G.mode;},
+  },
   giveXp:n=>{if(P)gainXp(n);},
   launch:i=>startGame(HULLS[i||0]),
   damage:n=>{if(P){P.invuln=0;hurtPlayer(n,P.x+60,P.y);}},
@@ -9891,6 +10264,20 @@ window.NOVA={
       codexHulls:el.cxHulls?el.cxHulls.children.length:0,
       nodes:el.lbTreeNodes?el.lbTreeNodes.children.length:0,
       links:el.lbTreeLinks?el.lbTreeLinks.children.length:0}),
+    /* 7.11 敌人建模：数出每块模型画布上「非透明像素」的个数。
+       探针要的不是「有 canvas 元素」，是「真的画了东西」—— 空的 canvas 一样有元素。 */
+    foeModels:()=>{
+      const one=(box,attr)=>{
+        if(!box)return [];
+        return [...box.querySelectorAll('canvas['+attr+']')].map(c=>{
+          const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+          let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>8)n++;
+          return {k:c.getAttribute(attr),px:n,
+            locked:!!(c.parentElement&&c.parentElement.classList.contains('locked'))};
+        });
+      };
+      return {foes:one(el.lbEnemies,'data-foe'),bosses:one(el.lbBosses,'data-boss')};
+    },
     ach:()=>ACH.map(a=>({id:a.id,...achProgress(a,loadStats())})),
     /* 节点完整数据：坐标 / 依赖 / 渲染出的类名与文字 —— 断言树结构用 */
     achNodes:()=>ACH.map(a=>{
@@ -10207,13 +10594,13 @@ window.NOVA={
      靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
   touch:{
     const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
-                BRK:JOY_BRK,THR:JOY_THR,ZONE:JOY_ZONE,ZONE_T:JOY_ZONE_T}),
-    /* 7.7 固定摇杆探针：整局里底盘 rect 必须一动不动；
-       lx/ty 恒为空串 = JS 确实没再写 style.left/top（位置只由 CSS 决定）。 */
+                BRK:JOY_BRK,THR:JOY_THR}),
+    /* 7.9 浮动摇杆探针：圆心 = 落点（ox/oy），整根手指期间不许变。
+       l/t 是底盘 rect 左上角（圆心 = l+w/2, t+h/2）。 */
     base:()=>{const r=el.joybase.getBoundingClientRect();
       return {hidden:el.joybase.hidden,on:el.joybase.classList.contains('on'),
               l:Math.round(r.left),t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),
-              lx:el.joybase.style.left||'',ty:el.joybase.style.top||''};},
+              ox:Math.round(joy.ox),oy:Math.round(joy.oy)};},
     zone:(x,y)=>inJoyZone(x,y),
     state:()=>({on:joy.on,dx:+joy.dx.toFixed(2),dy:+joy.dy.toFixed(2),
                 mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)}),
@@ -10242,13 +10629,13 @@ window.NOVA={
      靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
   touch:{
     const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
-                BRK:JOY_BRK,THR:JOY_THR,ZONE:JOY_ZONE,ZONE_T:JOY_ZONE_T}),
-    /* 7.7 固定摇杆探针：整局里底盘 rect 必须一动不动；
-       lx/ty 恒为空串 = JS 确实没再写 style.left/top（位置只由 CSS 决定）。 */
+                BRK:JOY_BRK,THR:JOY_THR}),
+    /* 7.9 浮动摇杆探针：圆心 = 落点（ox/oy），整根手指期间不许变。
+       l/t 是底盘 rect 左上角（圆心 = l+w/2, t+h/2）。 */
     base:()=>{const r=el.joybase.getBoundingClientRect();
       return {hidden:el.joybase.hidden,on:el.joybase.classList.contains('on'),
               l:Math.round(r.left),t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),
-              lx:el.joybase.style.left||'',ty:el.joybase.style.top||''};},
+              ox:Math.round(joy.ox),oy:Math.round(joy.oy)};},
     zone:(x,y)=>inJoyZone(x,y),
     state:()=>({on:joy.on,dx:+joy.dx.toFixed(2),dy:+joy.dy.toFixed(2),
                 mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)}),
