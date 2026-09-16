@@ -3121,7 +3121,8 @@ const G={
   gdt:0.1,gpts:null,gn:0,gplay:null, // 6.5 幽灵：录制步长 / 轨迹扁平数组 / 已录点数 / 本局影子
   gsrc:'',pendingGhost:null,         // 6.6 轨迹码：本局影子来源 '' | 'best' | 'link' / 待注入的外来影子
   taMode:false,taT:0,                 // 7 冲刺赛：模式开关 / 倒计时（秒，0=非 TA 局）
-  gate:null,warpT:0,chAfter:false,    // 7.12 奇点门：门状态 / 跃迁计时 / 「通道卡片发完再推进波次」标志
+  gate:null,warpT:0,chAfter:false,chRw:null, // 7.12/7.13 奇点门：门状态 / 跃迁计时 / 「卡片发完再推进波次」标志 / 跃出时待结算的通道奖励
+  sweeps:[],domains:[],               // 7.14 巨像终极技：旋转扫描臂 / 领域湮灭
   player:null,choices:[],build:{},pickT:0,syn:{},synQ:[],
   lastHit:null,cause:null, // 死因：最近一次受击来源 / 坠毁瞬间的快照（结算面板用）
   asteroids:[],enemies:[],bullets:[],ebullets:[],shards:[],pickups:[],drones:[],parts:[],texts:[],warns:[],bolts:[],deathTrail:[],dtFx:[],mines:[],ghosts:[],lances:[],debris:[],
@@ -3191,7 +3192,8 @@ function resumeRun(){
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.lances.length=0;G.ghosts.length=0;
   G.pending=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
-  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12 奇点门：续档不继承上一局的门
+  G.gate=null;G.warpT=0;G.chAfter=false;G.chRw=null;CH=null;
+  G.sweeps.length=0;G.domains.length=0;   // 7.12 奇点门：续档不继承上一局的门
   G.build=Object.assign({},s.b||{});
   P=newPlayer();G.player=P;
   G.lastHull=HULLS[s.h]||HULLS[0];G.lastHull.apply();
@@ -4983,7 +4985,6 @@ const JOY_R=46,             // 杆最大位移 px（与 #joyknob 直径对齐，
       JOY_DZ=0.18,          // 死区（占 JOY_R）：手指静止时的抖动不该让船自转
       JOY_TURN_MIN=0.45,    // 死区边缘的转向倍率（相对 P.turn）—— 微调要慢
       JOY_TURN_MAX=2.2,     // 满舵倍率：4.4 rad/s × 2.2 ≈ 旧的 10 rad/s，手感不变
-      JOY_BRK=0.62,         // 下拉超过此比例算刹车（对齐 5.2 手柄 ay>0.5）
       JOY_THR=0.12,         // 推进阈值：刚出死区就点火太敏感
    /* 捕获区只用来**排除**顶部 HUD 与 FIRE 按钮：浮动杆按哪哪是圆心，
       不需要再划一块"左边才有效"的地盘 —— 那样右半屏按下去没反应才像坏了。 */
@@ -5015,7 +5016,7 @@ function setTouch(v){
 /* 7.12：warp / channel 也算"在局中" —— 否则摇杆与触屏在这两段里会被判成局外而失效，
    手机上就彻底没法在通道里机动了。 */
 function inRun(){return G.mode==='play'||G.mode==='inter'||G.mode==='levelup'||G.mode==='dying'
-  ||G.mode==='warp'||G.mode==='channel';}
+  ||G.mode==='warp'||G.mode==='warpout'||G.mode==='channel';}
 /* ---- 7.9 摇杆底盘显隐 ----
    浮动杆不存在"待机可见"这回事：**有手指才有杆**。所以显隐归 touchstart / touchend 管，
    这里每帧只做兜底 —— 不在对局中（或切回键鼠）时把杆收掉，避免残留状态。
@@ -5609,7 +5610,8 @@ function spawnAst(size,x,y,kind,champ){
     rot:rand(TAU),vrot:rand(-0.7,0.7),verts:[],flash:0,age:0,boss,elite,champ:col,
     xp:AST_XP[size]*(elite?2.5:1)*(col?3:1),score:AST_SC[size]*(elite?2:1)*(col?4:1),
     contact:AST_CD[size],seedT:rand(1,3),bossKind:(boss||col)?(kind||'rock'):null,
-    stage:0,invT:0,rings:null,beamT:0,sweepA:0};
+    stage:0,invT:0,rings:null,beamT:0,sweepA:0,
+    odPh:null,od:null,odT:OD_FIRST,stunT:0,domT:14,lashT:rand(3,6),lash:null};  // 7.14 终极技状态
   if(boss||col){a.vx=rand(-16,16);a.vy=rand(-16,16);a.vrot=rand(-0.25,0.25);}
   if(boss&&kind==='warden'){
     // 环带狱卒：三重旋转护盾环，每环留一道缺口；环未破时本体免疫
@@ -6143,6 +6145,9 @@ function hurtAst(a,dmg,hx,hy,crit){
   }
   // 静默方碑：干扰场熄灭时核心暴露 —— 伤害加成（给「等窗口」以正反馈）
   if(a.boss&&a.bossKind==='monolith'&&!a.fieldOn)dmg*=1.5;
+  /* 7.14：OD 收束后的硬直 —— 躲过整轮霸体扫描的报酬。
+     霸体不给代价就只是单纯拖时间，玩家会觉得「凭什么打不动」。 */
+  if(a.boss&&a.stunT>0)dmg*=OD_STUN_MUL;
   a.hp-=dmg;a.flash=0.09;
   burst(mx,my,crit?10:5,crit?260:170,0.35,crit?'236,208,138':'160,190,220',2);
   dmgText(mx,my,dmg,crit?'crit':'hit',a);sfx.hit(crit?'crit':'');
@@ -6245,6 +6250,7 @@ function sweepField(){
     FX.boom(t.x,t.y,0.7,'orange',false);
   }
   G.asteroids.length=0;G.enemies.length=0;G.warns.length=0;G.ebullets.length=0;
+  G.sweeps.length=0;G.domains.length=0;   // 7.14：清场时连终极技一起收，别留悬空的扫描臂
   shake(18);sfx.boom(3);
 }
 let blastDepth=0; // 连锁爆炸深度保护
@@ -6824,9 +6830,14 @@ function updatePlayer(dt){
 
   let thrust=0;
   if(keyDown('thrust')||PAD.ay<-0.35)thrust=1;   // 5.1 KEYMAP / 5.2 摇杆上推 = 推进
-  /* 5.5 触屏：下拉到 JOY_BRK 以下是**刹车**而不是「也在推进」——
-     改前 up 和 down 都 thrust=1，手机上根本没有减速手段。 */
-  if(joy.mag>0){ if(joy.ny>JOY_BRK)joyBrake=1; else if(joy.mag>JOY_THR)thrust=1; }
+  /* ⚠️ 5.5 原来的写法是「下拉超过 0.62 算刹车」，与引导文案「往哪推就往哪走」直接打架：
+     推正下方 ny≈1 → 只刹车不推进，船掉头朝下却纹丝不动；更糟的是满舵的右下/左下
+     （ny≈0.707）也踩进刹车区，而推到八分（ny≈0.566）反而能动 —— 同一个方向，
+     推得满和推得不满结果相反。手机上这就是「向下推不动」的控制 bug。
+     刹车改挂到一个**不与方向冲突**的手势：手指按在杆上但停在死区里（推了等于没推）。
+     这是唯一不可能与「想去某个方向」混淆的输入。 */
+  if(joy.mag>0){ if(joy.mag>JOY_THR)thrust=1; else joyBrake=1; }
+  else if(joy.on)joyBrake=1;   // 按着不动 = 刹车（松手才是随阻尼自然减速）
   P.thrusting=thrust>0;
   {
     const tint=HULL_TINT[hullId]||HULL_TINT.peregrine;
@@ -6846,7 +6857,7 @@ function updatePlayer(dt){
     P.vx+=Math.cos(P.angle)*acc*dt;
     P.vy+=Math.sin(P.angle)*acc*dt;
   }
-  if(keyDown('brake')||PAD.brake||PAD.ay>0.5||joyBrake){   // 5.1 / 5.2 / 5.5 触屏下拉
+  if(keyDown('brake')||PAD.brake||PAD.ay>0.5||joyBrake){   // 5.1 / 5.2 / 5.5 触屏（按着不动）
     const k=Math.exp(-2.6*dt);P.vx*=k;P.vy*=k;
   }
   joyBrake=0;
@@ -7017,6 +7028,22 @@ function updateAsts(dt){
     wallBounce(a,a.r*0.5);
     if(a.boss||a.champ){
       if(a.invT>0)a.invT-=dt; // 换阶段无敌窗口
+      /* 7.14：OD（霸体终极技）期间一切常规行为让位 —— 追人会让旋转中心乱跑，
+         玩家读不出安全弧。站桩放招才是这套机制可读的前提。 */
+      if(a.odPh){bossOdUpdate(a,dt);continue;}
+      if(a.stunT>0)a.stunT-=dt;               // 硬直：不出手、不追人
+      if(!G.sweeps.length){bossOdTick(a,dt);bossDomainTick(a,dt);}
+      if(a.odPh||a.stunT>0)continue;
+      /* 近身横扫：贴脸就扇开。LASH 是常规阶段唯一的限制技，
+         它的存在意义是让「贴脸不动」永远不是最优解。 */
+      if(a.lash)bossLashUpdate(a,dt);
+      else{
+        a.lashT=(a.lashT||0)-dt;
+        if(a.lashT<=0){
+          a.lashT=rand(LASH_GAP[0],LASH_GAP[1]);
+          if(Math.hypot(P.x-a.x,P.y-a.y)<a.r+LASH_R)bossLash(a);
+        }
+      }
       const mv=BOSS_MV[a.bossKind]||BOSS_MV.rock;
       const rage=a.stage>=1;
       const want=angTo(a.x,a.y,P.x,P.y);
@@ -8059,7 +8086,8 @@ function startGame(hull,seed){
   G.bolts.length=0;G.pickups.length=0;G.pickT=rand(6,10);G.endless=false;G.winT=0;
   G.deathTrail.length=0;G.dtFx.length=0;G.mines.length=0;G.lances.length=0;G.ghosts.length=0;
   G.build={};G.pending=0;G.syn={};G.synQ=[];G.score=0;G.kills=0;G.runT=0;G.shake=0;G.slowT=0;G.hitstop=0;AU.setMuffle(0);
-  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12 奇点门：新局从零开始
+  G.gate=null;G.warpT=0;G.chAfter=false;G.chRw=null;CH=null;
+  G.sweeps.length=0;G.domains.length=0;   // 7.12 奇点门：新局从零开始
   G.lastHit=null;G.cause=null; // 新一局：清空上一局的死因
   /* 每日挑战：daily 模式由 startDaily 设 G.dailyMode=true 后再调 startGame，
      此处仅在非 daily 模式下重置 G.daily；dailyMode 用完即清。 */
@@ -8632,7 +8660,8 @@ function toMenu(){
      实测（probe74.js）：回菜单 taMode=true → 直接开一局 taT=180 / diff=standard。
      回标题 = 退出冲刺，这是唯一符合直觉的复位时机。 */
   G.taMode=false;
-  G.gate=null;G.warpT=0;G.chAfter=false;CH=null;   // 7.12：回标题就是放弃当前这扇门
+  G.gate=null;G.warpT=0;G.chAfter=false;G.chRw=null;CH=null;
+  G.sweeps.length=0;G.domains.length=0;   // 7.12：回标题就是放弃当前这扇门
   fireOn=false;el.firebtn.classList.remove('hot');
   G.mode='menu';
   el.over.hidden=true;el.pause.hidden=true;el.hud.hidden=true;el.victory.hidden=true;
@@ -10151,6 +10180,11 @@ function updateWorld(dt){
   updatePickups(dt);
   if(G.mode==='play'||G.mode==='inter')collidePlayer();
   if(G.mode==='play')gateUpdate(dt);
+  /* 7.14：扫描臂 / 领域只在 play / inter 推进。hurtPlayer 本身已 mode-gate
+     （line 6391），所以**不会**误伤玩家 —— 但 boss 死后 sweep 进入 0.5s fade，
+     mode 已经切到 warp/channel/levelup 时还继续累 base 既是 CPU 浪费也违反
+     「世界暂停」的观感。领域同理。 */
+  if(G.mode==='play'||G.mode==='inter'){updateSweeps(dt);updateDomains(dt);}
   updateParts(dt);
 }
 
@@ -10173,11 +10207,36 @@ const GATE_ENTER=30;           // 驶入判定：飞船中心进到这里就算�
 const GATE_PULL=430;           // 激发态引力加速度（px/s²）
 const GATE_GRAV_R=560;         // 引力作用半径
 const GATE_AUTO=30;            // 安全阀：激发后这么久还没驶入就强制收束，避免卡流程
+/* ── 7.13 黑洞透镜：同心环几何近似 ──────────────────────────────────────
+   参考过 Camille-Maslin/Shader-Black-Hole 那类逐像素 shader —— 但它是给
+   Three.js 全屏材质用的波浪/涟漪着色器，既不是引力透镜，也没法接进
+   「2D 主画布 + WebGL 星云层」的双层架构（引入整条 WebGL 合成管线，
+   开销与改动面都不成比例）。改用 echo-singularity（同系移植）验证过的
+   几何方案：把奇点周围那块从主画布抠到离屏，逐环做
+     径向放大 = 光线被拉向视界（背景被挤进视界边缘的薄环里）
+     旋转     = 参考系拖曳（自转的黑洞拖着时空一起转）
+   再贴回。因为是从主画布采样，星空 / 网格 / 残骸 / 敌机会**一起**被扭，
+   不只是背景 —— 这才是「扭曲周遭光线」该有的样子。
+   ⚠️ 门的本体一个尺寸都不动（GATE_R / GATE_ENTER / 吸积盘 / 光子环），
+      变的只有周遭的时空；影响域也比引力圈（GATE_GRAV_R）小得多。 */
+/* 7.13 黑洞透镜（向心扭曲）参数：把周边像素拉向视界 + 拖曳旋转 —— 不改门本身大小。
+   PULL/TWIST 调高更明显，但太大会让画面读作「塑料镜」；RINGS 越大越细腻但 drawImage
+   越多（每环一次）。
+   ⚠️ 尝试过每 2 帧抓一次源（CPU→GPU readback 的开销最大），结果首帧透明 →
+   7-12-12 的 A/B 探针直接 FAIL（透镜环 0 点扭曲）。这里老老实实每帧抓一次，
+   等真有量化帧率痛点再上 cache —— 5 次 drawImage 比起抓源省下的读回可以忽略。 */
+const GATE_LENS={REACH:3.4,PULL:1.40,TWIST:1.20,RINGS:6,MAXPX:320};
+let GATE_LENS_ON=true, GATE_LENS_CV=null;   // 开关给探针做 A/B 断言用
 const WARP_DUR=1.7;            // 跃迁过场时长
+const WARP_OUT_DUR=1.5;        // 跃出过场时长（进来 1.7s，出去利落一点）
 const CH_DUR=22;               // 通道时长（秒）
 const CH_SPD=250;              // 通道上卷速度（px/s）
 const CH_WALL=34;              // 侧壁厚度
-const CH_ACC=1250,CH_VDAMP=5.2,CH_SPD_MUL=1.25;  // 通道操控：比主玩法更跟手（无惯性漂移）
+/* 通道操控：**零惯性**。主玩法那套「加速度 + 阻尼 + 极速截断」是飞船漂移的一部分，
+   但雷霆战机式纵版要的是「手一按就动、手一松就停」—— 留惯性会让人在窄通道里
+   不是撞墙就是冲过头。所以位置直接由输入驱动，速度只保留"受击击退"这一份衰减量。 */
+const CH_SPD_MUL=1.55,CH_MOVE_MIN=430;   // 移动速度 = max(430, P.maxSpeed*1.55)
+const CH_KB=230,CH_KB_DAMP=7;            // 受击击退：唯一还带惯性的东西
 const CH_DMG_MUL=13;           // 子弹伤害系数：主玩法 dmg 基数是 1.0，不放大打不动残骸
 const CH_TIERS=[[0,1],[15,2],[30,3]];            // 星尘 → 三选一张数
 let CH=null;                   // 通道状态；null = 不在通道里
@@ -10271,7 +10330,7 @@ function chStart(){
   if(!P){G.mode='play';return;}
   G.mode='channel';
   CH={t:0,camY:0,dust:0,fire:0,inv:0,slow:0,hits:0,kills:0,
-      psx:VW/2,psy:VH*0.78,vx:0,vy:0,
+      psx:VW/2,psy:VH*0.78,kb:0,
       motes:[],rocks:[],foes:[],pods:[],bl:[],eb:[],fx:[],
       moteT:0.5,rockT:1.0,foeT:1.6,podT:3.4,stars:[]};
   for(let i=0;i<90;i++)CH.stars.push({x:Math.random(),y:Math.random(),s:0.6+Math.random()*1.7,f:0.22+Math.random()*0.78});
@@ -10309,7 +10368,7 @@ function chHurt(){
   const c=CH;
   c.inv=1.0;c.slow=0.9;c.hits++;
   c.dust=Math.max(0,c.dust-5);          // 代价是星尘，不是命 —— 奖励关不该劝退
-  c.vy+=200;
+  c.kb=CH_KB;                           // 往后（屏幕下方）弹一下
   shake(9);ppGlitch(1);sfx.hurt();
   c.fx.push({x:c.psx,y:c.camY+(VH-c.psy),t:0,max:0.4,r:26,c:'255,120,110'});
 }
@@ -10329,16 +10388,20 @@ function chUpdate(dt){
   let ay=((keys['KeyS']||keys['ArrowDown'])?1:0)-((keys['KeyW']||keys['ArrowUp'])?1:0)+PAD.ay;
   if(joy.mag>0){ax+=joy.dx/JOY_R;ay+=joy.dy/JOY_R;}
   ax=clamp(ax,-1,1);ay=clamp(ay,-1,1);
-  c.vx+=ax*CH_ACC*dt;c.vy+=ay*CH_ACC*0.8*dt;
-  const dmp=Math.exp(-CH_VDAMP*dt);c.vx*=dmp;c.vy*=dmp;
-  const cap=P.maxSpeed*CH_SPD_MUL,sp=Math.hypot(c.vx,c.vy);
-  if(sp>cap){c.vx*=cap/sp;c.vy*=cap/sp;}
-  c.psx+=c.vx*dt;c.psy+=c.vy*dt;
+  /* 直接位移：没有加速度爬升、没有松手后的滑行。斜向走三角不等比会更快，
+     所以先归一化再乘 —— 否则「斜着走比直走快 41%」会让贴墙微调变得不可控。 */
+  const am=Math.hypot(ax,ay);
+  if(am>1){ax/=am;ay/=am;}
+  const mv=Math.max(CH_MOVE_MIN,P.maxSpeed*CH_SPD_MUL);
+  c.psx+=ax*mv*dt;c.psy+=ay*mv*dt;
+  /* 击退：受击瞬间往后弹一下再迅速收住。这是通道里唯一保留惯性的地方 ——
+     完全不给会让撞击毫无反馈，给太多又会把"零惯性"的手感毁掉。 */
+  c.psy+=c.kb*dt;
+  c.kb*=Math.exp(-CH_KB_DAMP*dt);
+  if(Math.abs(c.kb)<2)c.kb=0;
   const L=CH_WALL+16,R=VW-CH_WALL-16;
-  if(c.psx<L){c.psx=L;c.vx=Math.abs(c.vx)*0.4;}
-  if(c.psx>R){c.psx=R;c.vx=-Math.abs(c.vx)*0.4;}
-  if(c.psy<VH*0.26){c.psy=VH*0.26;c.vy=Math.abs(c.vy)*0.4;}
-  if(c.psy>VH-64){c.psy=VH-64;c.vy=-Math.abs(c.vy)*0.4;}
+  c.psx=clamp(c.psx,L,R);
+  c.psy=clamp(c.psy,VH*0.26,VH-64);
 
   /* 自动开火：雷霆战机的手感来自「一直有弹幕往前铺」，手动点火会让这 22 秒空掉一半 */
   c.fire-=dt;
@@ -10440,22 +10503,57 @@ function chUpdate(dt){
   for(let j=c.fx.length-1;j>=0;j--){c.fx[j].t+=dt;if(c.fx[j].t>=c.fx[j].max)c.fx.splice(j,1);}
   if(c.t>=CH_DUR)chEnd();
 }
-/* ⑤ 收束：星尘换卡 + 发掉攒下的升级 → 下一波 */
+/* ⑤ 收束：星尘换卡 + 发掉攒下的升级 → 跃出 → 下一波
+   7.13：收束不再直接回 play —— 通道跑完先来一段与「驶入」对称的跃出过场
+   （破膜白闪 + 收拢环 + 减速线），把结算与发卡挪到跃出落地之后，
+   否则通道一结束画面「啪」地切回战场，进出的仪式感只有一半。 */
 function chEnd(){
   const c=CH;if(!c)return;
   const dust=c.dust;
   let cards=1;
   for(const t of CH_TIERS)if(dust>=t[0])cards=t[1];
   const win=!!(G.gate&&G.gate.win);
-  G.gate=null;CH=null;
-  G.mode='play';AU.setMuffle(0);
+  CH=null;
   addScore(dust*8+c.kills*10);
-  if(win){sweepField();G.winT=1.6;return;}
+  warpOutStart({cards,win,dust});
+}
+/* 跃出开始：奖励先挂起（chRw），落地时再发 —— 卡片 UI 盖在过场上会两头都看不清 */
+function warpOutStart(rw){
+  G.mode='warpout';G.warpT=0;G.hitstop=0;G.chRw=rw;
+  const g=G.gate;
+  if(g&&P){P.x=g.x;P.y=g.y;P.vx*=0.2;P.vy*=0.2;}   // 从门心出来
+  sfx.boom(3);ppGlitch(1);ppBloom(1);shake(16);AU.setMuffle(1);
+  banner(T('奇点跃出','SINGULARITY EXIT'),
+    T('脱离视界……','Leaving the event horizon…'),1);
+}
+function warpOutUpdate(dt){
+  G.warpT+=dt;
+  if(G.warpT>=WARP_OUT_DUR)warpOutFinish();
+}
+/* 跃出落地：门在身后坍掉 → 发奖励 → 回到主战场 */
+function warpOutFinish(){
+  const rw=G.chRw||{cards:0,win:false,dust:0};
+  G.chRw=null;
+  const g=G.gate;
+  G.mode='play';AU.setMuffle(0);
+  if(g){
+    burst(g.x,g.y,26,260,0.7,'150,225,255',2);
+    ring(g.x,g.y,GATE_R*1.4,'150,225,255');
+    FX.boom(g.x,g.y,0.8,'cyan',false);
+    shake(10);camKick(0.05);
+  }
+  G.gate=null;
+  if(P){P.invuln=Math.max(P.invuln,1.4);
+    /* ⚠️ 字段名是 P.angle。写成 P.ang 不会报错 —— Math.cos(undefined) 是 NaN，
+       于是 P.vx/P.vy 变 NaN，下一帧 P.x 也成 NaN，相机跟着 NaN，整局黑屏且
+       看不出原因（7.13 踩过）。这类"拼错字段"只能靠跑完流程的用例兜住。 */
+    P.vx+=Math.cos(P.angle)*300;P.vy+=Math.sin(P.angle)*300;}   // 顺着机头窜出去
+  if(rw.win){sweepField();G.winT=1.6;return;}
   /* 卡片与「通道中吃到的升级」一起进 G.pending，由 openLevelUp 逐个发完再推进波次 */
-  G.pending+=cards;
+  G.pending+=rw.cards;
   G.chAfter=true;
   banner(T('通道收束','CHANNEL CLOSED'),
-    T('星尘 '+dust+' → 三选一 ×'+cards,'Stardust '+dust+' → pick 1 of 3 ×'+cards),1);
+    T('星尘 '+rw.dust+' → 三选一 ×'+rw.cards,'Stardust '+rw.dust+' → pick 1 of 3 ×'+rw.cards),1);
   if(G.pending>0)openLevelUp();
   else chAdvance();
 }
@@ -10464,6 +10562,488 @@ function chAdvance(){
   if(!G.chAfter)return;
   G.chAfter=false;
   buildWave(Wv.n+1);
+}
+
+/* ================= 7.14 巨像终极技 · LASH / SWEEP / DOMAIN =================
+   为什么需要它：8 只巨像的主攻击其实是同一行代码 —— 以自己为圆心等角度发一圈弹
+   （`const ang=off+i/n*TAU`），伤害 11~16。玩家 100 血能顶 6~9 下，
+   而每 2~3 秒才 10~18 发散布在 360°，命中率极低。结果就是：**站着不动猛输出
+   就是最优解**，八只巨像打起来是同一种体验。
+   三套机制分别打三种「站着不动」：
+     ① LASH   近身横扫 —— 贴脸就被扇开，逼你保持距离；
+     ② SWEEP  时针扫描 —— 霸体无敌 + 旋转臂扫全场，必须按旋转方向绕着跑；
+     ③ DOMAIN 领域湮灭 —— 狂暴期满屏处决，只有一个安全区，碰到就半血。
+   三条共同纪律（否则又变成「看不见的伤害」）：
+     · **先预告后落刀**：每段都有 telegraph，虚影画出范围与旋转方向；
+     · **霸体必有代价**：扫描期间打不动它，收束后硬直 1.1s 且易伤 1.4 倍 ——
+       躲过整轮才拿得到输出窗口，构成「躲 → 打」的循环；
+     · **伤害要真的疼**：臂 32~37、领域 40~58。顶不住，只能躲。 */
+const OD_TELE=1.2,OD_GROW=0.4,OD_FADE=0.5;   // 预告 / 生长 / 收束（秒）
+const OD_FIRST=10,OD_GAP=12,OD_GAP_RAGE=9;   // 首次触发 / 之后间隔 / 狂暴期间隔
+const OD_STUN=1.1,OD_STUN_MUL=1.4;           // 收束后硬直时长 / 易伤倍率
+const LASH_GAP=[4.5,7.5],LASH_R=210;         // 近身横扫：间隔区间 / 触发距离
+const LASH_TELE=0.7,LASH_SW=0.3,LASH_ARC=2.9,LASH_DMG=22;
+/* 八只巨像的扫描技。⚠️ len 必须够长：战场对角约 1900px，臂长 900 才扫得到边角，
+   太短会让玩家「跑到角落就安全」，扫描就废了。
+   arm 只影响绘制；判定统一走 sweepHit —— 别让八份判定各写一遍。 */
+const OD_SWEEP={
+  rock:    {zh:'地脉震荡',en:'TECTONIC SWEEP',  arm:'spike', arms:3,arc:0,   spin:0.52,len:900, w:30,dur:4.2,dmg:34,trail:'rock'},
+  eye:     {zh:'全视之瞳',en:'ALL-SEEING GAZE', arm:'blade', arms:2,arc:0,   spin:0.78,len:980, w:18,dur:3.6,dmg:36,shot:0.55},
+  twin:    {zh:'双子回旋',en:'TWIN ORBIT',      arm:'link',  arms:2,arc:0,   spin:0.62,len:940, w:24,dur:4.6,dmg:35},
+  hydra:   {zh:'九首轮转',en:'HYDRA ROTOR',     arm:'jet',   arms:3,arc:0,   spin:0.46,len:820, w:34,dur:5.0,dmg:33,trail:'acid'},
+  warden:  {zh:'环带裁决',en:'ORBITAL VERDICT', arm:'laser', arms:3,arc:0,   spin:0.58,len:960, w:20,dur:4.8,dmg:35,rev:1},
+  nemesis: {zh:'回响处决',en:'ECHO EXECUTION',  arm:'mirror',arms:4,arc:0,   spin:0.70,len:880, w:16,dur:4.0,dmg:37,pulse:TAU/4},
+  monolith:{zh:'绝对静默',en:'ABSOLUTE SILENCE',arm:'wedge', arms:2,arc:0,   spin:0.34,len:860, w:66,dur:5.2,dmg:32,jam:1.5},
+  collapse:{zh:'视界崩解',en:'HORIZON COLLAPSE',arm:'tide',  arms:1,arc:3.49,spin:0.40,len:1000,w:0, dur:4.6,dmg:36,pull:340},
+};
+/* 狂暴期领域技：只有三种模板，按巨像分配 —— 三份判定，八种观感。 */
+const OD_DOMAIN={
+  rock:    {zh:'星震',    en:'STARQUAKE',    tpl:'wall',n:3, dmg:50},
+  collapse:{zh:'潮汐壁障',en:'TIDAL WALL',   tpl:'wall',n:4, dmg:52},
+  eye:     {zh:'万瞳凝视',en:'THE GAZE',     tpl:'eyes',n:3, dmg:55},
+  hydra:   {zh:'腐化之雨',en:'CORRUPTION',   tpl:'eyes',n:4, dmg:48},
+  monolith:{zh:'静默坍缩',en:'SILENT FALL',  tpl:'eyes',n:2, dmg:58},
+  warden:  {zh:'轨道轰炸',en:'ORBITAL BOMB', tpl:'grid',n:9, dmg:40},
+  nemesis: {zh:'回响归零',en:'ECHO ZERO',    tpl:'grid',n:9, dmg:44},
+  twin:    {zh:'双子夹击',en:'TWIN PINCER',  tpl:'grid',n:9, dmg:42},
+};
+const DOM_R=520,DOM_SAFE_R=70;   // 领域作用半径 / 安全圈半径
+
+/* ---------------- ① 近身横扫 LASH ---------------- */
+function bossLash(a){
+  const g=angTo(a.x,a.y,P.x,P.y);
+  a.lash={ph:'tele',t:0,a0:g-LASH_ARC/2,a1:g+LASH_ARC/2};
+  shake(3);sfx.eshoot();
+}
+function bossLashUpdate(a,dt){
+  const L=a.lash;if(!L)return;
+  L.t+=dt;
+  if(L.ph==='tele'){
+    if(L.t>=LASH_TELE){L.ph='sw';L.t=0;shake(7);sfx.boom(1);
+      const d=Math.hypot(P.x-a.x,P.y-a.y);
+      if(d<a.r+LASH_R){
+        const pa=Math.atan2(P.y-a.y,P.x-a.x);
+        if(Math.abs(angDiff(pa,(L.a0+L.a1)/2))<LASH_ARC/2)hurtPlayer(LASH_DMG,a.x,a.y,a);
+      }
+      ring(a.x,a.y,a.r+LASH_R*0.6,st_c(a));
+    }
+  }else if(L.t>=LASH_SW){a.lash=null;}
+}
+
+/* ---------------- ② 时针扫描 SWEEP ---------------- */
+function odSweepCfg(k){return OD_SWEEP[k]||OD_SWEEP.rock;}
+function bossOdTick(a,dt){
+  if(a.odPh)return;
+  if(a.stunT>0){a.stunT-=dt;return;}
+  a.odT-=dt;
+  if(a.odT>0)return;
+  // 全场同时只放一个扫描；双子只有一只先手，另一只错开
+  if(G.sweeps.length)return;
+  const k=a.bossKind||'rock';
+  if(k==='twin')for(const o of G.asteroids)
+    if(o!==a&&o.boss&&o.bossKind==='twin'&&o.hp>0)o.odT=Math.max(o.odT,8);
+  const cfg=odSweepCfg(k),rage=a.stage>=1;
+  const dur=cfg.dur*(rage?1.15:1);
+  a.odPh='tele';a.odT=0;
+  a.od={t:0,tele:OD_TELE*(rage?0.85:1),grow:0,dur,ph:'tele'};
+  /* 霸体：无敌覆盖 预告 + 生长 + 扫描 全程，收束时才解除 —— 打不动才必须躲 */
+  a.invT=Math.max(a.invT,a.od.tele+OD_GROW+dur);
+  a.vx*=0.15;a.vy*=0.15;
+  G.sweeps.push({a,kind:k,arm:cfg.arm,c:st_c(a),arms:cfg.arms,arc:cfg.arc,
+    spin:cfg.spin*(rage?1.12:1)*(rand(2)?1:-1),len:cfg.len,w:cfg.w,dmg:cfg.dmg,
+    base:rand(TAU),ph:'tele',t:0,grow:0,dur,
+    rev:cfg.rev||0,revFlash:0,pulse:cfg.pulse||0,pausing:0,
+    trail:cfg.trail||null,shot:cfg.shot||0,shotT:0,jam:cfg.jam||0,pull:cfg.pull||0,
+    x:a.x,y:a.y,r:a.r});
+  G.ebullets.length=0;   // 预告即清屏：让玩家读得懂这一轮是「躲」，不是「边打边躲」
+  banner(T(cfg.zh,cfg.en),T('霸体 —— 按旋转方向绕开','ARMOURED — circle with the sweep'),1);
+  camKick(0.03);ppGlitch(1);shake(10);sfx.max();
+}
+/* OD 期间由这里接管：boss 站桩不出手（追人会让旋转中心乱跑，读不出安全弧） */
+function bossOdUpdate(a,dt){
+  const od=a.od;if(!od)return;
+  od.t+=dt;
+  /* 霸体：只要还在放招就打不动。⚠️ 不能只在起手设一次 invT —— 它每帧都在衰减，
+     一场 6 秒的扫描会被衰减到中途就掉霸体，玩家会看到「打不动 → 突然能打」的割裂。 */
+  if(od.ph!=='fade')a.invT=Math.max(a.invT,0.4);
+  if(od.ph==='tele'&&od.t>=od.tele){od.ph='grow';od.t=0;}
+  else if(od.ph==='grow'&&od.t>=OD_GROW){od.ph='spin';od.t=0;shake(8);sfx.boom(2);}
+  else if(od.ph==='spin'&&od.t>=od.dur){od.ph='fade';od.t=0;
+    /* 收束 = 硬直 + 易伤：躲过整轮的报酬。霸体不给代价就是单纯拖时间。 */
+    a.stunT=OD_STUN;a.invT=0;
+    ring(a.x,a.y,a.r*2.2,'236,208,138');burst(a.x,a.y,18,260,0.6,'236,208,138',2.6);
+    banner(T('硬直','STAGGERED'),T('易伤 ×'+OD_STUN_MUL+' —— 出力窗口','VULNERABLE ×'+OD_STUN_MUL+' — unload now'));
+    sfx.max();
+  }
+  else if(od.ph==='fade'&&od.t>=OD_FADE){
+    a.odPh=null;a.od=null;
+    a.odT=(a.stage>=1?OD_GAP_RAGE:OD_GAP);
+  }
+}
+function updateSweeps(dt){
+  for(let i=G.sweeps.length-1;i>=0;i--){
+    const s=G.sweeps[i],a=s.a;
+    s.x=a.x;s.y=a.y;s.r=a.r;
+    const od=a.od;
+    if(!od||a.hp<=0){s.ph='fade';s.t+=dt;if(s.t>OD_FADE)swapDel(G.sweeps,i);continue;}
+    s.ph=od.ph;s.t=od.t;
+    s.grow=od.ph==='tele'?0:(od.ph==='grow'?clamp(od.t/OD_GROW,0,1):1);
+    s.revFlash=Math.max(0,s.revFlash-dt);
+    if(od.ph!=='spin')continue;
+    /* 环带狱卒：中途反转一次，反转前 0.6s 给出反向箭头 —— 不提示就是耍赖 */
+    if(s.rev>0&&od.t>s.dur*0.55){s.rev--;s.spin=-s.spin;s.revFlash=0.9;
+      ring(s.x,s.y,s.r*2.6,s.c);shake(7);sfx.zap();}
+    let spinNow=s.spin;
+    if(s.pulse){ // 终焉回响：每四分一圈顿 0.35s，读作「节奏扫描」而不是匀速转盘
+      const segT=s.pulse/Math.abs(s.spin);
+      if((od.t%segT)>segT-0.35){spinNow=0;s.pausing=1;}else s.pausing=0;
+    }
+    s.base+=spinNow*dt;
+    // 附加：臂端追踪弹 / 引力拽入
+    if(s.shot){
+      s.shotT-=dt;
+      if(s.shotT<=0){s.shotT=s.shot;
+        for(let k=0;k<s.arms;k++){
+          const ang=s.base+k/s.arms*TAU,ex=s.x+Math.cos(ang)*s.len*0.92,ey=s.y+Math.sin(ang)*s.len*0.92;
+          const g=angTo(ex,ey,P.x,P.y);
+          G.ebullets.push({x:ex,y:ey,vx:Math.cos(g)*330,vy:Math.sin(g)*330,r:4.5,dmg:9,life:2.4});
+        }
+        sfx.droneShot();
+      }
+    }
+    if(s.pull){
+      const dx=s.x-P.x,dy=s.y-P.y,d=Math.hypot(dx,dy)||1;
+      if(d<s.len&&d>1){
+        for(let k=0;k<s.arms;k++){
+          if(Math.abs(angDiff(Math.atan2(-dy,-dx),s.base+k/s.arms*TAU))<s.arc*0.5){
+            P.vx+=dx/d*s.pull*dt;P.vy+=dy/d*s.pull*dt;break;
+          }
+        }
+      }
+    }
+    if(sweepHit(s)){
+      const ang=angTo(s.x,s.y,P.x,P.y);
+      hurtPlayer(s.dmg,s.x,s.y,a);
+      P.vx+=Math.cos(ang)*260;P.vy+=Math.sin(ang)*260;   // 被臂扫飞，不是原地掉血
+      if(s.jam){P.jamT=Math.max(P.jamT,s.jam);P.jamF=0.05;}  // 方碑：扫到直接哑火
+    }
+  }
+}
+function sweepHit(s){
+  if(s.ph!=='spin'||s.grow<0.9||!P)return false;
+  const dx=P.x-s.x,dy=P.y-s.y,d=Math.hypot(dx,dy)||1;
+  if(s.arc>0){   // 扇形（坍缩之核的潮汐）
+    if(d>s.len)return false;
+    const pa=Math.atan2(dy,dx);
+    for(let k=0;k<s.arms;k++)
+      if(Math.abs(angDiff(pa,s.base+k/s.arms*TAU))<s.arc*0.5)return d>s.r*0.55;
+    return false;
+  }
+  const reach=s.len*s.grow;
+  if(d>reach+s.w)return false;
+  for(let k=0;k<s.arms;k++){
+    const ang=s.base+k/s.arms*TAU,ca=Math.cos(ang),sa=Math.sin(ang);
+    const proj=dx*ca+dy*sa;
+    if(proj<s.r*0.45)continue;
+    const perp=Math.abs(-dx*sa+dy*ca);
+    if(perp<(s.w*0.5+P.r*0.7)*s.grow&&proj<reach)return true;
+  }
+  return false;
+}
+/* 近身横扫的绘制：预警扇形（虚线 + 收缩充能弧）→ 挥出（实心扇） */
+function drawLashes(){
+  for(const a of G.asteroids){
+    const L=a.lash;if(!L)continue;
+    const c=st_c(a),R=a.r+LASH_R;
+    ctx.save();ctx.translate(a.x,a.y);
+    if(L.ph==='tele'){
+      const k=clamp(L.t/LASH_TELE,0,1);
+      ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,L.a0,L.a1);ctx.closePath();
+      ctx.fillStyle=`rgba(${c},${(0.05+0.15*k).toFixed(3)})`;ctx.fill();
+      ctx.strokeStyle=`rgba(${c},${(0.28+0.45*k).toFixed(3)})`;ctx.lineWidth=2;
+      ctx.setLineDash([9,8]);ctx.stroke();ctx.setLineDash([]);
+      // 向内收的充能弧：一眼读得出「还有多久落刀」
+      ctx.strokeStyle='rgba(255,246,225,0.85)';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(0,0,R*(1-k*0.34),L.a0,L.a1);ctx.stroke();
+    }else{
+      const k=clamp(L.t/LASH_SW,0,1),mid=(L.a0+L.a1)/2,half=LASH_ARC/2*k*1.12;
+      ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R*(0.35+0.65*k),mid-half,mid+half);ctx.closePath();
+      ctx.fillStyle=`rgba(${c},0.34)`;ctx.fill();
+      ctx.strokeStyle='rgba(255,246,225,0.92)';ctx.lineWidth=3;ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+/* ---------------- ③ 领域湮灭 DOMAIN ---------------- */
+function bossDomainTick(a,dt){
+  if(a.domT===undefined)return;
+  if(a.stage<1||a.odPh||G.domains.length||a.stunT>0)return;
+  a.domT-=dt;
+  if(a.domT>0)return;
+  const cfg=OD_DOMAIN[a.bossKind||'rock']||OD_DOMAIN.rock;
+  a.domT=26;
+  const D={tpl:cfg.tpl,n:cfg.n,dmg:cfg.dmg,c:st_c(a),ph:'tele',t:0,tele:1.9,
+    x:a.x,y:a.y,beat:0,i:0,items:[],dead:0};
+  if(cfg.tpl==='eyes'){
+    for(let k=0;k<cfg.n;k++){
+      const ang=rand(TAU),rr=rand(90,DOM_R-DOM_SAFE_R-40);
+      D.items.push({x:a.x+Math.cos(ang)*rr,y:a.y+Math.sin(ang)*rr});
+    }
+  }else if(cfg.tpl==='grid'){
+    /* ⚠️ 必须是**奇数**行/列。偶数格会把屏幕正中心压在格线上，
+       而 cam 恒等于玩家位置 —— 于是「站着不动」的玩家永远卡在边界，
+       `P.x>it.x` 恒为 false，整张网格一格都打不到他（实测：网格引爆 12 格，掉血 0）。
+       奇数格让中心成为一格的**正中**，原地不动也要挨炸。 */
+    const cols=3,rows=3;
+    const gw=(VW+220)/cols,gh=(VH+220)/rows;
+    const ox=cam.x-(VW+220)/2,oy=cam.y-(VH+220)/2;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)
+      D.items.push({x:ox+c*gw,y:oy+r*gh,w:gw,h:gh,at:0.45*(r*cols+c)});
+  }else{ // wall：横贯全场的墙，带一个缺口
+    for(let k=0;k<cfg.n;k++){
+      const vert=k%2===0;
+      D.items.push({vert,at:0.5+k*0.9,
+        gapV:rand(-1,1),w:74,gap:132,
+        x:cam.x-(vert?700:(VW+400)/2),y:cam.y-(vert?(VH+400)/2:700),
+        len:vert?(VH+400):(VW+400),spd:300+k*40});
+    }
+  }
+  G.domains.push(D);
+  banner(T(cfg.zh,cfg.en),T('全场处决 —— 找安全区','FIELD EXECUTION — find the safe zone'),1);
+  camKick(0.03);ppGlitch(1);shake(12);sfx.max();
+}
+function updateDomains(dt){
+  for(let i=G.domains.length-1;i>=0;i--){
+    const D=G.domains[i];D.t+=dt;
+    if(D.tpl==='eyes'){
+      if(D.ph==='tele'&&D.t>=D.tele){
+        D.ph='boom';D.t=0;shake(20);sfx.boom(3);ppBloom(1);
+        for(let k=0;k<20;k++)burst(D.x+rand(-DOM_R,DOM_R),D.y+rand(-DOM_R,DOM_R),6,220,0.5,D.c,2.4);
+        const d=Math.hypot(P.x-D.x,P.y-D.y);
+        /* ⚠️ 大括号不是风格问题：`if(d<R) for(...) if(...){} else safe=true;`
+           里的 else 会挂到**内层** if 上 —— 于是「在领域内但不在任何安全圈」
+           这个本该致命的情况被判成安全，整招变成零伤害（已踩）。 */
+        let safe=false;
+        if(d<DOM_R){
+          for(const it of D.items){
+            if(Math.hypot(P.x-it.x,P.y-it.y)<DOM_SAFE_R){safe=true;break;}
+          }
+        }else safe=true;   // 领域之外本来就是安全的
+        if(!safe)hurtPlayer(D.dmg,D.x,D.y,{bossKind:'domain'});
+        else{P.shieldT=Math.max(P.shieldT,2);ring(P.x,P.y,60,'150,238,255');}
+      }else if(D.ph==='boom'&&D.t>0.5)swapDel(G.domains,i);
+    }else if(D.tpl==='grid'){
+      let live=0;
+      for(let k=0;k<D.items.length;k++){
+        const it=D.items[k];
+        if(D.t<it.at)continue;
+        const lt=D.t-it.at;
+        if(lt<0.4){live++;continue;}              // 预警：格子在闪
+        if(!it.done){                              // 引爆那一帧判一次
+          it.done=1;
+          if(P.x>it.x&&P.x<it.x+it.w&&P.y>it.y&&P.y<it.y+it.h)hurtPlayer(D.dmg,it.x+it.w/2,it.y+it.h/2,{bossKind:'domain'});
+          burst(it.x+it.w/2,it.y+it.h/2,10,240,0.5,D.c,2.6);shake(6);
+        }
+        if(lt<0.75)live++;
+      }
+      if(!live)swapDel(G.domains,i);
+    }else{
+      let live=0;
+      for(const it of D.items){
+        if(D.t<it.at){live++;continue;}
+        const mv=it.spd*(D.t-it.at);
+        if(it.vert){
+          const wx=D.x+mv;
+          if(wx>cam.x+VW/2+120){continue;}
+          live++;
+          const gy=cam.y+it.gapV*(it.len*0.32);
+          if(Math.abs(P.x-wx)<it.w*0.5+P.r&&Math.abs(P.y-gy)>it.gap*0.5)
+            hurtPlayer(D.dmg,wx,P.y,{bossKind:'domain'});
+        }else{
+          const wy=D.y+mv;
+          if(wy>cam.y+VH/2+120){continue;}
+          live++;
+          const gx=cam.x+it.gapV*(it.len*0.32);
+          if(Math.abs(P.y-wy)<it.w*0.5+P.r&&Math.abs(P.x-gx)>it.gap*0.5)
+            hurtPlayer(D.dmg,P.x,wy,{bossKind:'domain'});
+        }
+      }
+      if(!live)swapDel(G.domains,i);
+    }
+  }
+}
+/* ---------------- 绘制 ---------------- */
+function drawSweeps(){
+  for(const s of G.sweeps){
+    const c=s.c,grow=s.grow;
+    ctx.save();ctx.translate(s.x,s.y);
+    const tele=(s.ph==='tele');
+    // 预告：充能环 + 旋转方向弧箭头 —— 不画方向玩家就只能靠试错学
+    if(tele){
+      const k=clamp(s.t/OD_TELE,0,1);
+      ctx.strokeStyle=`rgba(${c},0.75)`;ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.arc(0,0,s.r+16,-Math.PI/2,-Math.PI/2+k*TAU);ctx.stroke();
+      const rr=s.r+30,dir=s.spin>0?1:-1;
+      ctx.strokeStyle=`rgba(${c},0.45)`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(0,0,rr,s.base,s.base+dir*0.55,dir<0);ctx.stroke();
+      const ea=s.base+dir*0.55;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ea)*rr,Math.sin(ea)*rr);
+      ctx.lineTo(Math.cos(ea)*rr-Math.cos(ea-dir*0.9)*9,Math.sin(ea)*rr-Math.sin(ea-dir*0.9)*9);
+      ctx.moveTo(Math.cos(ea)*rr,Math.sin(ea)*rr);
+      ctx.lineTo(Math.cos(ea)*rr-Math.cos(ea+dir*0.9)*9,Math.sin(ea)*rr-Math.sin(ea+dir*0.9)*9);
+      ctx.stroke();
+    }
+    for(let k=0;k<s.arms;k++){
+      const ang=s.base+k/s.arms*TAU;
+      ctx.save();ctx.rotate(ang);
+      const L=s.len*grow;
+      if(s.arc>0){   // 潮汐扇
+        ctx.beginPath();ctx.moveTo(0,0);
+        ctx.arc(0,0,L,-s.arc/2,s.arc/2);ctx.closePath();
+        ctx.fillStyle=`rgba(${c},${(tele?0.07:0.17).toFixed(3)})`;ctx.fill();
+        ctx.strokeStyle=`rgba(${c},${(tele?0.3:0.7).toFixed(3)})`;ctx.lineWidth=tele?2:3;
+        ctx.setLineDash(tele?[10,9]:[]);
+        ctx.beginPath();ctx.arc(0,0,L,-s.arc/2,s.arc/2);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();continue;
+      }
+      const w=s.w*grow,hot=!tele&&s.ph==='spin';
+      if(s.arm==='spike'){   // 岩刺链：粗杆 + 沿杆的菱形节
+        ctx.fillStyle=`rgba(${c},${(tele?0.2:0.85).toFixed(3)})`;
+        ctx.beginPath();ctx.moveTo(s.r*0.5,-w*0.5);ctx.lineTo(L,-w*0.32);
+        ctx.lineTo(L,w*0.32);ctx.lineTo(s.r*0.5,w*0.5);ctx.closePath();ctx.fill();
+        for(let q=1;q<=5;q++){
+          const t=q/6,px=s.r*0.5+(L-s.r*0.5)*t,sw2=w*0.62*(1-t*0.45);
+          ctx.beginPath();ctx.moveTo(px,-sw2*0.5);ctx.lineTo(px+14,0);
+          ctx.lineTo(px,sw2*0.5);ctx.lineTo(px-14,0);ctx.closePath();ctx.fill();
+        }
+      }else if(s.arm==='blade'||s.arm==='mirror'){   // 细长光刃（镜像刃多一道残影）
+        if(s.arm==='mirror'){
+          ctx.globalAlpha=0.35;
+          ctx.strokeStyle=`rgba(${c},0.9)`;ctx.lineWidth=w*1.5;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(s.r*0.5,7);ctx.lineTo(L*0.95,7);ctx.stroke();
+          ctx.globalAlpha=1;
+        }
+        ctx.strokeStyle=`rgba(${c},${(tele?0.3:0.28).toFixed(3)})`;ctx.lineWidth=w*2.1;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);ctx.lineTo(L,0);ctx.stroke();
+        ctx.strokeStyle=hot?'rgba(255,250,235,0.98)':`rgba(${c},${(tele?0.5:0.85).toFixed(3)})`;
+        ctx.lineWidth=w*0.55;
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);ctx.lineTo(L,0);ctx.stroke();
+      }else if(s.arm==='jet'){   // 弧形酸液喷流
+        ctx.strokeStyle=`rgba(${c},${(tele?0.25:0.8).toFixed(3)})`;ctx.lineWidth=w;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);
+        ctx.quadraticCurveTo(L*0.5,w*0.85,L,w*1.5);ctx.stroke();
+        ctx.strokeStyle='rgba(190,255,170,0.55)';ctx.lineWidth=w*0.3;
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);
+        ctx.quadraticCurveTo(L*0.5,w*0.85,L,w*1.5);ctx.stroke();
+      }else if(s.arm==='wedge'){   // 宽力场楔形：读得出「这片区域不能用」
+        ctx.beginPath();ctx.moveTo(s.r*0.5,-w*0.34);ctx.lineTo(L,-w*0.5);
+        ctx.lineTo(L,w*0.5);ctx.lineTo(s.r*0.5,w*0.34);ctx.closePath();
+        ctx.fillStyle=`rgba(${c},${(tele?0.08:0.2).toFixed(3)})`;ctx.fill();
+        ctx.strokeStyle=`rgba(${c},${(tele?0.35:0.8).toFixed(3)})`;ctx.lineWidth=2;ctx.stroke();
+        ctx.strokeStyle=`rgba(${c},${(tele?0.2:0.5).toFixed(3)})`;ctx.lineWidth=1;
+        for(let q=1;q<5;q++){const px=s.r*0.5+(L-s.r*0.5)*q/5;
+          ctx.beginPath();ctx.moveTo(px,-w*0.4);ctx.lineTo(px,w*0.4);ctx.stroke();}
+      }else if(s.arm==='link'){   // 双子连线：杆 + 端球
+        ctx.strokeStyle=`rgba(${c},${(tele?0.3:0.9).toFixed(3)})`;ctx.lineWidth=w*0.9;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);ctx.lineTo(L,0);ctx.stroke();
+        ctx.fillStyle=`rgba(${c},${(tele?0.4:0.95).toFixed(3)})`;
+        ctx.beginPath();ctx.arc(L,0,w*0.75,0,TAU);ctx.fill();
+      }else{   // laser
+        ctx.strokeStyle=`rgba(${c},${(tele?0.3:0.35).toFixed(3)})`;ctx.lineWidth=w*2;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);ctx.lineTo(L,0);ctx.stroke();
+        ctx.strokeStyle='rgba(255,255,255,0.95)';ctx.lineWidth=w*0.5;
+        ctx.beginPath();ctx.moveTo(s.r*0.5,0);ctx.lineTo(L,0);ctx.stroke();
+      }
+      if(s.revFlash>0){   // 反转预警：反向箭头
+        const dir=-Math.sign(s.spin);
+        ctx.strokeStyle=`rgba(255,246,225,${s.revFlash.toFixed(2)})`;ctx.lineWidth=3;
+        const rr2=s.r+44;
+        ctx.beginPath();ctx.arc(0,0,rr2,s.base,s.base+dir*0.7,dir<0);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+function drawDomains(){
+  for(const D of G.domains){
+    const c=D.c;
+    if(D.tpl==='eyes'){
+      const boom=D.ph==='boom';
+      ctx.save();
+      ctx.beginPath();ctx.arc(D.x,D.y,DOM_R,0,TAU);
+      ctx.fillStyle=`rgba(${c},${(boom?0.3:0.06+0.1*(D.t/D.tele)).toFixed(3)})`;ctx.fill();
+      ctx.strokeStyle=`rgba(${c},${(boom?0.9:0.5).toFixed(3)})`;ctx.lineWidth=boom?4:2;
+      ctx.setLineDash(boom?[]:[14,10]);ctx.stroke();ctx.setLineDash([]);
+      for(const it of D.items){
+        ctx.beginPath();ctx.arc(it.x,it.y,DOM_SAFE_R,0,TAU);
+        ctx.fillStyle='rgba(120,238,255,0.10)';ctx.fill();
+        ctx.strokeStyle='rgba(150,238,255,'+(boom?0.95:0.6)+')';ctx.lineWidth=2.4;ctx.stroke();
+        ctx.strokeStyle='rgba(150,238,255,0.28)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.arc(it.x,it.y,DOM_SAFE_R*(0.72+0.2*Math.sin(G.t*5)),0,TAU);ctx.stroke();
+      }
+      ctx.restore();
+      if(!boom){
+        ctx.font=monoFont(15);ctx.textAlign='center';
+        ctx.fillStyle=`rgba(255,120,110,${(0.5+0.5*Math.sin(G.t*14)).toFixed(3)})`;
+        ctx.fillText(T('进入安全区','GET TO SAFETY')+'  '+Math.max(0,D.tele-D.t).toFixed(1)+'s',cam.x,cam.y-VH*0.34);
+        ctx.textAlign='left';
+      }
+    }else if(D.tpl==='grid'){
+      for(const it of D.items){
+        const lt=D.t-it.at;
+        if(lt<0){
+          ctx.strokeStyle=`rgba(${c},0.16)`;ctx.lineWidth=1;
+          ctx.strokeRect(it.x,it.y,it.w,it.h);
+        }else if(lt<0.4){
+          const k=lt/0.4;
+          ctx.fillStyle=`rgba(${c},${(0.1+0.35*k).toFixed(3)})`;
+          ctx.fillRect(it.x,it.y,it.w,it.h);
+          ctx.strokeStyle=`rgba(255,120,110,${(0.4+0.6*k).toFixed(3)})`;ctx.lineWidth=2;
+          ctx.strokeRect(it.x,it.y,it.w,it.h);
+        }else if(lt<0.75){
+          ctx.fillStyle=`rgba(255,246,225,${(0.55*(1-(lt-0.4)/0.35)).toFixed(3)})`;
+          ctx.fillRect(it.x,it.y,it.w,it.h);
+        }
+      }
+    }else{
+      for(const it of D.items){
+        if(D.t<it.at){
+          const k=clamp(1-(it.at-D.t),0,1);
+          ctx.strokeStyle=`rgba(${c},${(0.25+0.4*k).toFixed(3)})`;ctx.lineWidth=2;
+          ctx.setLineDash([12,10]);
+          if(it.vert){const yy=cam.y+it.gapV*(it.len*0.32);
+            ctx.beginPath();ctx.moveTo(D.x,0);ctx.lineTo(D.x,cam.y+yy-cam.y);ctx.stroke();}
+          ctx.setLineDash([]);
+          continue;
+        }
+        const mv=it.spd*(D.t-it.at);
+        if(it.vert){
+          const wx=D.x+mv;
+          if(wx>cam.x+VW/2+120)continue;
+          const gy=cam.y+it.gapV*(it.len*0.32);
+          ctx.fillStyle=`rgba(${c},0.5)`;
+          ctx.fillRect(wx-it.w/2,cam.y-VH,it.w,it.len+VH*2);
+          ctx.fillStyle=`rgba(${c},0.85)`;
+          ctx.fillRect(wx-it.w/2,cam.y-VH,it.w*0.3,it.len+VH*2);
+          ctx.fillStyle='rgba(120,238,255,0.16)';
+          ctx.fillRect(wx-it.w/2,gy-it.gap/2,it.w,it.gap);
+        }else{
+          const wy=D.y+mv;
+          if(wy>cam.y+VH/2+120)continue;
+          const gx=cam.x+it.gapV*(it.len*0.32);
+          ctx.fillStyle=`rgba(${c},0.5)`;
+          ctx.fillRect(cam.x-VW,wy-it.w/2,it.len+VW*2,it.w);
+          ctx.fillStyle=`rgba(${c},0.85)`;
+          ctx.fillRect(cam.x-VW,wy-it.w/2,it.len+VW*2,it.w*0.3);
+          ctx.fillStyle='rgba(120,238,255,0.16)';
+          ctx.fillRect(gx-it.gap/2,wy-it.w/2,it.gap,it.w);
+        }
+      }
+    }
+  }
 }
 
 /* ============================== draw ============================== */
@@ -11606,6 +12186,8 @@ function draw(){
     ctx.strokeRect(-r,-r,r*2,r*2);ctx.restore();
   }
   for(const a of G.asteroids)drawAst(a);
+  if(G.sweeps.length)drawSweeps();     // 7.14 扫描臂：画在巨像之上
+  drawLashes();                        // 7.14 近身横扫的预警扇形
   for(const e of G.enemies){drawEnemy(e);if(e.affix)drawAffixRing(e);}
   drawDebris();
   drawDeathTrail();
@@ -11780,8 +12362,10 @@ function draw(){
     ctx.fillText(t.txt,t.x,t.y);
     if(need)ctx.restore();
   }
+  if(G.domains.length)drawDomains();  // 7.14 领域：世界坐标，压在所有实体之上
   ctx.restore();
   if(G.mode==='warp')drawWarp();      // 7.12 跃迁：屏幕坐标的隧道过场
+  else if(G.mode==='warpout')drawWarpOut();   // 7.13 跃出：进入的镜像
   else drawGateHint();                // 7.12 激发态奇点在视野外时的边缘指引
   for(const h of edgeHints()){
     if(h.boss){
@@ -11835,8 +12419,57 @@ function draw(){
 
 /* ---------------- 7.12 奇点门 / 跃迁 / 通道：绘制 ----------------
    奇点画在世界坐标（跟着相机走），跃迁与通道画在屏幕坐标（各是一块独立的"场景"）。 */
+/* 透镜画在 drawGate 最前面：扭的是已经画好的世界（星空/网格/残骸/敌机），
+   门本体随后照常盖上 —— 层次读作「洞在它们后面弯曲时空」。 */
+function drawGateLens(g){
+  if(!GATE_LENS_ON||qTier>=2)return;      // 低画质档：透镜是装饰，先掐掉保帧率
+  const m=ctx.getTransform();
+  if(!m||!m.a)return;
+  /* 门心的设备像素坐标：当前变换含 DPR / 缩放 / 抖动，直接矩阵变换最稳 */
+  const gx=m.a*g.x+m.c*g.y+m.e,gy=m.b*g.x+m.d*g.y+m.f;
+  const px=Math.abs(m.a);                 // 世界 → 设备像素比例（DPR×zoom，本作无旋转）
+  const reach=GATE_R*GATE_LENS.REACH;     // 影响域半径（世界单位）
+  const Lw=reach*2,Lp=Math.min(GATE_LENS.MAXPX,Math.ceil(Lw*px));
+  const sx=Math.round(gx-Lp/2),sy=Math.round(gy-Lp/2);
+  if(sx+Lp<=0||sy+Lp<=0||sx>=cv.width||sy>=cv.height)return;   // 完全在屏外
+  if(!GATE_LENS_CV)GATE_LENS_CV=document.createElement('canvas');
+  if(GATE_LENS_CV.width!==Lp||GATE_LENS_CV.height!==Lp){GATE_LENS_CV.width=Lp;GATE_LENS_CV.height=Lp;}
+  const og=GATE_LENS_CV.getContext('2d');
+  og.setTransform(1,0,0,1,0,0);
+  og.clearRect(0,0,Lp,Lp);
+  /* 抠图。源坐标是画布物理像素，跟当前 transform 无关；贴边时源矩形越界
+     会被按比例裁剪，离屏里越界的部分保持透明 —— 正好。
+     ⚠️ 抓源是 GPU→CPU 的读back，开销最大：每 2 帧抓一次足够，肉眼看不出挪动
+     （相机每帧只动几像素），6 环 × 2 帧 = 视觉无感的代价降到 1/2。 */
+  og.drawImage(cv,sx,sy,Lp,Lp,0,0,Lp,Lp);
+  /* 亚稳态就已经在弯折时空（质量在那儿）；激发态洞张开，时空撕得更狠 */
+  const k=g.state===2?1.35:0.8;
+  const inner=GATE_ENTER-6;               // 起点压到视界之下，视界盖住后不留未扭曲的缝
+  const fE=(GATE_R/reach)*(GATE_R/reach); // 边界项：影响域边缘 s→1，外圈无接缝
+  ctx.save();
+  ctx.beginPath();ctx.arc(g.x,g.y,reach,0,TAU);ctx.clip();
+  for(let i=0;i<GATE_LENS.RINGS;i++){
+    const t0=i/GATE_LENS.RINGS,t1=(i+1)/GATE_LENS.RINGS;
+    const rIn=inner+(reach-inner)*t0,rOut=inner+(reach-inner)*t1;
+    const rm=(rIn+rOut)*0.5;
+    const f=(GATE_R/rm)*(GATE_R/rm);      // 越靠近视界，偏折越剧烈
+    const s=1+GATE_LENS.PULL*Math.max(0,f-fE)*k;
+    const rot=(GATE_LENS.TWIST*k+g.spin*0.25)*f;   // 拖曳跟着门的自转走
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(g.x,g.y,rOut+0.7,0,TAU);ctx.closePath();
+    ctx.moveTo(g.x+rIn,g.y);
+    ctx.arc(g.x,g.y,rIn,0,TAU,true);ctx.closePath();
+    ctx.clip();
+    ctx.translate(g.x,g.y);ctx.rotate(rot);ctx.scale(s,s);
+    ctx.drawImage(GATE_LENS_CV,0,0,Lp,Lp,-Lw/2,-Lw/2,Lw,Lw);
+    ctx.restore();
+  }
+  ctx.restore();
+}
 function drawGate(){
   const g=G.gate;if(!g)return;
+  drawGateLens(g);   // 7.13 黑洞透镜：先扭周遭，再画门本体（大小不变）
   const on=g.state===2;
   const hot=on?'255,246,225':'126,156,186';      // 激发 = 白热；亚稳 = 灰冷（同色系，不改语言）
   const cool=on?'150,225,255':'96,124,156';
@@ -11954,6 +12587,49 @@ function drawWarp(){
   ctx.font=monoFont(13);ctx.textAlign='center';
   ctx.fillStyle=`rgba(220,245,255,${(0.4+0.5*p).toFixed(3)})`;
   ctx.fillText(T('跃迁中','TRANSIT')+'  '+Math.round(p*100)+'%',cx,cy+Math.min(VW,VH)*0.34);
+  ctx.textAlign='left';
+}
+/* 7.13 跃出：与进入完全镜像 —— 进入是「环向外涌 + 结尾白闪」（冲进隧道），
+   出来就是「开场白闪（破膜）+ 环向心收拢（隧道在身后合拢）+ 速度线越收越短（减速）」。
+   世界在底下照常渲染（冻结），过场只做覆盖层 —— 和 drawWarp 同一套账。 */
+function drawWarpOut(){
+  const p=clamp(G.warpT/WARP_OUT_DUR,0,1);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const cx=VW/2,cy=VH/2,R=Math.max(VW,VH)*0.72;
+  /* 破膜白闪：只给前 22%，随后世界从闪里显影 */
+  if(p<0.22){ctx.fillStyle=`rgba(255,255,255,${(0.92*(1-p/0.22)).toFixed(3)})`;ctx.fillRect(0,0,VW,VH);}
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  /* 环：相位随时间倒退 → 半径向心收缩（进入时是向外涌的） */
+  const fade=Math.max(0,1-p*1.15);
+  for(let i=0;i<16;i++){
+    const f=(((i/16)-p*1.6)%1+1)%1;
+    const r=Math.pow(f,2.2)*R;
+    const a=(1-f)*0.5*fade;
+    ctx.strokeStyle=`rgba(150,225,255,${a.toFixed(3)})`;
+    ctx.lineWidth=1+f*3;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.stroke();
+  }
+  /* 速度线：线长随进度收短 —— 读作减速滑行，而不是又一脚油门 */
+  ctx.strokeStyle=`rgba(200,240,255,${(0.14+0.28*(1-p)).toFixed(3)})`;ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let i=0;i<48;i++){
+    const a=i/48*TAU+G.t*0.6;
+    const r0=Math.pow((i*0.37+p*2.2)%1,2.0)*R,r1=r0+26+100*(1-p);
+    ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);
+    ctx.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+  }
+  ctx.stroke();
+  ctx.restore();
+  /* 身后的洞在发光：中心辉光随离开展开而收，最后全透明交还画面 */
+  const core=Math.pow(1-p,2.4);
+  const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,R*(0.3+core));
+  gr.addColorStop(0,`rgba(255,255,255,${(0.10+0.55*core).toFixed(3)})`);
+  gr.addColorStop(0.5,`rgba(160,225,255,${(0.06+0.25*core).toFixed(3)})`);
+  gr.addColorStop(1,'rgba(8,13,22,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,VW,VH);
+  ctx.font=monoFont(13);ctx.textAlign='center';
+  ctx.fillStyle=`rgba(220,245,255,${(0.4+0.5*p).toFixed(3)})`;
+  ctx.fillText(T('跃出','EMERGING')+'  '+Math.round(p*100)+'%',cx,cy+Math.min(VW,VH)*0.34);
   ctx.textAlign='left';
 }
 /* 通道：一整块自绘场景（不复用主战场的世界变换） */
@@ -12110,7 +12786,7 @@ function hudW(k,v){const s=v.toFixed(1)+'%';if(HUDC[k]!==s){HUDC[k]=s;return tru
 function updateHUD(){
   /* 7.12：跃迁与通道期间用画布自绘 HUD，DOM 那套让位（它的读数全是主战场的，
      留在屏上只会显示一堆过期数字）。⚠️ 只在必要时写 hidden，别每帧无条件赋值。 */
-  if(G.mode==='warp'||G.mode==='channel'){
+  if(G.mode==='warp'||G.mode==='warpout'||G.mode==='channel'){
     if(!el.hud.hidden)el.hud.hidden=true;
     return;
   }
@@ -12186,7 +12862,14 @@ function updateHUD(){
     if(HUDC.bb!==true){HUDC.bb=true;el.bossbar.hidden=false;}
     w=hudW('bf',clamp(bHp/bMax*100,0,100));
     if(w)el.bossFill.style.width=HUDC.bf;
-    if(HUDC.bn!==bName){HUDC.bn=bName;el.bossName.textContent=bName;}
+    /* 7.14：霸体 / 硬直挂在巨像名后面 —— 玩家得知道「现在打不动」是规则不是掉帧 */
+    let nm=bName;
+    for(const a of G.asteroids)if(a.boss){
+      if(a.odPh)nm+=' · '+T('霸体','ARMOURED');
+      else if(a.stunT>0)nm+=' · '+T('硬直','STAGGERED');
+      break;
+    }
+    if(HUDC.bn!==nm){HUDC.bn=nm;el.bossName.textContent=nm;}
     if(el.bossName.hidden)el.bossName.hidden=false;
   }else if(HUDC.bb!==false){HUDC.bb=false;el.bossbar.hidden=true;el.bossName.hidden=true;}
   /* 得分：显示值追赶真实值做出滚动感，真实值跳增时补一次过冲回弹。
@@ -12367,6 +13050,7 @@ function frame(now){
   }
   else if(G.mode==='levelup')updateParts(raw*0.3);
   else if(G.mode==='warp')warpUpdate(raw);        // 7.12 跃迁过场
+  else if(G.mode==='warpout')warpOutUpdate(raw);  // 7.13 跃出过场
   else if(G.mode==='channel')chUpdate(raw);       // 7.12 奇点通道
   draw();
   FX.frame(realDt,G.mode);
@@ -12588,6 +13272,9 @@ window.NOVA={
       gateUpdate(1/60);return G.mode;},
     warpStep:(sec)=>{const n=Math.round((sec||2)*60);
       for(let i=0;i<n;i++){if(G.mode!=='warp')break;warpUpdate(1/60);}return G.mode;},
+    /* 7.13 跃出过场同理：走真实 warpOutUpdate，把 1.5s 压成几十帧 */
+    warpOutStep:(sec)=>{const n=Math.round((sec||2)*60);
+      for(let i=0;i<n;i++){if(G.mode!=='warpout')break;warpOutUpdate(1/60);}return G.mode;},
     /* 按住 A / D 推进通道若干秒：验证「靠 A/D 移动」真的成立 */
     chStep:(ax,sec)=>{const n=Math.round((sec||0.5)*60);
       if(ax)keys[ax>0?'KeyD':'KeyA']=true;
@@ -12617,7 +13304,76 @@ window.NOVA={
     stat:()=>P?{dmg:+P.dmg.toFixed(3),fireRate:+P.fireRate.toFixed(3),maxHp:P.maxHp,
       maxSpeed:Math.round(P.maxSpeed),magnet:Math.round(P.magnet),crit:+P.crit.toFixed(3),
       bspd:P.bspd,level:P.level}:null,
-    consts:()=>({GATE_ENTER,WARP_DUR,CH_DUR,VW:Math.round(VW),VH:Math.round(VH)}),
+    consts:()=>({GATE_ENTER,WARP_DUR,WARP_OUT_DUR,CH_DUR,VW:Math.round(VW),VH:Math.round(VH)}),
+  },
+  /* 7.14 巨像终极技测试钩子 */
+  od:{
+    cfg:()=>({sweep:Object.keys(OD_SWEEP),domain:Object.keys(OD_DOMAIN),
+      kinds:Object.keys(BOSS_MV)}),
+    /* 八只的扫描参数必须真的有差异 —— 这正是「战斗模式完全一样」的量化判据 */
+    params:()=>Object.keys(OD_SWEEP).map(k=>({k,...OD_SWEEP[k]})),
+    state:()=>({mode:G.mode,hp:P?+P.hp.toFixed(1):null,
+      sweeps:G.sweeps.map(s=>({kind:s.kind,arm:s.arm,ph:s.ph,arms:s.arms,arc:s.arc,
+        spin:+s.spin.toFixed(3),len:s.len,w:s.w,dmg:s.dmg,grow:+s.grow.toFixed(2),
+        base:+s.base.toFixed(3)})),
+      domains:G.domains.map(d=>({tpl:d.tpl,ph:d.ph,n:d.n,dmg:d.dmg,items:d.items.length})),
+      boss:(()=>{const a=G.asteroids.find(x=>x.boss);
+        return a?{kind:a.bossKind,odPh:a.odPh,invT:+a.invT.toFixed(2),stunT:+a.stunT.toFixed(2),
+          odT:+a.odT.toFixed(2),lash:a.lash?a.lash.ph:null,hp:+a.hp.toFixed(1)}:null;})()}),
+    /* 强制某个 boss 立刻起手扫描技（走真实 bossOdTick，只把 odT 拨到 0） */
+    force:()=>{const a=G.asteroids.find(x=>x.boss);if(!a)return null;
+      a.odT=0;a.stunT=0;bossOdTick(a,1/60);
+      return G.sweeps.length?{kind:G.sweeps[0].kind,ph:G.sweeps[0].ph,invT:+a.invT.toFixed(2)}:null;},
+    /* 强制起手领域技（需 boss 已狂暴） */
+    forceDom:()=>{const a=G.asteroids.find(x=>x.boss);if(!a)return null;
+      a.stage=1;a.domT=0;bossDomainTick(a,1/60);
+      return G.domains.length?{tpl:G.domains[0].tpl,n:G.domains[0].n,dmg:G.domains[0].dmg}:null;},
+    /* 推进 N 秒世界（走 updateWorld，含 updateSweeps / updateDomains） */
+    step:sec=>{const n=Math.round((sec||1)*60);
+      for(let i=0;i<n;i++){if(G.mode!=='play'&&G.mode!=='inter')break;updateWorld(1/60);}
+      return {mode:G.mode,hp:P?+P.hp.toFixed(1):null,
+        sw:G.sweeps.length?G.sweeps[0].ph:null,dm:G.domains.length?G.domains[0].ph:null};},
+    /* 把玩家摆到「臂上」或「两臂之间」，验证命中/不命中不是玄学 */
+    put:(onArm,frac)=>{const s=G.sweeps[0];if(!s||!P)return null;
+      const ang=s.base+(onArm?0:Math.PI/s.arms);
+      const d=s.len*(frac===undefined?0.6:frac);
+      P.x=s.x+Math.cos(ang)*d;P.y=s.y+Math.sin(ang)*d;P.vx=0;P.vy=0;P.invuln=0;
+      const before=P.hp;updateSweeps(1/60);
+      return {hit:P.hp<before,dmg:+(before-P.hp).toFixed(1),hp:+P.hp.toFixed(1)};},
+    /* 同上，但针对潮汐扇（arc>0） */
+    putArc:(inside)=>{const s=G.sweeps[0];if(!s||!P)return null;
+      const ang=inside?s.base:s.base+Math.PI;
+      P.x=s.x+Math.cos(ang)*s.len*0.5;P.y=s.y+Math.sin(ang)*s.len*0.5;
+      P.vx=0;P.vy=0;P.invuln=0;
+      const before=P.hp;updateSweeps(1/60);
+      return {hit:P.hp<before,dmg:+(before-P.hp).toFixed(1)};},
+    hp:()=>P?+P.hp.toFixed(1):null,
+    heal:()=>{if(P){P.hp=P.maxHp;P.invuln=0;}return P?P.hp:null;},
+    /* 每帧清掉杂兵与弹幕的推进：领域判定必须被"单独"测量，
+       否则 boss 常规弹幕抢先把 P.invuln 吃掉，格子引爆时正好免疫，测出假阴性。 */
+    stepClean:sec=>{const n=Math.round((sec||1)*60);
+      for(let i=0;i<n;i++){
+        /* vx/vy 也要归零：hurtPlayer 带 190 的击退，被 boss 蹭一下就把玩家推离
+           安全圈了 —— 于是「圈内应满血」会被测成「圈外挨炸」，得出反向结论。 */
+        G.enemies.length=0;G.ebullets.length=0;P.invuln=0;P.vx=0;P.vy=0;
+        if(G.mode!=='play'&&G.mode!=='inter')break;
+        updateWorld(1/60);
+      }
+      return {mode:G.mode,hp:+P.hp.toFixed(1),dm:G.domains.length};},
+    dbg:()=>({px:Math.round(P.x),py:Math.round(P.y),cx:Math.round(cam.x),cy:Math.round(cam.y),
+      mode:G.mode,inv:+P.invuln.toFixed(2),
+      d:G.domains[0]?{tpl:G.domains[0].tpl,t:+G.domains[0].t.toFixed(2),ph:G.domains[0].ph,
+        done:G.domains[0].items.filter(i=>i.done).length,n:G.domains[0].items.length,
+        it0:G.domains[0].items[0]}:null}),
+    /* 验证霸体：扫描期间打它不掉血；硬直期间同样的伤害多掉 40% */
+    poke:()=>{const a=G.asteroids.find(x=>x.boss);if(!a)return null;
+      const b=a.hp;hurtAst(a,100,a.x,a.y,false);
+      return {lost:+(b-a.hp).toFixed(1),odPh:a.odPh,stunT:+a.stunT.toFixed(2)};},
+    lash:()=>{const a=G.asteroids.find(x=>x.boss);if(!a||!P)return null;
+      P.x=a.x;a.y=a.y+0;P.x=a.x+a.r+60;P.y=a.y;P.invuln=0;
+      const b=P.hp;bossLash(a);
+      for(let i=0;i<Math.round((LASH_TELE+LASH_SW+0.1)*60);i++)bossLashUpdate(a,1/60);
+      return {hit:P.hp<b,dmg:+(b-P.hp).toFixed(1)};},
   },
   /* 航行日志测试钩子：counts 返回图鉴条目数；ach 返回成就树状态；open 打开日志面板 */
   logbook:{
@@ -12965,42 +13721,7 @@ window.NOVA={
      靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
   touch:{
     const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
-                BRK:JOY_BRK,THR:JOY_THR}),
-    /* 7.9 浮动摇杆探针：圆心 = 落点（ox/oy），整根手指期间不许变。
-       l/t 是底盘 rect 左上角（圆心 = l+w/2, t+h/2）。 */
-    base:()=>{const r=el.joybase.getBoundingClientRect();
-      return {hidden:el.joybase.hidden,on:el.joybase.classList.contains('on'),
-              l:Math.round(r.left),t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),
-              ox:Math.round(joy.ox),oy:Math.round(joy.oy)};},
-    zone:(x,y)=>inJoyZone(x,y),
-    state:()=>({on:joy.on,dx:+joy.dx.toFixed(2),dy:+joy.dy.toFixed(2),
-                mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)}),
-    set:(dx,dy)=>{joy.on=true;joy.dx=dx;joy.dy=dy;joyRead();
-      return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
-    clear:()=>{joy.id=null;joy.on=false;joy.dx=0;joy.dy=0;joyRead();},
-    read:()=>{joyRead();return {mag:+joy.mag.toFixed(4),nx:+joy.nx.toFixed(4),ny:+joy.ny.toFixed(4)};},
-    isTouch:()=>isTouch,
-    setTouch:v=>{setTouch(!!v);return isTouch;},
-    fire:()=>fireOn,
-    /* 竖屏提示：hidden/on/ignored + 当前是否横屏 */
-    orient:()=>({hidden:el.orhint.hidden,on:el.orhint.classList.contains('on'),
-                 ignored:orHidden,land:innerWidth>innerHeight,touch:isTouch,run:inRun()}),
-    sync:()=>{orientHint();return 1;},
-    resetHint:()=>{orHidden=false;try{localStorage.removeItem(OR_KEY);}catch(e){}orientHint();},
-    /* 安全区：读浏览器实际解析出的 env() 值（headless 下全为 0，只能验变量链路通不通） */
-    safe:()=>{const cs=getComputedStyle(document.documentElement);
-      return {t:cs.getPropertyValue('--safe-t').trim(),r:cs.getPropertyValue('--safe-r').trim(),
-              b:cs.getPropertyValue('--safe-b').trim(),l:cs.getPropertyValue('--safe-l').trim()};},
-    btnRect:()=>{const r=el.firebtn.getBoundingClientRect();
-      return {right:Math.round(innerWidth-r.right),bottom:Math.round(innerHeight-r.bottom),
-              w:Math.round(r.width),h:Math.round(r.height)};},
-  },
-  /* ---- 5.5 触屏钩子 ----
-     set(dx,dy) 直接喂杆量：断言要能「推 3px 和推 46px 转得不一样快」，
-     靠派发真实 touch 事件做不到稳定复现（还受 passive / 合成事件影响）。 */
-  touch:{
-    const:()=>({R:JOY_R,DZ:JOY_DZ,TURN_MIN:JOY_TURN_MIN,TURN_MAX:JOY_TURN_MAX,
-                BRK:JOY_BRK,THR:JOY_THR}),
+                THR:JOY_THR}),
     /* 7.9 浮动摇杆探针：圆心 = 落点（ox/oy），整根手指期间不许变。
        l/t 是底盘 rect 左上角（圆心 = l+w/2, t+h/2）。 */
     base:()=>{const r=el.joybase.getBoundingClientRect();

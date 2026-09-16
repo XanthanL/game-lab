@@ -81,7 +81,10 @@ await run('5-5-02-deadzone', ...P, async p => {
     ` · 6/8px → ${r['6']}/${r['8']}° · 死区 ${dz}`;
 });
 
-/* ── 03 下拉 = 刹车（改前 up / down 都在推进） ──────────── */
+/* ── 03 5.5 重写：旧版「下拉 = 刹车」与引导文案「往哪推就往哪走」直接打架
+     —— 玩家推正下方只掉头不推进（满舵的右下/左下还会进刹车区，推得满 vs
+     推不满结果相反），是一个实打实的控制 bug。刹车现在挂到一个不可能与
+     方向冲突的手势：手指按在杆上但停在死区里。 ── */
 await run('5-5-03-brake', ...P, async p => {
   await play(p);
   const r = await evj(p, `(()=>{
@@ -90,9 +93,10 @@ await run('5-5-03-brake', ...P, async p => {
       for(let i=0;i<30;i++)updatePlayer(1/60);
       const s=Math.hypot(P.vx,P.vy);NOVA.touch.clear();return +s.toFixed(1);};
     return {up:run(-46),down:run(46),idle:run(0)};})()`);
-  const ok = r.down < r.idle * 0.55 && r.up > r.idle;
-  return `${ok ? 'PASS' : 'FAIL'} 初速 300 → 上推 ${r.up} · 不动 ${r.idle} · 下拉 ${r.down}` +
-    `（下拉须明显低于不动：它是刹车不是推进）`;
+  const ok = r.up > r.idle && r.down > r.idle  /* 上推/下推 = 都在推进（控制 bug 已修） */
+    && r.idle < r.up * 0.55 && r.idle < r.down * 0.55;  /* 按着不动 = 唯一刹车 */
+  return `${ok ? 'PASS' : 'FAIL'} 初速 300 → 上推 ${r.up} · 下推 ${r.down}（两者都该推进）` +
+    ` · 按着不动 ${r.idle}（唯一刹车，须明显低于上/下推）`;
 });
 
 /* ── 04 底盘钉死左下角：推多远都不动（7.7） ─────────────
@@ -344,6 +348,65 @@ await run('5-5-14-takeover', ...P, async p => {
   const ok=s.dx===46&&s.dy===0;
   await dispatch(2,'touchend',cx+60,cy);
   return `${ok?'PASS':'FAIL'} cancel 后 30ms 新手指右推：dx=${s.dx} dy=${s.dy}（期望 46/0）`;
+});
+
+/* ── 15 端到端：真实 TouchEvent 走完 4 个方向 + 唯一刹车手势
+     7-12-14 用 NOVA.touch.set 绕过 touchmove 直接喂 joy.dx/dy —— 好处是稳定，
+     坏处是 joyMove / touch 监听器坏了用例仍会 PASS。这一条走完整事件路径。
+     ⚠️ 派发完必须**等真实时间**：杆量是被 RAF 里的 updatePlayer 消费的，
+     派发 30 个 touchmove 然后立刻读 P.x，一帧都还没跑（实测：位移 0.0）。 */
+await run('5-5-15-real-touch-4dir', ...P, async p => {
+  await play(p);
+  const dispatch = async (id, type, x, y) => await ev(p,
+    `(function(){
+      const t=new Touch({identifier:${id},target:document.body,clientX:${x},clientY:${y}});
+      const isEnd=${type==='touchend'||type==='touchcancel'?'true':'false'};
+      window.dispatchEvent(new TouchEvent('${type}',{bubbles:true,cancelable:false,
+        touches:isEnd?[]:[t],targetTouches:isEnd?[]:[t],changedTouches:isEnd?[t]:[t]}));
+      return 1;
+    })()`);
+  /* 锚点用左下自然握持位（同 5-5-04），不用 base() 的 rect —— 杆未显形时 rect 全 0 */
+  const AX = 90, AY = 704;
+  const reset = `P.x=WORLD.w/2;P.y=WORLD.h/2;P.vx=0;P.vy=0;P.angle=0;
+    G.asteroids.length=0;G.ebullets.length=0;G.enemies.length=0;`;
+  const out = {};
+  for (const [name, dx, dy] of [['down',0,40],['up',0,-40],['right',40,0],['left',-40,0]]) {
+    await ev(p, reset);
+    const a = await evj(p, `({x:+P.x.toFixed(1),y:+P.y.toFixed(1)})`);
+    await dispatch(7, 'touchstart', AX, AY);
+    const n = 12;
+    for (let i = 1; i <= n; i++) await dispatch(7, 'touchmove', AX + dx * i / n, AY + dy * i / n);
+    await p.waitForTimeout(600);          // ← 让 RAF 真的跑 36 帧把杆量消费掉
+    const b = await evj(p, `({x:+P.x.toFixed(1),y:+P.y.toFixed(1),ang:+P.angle.toFixed(2),
+      th:P.thrusting,fin:Number.isFinite(P.x)&&Number.isFinite(P.y)&&Number.isFinite(P.vx)&&Number.isFinite(P.vy)})`);
+    out[name] = { dx:+(b.x-a.x).toFixed(1), dy:+(b.y-a.y).toFixed(1), ang:b.ang, th:b.th, fin:b.fin };
+    await dispatch(7, 'touchend', AX + dx, AY + dy);
+    await p.waitForTimeout(120);
+  }
+  /* 按着不动 = 唯一刹车（5-5-03 的端到端版）：先起速 → 按死区 → 与松手自然衰减对照 */
+  await ev(p, `P.x=WORLD.w/2;P.y=WORLD.h/2;P.vx=400;P.vy=0;P.angle=0;`);
+  await dispatch(8, 'touchstart', AX, AY);
+  for (let i = 1; i <= 8; i++) await dispatch(8, 'touchmove', AX, AY);
+  await p.waitForTimeout(500);
+  const held = await evj(p, `+Math.hypot(P.vx,P.vy).toFixed(1)`);
+  await dispatch(8, 'touchend', AX, AY);
+  await p.waitForTimeout(80);
+  await ev(p, `P.vx=400;P.vy=0;`);
+  await p.waitForTimeout(500);
+  const free = await evj(p, `+Math.hypot(P.vx,P.vy).toFixed(1)`);
+  /* 量化阈值（与 7-12-14 对齐）：600ms 内上 / 下 / 右都能跑出 ≥60px。
+     ⚠️ 左是特例：从 angle 0 要掉头 180°，途中会扫过朝下一段，最终 Δx 很小 ——
+     这是 rotate-and-thrust 飞船的正确行为，用「Δx 必须大」卡会把好行为判成 bug。
+     所以左只验「真的在推进 + 朝向转到了 π 附近 + 坐标有限」。 */
+  const ok = out.down.dy > 60 && out.up.dy < -60 && out.right.dx > 60
+    && out.left.th && Math.abs(Math.abs(out.left.ang) - Math.PI) < 0.6
+    && out.down.fin && out.up.fin && out.right.fin && out.left.fin
+    && held < free * 0.6;
+  return `${ok?'PASS':'FAIL'} 真实触摸 600ms：下 Δy=${out.down.dy}（须 >60）` +
+    ` · 上 Δy=${out.up.dy}（须 <-60）· 右 Δx=${out.right.dx}（须 >60）` +
+    ` · 左 Δ=(${out.left.dx},${out.left.dy}) ang=${out.left.ang.toFixed(2)} th=${out.left.th}` +
+    `（180° 掉头途中扫过朝下，Δx 小是正确行为）` +
+    ` · 按着不动 0.5s 残速 ${held} vs 松手 ${free}（刹车须 <60%）`;
 });
 
 })();
