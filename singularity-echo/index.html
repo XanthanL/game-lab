@@ -876,6 +876,26 @@ html[data-rm] .overlay{animation:none}
 .cxitem .cxlock{font-size:var(--fs-1);letter-spacing:.06em;color:var(--c-amber);margin-top:3px}
 .cxitem.locked .cxname{color:var(--c-ink-3)}
 .cxitem.locked .cxdesc{color:rgb(var(--c-ink-rgb) / .32)}
+/* ---------- Codex Detail Modal ---------- */
+.cx-detail-panel{position:relative;max-width:min(92vw,580px)}
+.cx-close-btn{position:absolute;top:16px;right:16px;font-size:var(--fs-hero);
+  line-height:1;color:#aaa;background:none;border:none;cursor:pointer;
+  transition:color var(--dur-2),transform var(--dur-3)}
+.cx-close-btn:hover{color:var(--c-cyan-hi);transform:scale(1.1)}
+.cx-detail-model{width:100%;height:140px;margin:24px auto 0;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--c-line);background:rgb(var(--c-void-rgb) / .5);border-radius:4px;overflow:hidden}
+.cx-detail-model canvas{max-width:100%;max-height:100%}
+.cx-detail-title{text-align:center;margin:0;font-size:var(--fs-hero);letter-spacing:.1em;color:var(--c-ink-hi)}
+.cx-detail-title em{display:block;font-style:normal;font-size:var(--fs-3);letter-spacing:.2em;color:var(--c-cyan-hi);
+  font-family:ui-monospace,Consolas,monospace;margin-top:4px}
+.cx-detail-content{margin-top:18px;font-size:var(--fs-2);letter-spacing:.04em;color:var(--c-ink);line-height:1.7;text-align:left}
+.cx-detail-content p{margin:8px 0;padding:10px;background:rgb(var(--c-void-rgb) / .3);
+  border-left:2px solid rgb(var(--c-cyan-rgb) / .4);border-radius:0 3px 3px 0}
+.cx-detail-content .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:12px}
+.cx-detail-content .stat-row{display:flex;justify-content:space-between;padding:8px 10px;
+  background:rgb(var(--c-cyan-rgb) / .04);border-radius:2px}
+.cx-detail-content .stat-label{font-size:var(--fs-1);letter-spacing:.1em;color:var(--c-steel)}
+.cx-detail-content .stat-value{font-size:var(--fs-1);letter-spacing:.04em;color:var(--c-ink-hi);font-family:ui-monospace,Consolas,monospace}
 /* ---------- 7.9 模式介绍卡片 ---------- */
 .mdlist{display:flex;flex-direction:column;gap:10px;text-align:left}
 .mdcard{border:1px solid var(--c-line);border-left:2px solid rgb(var(--c-cyan-rgb) / .55);
@@ -1641,6 +1661,19 @@ html[data-rm] .overlay{animation:none}
       </section>
     </div>
     <div class="row-btns"><button id="btnCxBack" class="btn" data-i18n="lb_back">返回 ▸ ESC</button></div>
+  </div>
+</div>
+
+<!-- Codex Detail Modal -->
+<div id="cxDetail" class="overlay" hidden>
+  <div class="panel lb-panel cx-detail-panel">
+    <button type="button" class="cx-close-btn" id="btnCxClose">&times;</button>
+    <div class="cx-detail-model" id="cxDetailModel"></div>
+    <h2 class="cx-detail-title" id="cxDetailTitle"></h2>
+    <div class="cx-detail-content" id="cxDetailContent"></div>
+    <div class="row-btns">
+      <button id="btnCxDetailOk" class="btn">ACKNOWLEDGED ✓</button>
+    </div>
   </div>
 </div>
 
@@ -9360,9 +9393,9 @@ function drawLogbook(){
     const need=EN_UNLOCK[t],ok=reached>=need,d=ENEMY_DEFS[t]||{};
     const c=d.c||'192,64,43';
     /* 7.11：色点方块换成 canvas 建模（drawFoeCodex 稍后填）。data-foe 是绘制的取型键 */
-    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})">
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})" onclick="${ok?`openFoeDetail('${t}')`:'javascript:void(0)'}">
       <canvas class="cxmodel" width="180" height="120" data-foe="${t}"></canvas>
-      <span style="min-width:0;flex:1">
+      <span style="min-width:0;flex:1" class="lbcell-inner">
         <span class="lbname">${T(EN_ZH[t]||t,EN_EN[t]||t)}</span>
         <span class="lben">${(EN_EN[t]||t).toUpperCase()}</span>
         <span class="lbtrait">${ok?T(...(EN_TRAIT[t]||['',''])):T('第 '+need+' 波解锁','Unlocks at W'+need)}</span>
@@ -9374,7 +9407,7 @@ function drawLogbook(){
   // BOSS_AT 是「波次 → 巨像 kind」的映射，必须迭代它的值而不是键。
   if(el.lbBosses)el.lbBosses.innerHTML=Object.keys(BOSS_AT).sort((a,b)=>a-b).map(w=>{
     const k=BOSS_AT[w],need=+w,ok=reached>=need,st=BOSS_STYLE[k]||{c:'192,64,43'};
-    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})">
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})" onclick="${ok?`openBossDetail('${k}')`:'javascript:void(0)'}">
       <canvas class="cxmodel" width="180" height="120" data-boss="${k}"></canvas>
       <span style="min-width:0;flex:1">
         <span class="lbname">${T(BOSS_ZH[k]||k,BOSS_NAME[k]||k)}</span>
@@ -9735,7 +9768,7 @@ function drawHullCodex(){
     const note=typeof h.lockNote==='function'?h.lockNote():h.lockNote;
     const lk=HULL_LOCK_EN[h.id];
     const noteEn=typeof lk==='function'?lk():(lk||note);
-    return `<div class="cxitem${ok?'':' locked'}">
+    return `<div class="cxitem${ok?'':' locked'}" onclick="${ok?`openHullDetail('${h.id}')`:'javascript:void(0)'}">
       <canvas class="cxmodel" width="150" height="92"></canvas>
       <div class="cxbody">
         <div class="cxname">${h.g} ${T(h.zh,h.en)}<em>${h.en.toUpperCase()}</em></div>
@@ -10160,6 +10193,233 @@ $('btnLbBack').addEventListener('click',toMenu);
 /* 7.9：图鉴 / 星图 / 模式介绍 三个新入口 */
 $('btnCodex').addEventListener('click',openCodex);
 $('btnCxBack').addEventListener('click',toMenu);
+
+/* Codex Detail Modal Handlers */
+$$('#cxDetailModal .lbcell').forEach(cell => {
+  cell.addEventListener('click', () => {
+    const foe = cell.querySelector('[data-foe]');
+    if (foe) openFoeDetail(foe.dataset.foe);
+    
+    const boss = cell.querySelector('[data-boss]');
+    if (boss) openBossDetail(boss.dataset.boss);
+  });
+});
+
+document.getElementById('btnCxClose').addEventListener('click', closeCodexDetail);
+document.getElementById('btnCxDetailOk').addEventListener('click', closeCodexDetail);
+
+/* Close on Escape */
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' && G.mode === 'detail') {
+    closeCodexDetail();
+  }
+});
+
+function closeCodexDetail() {
+  const el = document.getElementById('cxDetail');
+  if (!el) return;
+  el.hidden = true;
+  G.mode = 'codex';
+}
+
+function drawDetailModel(containerId, type, id) {
+  const container = document.getElementById(containerId);
+  if (!container) return null;
+  
+  const cvs = document.createElement('canvas');
+  cvs.width = 300;
+  cvs.height = 180;
+  cvs.style.cssText = 'max-width:100%;height:auto';
+  
+  container.innerHTML = '';
+  container.appendChild(cvs);
+  
+  const g = cvs.getContext('2d');
+  
+  if (type === 'hull') {
+    const hull = HULLS.find(h => h.id === id);
+    if (hull) {
+      const ok = hullUnlocked(id);
+      if (drawHullCache(g, id, ok ? 1 : 0)) {
+        return cvs;
+      }
+      g.translate(150, 90);
+      g.rotate(-Math.PI / 2);
+      g.scale(4, 4);
+      drawHullBody(g, id, ok ? 1 : 0);
+    }
+  } else if (type === 'foe') {
+    const stub = cxFoeStub(id);
+    const ext = (cvs.height / 2 - 30) / (CX_FOE_R[id] || 20);
+    cxModelPaint(cvs, g => drawEnemy(stub, g), ext);
+  } else if (type === 'boss') {
+    const stub = cxBossStub(id);
+    const ext = (cvs.height / 2 - 30) / (30 * (CX_BOSS_EXT[id] || 1.06));
+    cxModelPaint(cvs, g => drawAst(stub, g), ext);
+  } else if (type === 'up') {
+    const module = MODULES.find(m => m.id === id);
+    if (module) {
+      g.fillStyle = '#7dcfff';
+      g.font = 'bold 48px Consolas, monospace';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(module.g || '•', 150, 90);
+    }
+  }
+  
+  return cvs;
+}
+
+function openHullDetail(hullId) {
+  const hull = HULLS.find(h => h.id === hullId);
+  if (!hull) return;
+  
+  const ok = hullUnlocked(hullId);
+  const note = typeof hull.lockNote === 'function' ? hull.lockNote() : hull.lockNote;
+  
+  drawDetailModel('cxDetailModel', 'hull', hullId);
+  
+  const titleEl = document.getElementById('cxDetailTitle');
+  titleEl.innerHTML = `
+    ${hull.g} ${T(hull.zh, hull.en)}
+    <em>${hull.en.toUpperCase()}</em>
+  `;
+  
+  const contentEl = document.getElementById('cxDetailContent');
+  let html = `<p>${T(hull.desc, HULL_EN[hullId] || hull.desc)}</p>`;
+  
+  if (!ok) {
+    html += `<p style="color:var(--c-amber);margin-top:16px;border-left-color:rgb(var(--c-amber-rgb) / .6)">
+      ${T('未解锁 · ', 'LOCKED · ')}${T(note, HULL_LOCK_EN[hullId] || note)}
+    </p>`;
+  }
+  
+  contentEl.innerHTML = html;
+  
+  const modal = document.getElementById('cxDetail');
+  modal.hidden = false;
+  G.mode = 'detail';
+}
+
+function openFoeDetail(enemyType) {
+  const def = ENEMY_DEFS[enemyType] || {};
+  const stub = cxFoeStub(enemyType);
+  
+  drawDetailModel('cxDetailModel', 'foe', enemyType);
+  
+  const titleEl = document.getElementById('cxDetailTitle');
+  titleEl.innerHTML = `
+    ${T(EN_ZH[enemyType] || enemyType, EN_EN[enemyType] || enemyType)}
+    <em>${(EN_EN[enemyType] || enemyType).toUpperCase()}</em>
+  `;
+  
+  const contentEl = document.getElementById('cxDetailContent');
+  const trait = EN_TRAIT[enemyType] || ['', ''];
+  const unlockWave = EN_UNLOCK[enemyType] || 0;
+  
+  let html = `
+    <p><b>${T(trait[0], trait[1])}</b></p>
+    <div class="stat_grid">
+      <div class="stat_row">
+        <span class="stat_label">HP | HP</span>
+        <span class="stat_value">${def.hp || '?'}</span>
+      </div>
+      <div class="stat_row">
+        <span class="stat_label">Damage | 伤害</span>
+        <span class="stat_value">${def.dmg || '?'}</span>
+      </div>
+      <div class="stat_row">
+        <span class="stat_label">Unlock Wave | 解锁波次</span>
+        <span class="stat_value">W${unlockWave}</span>
+      </div>
+    </div>
+  `;
+  
+  contentEl.innerHTML = html;
+  
+  const modal = document.getElementById('cxDetail');
+  modal.hidden = false;
+  G.mode = 'detail';
+}
+
+function openBossDetail(bossKind) {
+  const stub = cxBossStub(bossKind);
+  const st = BOSS_STYLE[bossKind] || {};
+  
+  let unlockWave = 0;
+  for (const [wave, kind] of Object.entries(BOSS_AT)) {
+    if (kind === bossKind) {
+      unlockWave = parseInt(wave);
+      break;
+    }
+  }
+  
+  drawDetailModel('cxDetailModel', 'boss', bossKind);
+  
+  const titleEl = document.getElementById('cxDetailTitle');
+  titleEl.innerHTML = `
+    ${T(BOSS_ZH[bossKind] || bossKind, BOSS_NAME[bossKind] || bossKind)}
+    <em>${(BOSS_NAME[bossKind] || '').toUpperCase()}</em>
+  `;
+  
+  const contentEl = document.getElementById('cxDetailContent');
+  let html = `
+    <p><b>${st.name || ''}</b></p>
+    <div class="stat_grid">
+      <div class="stat_row">
+        <span class="stat_label">HP | HP</span>
+        <span class="stat_value">${stub.hp || '?'}</span>
+      </div>
+      <div class="stat_row">
+        <span class="stat_label">Radius | 半径</span>
+        <span class="stat_value">${stub.r || '?'}</span>
+      </div>
+      <div class="stat_row">
+        <span class="stat_label">Unlock Wave | 解锁波次</span>
+        <span class="stat_value">W${unlockWave}</span>
+      </div>
+    </div>
+  `;
+  
+  contentEl.innerHTML = html;
+  
+  const modal = document.getElementById('cxDetail');
+  modal.hidden = false;
+  G.mode = 'detail';
+}
+
+function openUpgradeDetail(moduleId) {
+  const module = MODULES.find(m => m.id === moduleId);
+  if (!module) return;
+  
+  drawDetailModel('cxDetailModel', 'up', moduleId);
+  
+  const titleEl = document.getElementById('cxDetailTitle');
+  const lvInfo = (module.lv && module.lv.length) || module.max || 1;
+  titleEl.innerHTML = `
+    ${T(module.zh, module.en)}
+    <em>${((module.en || '').toUpperCase()) + ' Lv.' + lvInfo}</em>
+  `;
+  
+  const contentEl = document.getElementById('cxDetailContent');
+  const l0 = (module.lv && module.lv[0]) || '';
+  const l0e = (LV_EN[module.id] && LV_EN[module.id][0]) || l0;
+  
+  let html = `
+    <p><b>${T(l0, l0e)}</b></p>
+    <p style="color:var(--c-steel);margin-top:12px">
+      ${T('每级提升效果 · Effect per level')} · 
+      <span class="stat_value">${lvInfo}</span> 
+      ${T('级满上限 · max levels')}
+    </p>
+  `;
+  
+  contentEl.innerHTML = html;
+  
+  const modal = document.getElementById('cxDetail');
+  modal.hidden = false;
+  G.mode = 'detail';
+}
 $('btnStarmap').addEventListener('click',openStarmap);
 $('btnSmBack').addEventListener('click',toMenu);
 $('btnModes').addEventListener('click',openModes);
