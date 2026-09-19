@@ -135,6 +135,103 @@ const configLoader = new ConfigLoader();
 // ============================================
 
 /**
+ * Wave difficulty scaling parameters (Phase 15+)
+ */
+export const WAVE_SCALING = {
+  hpGrowth: 0.12,        // 每波敌人 HP 增长 12%
+  damageGrowth: 0.10,   // 每波伤害增长 10%
+  spawnRateReduction: 0.03, // 每波生成间隔减少 3%
+  minSpawnInterval: 0.5  // 最短生成间隔（秒）
+};
+
+/**
+ * Shield system configuration (Phase 15+)
+ */
+export const SHIELD_CONFIG = {
+  baseShield: 20,
+  shieldRechargeRate: 0.5,        // 每秒恢复量
+  shieldBreakCooldown: 1.0,       // 破碎后冷却时间（秒）
+  maxShield: 150,                 // 最大护盾值
+  hitInvincibility: 0.2,          // 受击无敌时间（秒）
+  damageThreshold: 10,            // 低于此值的伤害不会触发硬直
+  hardKnockbackDuration: 0.3      // 硬直时间（秒）
+};
+
+/**
+ * Boss phase configurations (Phase 16+)
+ */
+export const BOSS_PHASE_CONFIGS = {
+  hydra: {
+    phases: [
+      {
+        percentage: 1.0,
+        name: { zh: '深渊海德拉', en: 'Abyssal Hydra' },
+        hpMultiplier: 1.0,
+        attacks: ['spiral', 'burst'],
+        movement: 'hover',
+        color: '#a855f7'
+      },
+      {
+        percentage: 0.7,
+        name: { zh: '扭曲形态', en: 'Twisted Form' },
+        hpMultiplier: 0.8,
+        attacks: ['spiral', 'burst', 'spread'],
+        movement: 'sineWave',
+        color: '#c026d3'
+      },
+      {
+        percentage: 0.4,
+        name: { zh: '完全体', en: 'True Form' },
+        hpMultiplier: 0.6,
+        attacks: ['spiral', 'burst', 'spread', 'ultimate'],
+        movement: 'orbit',
+        color: '#e879f9'
+      }
+    ]
+  },
+  colossus: {
+    phases: [
+      {
+        percentage: 1.0,
+        name: { zh: '巨神壁垒', en: 'Colossal Bastion' },
+        hpMultiplier: 1.0,
+        attacks: ['heavy_shield', 'tsunami'],
+        movement: 'slow_advance',
+        color: '#f59e0b'
+      },
+      {
+        percentage: 0.6,
+        name: { zh: '震地猛击', en: 'Earth Shaker' },
+        hpMultiplier: 0.7,
+        attacks: ['heavy_shield', 'tsunami', 'earthquake'],
+        movement: 'aggressive_chase',
+        color: '#fb923c'
+      }
+    ]
+  },
+  nebula: {
+    phases: [
+      {
+        percentage: 1.0,
+        name: { zh: '星云守护者', en: 'Nebula Guardian' },
+        hpMultiplier: 1.0,
+        attacks: ['phaseray', 'singularity'],
+        movement: 'teleport_hover',
+        color: '#3b82f6'
+      },
+      {
+        percentage: 0.5,
+        name: { zh: '黑洞核心', en: 'Black Hole Core' },
+        hpMultiplier: 0.5,
+        attacks: ['phaseray', 'singularity', 'event_horizon'],
+        movement: 'chaotic_orbit',
+        color: '#8b5cf6'
+      }
+    ]
+  }
+};
+
+/**
  * Difficulty presets
  */
 export const DIFFICULTIES = {

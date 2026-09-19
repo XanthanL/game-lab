@@ -1,8 +1,11 @@
 /**
- * Singularity Echo - Player Entity Module
+ * Singularity Echo - Player Entity Module (Enhanced for Phase 15+)
  * 
- * Represents the player's ship with all combat capabilities.
- * Handles movement, shooting, shields, and power-up effects.
+ * Represents the player's ship with all combat capabilities:
+ * - Movement and shooting
+ * - Shields, shields breaks, and knockback
+ * - Invulnerability frames
+ * - Upgrade system integration
  * 
  * @module player
  */
@@ -10,7 +13,7 @@
 'use strict';
 
 import { BaseEntity } from './entity-base.js';
-import { configLoader } from './config.js';
+import { configLoader, SHIELD_CONFIG } from './config.js';
 import { RGBA } from './tokens.js';
 import { particlesManager } from './particles.js';
 import { playSound } from './audio.js';
@@ -89,10 +92,15 @@ class Player extends BaseEntity {
       });
     }
     
-    // Shield system
-    this.invulnTime = 3.0; // Starting invulnerability
+    // Shield system (Phase 15+)
+    this.invulnTime = SHIELD_CONFIG.hitInvincibility * 3; // Starting invulnerability
     this.hitFlashTimer = 0;
     this.shieldBreakTimer = 0;
+    this.knockbackDuration = 0; // Knockback frames counter
+    
+    // Initial shield amount (config-based)
+    this.shield = SHIELD_CONFIG.baseShield;
+    this.maxShield = SHIELD_CONFIG.maxShield;
     
     // Input state
     this.input = {
@@ -123,24 +131,24 @@ class Player extends BaseEntity {
   }
   
   /**
-   * Update player state
+   * Update player state (Phase 15+ enhancements)
    * @param {number} dt - Delta time
    * @param {GameState} gameState
    */
   update(dt, gameState) {
     if (gameState === GameState.PAUSED || this.dead) return;
     
-    // Invulnerability
+    // Invulnerability frames
     if (this.invulnTime > 0) {
       this.invulnTime -= dt;
     }
     
-    // Hit flash
+    // Hit flash timer
     if (this.hitFlashTimer > 0) {
       this.hitFlashTimer -= dt;
     }
     
-    // Shield break recovery
+    // Shield break recovery cooldown
     if (this.shieldBreakTimer > 0) {
       this.shieldBreakTimer -= dt;
     }
@@ -150,9 +158,22 @@ class Player extends BaseEntity {
       this.dashCooldown -= dt;
     }
     
-    // Regenerate shield
+    // Regenerate shield (with config threshold)
     if (this.shield < this.shieldMax && this.shieldBreakTimer <= 0) {
-      this.shield = Math.min(this.shield + this.regen * dt, this.shieldMax);
+      this.shield = Math.min(this.shield + SHIELD_CONFIG.shieldRechargeRate * dt, this.shieldMax);
+    }
+    
+    // Knockback decay (hard knockback duration)
+    if (this.knockbackDuration > 0) {
+      this.knockbackDuration -= dt;
+      
+      // Apply velocity decay during knockback
+      this.vx *= 0.9;
+      this.vy *= 0.9;
+    } else {
+      // Reset velocity after knockback ends
+      this.vx = 0;
+      this.vy = 0;
     }
     
     // Movement
@@ -271,37 +292,64 @@ class Player extends BaseEntity {
   }
   
   /**
-   * Take damage
+   * Take damage with shield blocking, invincibility, and knockback (Phase 15+)
    * @param {number} amount 
    * @param {Object} source - Damage source info
    */
   takeDamage(amount, source = {}) {
+    // Check invincibility frames
     if (this.invulnTime > 0) return false;
     
+    // Check damage threshold for hit reaction
+    const hasHitReaction = amount >= SHIELD_CONFIG.damageThreshold;
+    
     // Apply shield first
+    let actualDamage = amount;
     if (this.shield > 0) {
-      const shieldDamage = Math.min(amount, this.shield);
+      const shieldDamage = Math.min(actualDamage, this.shield);
       this.shield -= shieldDamage;
       
-      if (this.shield <= 0) {
-        this.shieldBreakTimer = 1.0; // Brief shield regeneration delay
+      // Shield break trigger
+      if (this.shield <= 0 && !this.shieldBreakTimer) {
+        this.shieldBreakTimer = SHIELD_CONFIG.shieldBreakCooldown;
+        
+        // Trigger shield break effect
+        if (typeof particlesManager !== 'undefined') {
+          particlesManager.spawn('explosion', this.x, this.y, 30, '#38bdf8');
+          particlesManager.spawn('shieldBubble', this.x, this.y, 50, '#93c5fd');
+        }
+        
+        if (typeof playSound !== 'undefined') {
+          playSound('shield_break');
+        }
       }
       
-      amount -= shieldDamage;
+      actualDamage -= shieldDamage;
       
-      if (amount <= 0) {
-        return true; // Blocked by shield
+      if (actualDamage <= 0) {
+        return true; // Completely blocked by shield
       }
     }
     
     // Apply to HP
-    this.hp -= amount;
-    this.hitFlashTimer = 0.2;
+    this.hp -= actualDamage;
+    this.hitFlashTimer = SHIELD_CONFIG.hitInvincibility;
+    
+    // Hard knockback on significant hits
+    if (hasHitReaction && this.state === GameState.PLAYING) {
+      const dx = source.x ? this.x - source.x : 0;
+      const dy = source.y ? this.y - source.y : 1;
+      const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+      
+      this.vx -= (dx / distance) * 20;
+      this.vy -= (dy / distance) * 20;
+      this.knockbackDuration = SHIELD_CONFIG.hardKnockbackDuration;
+    }
     
     // Trigger VFX effects (shake, flash, damage numbers)
     if (typeof vfxTriggerShake !== 'undefined') {
-      const shakeIntensity = Math.min(amount / 2, 15);
-      const shakeDuration = Math.floor(amount / 3);
+      const shakeIntensity = Math.min(actualDamage / 2, 15);
+      const shakeDuration = Math.floor(actualDamage / 3);
       vfxTriggerShake(shakeDuration, shakeIntensity);
     }
     
@@ -319,8 +367,8 @@ class Player extends BaseEntity {
       playSound('low_health_warning');
     }
     
-    // Occasional screen freeze for heavy hits
-    if (amount >= 30 && typeof triggerScreenFreeze !== 'undefined') {
+    // Screen freeze for heavy hits
+    if (actualDamage >= 30 && typeof triggerScreenFreeze !== 'undefined') {
       triggerScreenFreeze(0.1);
     }
     
