@@ -218,7 +218,32 @@ class BossSystem {
         speed: 250,
         color: '#f59e0b'
       });
+      
+      // Heavy particle burst
+      particlesManager.spawn('impact', x, y, 10, '#f59e0b');
     }
+    
+    // Trigger screen freeze for dramatic impact
+    this.triggerScreenFreeze(0.15);
+  }
+  
+  /**
+   * Trigger screen freeze for impactful moments
+   * @param {number} duration - Freeze duration in seconds
+   */
+  triggerScreenFreeze(duration = 0.3) {
+    if (!Game) return;
+    
+    Game.freezeDuration = duration;
+    Game.isFrozen = true;
+    
+    // Resume after duration
+    setTimeout(() => {
+      if (Game.state === GameState.PLAYING) {
+        Game.isFrozen = false;
+        Game.freezeDuration = 0;
+      }
+    }, duration * 1000);
   }
   
   /**
