@@ -279,6 +279,9 @@ function render() {
     
     // Draw HUD
     hudSystem.render(ctx, Game);
+    
+    // VFX overlays (damage flash, etc.)
+    vfxRender(ctx);
   } else if (Game.state === GameState.OVER || Game.state === GameState.VICTORY) {
     // End screen
     renderEndScreen(ctx);

@@ -298,8 +298,31 @@ class Player extends BaseEntity {
     this.hp -= amount;
     this.hitFlashTimer = 0.2;
     
-    // Flash red on hit
-    document.dispatchEvent(new CustomEvent('playerHit', { detail: { x: this.x, y: this.y } }));
+    // Trigger VFX effects (shake, flash, damage numbers)
+    if (typeof vfxTriggerShake !== 'undefined') {
+      const shakeIntensity = Math.min(amount / 2, 15);
+      const shakeDuration = Math.floor(amount / 3);
+      vfxTriggerShake(shakeDuration, shakeIntensity);
+    }
+    
+    if (typeof vfxTriggerDamageFlash !== 'undefined') {
+      vfxTriggerDamageFlash('#ff4444');
+    }
+    
+    // Spawn particles at player position
+    if (typeof particlesManager !== 'undefined') {
+      particlesManager.spawn('explosion', this.x, this.y, 20, '#ffffff');
+    }
+    
+    // Low health warning
+    if (this.hp < this.maxHp * 0.3 && typeof playSound !== 'undefined') {
+      playSound('low_health_warning');
+    }
+    
+    // Occasional screen freeze for heavy hits
+    if (amount >= 30 && typeof triggerScreenFreeze !== 'undefined') {
+      triggerScreenFreeze(0.1);
+    }
     
     if (this.hp <= 0) {
       this.die(source);
