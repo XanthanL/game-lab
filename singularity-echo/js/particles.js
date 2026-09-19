@@ -579,7 +579,7 @@ class ParticleManager {
   }
   
   /**
-   * Adjust particle pool capacity based on game state (Performance optimization)
+   * Adjust particle pool capacity based on game state (Performance optimization - Priority Aware)
    */
   adjustCapacity(enemyCount, isBossFight = false) {
     const wasBossFight = this.bossFightActive;
@@ -604,14 +604,48 @@ class ParticleManager {
       this.currentMaxParticles = Math.floor(this.baseMaxParticles * enemyFactor);
     }
     
-    // Enforce new limit immediately by trimming excess
+    // Enforce new limit immediately by trimming excess (Priority-aware: delete low-priority first)
     while (this.particles.length > this.currentMaxParticles) {
-      this.particles.shift();
+      // Find lowest priority particle for removal
+      let victimIndex = -1;
+      let lowestPriority = Infinity;
+      
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        
+        // Priority levels (lower number = higher priority, won't be deleted until necessary)
+        // 1 = damage numbers (never delete unless critical)
+        // 2 = phase flashes, warning markers (keep visible)
+        // 3 = explosions, impacts (can delete if needed)
+        // 4 = trails, decorative (delete first)
+        let priority = 4;
+        
+        if (p.type === 'damageNumber' || p.text?.includes('-')) {
+          priority = 1; // Critical feedback - last resort
+        } else if (p.isRing || p.isCrosshair || p.isGlow) {
+          priority = 2; // Important visual cues
+        } else if (p.spawnType === 'explosion' || p.spawnType === 'impact') {
+          priority = 3; // Standard effects
+        }
+        
+        if (priority < lowestPriority) {
+          lowestPriority = priority;
+          victimIndex = i;
+        }
+      }
+      
+      // Remove the lowest priority particle
+      if (victimIndex >= 0) {
+        this.particles.splice(victimIndex, 1);
+      } else {
+        // No suitable victim found, remove from back (fallback)
+        this.particles.pop();
+      }
     }
   }
   
   /**
-   * Spawn particles from effect factory
+   * Spawn particles from effect factory (Priority-aware)
    */
   spawn(effectName, ...args) {
     const effect = ParticleEffects[effectName];
@@ -622,9 +656,54 @@ class ParticleManager {
     
     const newParticles = effect(...args);
     
-    // Enforce dynamic limit
+    // Mark each particle with its type for priority management
+    newParticles.forEach(p => {
+      p.type = effectName;
+      
+      // Set additional metadata
+      if (effectName === 'damageNumber') {
+        p.priority = 1; // Critical feedback
+        p.neverDeleteEarly = true;
+      } else if (['warningMarker', 'phaseFlash'].includes(effectName)) {
+        p.priority = 2; // Important visual cues
+        p.neverDeleteEarly = true;
+      } else if (['explosion', 'impact', 'deathShatter'].includes(effectName)) {
+        p.priority = 3; // Standard effects
+      } else {
+        p.priority = 4; // Decorative/trails
+      }
+    });
+    
+    // Enforce dynamic limit (priority-aware)
     while (this.particles.length + newParticles.length > this.currentMaxParticles) {
-      this.particles.shift();
+      let victimIndex = -1;
+      let lowestPriority = Infinity;
+      let hasHighPriority = false;
+      
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        
+        // Check if this is high-priority (shouldn't be deleted unless necessary)
+        if (p.neverDeleteEarly || (p.priority <= 2 && p.life > 0.3)) {
+          hasHighPriority = true;
+        }
+        
+        if (p.priority < lowestPriority) {
+          lowestPriority = p.priority;
+          victimIndex = i;
+        }
+      }
+      
+      // Only delete if we have a suitable victim or no high-priority particles exist
+      if (victimIndex >= 0 && (!hasHighPriority || lowestPriority >= 3)) {
+        this.particles.splice(victimIndex, 1);
+      } else if (lowestPriority >= 3) {
+        // Delete lowest priority even if some are medium-high
+        this.particles.splice(victimIndex, 1);
+      } else {
+        // No suitable victim found, remove from back (fallback - should rarely happen)
+        this.particles.pop();
+      }
     }
     
     this.particles.push(...newParticles);
