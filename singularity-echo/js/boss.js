@@ -18,6 +18,7 @@ import { particlesManager } from './particles.js';
 import { playSound, triggerDamageFlash as vfxTriggerDamageFlash } from './audio.js';
 import { notificationSystem, hudSystem } from './ui.js';
 import { triggerScreenFreeze as vfxTriggerScreenFreeze } from './vfx.js';
+import { BOSS_PHASE_CONFIGS } from './config.js';
 
 /**
  * Boss attack patterns with telegraph duration
@@ -70,6 +71,10 @@ class BossSystem {
     
     // Boss movement tracking
     this.bossMovement = null;
+    
+    // Phase transition tracking
+    this.currentPhaseIndex = 0;
+    this.checkPhaseThresholds = true;
     
     console.log('[BossSystem] Initialized');
   }
@@ -306,12 +311,15 @@ class BossSystem {
   }
   
   /**
-   * Update boss AI behavior (called each frame)
+   * Update boss AI behavior (called each frame - Phase 16+)
    * @param {Enemy} boss - Boss entity
    * @param {number} dt - Delta time
    */
   updateBossAI(boss, dt) {
     if (!this.activeBoss || boss.dead) return;
+    
+    // Check for phase transitions based on HP
+    this.checkPhaseChange(boss);
     
     // Simple AI: hover and move towards player periodically
     const player = Game?.player;
@@ -363,6 +371,67 @@ class BossSystem {
     if (Game.player && !Game.player.dead) {
       this.telegraphAttack(selected, Game.player.x, Game.player.y);
     }
+  }
+  
+  /**
+   * Check for phase transitions based on HP threshold
+   * @param {Enemy} boss - Boss entity
+   */
+  checkPhaseChange(boss) {
+    if (!this.activeBoss || !this.checkPhaseThresholds) return;
+    
+    // Get current boss config with phase data
+    const phaseConfig = BOSS_PHASE_CONFIGS[this.activeBoss.config.id];
+    if (!phaseConfig || !phaseConfig.phases) return;
+    
+    const hpPercent = boss.hp / boss.maxHp;
+    
+    // Check if we should transition to next phase
+    if (this.currentPhaseIndex < phaseConfig.phases.length - 1) {
+      const nextPhase = phaseConfig.phases[this.currentPhaseIndex + 1];
+      
+      if (hpPercent <= nextPhase.percentage) {
+        this.triggerPhaseChange(boss, nextPhase);
+      }
+    }
+  }
+  
+  /**
+   * Trigger boss phase change effect
+   * @param {Enemy} boss - Current boss entity
+   * @param {Object} newPhase - New phase configuration
+   */
+  triggerPhaseChange(boss, newPhase) {
+    this.currentPhaseIndex++;
+    this.phase = this.currentPhaseIndex + 1;
+    this.checkPhaseThresholds = false;
+    
+    console.log(`[BossSystem] Phase ${this.phase}: ${newPhase.name.zh}`);
+    
+    // VFX: Flash and particles
+    particlesManager.spawn('phaseFlash', boss.x, boss.y, 50, newPhase.color);
+    vfxTriggerDamageFlash(newPhase.color);
+    
+    // Screen shake for dramatic effect
+    triggerShake(20, 15);
+    
+    // Audio sting
+    playSound('level_up');
+    
+    // Update HUD with new boss name and color
+    hudSystem.updateBossBarColor(newPhase.color);
+    hudSystem.setBossName(newPhase.name.zh);
+    
+    // Show toast notification
+    notificationSystem.showToast(`PHASE ${this.phase}: ${newPhase.name.en}`, 'success', 5000);
+    
+    // Apply phase changes
+    boss.color = newPhase.color;
+    
+    // Resume phase checking after delay
+    setTimeout(() => {
+      this.checkPhaseThresholds = true;
+    }, 3000);
   }
 }
 

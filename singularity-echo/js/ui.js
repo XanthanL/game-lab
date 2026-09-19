@@ -81,11 +81,12 @@ export class HUD {
   }
   
   /**
-   * Update boss bar
-   * @param {number} currentHP
-   * @param {number} maxHP
+   * Update boss bar width and color (Phase 16+)
+   * @param {number} currentHP 
+   * @param {number} maxHP 
+   * @param {string} [color] - Optional custom color for this phase
    */
-  updateBossBar(currentHP, maxHP) {
+  updateBossBar(currentHP, maxHP, color = null) {
     if (!this.elements.bossBar || !this.elements.bossBarFill) return;
     
     this.bossHP = currentHP;
@@ -93,10 +94,15 @@ export class HUD {
     
     const percent = Math.max(0, Math.min(1, currentHP / maxHP));
     this.elements.bossBarFill.style.width = `${percent * 100}%`;
+    
+    // Update color if provided (for phase transitions)
+    if (color) {
+      this.elements.bossBarFill.style.backgroundColor = color;
+    }
   }
   
   /**
-   * Set boss name
+   * Set boss name (alias)
    * @param {string} name
    */
   setBossName(name) {
