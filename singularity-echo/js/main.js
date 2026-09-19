@@ -21,6 +21,7 @@ import { hudSystem, menuSystem, cardSelector, achievements, notificationSystem }
 import { particlesManager } from './particles.js';
 import { PowerUpSpawner } from './power-ups.js';
 import { CardGenerator } from './upgrades.js';
+import { bossSystem, BOSS_ATTACKS } from './boss.js';
 
 // ==================== 全局状态 ====================
 const Game = {
@@ -228,6 +229,23 @@ function completeWave() {
   }, 1000);
 }
 
+// New function: Start boss fight with warning
+function startBossFight(bossConfig) {
+  // Clear existing enemies
+  Game.enemies = Game.enemies.filter(e => e.dead);
+  
+  // Show warning notification
+  notificationSystem.showToast(`⚠️ ${bossConfig.name.zh} APPROACHING`, 'info', 4000);
+  
+  // Play dramatic music or sound
+  playSound('boss_enter');
+  
+  // Start boss warning sequence
+  bossSystem.startBossFight(bossConfig, () => {
+    console.log('[Main] Boss combat phase started');
+  });
+}
+
 // ==================== 渲染逻辑 ====================
 
 function render() {
@@ -338,9 +356,23 @@ function handleEnemyDeath(enemy, index) {
   hudSystem.updateCombo(Game.player.comboCount, comboMultiplier);
   
   // Show toast for high combos (2x and above)
-  if (comboMultiplier >= 2.0 && Game.player.comboCount % 3 === 0) {
+  const comboMult = Game.player.getComboMultiplier();
+  if (comboMult >= 2.0 && Game.player.comboCount % 3 === 0) {
     const comboText = `${Game.player.comboCount}x Combo! +${Math.floor((comboMult - 1) * 100)}% Score`;
     notificationSystem.showToast(comboText, 'combo');
+    
+    // Multi-kill bonus at milestones
+    if ([5, 10, 15, 20].includes(Game.player.comboCount)) {
+      const isDouble = Game.player.comboCount >= 10;
+      const text = isDouble ? `${Game.player.comboCount}x MULTI-KILL!` : `SUSTAINED COMBO ${Game.player.comboCount}x!`;
+      
+      // Play multi-kill celebration sound
+      playSound('multi_kill');
+      
+      setTimeout(() => {
+        notificationSystem.showToast(text, 'success');
+      }, 500);
+    }
   }
   
   // Check boss defeat

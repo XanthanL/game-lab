@@ -171,6 +171,71 @@ class AudioManager {
     this.sounds['wave_start'] = this.createWaveStartSound();
     this.sounds['low_health_warning'] = this.createLowHealthWarning();
     
+    // Multi-kill celebration sound
+    this.sounds['multi_kill'] = {
+      play: (vol = 0.8) => {
+        if (!this.ctx || this.muted) return;
+        
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle';
+        filter.type = 'lowpass';
+        filter.frequency.value = 2000;
+        
+        // Ascending arpeggio for multi-kill celebration
+        const frequencies = [523.25, 659.25, 783.99, 1046.50];
+        frequencies.forEach((freq, i) => {
+          const delay = i * 0.05;
+          osc.frequency.setValueAtTime(freq, t + delay);
+        });
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(vol, t + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        
+        osc.start(t);
+        osc.stop(t + 0.8);
+      }
+    };
+    
+    // Boss warning signal
+    this.sounds['boss_warning'] = {
+      play: (vol = 0.6) => {
+        if (!this.ctx || this.muted) return;
+        
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sine';
+        filter.type = 'bandpass';
+        filter.Q.value = 3;
+        
+        // Rising warning tone
+        osc.frequency.setValueAtTime(523.25, t);
+        osc.frequency.linearRampToValueAtTime(783.99, t + 0.3);
+        
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(vol, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        
+        osc.start(t);
+        osc.stop(t + 0.5);
+      }
+    };
+    
     // Background music placeholder (would need external audio file)
     this.musicTracks = {
       'battle': null,
