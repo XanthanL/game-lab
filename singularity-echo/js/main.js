@@ -167,10 +167,15 @@ function updatePlaying(dt) {
   // Update combo system
   Game.player.updateCombo(effectiveDt);
   
-  // Update enemies
+  // Update enemies (including Boss AI)
   for (let i = Game.enemies.length - 1; i >= 0; i--) {
     const enemy = Game.enemies[i];
     enemy.update(effectiveDt, Game.state);
+    
+    // Update Boss AI if this is a boss
+    if (enemy.type === 'boss' && typeof bossSystem !== 'undefined') {
+      bossSystem.updateBossAI(enemy, effectiveDt);
+    }
     
     if (enemy.dead) {
       handleEnemyDeath(enemy, i);

@@ -12,17 +12,12 @@
 
 'use strict';
 
-// Import needed modules
-import { bulletsManager, BULLET_TYPES } from './bullets.js';
+// Import needed modules (ensure they exist before import)
+import { bulletsManager } from './bullets.js';
 import { particlesManager } from './particles.js';
-import { playSound } from './audio.js';
-import { notificationSystem } from './ui.js';
-
-// Helper for global functions
-function getGlobal(name) {
-  if (typeof window !== 'undefined') return window[name];
-  return null;
-}
+import { playSound, triggerDamageFlash as vfxTriggerDamageFlash } from './audio.js';
+import { notificationSystem, hudSystem } from './ui.js';
+import { triggerScreenFreeze as vfxTriggerScreenFreeze } from './vfx.js';
 
 /**
  * Boss attack patterns with telegraph duration
@@ -257,18 +252,21 @@ class BossSystem {
    * @param {number} duration - Freeze duration in seconds
    */
   triggerScreenFreeze(duration = 0.3) {
-    if (!Game) return;
-    
-    Game.freezeDuration = duration;
-    Game.isFrozen = true;
-    
-    // Resume after duration
-    setTimeout(() => {
-      if (Game.state === GameState.PLAYING) {
-        Game.isFrozen = false;
-        Game.freezeDuration = 0;
-      }
-    }, duration * 1000);
+    // Use VFX system function
+    if (typeof vfxTriggerScreenFreeze !== 'undefined') {
+      vfxTriggerScreenFreeze(duration);
+    } else {
+      // Fallback to old method
+      if (!Game) return;
+      Game.freezeDuration = duration;
+      Game.isFrozen = true;
+      setTimeout(() => {
+        if (Game.state === GameState.PLAYING) {
+          Game.isFrozen = false;
+          Game.freezeDuration = 0;
+        }
+      }, duration * 1000);
+    }
   }
   
   /**
