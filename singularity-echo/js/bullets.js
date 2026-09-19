@@ -277,6 +277,38 @@ class BulletManager {
     this.bullets = [];
     this.beams = [];
     this.maxBullets = 200;
+    
+    // Delayed cleanup queue (prevents deleting bullets in same frame they're spawned)
+    this.cleanupQueue = [];
+    
+    console.log('[BulletManager] Initialized with delayed cleanup');
+  }
+  
+  /**
+   * Schedule bullet for delayed cleanup
+   */
+  scheduleCleanup(bullet) {
+    this.cleanupQueue.push({
+      bullet,
+      safeToRemove: Date.now() + 50 // 50ms buffer
+    });
+  }
+  
+  /**
+   * Process delayed cleanup queue
+   */
+  processCleanup() {
+    const now = Date.now();
+    this.cleanupQueue = this.cleanupQueue.filter(entry => {
+      if (entry.safeToRemove > now) return true; // Still waiting
+      
+      // Safe to remove
+      const idx = this.bullets.indexOf(entry.bullet);
+      if (idx > -1) {
+        this.bullets.splice(idx, 1);
+      }
+      return false;
+    });
   }
   
   /**
@@ -322,20 +354,36 @@ class BulletManager {
   }
   
   /**
-   * Update all bullets
+   * Update all bullets (Phase 17+ with delayed cleanup)
    * @param {number} dt 
    * @param {GameState} gameState 
    */
   update(dt, gameState) {
-    this.bullets = this.bullets.filter(b => {
-      b.update(dt, gameState);
-      return !b.dead;
-    });
+    // Process cleanup queue first
+    this.processCleanup();
     
-    this.beams = this.beams.filter(b => {
+    // Update and filter bullets
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+      const b = this.bullets[i];
       b.update(dt, gameState);
-      return !b.dead;
-    });
+      
+      if (b.dead) {
+        this.scheduleCleanup(b);
+      }
+    }
+    
+    // Update beams
+    for (let i = this.beams.length - 1; i >= 0; i--) {
+      const beam = this.beams[i];
+      beam.update(dt, gameState);
+      
+      if (!beam.dead) continue;
+      
+      const idx = this.beams.indexOf(beam);
+      if (idx > -1) {
+        this.beams.splice(idx, 1);
+      }
+    }
   }
   
   /**

@@ -563,12 +563,51 @@ const ParticleEffects = {
   }
 };
 
-// ==================== 粒子管理器 ====================
+// ==================== 粒子管理器 (Phase 17+ Optimization) ====================
 
 class ParticleManager {
   constructor() {
     this.particles = [];
-    this.maxParticles = 500; // Performance limit
+    this.baseMaxParticles = 500; // Performance baseline
+    this.currentMaxParticles = this.baseMaxParticles;
+    
+    // Dynamic capacity management
+    this.activeEnemies = 0;
+    this.bossFightActive = false;
+    
+    console.log('[ParticleManager] Initialized with', this.baseMaxParticles, 'base capacity');
+  }
+  
+  /**
+   * Adjust particle pool capacity based on game state (Performance optimization)
+   */
+  adjustCapacity(enemyCount, isBossFight = false) {
+    const wasBossFight = this.bossFightActive;
+    this.bossFightActive = isBossFight;
+    this.activeEnemies = enemyCount;
+    
+    // Increase capacity during boss fights
+    if (isBossFight) {
+      this.currentMaxParticles = Math.max(
+        this.currentMaxParticles,
+        this.baseMaxParticles + 200
+      );
+    }
+    
+    // Scale based on enemy count (more enemies = more particles allowed)
+    const enemyFactor = 1 + Math.min(enemyCount / 20, 1.5); // Cap at +150%
+    
+    // Reduce if idle to save resources
+    if (!isBossFight && enemyCount < 3) {
+      this.currentMaxParticles = this.baseMaxParticles;
+    } else {
+      this.currentMaxParticles = Math.floor(this.baseMaxParticles * enemyFactor);
+    }
+    
+    // Enforce new limit immediately by trimming excess
+    while (this.particles.length > this.currentMaxParticles) {
+      this.particles.shift();
+    }
   }
   
   /**
@@ -583,8 +622,8 @@ class ParticleManager {
     
     const newParticles = effect(...args);
     
-    // Enforce limit
-    while (this.particles.length + newParticles.length > this.maxParticles) {
+    // Enforce dynamic limit
+    while (this.particles.length + newParticles.length > this.currentMaxParticles) {
       this.particles.shift();
     }
     
@@ -593,11 +632,22 @@ class ParticleManager {
   }
   
   /**
-   * Update all particles
+   * Update all particles (with optimization)
    */
   update(dt) {
-    // Remove dead particles
-    this.particles = this.particles.filter(p => !p.dead);
+    // Remove dead particles and inactive particles faster than active ones
+    const beforeCount = this.particles.length;
+    this.particles = this.particles.filter(p => {
+      if (p.dead || p.life <= 0) return false;
+      p.update(dt);
+      return true;
+    });
+    
+    const removedCount = beforeCount - this.particles.length;
+    if (removedCount > 50) {
+      // Log large cleanup operations for debugging
+      console.log(`[Particles] Cleaned up ${removedCount} particles`);
+    }
     
     // Update remaining
     this.particles.forEach(p => p.update(dt));
@@ -607,6 +657,7 @@ class ParticleManager {
    * Render all particles
    */
   render(ctx) {
+    // Batch rendering can be added here for performance
     this.particles.forEach(p => p.render(ctx));
   }
   
@@ -615,6 +666,7 @@ class ParticleManager {
    */
   clear() {
     this.particles = [];
+    this.currentMaxParticles = this.baseMaxParticles;
   }
   
   /**
@@ -622,6 +674,15 @@ class ParticleManager {
    */
   get count() {
     return this.particles.length;
+  }
+  
+  /**
+   * Emergency cleanup (call when memory is high)
+   */
+  emergencyCleanup(targetCount = 200) {
+    while (this.particles.length > targetCount) {
+      this.particles.shift();
+    }
   }
 }
 

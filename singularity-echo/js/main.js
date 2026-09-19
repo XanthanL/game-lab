@@ -194,6 +194,13 @@ function updatePlaying(dt) {
   // Update VFX system
   vfxUpdate(effectiveDt);
   
+  // Adjust particle pool capacity based on game state (Performance optimization)
+  const activeEnemyCount = Game.enemies.filter(e => !e.dead).length;
+  const isBossFight = Game.enemies.some(e => e.type === 'boss' && !e.dead);
+  if (typeof particlesManager !== 'undefined') {
+    particlesManager.adjustCapacity(activeEnemyCount, isBossFight);
+  }
+  
   // Check wave progress
   checkWaveProgress();
   
