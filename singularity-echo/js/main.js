@@ -17,7 +17,7 @@ import { bulletsManager, BULLET_TYPES } from './bullets.js';
 import { EnemySpawner, ENEMY_TYPES, Enemy } from './enemy.js';
 import { audioManager, playSound, startMusic } from './audio.js';
 import { saveManager, loadGame, saveGame } from './save.js';
-import { hudSystem, menuSystem, cardSelector, achievements } from './ui.js';
+import { hudSystem, menuSystem, cardSelector, achievements, notificationSystem } from './ui.js';
 import { particlesManager } from './particles.js';
 import { PowerUpSpawner } from './power-ups.js';
 import { CardGenerator } from './upgrades.js';
@@ -51,7 +51,15 @@ const Game = {
   
   // 难度系数
   enemyScale: 1.0,
-  dropRate: 1.0
+  dropRate: 1.0,
+  
+  // Screen Shake
+  shakeDuration: 0,
+  shakeIntensity: 5,
+  
+  // Slow Motion
+  timeScale: 1.0,
+  slowMotionActive: false
 };
 
 // ==================== 初始化 ====================
@@ -148,13 +156,19 @@ function update(dt) {
 }
 
 function updatePlaying(dt) {
+  // Apply slow motion
+  const effectiveDt = dt * Game.timeScale;
+  
   // Update player
-  Game.player.update(dt, Game.state);
+  Game.player.update(effectiveDt, Game.state);
+  
+  // Update combo system
+  Game.player.updateCombo(effectiveDt);
   
   // Update enemies
   for (let i = Game.enemies.length - 1; i >= 0; i--) {
     const enemy = Game.enemies[i];
-    enemy.update(dt, Game.state);
+    enemy.update(effectiveDt, Game.state);
     
     if (enemy.dead) {
       handleEnemyDeath(enemy, i);
@@ -162,13 +176,13 @@ function updatePlaying(dt) {
   }
   
   // Update bullets
-  bulletsManager.update(dt, Game.state);
+  bulletsManager.update(effectiveDt, Game.state);
   
   // Update particles
-  particlesManager.update(dt);
+  particlesManager.update(effectiveDt);
   
   // Update power-ups
-  PowerUpSpawner.update(dt);
+  PowerUpSpawner.update(effectiveDt);
   
   // Check wave progress
   checkWaveProgress();
@@ -219,22 +233,38 @@ function completeWave() {
 function render() {
   const ctx = canvas.getContext('2d');
   
-  // 清空画布
+  // Clear canvas
   ctx.fillStyle = '#0e1520';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // 绘制星空背景
+  // Apply screen shake if active
+  let shakeOffsetX = 0;
+  let shakeOffsetY = 0;
+  if (Game.shakeDuration > 0) {
+    shakeOffsetX = (Math.random() - 0.5) * Game.shakeIntensity;
+    shakeOffsetY = (Math.random() - 0.5) * Game.shakeIntensity;
+    ctx.save();
+    ctx.translate(shakeOffsetX, shakeOffsetY);
+    Game.shakeDuration--;
+  }
+  
+  // Draw starfield background
   drawStarfield(ctx);
   
   if (Game.state === GameState.PLAYING) {
-    // 绘制游戏实体
+    // Draw game entities
     drawGameEntities(ctx);
     
-    // 绘制 HUD
+    // Draw HUD
     hudSystem.render(ctx, Game);
   } else if (Game.state === GameState.OVER || Game.state === GameState.VICTORY) {
-    // 结束屏幕
+    // End screen
     renderEndScreen(ctx);
+  }
+  
+  // Restore context if shake was applied
+  if (Game.shakeDuration >= 0 || shakeOffsetX !== 0) {
+    ctx.restore();
   }
 }
 
@@ -291,11 +321,27 @@ function handleEnemyDeath(enemy, index) {
   // Remove enemy
   Game.enemies.splice(index, 1);
   
+  // Calculate score with combo multiplier
+  const comboMultiplier = Game.player.getComboMultiplier();
+  const bonusScore = Math.floor(enemy.scoreValue * comboMultiplier);
+  
   // Give score
-  Game.score += enemy.scoreValue;
+  Game.score += bonusScore;
   
   // Stat kill count
   Game.player.kills++;
+  
+  // Record combo
+  Game.player.onKill(enemy);
+  
+  // Update combo HUD display
+  hudSystem.updateCombo(Game.player.comboCount, comboMultiplier);
+  
+  // Show toast for high combos (2x and above)
+  if (comboMultiplier >= 2.0 && Game.player.comboCount % 3 === 0) {
+    const comboText = `${Game.player.comboCount}x Combo! +${Math.floor((comboMult - 1) * 100)}% Score`;
+    notificationSystem.showToast(comboText, 'combo');
+  }
   
   // Check boss defeat
   if (enemy.type === 'boss') {
@@ -495,6 +541,34 @@ function getConfigData() {
 
 // ==================== 辅助函数 ====================
 
+/**
+ * Trigger screen shake effect
+ * @param {number} duration - Number of frames to shake (default: 10)
+ * @param {number} intensity - Shake intensity in pixels (default: 5)
+ */
+function triggerShake(duration = 10, intensity = 5) {
+  Game.shakeDuration = duration;
+  Game.shakeIntensity = intensity;
+}
+
+/**
+ * Activate slow motion effect
+ * @param {number} scale - Time scale factor (0.3 = 30% speed, default: 0.3)
+ * @param {number} duration - Duration in seconds (default: 2.0)
+ */
+function activateSlowMotion(scale = 0.3, duration = 2.0) {
+  Game.timeScale = scale;
+  Game.slowMotionActive = true;
+  
+  // Revert after duration
+  setTimeout(() => {
+    if (Game.state === GameState.PLAYING) {
+      Game.timeScale = 1.0;
+      Game.slowMotionActive = false;
+    }
+  }, duration * 1000);
+}
+
 function formatTime(ms) {
   const seconds = Math.floor(ms / 1000);
   const mins = Math.floor(seconds / 60);
@@ -506,6 +580,12 @@ function showError(message) {
   console.error('[Error]', message);
   // TODO: 显示错误 UI
 }
+
+/**
+ * Global API helpers
+ */
+window.triggerShake = triggerShake;
+window.activateSlowMotion = activateSlowMotion;
 
 // ==================== 导出 API ====================
 

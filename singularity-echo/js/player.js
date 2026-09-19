@@ -104,6 +104,11 @@ class Player extends BaseEntity {
       dash: false
     };
     
+    // Combo system
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this.comboMaxTime = 3.0; // Seconds before combo resets
+    
     // Dash cooldown
     this.dashCooldown = 0;
     this.dashDuration = 0.2;
@@ -508,6 +513,62 @@ class Player extends BaseEntity {
     return 0;
   }
   
+  // ========== Combo System Extensions ==========
+  
+  /**
+   * Record a kill for combo tracking
+   * @param {Object} enemy - The killed enemy
+   */
+  onKill(enemy) {
+    // Increment combo counter
+    this.comboCount++;
+    this.comboTimer = this.comboMaxTime;
+    
+    // Calculate combo bonus
+    const multiplier = Math.min(1 + (this.comboCount - 1) * 0.1, 3.0); // Max 3x
+    
+    if (this.comboCount > 1) {
+      console.log(`[Combo] ${this.comboCount}x kill! (+${((multiplier - 1) * 100).toFixed(0)}% score)`);
+      
+      // Trigger screen shake for high combos
+      if (this.comboCount >= 5) {
+        triggerShake(Math.floor(this.comboCount / 5), 2);
+      }
+    }
+  }
+  
+  /**
+   * Update combo timer in game loop
+   * @param {number} dt - Delta time
+   */
+  updateCombo(dt) {
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) {
+        this.resetCombo();
+      }
+    }
+  }
+  
+  /**
+   * Reset combo counter
+   */
+  resetCombo() {
+    if (this.comboCount > 0) {
+      console.log(`[Combo Lost] Combo ended at ${this.comboCount}x`);
+    }
+    this.comboCount = 0;
+    this.comboTimer = 0;
+  }
+  
+  /**
+   * Get current combo multiplier
+   * @returns {number} Score multiplier (1.0 - 3.0)
+   */
+  getComboMultiplier() {
+    return Math.min(1 + (this.comboCount - 1) * 0.1, 3.0);
+  }
+  
   // ========== Upgrade System Extensions ==========
   
   /**
@@ -575,6 +636,73 @@ class Player extends BaseEntity {
     this.applyUpgrade(upgrade);
     
     console.log(`[Player] Applied upgrade: ${upgrade.id}`);
+    
+    // Trigger sound and visual feedback if game is available
+    if (typeof playSound === 'function') {
+      playSound('level_up', { vol: 0.5 });
+    }
+  }
+  
+  /**
+   * Show upgrade toast notification
+   * @param {Object} upgrade - The applied upgrade
+   */
+  showUpgradeToast(upgrade) {
+    const rarityColors = {
+      common: '#b8c6d9',
+      uncommon: '#56b4e9',
+      rare: '#78b2dd',
+      epic: '#a855f7',
+      legendary: '#f59e0b'
+    };
+    
+    const rarity = upgrade.rarity || 'common';
+    const message = `${upgrade.name}\n${upgrade.description}`;
+    
+    if (typeof notificationSystem !== 'undefined') {
+      // Create custom styled toast element
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${rarity}`;
+      toast.style.cssText = `
+        position: fixed;
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        background: linear-gradient(135deg, ${rarityColors[rarity]} 0%, ${rarityColors[rarity].replace('#', 'rgba(' + parseInt(rarityColors[rarity].slice(1,3), 16).toString() + ',' + parseInt(rarityColors[rarity].slice(3,5), 16).toString() + ',' + parseInt(rarityColors[rarity].slice(5,7), 16).toString() + ', 0.9)'), 100%);
+        color: white;
+        padding: 20px 32px;
+        border-radius: 12px;
+        text-align: center;
+        font-size: var(--fs-3);
+        font-weight: bold;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        animation: upgradeToastIn 0.4s ease-out forwards;
+        max-width: 400px;
+      `;
+      
+      toast.innerHTML = `
+        <div style="font-size: 1.2rem; margin-bottom: 8px;">✨ ${upgrade.name}</div>
+        <div style="font-size: 0.85rem; opacity: 0.9;">${upgrade.description}</div>
+      `;
+      
+      document.body.appendChild(toast);
+      
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-20px)';
+        toast.style.transition = 'all 0.3s ease-out';
+        
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 3000);
+    }
+    
+    return message;
   }
   
   /**

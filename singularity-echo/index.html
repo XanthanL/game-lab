@@ -542,6 +542,69 @@ html[data-rm] .overlay{animation:none}
 /* ---------- level-up cards ---------- */
 .cards-in{text-align:center;margin:auto;padding:20px 0}
 #cardrow,#hullrow{display:flex;gap:18px;margin-top:34px;justify-content:center;flex-wrap:wrap}
+
+/* Toast notifications for achievements & combos */
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast-message {
+  font-size: var(--fs-3);
+  font-weight: bold;
+  padding: 16px 32px;
+  border-radius: 8px;
+  text-align: center;
+  opacity: 0;
+  animation: toastIn 0.3s ease-out forwards;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.toast-combo {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  font-size: 2rem;
+  animation: comboPulse 0.5s ease-in-out infinite;
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastVisible {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes comboPulseOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.toast-in { animation: toastIn 0.3s ease-out forwards; }
+.toast-visible { opacity: 1; }
+.toast-out { opacity: 0; transition: opacity 0.3s ease-out; }
+
 .card{width:196px;min-height:264px;height:auto;padding:20px 17px 17px;display:flex;flex-direction:column;
   background:rgb(var(--c-panel-rgb) / .82);border:1px solid var(--c-line);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);

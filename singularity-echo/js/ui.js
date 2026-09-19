@@ -128,6 +128,61 @@ export class HUD {
   }
   
   /**
+   * Update combo display
+   * @param {number} comboCount - Current combo count
+   * @param {number} multiplier - Combo multiplier (1.0 - 3.0)
+   */
+  updateCombo(comboCount, multiplier) {
+    // Create combo display element if it doesn't exist
+    if (!this.comboElement) {
+      this.comboElement = document.createElement('div');
+      this.comboElement.className = 'combo-display';
+      this.comboElement.style.cssText = `
+        position: fixed;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        text-align: center;
+        font-size: var(--fs-4);
+        font-weight: bold;
+        color: #f59e0b;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+        z-index: 100;
+      `;
+      document.body.appendChild(this.comboElement);
+    }
+    
+    if (comboCount > 0) {
+      this.comboElement.innerHTML = `
+        <div style="font-size: 2rem;">${comboCount}x</div>
+        <div style="font-size: 0.75rem; opacity: 0.8;">+${Math.floor((multiplier - 1) * 100)}%</div>
+      `;
+      this.comboElement.style.opacity = '1';
+      
+      // Pulse animation when new kill
+      const pulseEl = this.comboElement.querySelector('.combo-pulse');
+      if (pulseEl) {
+        pulseEl.remove();
+      }
+      const pulse = document.createElement('div');
+      pulse.className = 'combo-pulse';
+      pulse.style.cssText = `
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #f59e0b;
+        border-radius: 50%;
+        animation: comboPulseOut 0.5s ease-out forwards;
+      `;
+      this.comboElement.appendChild(pulse);
+    } else {
+      this.comboElement.style.opacity = '0';
+    }
+  }
+  
+  /**
    * Hide/show HUD based on context
    * @param {boolean} show
    */
@@ -267,6 +322,9 @@ export class NotificationSystem {
     this.flash = $('#flash');
     this.danger = $('#danger');
     
+    // Toast container
+    this.toastContainer = null;
+    
     console.log('[NotificationSystem] Initialized');
   }
   
@@ -301,10 +359,58 @@ export class NotificationSystem {
   }
   
   /**
+   * Show toast notification (achievement/combo popup)
+   * @param {string} message - Toast message
+   * @param {string} type - Toast type: 'success', 'info', 'combo'
+   */
+  showToast(message, type = 'info') {
+    // Create or get toast container
+    if (!this.toastContainer) {
+      this.toastContainer = document.createElement('div');
+      this.toastContainer.className = `toast ${type}`;
+      document.body.appendChild(this.toastContainer);
+    }
+    
+    // Remove existing toasts
+    const existingToast = this.toastContainer.querySelector('.toast-message');
+    if (existingToast) {
+      this.toastContainer.removeChild(existingToast);
+    }
+    
+    // Create new toast message element
+    const toastMsg = document.createElement('div');
+    toastMsg.className = 'toast-message';
+    toastMsg.textContent = message;
+    
+    // Add animation classes
+    toastMsg.classList.add('toast-in');
+    this.toastContainer.appendChild(toastMsg);
+    
+    // Animate in
+    setTimeout(() => {
+      toastMsg.classList.add('toast-visible');
+    }, 10);
+    
+    // Auto-hide after 2 seconds
+    setTimeout(() => {
+      toastMsg.classList.remove('toast-visible');
+      toastMsg.classList.add('toast-out');
+      
+      setTimeout(() => {
+        this.toastContainer.removeChild(toastMsg);
+        if (this.toastContainer.children.length === 0) {
+          this.toastContainer.remove();
+          this.toastContainer = null;
+        }
+      }, 300);
+    }, 2000);
+  }
+  
+  /**
    * Show damage flash effect
    * @param {string} color - Flash color (default: red)
    */
-  showDamageFlash(color = '#c8482d') {
+  showDamageFlash(color = '#c842d') {
     if (!this.flash) return;
     
     this.flash.style.background = `radial-gradient(ellipse at center, rgba(${color.replace('#', '')}, 0.7), transparent)`;
@@ -520,10 +626,17 @@ export class CardSelector {
     // Apply the upgrade to the player
     if (Game.player) {
       Game.player.addUpgrade(upgrade);
+      
+      // Show upgrade toast notification
+      setTimeout(() => {
+        Game.player.showUpgradeToast(upgrade);
+      }, 100);
     }
     
     // Play sound effect
-    playSound('level_up');
+    if (typeof playSound === 'function') {
+      playSound('level_up');
+    }
     
     // Refresh HUD
     hudSystem.updateLevel(Game.player.level);

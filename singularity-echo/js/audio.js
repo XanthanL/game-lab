@@ -40,6 +40,13 @@ class AudioManager {
     this.initialized = false;
   }
   
+  /**
+   * Set game reference for screen shake integration
+   */
+  setGameRef(gameObj) {
+    window.Game = gameObj;
+  }
+  
   async init() {
     if (this.initialized) return;
     
@@ -491,7 +498,14 @@ class AudioManager {
       return null;
     }
     
-    // 支持空间化（3D 音效）
+    // Screen shake on explosion sounds
+    if (name === 'explosion' && Game) {
+      triggerShake(8, 5);
+    } else if (name === 'boss_death' && Game) {
+      triggerShake(30, 15); // Massive shake for boss death
+    }
+    
+    // Support spatialization (3D audio)
     if (options.x !== undefined && options.y !== undefined) {
       const pan = this.computePan(options.x, options.y);
       this.applyPanning(sound, pan, options.vol);
@@ -503,7 +517,7 @@ class AudioManager {
   }
   
   computePan(x, y) {
-    // 将屏幕坐标转换为左右声道混合比
+    // Convert screen coordinates to left-right channel mix ratio
     const screenCenter = canvas.width / 2;
     const pan = (x - screenCenter) / screenCenter;
     return Math.max(-1, Math.min(1, pan));
