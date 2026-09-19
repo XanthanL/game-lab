@@ -22,6 +22,7 @@ import { particlesManager } from './particles.js';
 import { PowerUpSpawner } from './power-ups.js';
 import { CardGenerator } from './upgrades.js';
 import { bossSystem, BOSS_ATTACKS } from './boss.js';
+import { triggerShake as vfxTriggerShake, update as vfxUpdate, render as vfxRender, triggerDamageFlash as vfxTriggerDamageFlash } from './vfx.js';
 
 // ==================== 全局状态 ====================
 const Game = {
