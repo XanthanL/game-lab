@@ -32,10 +32,31 @@ class Particle {
     
     this.gravity = options.gravity || 0;
     this.friction = options.friction || 1.0;
+    
+    // Orbital animation properties (for singularity/music effects)
+    this.angle = options.angle || 0;
+    this.angularVelocity = options.angularVelocity || 0;
+    this.radius = options.radius || 0;
+    this.orbitCenterX = options.orbitCenterX || 0;
+    this.orbitCenterY = options.orbitCenterY || 0;
+    this.isMusicOrbit = options.isMusicOrbit || false;
   }
   
   update(dt) {
     if (this.dead) return;
+    
+    // Orbital animation for music singularity
+    if (this.isMusicOrbit && this.angularVelocity !== 0) {
+      this.angle += this.angularVelocity * dt;
+      this.x = this.orbitCenterX + Math.cos(this.angle) * this.radius;
+      this.y = this.orbitCenterY + Math.sin(this.angle) * this.radius;
+      
+      // Pulse radius based on bass frequency (passed via size field as scale factor)
+      const pulse = Math.sin(Date.now() * 0.003 * this.size) * 2;
+      this.x += pulse * Math.cos(this.angle);
+      this.y += pulse * Math.sin(this.angle);
+      return; // Skip normal velocity updates for orbited particles
+    }
     
     // Apply velocity
     this.x += this.vx * dt;
@@ -121,6 +142,20 @@ class Particle {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
       ctx.fill();
+      
+    } else if (this.isMusicOrbit) {
+      // Music singularity orbital particles - draw trail
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = this.size * 0.5;
+      ctx.globalAlpha = this.alpha * 0.6;
+      
+      // Draw from center outwards with fade
+      ctx.beginPath();
+      ctx.moveTo(this.orbitCenterX, this.orbitCenterY);
+      ctx.lineTo(this.x, this.y);
+      ctx.stroke();
+      
+      ctx.globalAlpha = this.alpha; // Restore alpha
       
     } else {
       // Standard particle circle

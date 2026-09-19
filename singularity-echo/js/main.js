@@ -462,10 +462,6 @@ function handleInput(action) {
       togglePause();
       break;
       
-    case 'restart':
-      restartGame();
-      break;
-      
     case 'menu':
       showMainMenu();
       break;
@@ -499,12 +495,6 @@ function togglePause() {
     Game.state = GameState.PLAYING;
     menuSystem.hidePause();
   }
-}
-
-function restartGame() {
-  Game.state = GameState.BOOT;
-  initWorld();
-  Game.state = GameState.PLAYING;
 }
 
 function showMainMenu() {

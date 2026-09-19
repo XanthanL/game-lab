@@ -1501,9 +1501,7 @@ html[data-rm] .overlay{animation:none}
     <div class="sdcode" id="pSeed" hidden></div>
     <div class="row-btns" data-page-node-id="9FBiGeQSXKPWxps6V2t8ok">
       <button id="btnResume" class="btn" data-i18n="p_resume" data-page-node-id="lkoNg5ViiffmJ2sweuWbjP">继续</button>
-      <button id="btnRestart" class="btn ghost" data-i18n="p_restart" data-page-node-id="kenlRQVaIAjpzqxpwpC985">重开本局</button>
       <button id="btnSettingsP" class="btn ghost" data-i18n="p_settings" data-page-node-id="B3dev3eWj7u2lIhmCRtpx8">SETTINGS ▸ 设置</button>
-      <button id="btnShot" class="btn ghost" data-i18n="p_shot">SNAP ▸ 截图</button>
       <button id="btnQuit" class="btn ghost" data-i18n="p_quit" data-page-node-id="d0JyH42UDZErzMwfb89xGo">返回主菜单</button>
     </div>
   </div>
@@ -8618,7 +8616,6 @@ $('btnBdClear').addEventListener('click',()=>{
   if(!confirm(T('清空全部排行榜记录？','Clear all leaderboard records?')))return;
   boardClear();renderBoard(0);sfx.ui();
 });
-$('btnShot').addEventListener('click',()=>saveUrl(grabShot(),'echo-'+Date.now()+'.png'));
 /* 6.1 种子面板 */
 el.btnSeed.addEventListener('click',openSeed);
 $('sdGo').addEventListener('click',seedGo);
@@ -9873,6 +9870,7 @@ function bgmName(url){
 const BGM_SCENE={menu:['菜单','MENU'],cruise:['巡航','CRUISE'],combat:['战斗','COMBAT'],
   boss:['巨像','COLOSSUS'],evolve:['质变','EVOLVE'],endless:['无尽','ENDLESS'],end:['结算','RESULT']};
 let muRaf=0,muCur=null;
+let muParticles=[]; // Singularity orbital particles for music visualizer
 function muAnalyser(){
   const c=BGM.ctx();if(!c)return null;
   if(!BGM._an){
@@ -9932,6 +9930,151 @@ function muStop(){
   drawMusicList();
   muNow(T('未在播放','NOT PLAYING'));
 }
+
+/* 音乐奇点粒子系统：基于 Audio API 分析数据驱动 */
+function muSpawnParticles(an, w, h) {
+  const n = 32;
+  const buf = new Uint8Array(an.frequencyBinCount);
+  an.getByteFrequencyData(buf);
+  
+  // Extract frequency bands
+  const bass = buf.slice(0, 4).reduce((a, b) => a + b, 0) / 4; // Bass frequencies
+  const mid = buf.slice(4, 16).reduce((a, b) => a + b, 0) / 12; // Mid frequencies
+  const treble = buf.slice(16, 32).reduce((a, b) => a + b, 0) / 16; // High frequencies
+  
+  const centerX = w / 2;
+  const centerY = h / 2;
+  
+  // Create orbital particles based on audio data
+  const particleCount = 40 + Math.floor(bass / 3); // More particles when bass is loud
+  const orbitRadius = 40 + (mid / 255) * 80; // Orbits expand with mid frequencies
+  
+  for (let i = 0; i < particleCount; i++) {
+    const angle = (i / particleCount) * Math.PI * 2;
+    const spread = (Math.random() - 0.5) * 0.15;
+    const distance = orbitRadius + Math.random() * 60;
+    
+    // Color shifts from cyan (bass) to amber (treble)
+    let color;
+    if (treble > bass * 1.3) {
+      color = `rgb(${201 + (mid/5)}, ${162 + (mid/5)}, ${39})`; // Amber for highs
+    } else {
+      color = `rgb(${124 + (bass/5)}, ${178 + (mid/5)}, ${221 + (bass/5)})`; // Cyan for lows
+    }
+    
+    muParticles.push({
+      x: centerX + Math.cos(angle + spread) * distance,
+      y: centerY + Math.sin(angle + spread) * distance,
+      vx: 0,
+      vy: 0,
+      size: 2 + (Math.random() * 3),
+      color: color,
+      alpha: 0.3 + (mid / 255) * 0.5,
+      decay: 0.01,
+      life: 1.8 - (bass / 255) * 0.6, // Longer life when louder
+      maxLife: 1.8,
+      dead: false,
+      angle: angle,
+      angularVelocity: 0.8 + (mid / 255) * 3, // Faster rotation with more energy
+      radius: distance,
+      orbitCenterX: centerX,
+      orbitCenterY: centerY,
+      isMusicOrbit: true
+    });
+  }
+  
+  // Add occasional sparkles on high peaks
+  if (treble > 180 && Math.random() > 0.7) {
+    muParticles.push({
+      x: centerX + (Math.random() - 0.5) * 100,
+      y: centerY + (Math.random() - 0.5) * 100,
+      vx: (Math.random() - 0.5) * 100,
+      vy: (Math.random() - 0.5) * 100,
+      size: 4,
+      color: '#ffffff',
+      alpha: 1.0,
+      decay: 0.03,
+      life: 0.8,
+      maxLife: 0.8,
+      dead: false,
+      gravity: 80,
+      friction: 0.96
+    });
+  }
+}
+
+// Update and render music particles
+function muUpdateParticles(dt) {
+  for (let i = muParticles.length - 1; i >= 0; i--) {
+    const p = muParticles[i];
+    
+    // Orbital animation
+    if (p.isMusicOrbit && p.angularVelocity !== 0) {
+      p.angle += p.angularVelocity * dt;
+      p.x = p.orbitCenterX + Math.cos(p.angle) * p.radius;
+      p.y = p.orbitCenterY + Math.sin(p.angle) * p.radius;
+      
+      // Pulse radius based on bass frequency
+      const pulse = Math.sin(Date.now() * 0.003 * p.size) * 2;
+      p.x += pulse * Math.cos(p.angle);
+      p.y += pulse * Math.sin(p.angle);
+    } else {
+      // Normal physics for sparkles
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      
+      if (p.gravity !== 0) {
+        p.vy += p.gravity * dt;
+      }
+      
+      if (p.friction !== 1.0) {
+        p.vx *= p.friction;
+        p.vy *= p.friction;
+      }
+    }
+    
+    // Update life
+    p.life -= dt;
+    if (p.life <= 0) {
+      p.dead = true;
+    }
+    p.alpha = p.life / p.maxLife;
+  }
+  
+  // Remove dead particles
+  muParticles = muParticles.filter(p => !p.dead);
+}
+
+// Render music particles
+function muRenderParticles(ctx, dpr) {
+  ctx.save();
+  ctx.globalAlpha = 1.0;
+  
+  for (const p of muParticles) {
+    if (p.isMusicOrbit) {
+      // Draw orbital trails
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.size * 0.5 * dpr;
+      ctx.globalAlpha = p.alpha * 0.6;
+      
+      ctx.beginPath();
+      ctx.moveTo(p.orbitCenterX, p.orbitCenterY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      
+    } else {
+      // Draw sparkle particles
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * dpr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  ctx.restore();
+}
+
 /* 频谱：BGM 总线上分接一个 AnalyserNode，画 32 根柱状条。
    ⚠️ 只在面板可见时跑 rAF —— 关掉就停，别在后台白烧 CPU。 */
 function muTick(){
@@ -9949,15 +10092,15 @@ function muTick(){
     g.strokeStyle='rgba('+cy+',.22)';g.lineWidth=Math.max(1,dpr);
     g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();return;
   }
-  const n=32,buf=new Uint8Array(an.frequencyBinCount);
-  an.getByteFrequencyData(buf);
-  const bw=w/n;
-  for(let i=0;i<n;i++){
-    const v=buf[Math.floor(i*buf.length/n)]/255;
-    const bh=Math.max(dpr,v*h*0.94);
-    g.fillStyle='rgba('+(v>0.62?am:cy)+','+(0.30+v*0.6).toFixed(3)+')';
-    g.fillRect(i*bw+0.5,h-bh,bw-Math.max(1,dpr),bh);
-  }
+  
+  // Spawn new orbital particles
+  muSpawnParticles(an, w, h);
+  
+  // Update all particles
+  muUpdateParticles(1/60);
+  
+  // Render all particles
+  muRenderParticles(g, dpr);
 }
 function openMusic(){
   G.mode='music';
@@ -9980,7 +10123,6 @@ $('btnMenu').addEventListener('click',toMenu);
 $('btnEndless').addEventListener('click',continueEndless);
 $('btnMenuV').addEventListener('click',toMenu);
 $('btnResume').addEventListener('click',resumeGame);
-$('btnRestart').addEventListener('click',()=>startGame());
 $('btnQuit').addEventListener('click',()=>{saveRun();toMenu();});
 function renderDaily(){
   if(!el.menuDaily)return;
