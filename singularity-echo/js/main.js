@@ -1,0 +1,518 @@
+/**
+ * 奇点回响 · 主入口文件
+ * 
+ * 游戏启动流程：
+ * 1. 初始化音频上下文（用户交互触发）
+ * 2. 加载配置和存档
+ * 3. 初始化游戏循环
+ * 4. 进入菜单系统
+ * 
+ * @module main
+ */
+
+import { configLoader } from './config.js';
+import { GameState, GameLoop } from './game-loop.js';
+import { Player, HULL_CONFIGS } from './player.js';
+import { bulletsManager, BULLET_TYPES } from './bullets.js';
+import { EnemySpawner, ENEMY_TYPES, Enemy } from './enemy.js';
+import { audioManager, playSound, startMusic } from './audio.js';
+import { saveManager, loadGame, saveGame } from './save.js';
+import { hudSystem, menuSystem, cardSelector, achievements } from './ui.js';
+
+// ==================== 全局状态 ====================
+const Game = {
+  state: GameState.BOOT,
+  lastTime: 0,
+  accumulator: 0,
+  
+  // 游戏实体
+  player: null,
+  enemies: [],
+  particles: [],
+  
+  // 游戏数据
+  score: 0,
+  wave: 1,
+  level: 1,
+  difficulty: 'standard',
+  
+  // 计时器
+  startTime: 0,
+  timeRemaining: 0,
+  
+  // 波次管理
+  currentWave: null,
+  waveInProgress: false,
+  enemiesToSpawn: [],
+  spawnTimer: 0,
+  
+  // 难度系数
+  enemyScale: 1.0,
+  dropRate: 1.0
+};
+
+// ==================== 初始化 ====================
+
+async function init() {
+  console.log('[Init] Starting Singularity Echo...');
+  
+  try {
+    // 1. 初始化音频（需要用户交互）
+    await audioManager.init();
+    
+    // 2. 加载存档
+    await loadSaveData();
+    
+    // 3. 初始化游戏世界
+    initWorld();
+    
+    // 4. 创建游戏循环
+    createGameLoop();
+    
+    // 5. 显示主菜单
+    menuSystem.showMenu();
+    
+    Game.state = GameState.MENU;
+    console.log('[Init] Ready');
+    
+  } catch (err) {
+    console.error('[Init] Failed:', err);
+    showError(err.message);
+  }
+}
+
+function initWorld() {
+  // 重置游戏状态
+  Game.score = 0;
+  Game.wave = 1;
+  Game.enemies = [];
+  Game.particles = [];
+  Game.enemiesToSpawn = [];
+  Game.waveInProgress = false;
+  
+  // 创建玩家
+  const hullConfig = configLoader.getHullConfig('peregrine');
+  Game.player = new Player({
+    x: canvas.width / 2,
+    y: canvas.height - 100,
+    hullType: 'peregrine',
+    stats: hullConfig.baseStats
+  });
+  
+  // 初始化 HUD
+  hudSystem.init(Game.player);
+}
+
+function createGameLoop() {
+  // 游戏循环使用 requestAnimationFrame
+  function loop(timestamp) {
+    if (Game.state === GameState.BOOT || Game.state === GameState.PAUSED) {
+      requestAnimationFrame(loop);
+      return;
+    }
+    
+    const dt = Math.min((timestamp - Game.lastTime) / 1000, 0.1);
+    Game.lastTime = timestamp;
+    
+    update(dt);
+    render();
+    
+    requestAnimationFrame(loop);
+  }
+  
+  requestAnimationFrame(loop);
+}
+
+// ==================== 更新逻辑 ====================
+
+function update(dt) {
+  switch (Game.state) {
+    case GameState.PLAYING:
+      updatePlaying(dt);
+      break;
+      
+    case GameState.OVER:
+    case GameState.VICTORY:
+      updateEndScreen(dt);
+      break;
+      
+    default:
+      break;
+  }
+}
+
+function updatePlaying(dt) {
+  // 更新玩家
+  Game.player.update(dt, Game.state);
+  
+  // 更新敌人
+  for (let i = Game.enemies.length - 1; i >= 0; i--) {
+    const enemy = Game.enemies[i];
+    enemy.update(dt, Game.state);
+    
+    if (enemy.dead) {
+      handleEnemyDeath(enemy, i);
+    }
+  }
+  
+  // 更新子弹
+  bulletsManager.update(dt, Game.state);
+  
+  // 检查波次完成
+  checkWaveProgress();
+  
+  // 自动保存
+  if (Date.now() - Game.lastAutoSave > 30000) {
+    autoSave();
+  }
+}
+
+function checkWaveProgress() {
+  if (!Game.waveInProgress) return;
+  
+  // 如果所有敌人都被消灭
+  if (Game.enemies.filter(e => !e.dead).length === 0) {
+    completeWave();
+  }
+}
+
+function completeWave() {
+  Game.waveInProgress = false;
+  
+  // 播放胜利音效
+  playSound('powerup');
+  
+  // 显示波次完成提示
+  hudSystem.showWaveClear(Game.wave);
+  
+  // 生成奖励卡牌
+  setTimeout(() => {
+    if (Game.player.level >= 3) {
+      cardSelector.showLevelUpCards();
+    }
+  }, 1000);
+}
+
+// ==================== 渲染逻辑 ====================
+
+function render() {
+  const ctx = canvas.getContext('2d');
+  
+  // 清空画布
+  ctx.fillStyle = '#0e1520';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // 绘制星空背景
+  drawStarfield(ctx);
+  
+  if (Game.state === GameState.PLAYING) {
+    // 绘制游戏实体
+    drawGameEntities(ctx);
+    
+    // 绘制 HUD
+    hudSystem.render(ctx, Game);
+  } else if (Game.state === GameState.OVER || Game.state === GameState.VICTORY) {
+    // 结束屏幕
+    renderEndScreen(ctx);
+  }
+}
+
+function drawGameEntities(ctx) {
+  // 绘制子弹（按 Z 索引排序）
+  const allBullets = [
+    ...bulletsManager.bullets.map(b => ({ ...b, type: 'bullet' }))
+  ];
+  allBullets.sort((a, b) => a.zIndex - b.zIndex);
+  
+  for (const bullet of allBullets) {
+    bullet.draw(ctx);
+  }
+  
+  // 绘制敌人
+  for (const enemy of Game.enemies) {
+    if (!enemy.dead) {
+      enemy.draw(ctx);
+    }
+  }
+  
+  // 绘制玩家
+  if (Game.player && !Game.player.dead) {
+    Game.player.draw(ctx);
+  }
+  
+  // TODO: 绘制粒子效果
+}
+
+function drawStarfield(ctx) {
+  // 简单星场效果（可从配置文件读取）
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#ffffff';
+  
+  // 固定位置的星星
+  const stars = starfieldStars || [];
+  for (const star of stars) {
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+// ==================== 事件处理 ====================
+
+function handleEnemyDeath(enemy, index) {
+  // 移除敌人
+  Game.enemies.splice(index, 1);
+  
+  // 给予分数
+  Game.score += enemy.scoreValue;
+  
+  // 统计击杀
+  Game.player.kills++;
+  
+  // 播放爆炸音效
+  playSound('explosion', { x: enemy.x, y: enemy.y });
+  
+  // 检查 Boss 死亡
+  if (enemy.type === 'boss') {
+    handleBossDefeat();
+  }
+  
+  // 掉落道具
+  maybeDropPowerup(enemy.x, enemy.y);
+}
+
+function handleBossDefeat() {
+  // Boss 战胜利处理
+  Game.waveInProgress = false;
+  playSound('powerup');
+  
+  // 解锁新船体？
+  if (Game.wave === 15) {
+    achievements.unlockAchievement('defeat_first_boss');
+  }
+}
+
+function maybeDropPowerup(x, y) {
+  // 小概率掉落
+  if (Math.random() < 0.1 * Game.dropRate) {
+    // 生成掉落物
+    const powerups = ['health', 'shield', 'fire_rate', 'homing'];
+    const type = powerups[Math.floor(Math.random() * powerups.length)];
+    
+    // TODO: 添加掉落物到游戏世界
+    console.log(`Dropped: ${type}`);
+  }
+}
+
+// ==================== 波次生成 ====================
+
+function startWave(waveNum) {
+  Game.wave = waveNum;
+  Game.waveInProgress = true;
+  Game.enemiesToSpawn = EnemySpawner.generateWave(waveNum, Game.difficulty);
+  Game.spawnTimer = 0;
+  
+  hudSystem.showWaveStart(waveNum);
+  playSound('boss_enter');
+}
+
+function spawnNextEnemy() {
+  if (Game.enemiesToSpawn.length === 0) return;
+  
+  const enemyTemplate = Game.enemiesToSpawn.shift();
+  const enemy = new Enemy({
+    ...enemyTemplate,
+    x: rand(50, canvas.width - 50),
+    y: rand(50, 200)
+  });
+  
+  Game.enemies.push(enemy);
+}
+
+// ==================== 输入处理 ====================
+
+function handleInput(action) {
+  switch (action) {
+    case 'move':
+      // 由输入管理器处理
+      break;
+      
+    case 'fire':
+      if (Game.state === GameState.PLAYING && Game.player) {
+        fireWeapon();
+      }
+      break;
+      
+    case 'dash':
+      if (Game.state === GameState.PLAYING && Game.player) {
+        Game.player.dash();
+      }
+      break;
+      
+    case 'pause':
+      togglePause();
+      break;
+      
+    case 'restart':
+      restartGame();
+      break;
+      
+    case 'menu':
+      showMainMenu();
+      break;
+  }
+}
+
+function fireWeapon() {
+  if (!Game.player?.canAttack) return;
+  
+  // 根据当前武器类型射击
+  const weapon = Game.player.activeWeapons[0] || 'pulse_cannon';
+  const shot = bulletsManager.spawnPlayerBullet({
+    x: Game.player.x,
+    y: Game.player.y - 20,
+    angle: -Math.PI / 2,
+    weapon: weapon
+  });
+  
+  if (shot) {
+    playSound('shoot', { x: Game.player.x, y: Game.player.y });
+  }
+}
+
+// ==================== 游戏控制 ====================
+
+function togglePause() {
+  if (Game.state === GameState.PLAYING) {
+    Game.state = GameState.PAUSED;
+    menuSystem.showPause();
+  } else if (Game.state === GameState.PAUSED) {
+    Game.state = GameState.PLAYING;
+    menuSystem.hidePause();
+  }
+}
+
+function restartGame() {
+  Game.state = GameState.BOOT;
+  initWorld();
+  Game.state = GameState.PLAYING;
+}
+
+function showMainMenu() {
+  Game.state = GameState.MENU;
+  menuSystem.showMenu();
+}
+
+function gameOver(reason) {
+  Game.state = GameState.OVER;
+  
+  // 保存最终成绩
+  saveFinalScore();
+  
+  // 显示结算界面
+  hudSystem.showGameOver(Game.score, reason);
+}
+
+function gameVictory() {
+  Game.state = GameState.VICTORY;
+  
+  // 保存最终成绩
+  saveFinalScore();
+  
+  // 显示胜利界面
+  hudSystem.showVictory(Game.score);
+}
+
+// ==================== 存档相关 ====================
+
+async function loadSaveData() {
+  const saved = loadGame();
+  
+  if (saved) {
+    Game.difficulty = saved.settings?.difficulty || 'standard';
+    Game.player?.loadFromSave(saved.profile);
+    console.log('[Save] Loaded:', saved);
+  } else {
+    console.log('[Save] No save data found');
+  }
+}
+
+function autoSave() {
+  if (!Game.player) return;
+  
+  saveGame(
+    Game.player.getProfileData(),
+    getGameData(),
+    getConfigData()
+  );
+  
+  Game.lastAutoSave = Date.now();
+}
+
+function saveFinalScore() {
+  if (!Game.player) return;
+  
+  const finalData = {
+    profile: Game.player.getProfileData(),
+    game: getGameData(),
+    settings: getConfigData(),
+    finalScore: Game.score,
+    completionTime: formatTime(Date.now() - Game.startTime)
+  };
+  
+  saveGame(finalData.profile, finalData.game, finalData.settings);
+  console.log('[Save] Final score saved:', finalData);
+}
+
+function getGameData() {
+  return {
+    wave: Game.wave,
+    score: Game.score,
+    kills: Game.player?.kills || 0,
+    level: Game.player?.level || 1
+  };
+}
+
+function getConfigData() {
+  return {
+    difficulty: Game.difficulty,
+    audioVolume: audioManager.volume,
+    audioMuted: audioManager.muted
+  };
+}
+
+// ==================== 辅助函数 ====================
+
+function formatTime(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function showError(message) {
+  console.error('[Error]', message);
+  // TODO: 显示错误 UI
+}
+
+// ==================== 导出 API ====================
+
+export {
+  init,
+  handleInput,
+  startWave,
+  spawnNextEnemy,
+  Game
+};
+
+// ==================== 启动 ====================
+
+// 等待 DOM 加载
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
