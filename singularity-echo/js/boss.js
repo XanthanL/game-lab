@@ -5,11 +5,24 @@
  * - Pre-fight warning sequence with countdown
  * - Attack pattern telegraphs (visual/audio cues)
  * - Phase transition effects
+ * - AI movement and combat behavior
  * 
  * @module boss
  */
 
 'use strict';
+
+// Import needed modules
+import { bulletsManager, BULLET_TYPES } from './bullets.js';
+import { particlesManager } from './particles.js';
+import { playSound } from './audio.js';
+import { notificationSystem } from './ui.js';
+
+// Helper for global functions
+function getGlobal(name) {
+  if (typeof window !== 'undefined') return window[name];
+  return null;
+}
 
 /**
  * Boss attack patterns with telegraph duration
@@ -42,6 +55,15 @@ export const BOSS_ATTACKS = {
 };
 
 /**
+ * Boss movement patterns
+ */
+const BOSS_MOVEMENT = {
+  hover: { speed: 60, amplitude: 100, frequency: 0.002 },
+  sineWave: { speed: 40, amplitude: 150, frequency: 0.003 },
+  orbit: { speed: 30, radius: 200, frequency: 0.001 }
+};
+
+/**
  * Boss encounter manager
  */
 class BossSystem {
@@ -50,6 +72,9 @@ class BossSystem {
     this.warningSequence = false;
     this.telegraphActive = false;
     this.phase = 1;
+    
+    // Boss movement tracking
+    this.bossMovement = null;
     
     console.log('[BossSystem] Initialized');
   }
@@ -280,6 +305,66 @@ class BossSystem {
    */
   isWarningActive() {
     return this.warningSequence;
+  }
+  
+  /**
+   * Update boss AI behavior (called each frame)
+   * @param {Enemy} boss - Boss entity
+   * @param {number} dt - Delta time
+   */
+  updateBossAI(boss, dt) {
+    if (!this.activeBoss || boss.dead) return;
+    
+    // Simple AI: hover and move towards player periodically
+    const player = Game?.player;
+    if (!player || player.dead) return;
+    
+    // Move toward player if too far
+    const dx = player.x - boss.x;
+    const dy = player.y - boss.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > 300) {
+      boss.vx += (dx / distance) * BOSS_MOVEMENT.hover.speed * dt * 60;
+      boss.vy += (dy / distance) * BOSS_MOVEMENT.hover.speed * dt * 60;
+    } else if (distance < 150) {
+      // Back away if too close
+      boss.vx -= (dx / distance) * BOSS_MOVEMENT.hover.speed * dt * 60;
+      boss.vy -= (dy / distance) * BOSS_MOVEMENT.hover.speed * dt * 60;
+    }
+    
+    // Hover pattern (up/down oscillation)
+    if (this.bossMovement) {
+      const now = Date.now();
+      boss.x += Math.sin(now * this.bossMovement.frequency) * this.bossMovement.amplitude * dt;
+      boss.y += Math.cos(now * this.bossMovement.frequency) * this.bossMovement.amplitude * dt * 0.5;
+    }
+    
+    // Clamp to canvas bounds
+    boss.x = Math.max(50, Math.min(canvas.width - 50, boss.x));
+    boss.y = Math.max(100, Math.min(canvas.height - 100, boss.y));
+    
+    // Attack cooldown
+    if (!this.lastAttackTime) this.lastAttackTime = 0;
+    this.lastAttackTime += dt;
+    
+    // Trigger attack every 3-5 seconds
+    if (this.lastAttackTime > 3.0 + Math.random() * 2.0 && !this.telegraphActive) {
+      this.triggerRandomAttack();
+      this.lastAttackTime = 0;
+    }
+  }
+  
+  /**
+   * Trigger a random telegraphed attack
+   */
+  triggerRandomAttack() {
+    const attacks = Object.keys(BOSS_ATTACKS);
+    const selected = attacks[Math.floor(Math.random() * attacks.length)];
+    
+    if (Game.player && !Game.player.dead) {
+      this.telegraphAttack(selected, Game.player.x, Game.player.y);
+    }
   }
 }
 
