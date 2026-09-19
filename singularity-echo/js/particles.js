@@ -69,11 +69,66 @@ class Particle {
     ctx.save();
     ctx.globalAlpha = this.alpha;
     
-    // Render particle circle
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
+    // Render special particle types
+    if (this.isCrosshair) {
+      // Crosshair indicators (target markers)
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 2;
+      
+      const size = 8;
+      // Top
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y - size);
+      ctx.lineTo(this.x, this.y - size * 2);
+      ctx.stroke();
+      // Bottom
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y + size);
+      ctx.lineTo(this.x, this.y + size * 2);
+      ctx.stroke();
+      // Left
+      ctx.beginPath();
+      ctx.moveTo(this.x - size, this.y);
+      ctx.lineTo(this.x - size * 2, this.y);
+      ctx.stroke();
+      // Right
+      ctx.beginPath();
+      ctx.moveTo(this.x + size, this.y);
+      ctx.lineTo(this.x + size * 2, this.y);
+      ctx.stroke();
+      
+    } else if (this.isRing || this.isSpiral) {
+      // Ring or spiral pattern particles
+      const radius = this.size;
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = this.lineWidth || 2;
+      ctx.setLineDash(this.dashPattern || []);
+      
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+    } else if (this.isGlow) {
+      // Glow effect for flashes
+      const gradient = ctx.createRadialGradient(
+        this.x, this.y, 0,
+        this.x, this.y, this.size * 2
+      );
+      gradient.addColorStop(0, this.color);
+      gradient.addColorStop(1, 'transparent');
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+    } else {
+      // Standard particle circle
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
     
     // Render text if present
     if (this.text && typeof this.text === 'string') {
@@ -101,6 +156,154 @@ class Particle {
 // ==================== 特效类型工厂 ====================
 
 const ParticleEffects = {
+  /**
+   * Create warning marker (target circle or attack indicator)
+   */
+  warningMarker(x, y, type = 'target_circle') {
+    const particles = [];
+    
+    if (type === 'target_circle') {
+      // Animated expanding ring for targeting
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        particles.push(new Particle({
+          x, y,
+          vx: 0,
+          vy: 0,
+          size: 3,
+          color: '#ff6060',
+          alpha: 0.7,
+          decay: 0.015,
+          life: 1.5,
+          floatUp: true,
+          rotation: angle
+        }));
+      }
+      
+      // Add expanding dashed ring as particle
+      const ringParticle = new Particle({
+        x, y,
+        vx: 0,
+        vy: 0,
+        size: 20,
+        color: '#ff4444',
+        alpha: 0.8,
+        decay: 0.008,
+        life: 2.0,
+        lineWidth: 3,
+        isRing: true,
+        dashPattern: [10, 5],
+        rotationOffset: 0
+      });
+      particles.push(ringParticle);
+      
+    } else if (type === 'spiral_pattern') {
+      // Spiral attack preview - multiple rings
+      for (let spiral = 0; spiral < 3; spiral++) {
+        for (let i = 0; i < 16; i++) {
+          const angle = (i / 16) * Math.PI * 2 + spiral * Math.PI / 2;
+          const radius = spiral * 40 + 20;
+          particles.push(new Particle({
+            x: x + Math.cos(angle) * radius,
+            y: y + Math.sin(angle) * radius,
+            vx: 0,
+            vy: 0,
+            size: 2,
+            color: '#aa88ff',
+            alpha: 0.6,
+            decay: 0.01,
+            life: 2.0,
+            lineWidth: 2,
+            isRing: true,
+            isSpiral: true
+          }));
+        }
+      }
+    } else if (type === 'rapid_fire') {
+      // Rapid fire pattern - crosshairs
+      const size = 30;
+      particles.push(new Particle({
+        x: x - size, y,
+        vx: 0, vy: 0,
+        size: 4, color: '#ff4444', alpha: 0.8,
+        decay: 0.01, life: 1.5, isCrosshair: true
+      }));
+      particles.push(new Particle({
+        x: x + size, y,
+        vx: 0, vy: 0,
+        size: 4, color: '#ff4444', alpha: 0.8,
+        decay: 0.01, life: 1.5, isCrosshair: true
+      }));
+      particles.push(new Particle({
+        x, y: y - size,
+        vx: 0, vy: 0,
+        size: 4, color: '#ff4444', alpha: 0.8,
+        decay: 0.01, life: 1.5, isCrosshair: true
+      }));
+      particles.push(new Particle({
+        x, y: y + size,
+        vx: 0, vy: 0,
+        size: 4, color: '#ff4444', alpha: 0.8,
+        decay: 0.01, life: 1.5, isCrosshair: true
+      }));
+      
+    } else if (type === 'spread_attack') {
+      // Spread attack - arc indicators
+      for (let arc = 0; arc < 3; arc++) {
+        const angle = (arc / 3) * Math.PI * 2 - Math.PI / 2;
+        for (let i = 0; i < 8; i++) {
+          const spreadAngle = angle + (i / 8) * Math.PI * 0.5;
+          particles.push(new Particle({
+            x: x + Math.cos(spreadAngle) * 50,
+            y: y + Math.sin(spreadAngle) * 50,
+            vx: Math.cos(spreadAngle) * 30,
+            vy: Math.sin(spreadAngle) * 30,
+            size: 3,
+            color: '#ffaa44',
+            alpha: 0.7,
+            decay: 0.012,
+            life: 1.8
+          }));
+        }
+      }
+    }
+    
+    return particles;
+  },
+  
+  /**
+   * Create phase flash effect (boss transition)
+   */
+  phaseFlash(x, y, count = 30, color = '#ffd54a') {
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle({
+        x, y,
+        vx: (Math.random() - 0.5) * 200,
+        vy: (Math.random() - 0.5) * 200,
+        size: Math.random() * 5 + 3,
+        color: color,
+        alpha: 0.9,
+        decay: 0.02,
+        life: 0.8
+      }));
+    }
+    
+    // Add bright central flash
+    particles.push(new Particle({
+      x, y,
+      vx: 0, vy: 0,
+      size: 20,
+      color: '#ffffff',
+      alpha: 1.0,
+      decay: 0.05,
+      life: 0.4,
+      isGlow: true
+    }));
+    
+    return particles;
+  },
+  
   /**
    * Create explosion effect
    */
