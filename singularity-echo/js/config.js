@@ -267,6 +267,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 100,
       maxHp: 100,
+      damage: 10,
       fireRate: 1.0,
       maxSpeed: 4.0,
       shieldMax: 50,
@@ -287,6 +288,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 120,
       maxHp: 120,
+      damage: 12,
       fireRate: 0.9,
       maxSpeed: 3.5,
       shieldMax: 60,
@@ -307,6 +309,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 180,
       maxHp: 180,
+      damage: 6,
       fireRate: 0.7,
       maxSpeed: 2.5,
       shieldMax: 120,
@@ -327,6 +330,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 90,
       maxHp: 90,
+      damage: 14,
       fireRate: 1.3,
       maxSpeed: 4.5,
       shieldMax: 40,
@@ -347,6 +351,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 110,
       maxHp: 110,
+      damage: 11,
       fireRate: 1.5,
       maxSpeed: 3.0,
       shieldMax: 50,
@@ -367,6 +372,7 @@ export const HULL_CONFIGS = {
     baseStats: {
       hp: 200,
       maxHp: 200,
+      damage: 20,
       fireRate: 1.2,
       maxSpeed: 5.0,
       shieldMax: 100,

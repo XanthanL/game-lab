@@ -14,6 +14,7 @@ import { configLoader } from './config.js';
 import { RGBA } from './tokens.js';
 import { particlesManager } from './particles.js';
 import { playSound } from './audio.js';
+import { PowerUpSpawner } from './power-ups.js';
 
 // ============================================
 // Weapon Types
@@ -58,6 +59,7 @@ class Player extends BaseEntity {
     const stats = hullConfig.baseStats;
     this.hp = stats.hp;
     this.maxHp = stats.maxHp;
+    this.damage = stats.damage || 10; // Add damage stat
     this.shield = 0;
     this.shieldMax = stats.shieldMax;
     this.regen = stats.regen;
@@ -161,6 +163,9 @@ class Player extends BaseEntity {
     if (this.input.fire && this.weapons.active.length > 0) {
       this.fireWeapons(dt);
     }
+    
+    // Check power-up pickups
+    PowerUpSpawner.checkCollisions(this);
   }
   
   /**
@@ -501,6 +506,217 @@ class Player extends BaseEntity {
   getUpgradePoints() {
     // Usually comes from XP/system
     return 0;
+  }
+  
+  // ========== Upgrade System Extensions ==========
+  
+  /**
+   * Initialize upgrade system properties
+   */
+  initUpgradeSystem() {
+    this.upgrades = [];         // Array of applied upgrade IDs
+    this.level = 1;
+    this.xp = 0;
+    this.xpForNextLevel = 100;
+  }
+  
+  /**
+   * Add XP and check for level up
+   * @param {number} amount - XP to add
+   */
+  addXp(amount) {
+    this.xp += amount;
+    
+    if (this.xp >= this.xpForNextLevel) {
+      this.xp -= this.xpForNextLevel;
+      this.level++;
+      this.xpForNextLevel = Math.floor(this.xpForNextLevel * 1.2);
+      
+      console.log(`[Player] Level Up! Now at level ${this.level}`);
+      
+      // Trigger sound
+      playSound('level_up');
+      
+      return true; // Level up occurred
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Check if player has a specific upgrade
+   * @param {string} upgradeId - Upgrade ID
+   * @returns {boolean}
+   */
+  hasUpgrade(upgradeId) {
+    return this.upgrades.includes(upgradeId);
+  }
+  
+  /**
+   * Apply an upgrade to the player
+   * @param {Object} upgrade - Upgrade configuration
+   */
+  addUpgrade(upgrade) {
+    if (!upgrade || !upgrade.id) {
+      console.error('[Player] Invalid upgrade:', upgrade);
+      return;
+    }
+    
+    // Prevent duplicate upgrades
+    if (this.hasUpgrade(upgrade.id)) {
+      console.warn(`[Player] Already has upgrade: ${upgrade.id}`);
+      return;
+    }
+    
+    // Record the upgrade
+    this.upgrades.push(upgrade.id);
+    
+    // Apply the effect
+    this.applyUpgrade(upgrade);
+    
+    console.log(`[Player] Applied upgrade: ${upgrade.id}`);
+  }
+  
+  /**
+   * Apply the effects of an upgrade
+   * @param {Object} upgrade - Upgrade data
+   */
+  applyUpgrade(upgrade) {
+    if (!upgrade.type) {
+      console.warn('[Player] Upgrade missing type:', upgrade);
+      return;
+    }
+    
+    switch (upgrade.type) {
+      case 'stat_mod':
+        // Stat multiplier (+10% Damage, etc.)
+        if (upgrade.stat === 'damage') {
+          const oldDmg = this.damage;
+          this.damage *= (1 + upgrade.value);
+          console.log(`[Stat Mod] Damage: ${oldDmg.toFixed(2)} → ${this.damage.toFixed(2)}`);
+        } else if (upgrade.stat === 'fireRate') {
+          const oldFR = this.fireRate;
+          this.fireRate *= (1 + upgrade.value);
+          console.log(`[Stat Mod] Fire Rate: ${oldFR.toFixed(3)} → ${this.fireRate.toFixed(3)}`);
+        } else if (upgrade.stat === 'maxHp') {
+          const oldHp = this.maxHp;
+          this.maxHp += upgrade.value;
+          this.hp += upgrade.value; // Also heal
+          console.log(`[Stat Mod] Max HP: ${oldHp} → ${this.maxHp}`);
+        } else if (upgrade.stat === 'shieldMax') {
+          const oldShield = this.shieldMax;
+          this.shieldMax = Math.floor(this.shieldMax * (1 + upgrade.value));
+          console.log(`[Stat Mod] Shield Max: ${oldShield} → ${this.shieldMax}`);
+        } else if (upgrade.stat === 'magnet') {
+          const oldMag = this.magnet;
+          this.magnet += upgrade.value;
+          console.log(`[Stat Mod] Magnet: ${oldMag} → ${this.magnet}`);
+        }
+        break;
+        
+      case 'stat_add':
+        // Fixed stat addition (+25 HP, etc.)
+        if (upgrade.stat === 'maxHp') {
+          this.maxHp += upgrade.value;
+          this.hp += upgrade.value;
+        }
+        break;
+        
+      case 'weapon_unlock':
+        // Unlock a new weapon
+        if (upgrade.weaponId && !this.weapons.primary.includes(upgrade.weaponId)) {
+          this.weapons.primary.push(upgrade.weaponId);
+          console.log(`[Weapon Unlocked] ${upgrade.weaponId}`);
+        }
+        break;
+        
+      case 'ability':
+        // Unlock special ability (homing missiles, etc.)
+        this.specialAbilities = this.specialAbilities || {};
+        this.specialAbilities[upgrade.abilityId] = true;
+        console.log(`[Ability Unlocked] ${upgrade.abilityId}`);
+        break;
+        
+      case 'passive':
+        // Passive triggers on conditions
+        this.passives = this.passives || {};
+        this.passives[upgrade.id] = {
+          trigger: upgrade.trigger,
+          threshold: upgrade.threshold,
+          active: false
+        };
+        console.log(`[Passive Activated] ${upgrade.id}`, this.passives[upgrade.id]);
+        
+        // Check immediate trigger condition
+        if (upgrade.trigger === 'low_health' && this.hp < this.maxHp * upgrade.threshold) {
+          this.activatePassive(upgrade.id);
+        }
+        break;
+        
+      default:
+        console.warn('[Player] Unknown upgrade type:', upgrade.type);
+    }
+  }
+  
+  /**
+   * Activate a passive ability
+   * @param {string} passiveId - Passive upgrade ID
+   */
+  activatePassive(passiveId) {
+    const passive = this.passives?.[passiveId];
+    if (!passive) return;
+    
+    console.log(`[Passive] Activating: ${passiveId}`);
+    
+    switch (passiveId) {
+      case 'slow_motion':
+        // Slow down time by 30% when health is low
+        Game.timeScale = 0.7;
+        setTimeout(() => { Game.timeScale = 1.0; }, 5000);
+        break;
+    }
+    
+    // Mark as activated (one-time use)
+    passive.active = true;
+  }
+  
+  /**
+   * Calculate synergy bonuses between equipped modules
+   * @returns {Object} Synergy bonuses
+   */
+  calculateSynergies() {
+    if (!this.weapons.primary.length < 2) {
+      return {};
+    }
+    
+    const synergies = {
+      damageBonus: 0,
+      fireRateBonus: 0,
+      specialEffects: []
+    };
+    
+    const weapons = [...this.weapons.primary];
+    
+    // Check for known synergies
+    const synergyPairs = [
+      ['pulse_cannon', 'homing', { damageBonus: 0.15, desc: 'Homing pulses' }],
+      ['blaster', 'explosive', { damageBonus: 0.20, desc: 'Explosive blasts' }],
+      ['laser', 'rapid_fire', { fireRateBonus: 0.30, desc: 'Rapid lasers' }],
+      ['mine_layer', 'chain_lightning', { specialEffects: ['chain'] }]
+    ];
+    
+    synergyPairs.forEach(([w1, w2, bonus]) => {
+      if (weapons.includes(w1) && weapons.includes(w2)) {
+        synergies.damageBonus += bonus.damageBonus || 0;
+        synergies.fireRateBonus += bonus.fireRateBonus || 0;
+        if (bonus.specialEffects) {
+          synergies.specialEffects.push(...bonus.specialEffects);
+        }
+        console.log(`[Synergy] Activated: ${w1} + ${w2} ->`, bonus);
+      }
+    });
+    
+    return synergies;
   }
 }
 

@@ -347,12 +347,54 @@ export class NotificationSystem {
 // Card Selection System
 // ============================================
 
+import { CardGenerator, UPGRADE_DATABASE } from './upgrades.js';
+
 export class CardSelector {
   constructor() {
     this.cardRow = $('#cardrow');
     this.selectedCard = null;
+    this.onChoiceCallback = null;
     
     console.log('[CardSelector] Initialized');
+  }
+  
+  /**
+   * Show level-up card selection
+   * Called when wave is completed and player reaches level threshold
+   */
+  showLevelUpCards() {
+    if (!Game.player) {
+      console.warn('[CardSelector] No player available');
+      return;
+    }
+    
+    // Generate 3 random upgrade cards
+    const cards = CardGenerator.generateCards(Game.player.level, Game.player.upgrades || []);
+    
+    if (cards.length === 0) {
+      console.warn('[CardSelector] No cards generated');
+      return;
+    }
+    
+    // Store choices globally for input handling
+    window.G = window.G || {};
+    window.G.choices = cards;
+    window.G.rerolled = false;
+    
+    // Render the cards
+    this.render(cards, (selected) => {
+      this.onChoiceCallback = null; // Reset callback
+      this.hide();
+      this.confirmSelection(selected);
+    });
+    
+    // Show the overlay
+    const cardsOverlay = $('#cards');
+    if (cardsOverlay) {
+      cardsOverlay.hidden = false;
+    }
+    
+    console.log('[CardSelector] Showing', cards.length, 'upgrade options');
   }
   
   /**
@@ -367,12 +409,16 @@ export class CardSelector {
     }
     
     this.cardRow.innerHTML = '';
+    this.onChoiceCallback = onSelect;
     
     cards.forEach((card, index) => {
-      const cardEl = this.createCardElement(card, index);
+      const cardEl = this.createUpgradeCard(card, index);
+      
+      // Click handler
       cardEl.addEventListener('click', () => {
         onSelect(card);
       });
+      
       this.cardRow.appendChild(cardEl);
     });
     
@@ -384,44 +430,122 @@ export class CardSelector {
   }
   
   /**
-   * Create card element from data
-   * @param {Object} card - Card configuration
+   * Create upgrade card element from data
+   * @param {Object} card - Upgrade card configuration
    * @param {number} index - Card index
    * @returns {HTMLElement} Card DOM element
    */
-  createCardElement(card, index) {
+  createUpgradeCard(card, index) {
     const cardEl = document.createElement('div');
-    cardEl.className = 'card r-' + (card.rarity || 'common');
+    
+    // Rarity-based styling
+    const rarityColors = {
+      common: '#b8c6d9',    // Gray-white
+      uncommon: '#56b4e9',  // Cyan
+      rare: '#78b2dd',      // Blue
+      epic: '#a855f7',      // Purple
+      legendary: '#f59e0b'  // Amber-gold
+    };
+    
+    const rarity = card.rarity || 'common';
+    cardEl.className = `card r-${rarity}`;
     cardEl.dataset.cardIndex = index;
+    cardEl.style.borderColor = rarityColors[rarity] || rarityColors.common;
     
-    const module = card.module;
+    const upgrade = card.upgrade;
     
-    // Card header with symbol and type
+    // Card structure
     cardEl.innerHTML = `
-      <span class="g">${module.symbol || '?'}</span>
-      <h3>${module.name.zh || module.name.en || '?'}</h3>
-      ${module.name.en ? `<span class="en">${module.name.en}</span>` : ''}
-      <p>${module.description.zh || module.description.en || ''}</p>
-      <div class="rd">
-        <span>${module.statMods.fireRate ? (module.statMods.fireRate > 0 ? '+' : '') + (module.statMods.fireRate * 100).toFixed(0) + '% Fire Rate' : ''}</span>
+      <div class="header">
+        <span class="g" style="color:${rarityColors[rarity]}">${this.getIconByType(upgrade.type)}</span>
+        <h3>${upgrade.name}</h3>
+        <span class="en">${upgrade.tier}</span>
       </div>
-      ${module.synonyms && module.synonyms.length > 0 ? `
-        <div class="syn live">
-          <div class="synrow"><b>${module.synonyms[0]}</b></div>
-        </div>
-      ` : ''}
+      <p class="desc">${upgrade.description}</p>
+      <div class="synergy" style="display:none">
+        <b>Synergies:</b>
+        <div class="synrow"></div>
+      </div>
+      <div class="rd" style="margin-top:auto;padding-top:12px;font-size:var(--fs-2)">
+        ${this.getReadouts(upgrade)}
+      </div>
     `;
     
     return cardEl;
   }
   
   /**
-   * Clear all cards
+   * Get icon based on upgrade type
+   * @param {string} type - Upgrade type
+   * @returns {string} Icon character
    */
-  clear() {
+  getIconByType(type) {
+    const icons = {
+      'stat_mod': '+',
+      'stat_add': '↑',
+      'weapon_unlock': '⚔',
+      'ability': '★',
+      'passive': '♾'
+    };
+    return icons[type] || '?';
+  }
+  
+  /**
+   * Get readout text for card
+   * @param {Object} upgrade - Upgrade configuration
+   * @returns {string} Readout HTML
+   */
+  getReadouts(upgrade) {
+    const parts = [];
+    
+    if (upgrade.statMod) {
+      parts.push(`${upgrade.statMod}% ${upgrade.statName}`);
+    }
+    if (upgrade.valueAdded) {
+      parts.push(`+${upgrade.valueAdded} ${upgrade.statName}`);
+    }
+    
+    return parts.join(' · ');
+  }
+  
+  /**
+   * Confirm the selected upgrade
+   * @param {Object} upgrade - Selected upgrade data
+   */
+  confirmSelection(upgrade) {
+    if (!upgrade) return;
+    
+    console.log('[CardSelector] Player chose:', upgrade.id);
+    
+    // Apply the upgrade to the player
+    if (Game.player) {
+      Game.player.addUpgrade(upgrade);
+    }
+    
+    // Play sound effect
+    playSound('level_up');
+    
+    // Refresh HUD
+    hudSystem.updateLevel(Game.player.level);
+    
+    // Log what was added
+    console.log('[Upgrade Applied]', upgrade);
+  }
+  
+  /**
+   * Hide the card selection overlay
+   */
+  hide() {
+    const cardsOverlay = $('#cards');
+    if (cardsOverlay) {
+      cardsOverlay.hidden = true;
+    }
+    
     if (this.cardRow) {
       this.cardRow.innerHTML = '';
     }
+    
+    this.selectedCard = null;
   }
 }
 

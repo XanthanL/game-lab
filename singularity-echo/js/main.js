@@ -18,6 +18,9 @@ import { EnemySpawner, ENEMY_TYPES, Enemy } from './enemy.js';
 import { audioManager, playSound, startMusic } from './audio.js';
 import { saveManager, loadGame, saveGame } from './save.js';
 import { hudSystem, menuSystem, cardSelector, achievements } from './ui.js';
+import { particlesManager } from './particles.js';
+import { PowerUpSpawner } from './power-ups.js';
+import { CardGenerator } from './upgrades.js';
 
 // ==================== 全局状态 ====================
 const Game = {
@@ -82,7 +85,7 @@ async function init() {
 }
 
 function initWorld() {
-  // 重置游戏状态
+  // Reset game state
   Game.score = 0;
   Game.wave = 1;
   Game.enemies = [];
@@ -90,7 +93,7 @@ function initWorld() {
   Game.enemiesToSpawn = [];
   Game.waveInProgress = false;
   
-  // 创建玩家
+  // Create player
   const hullConfig = configLoader.getHullConfig('peregrine');
   Game.player = new Player({
     x: canvas.width / 2,
@@ -99,7 +102,10 @@ function initWorld() {
     stats: hullConfig.baseStats
   });
   
-  // 初始化 HUD
+  // Initialize upgrade system
+  Game.player.initUpgradeSystem();
+  
+  // Initialize HUD
   hudSystem.init(Game.player);
 }
 
@@ -142,10 +148,10 @@ function update(dt) {
 }
 
 function updatePlaying(dt) {
-  // 更新玩家
+  // Update player
   Game.player.update(dt, Game.state);
   
-  // 更新敌人
+  // Update enemies
   for (let i = Game.enemies.length - 1; i >= 0; i--) {
     const enemy = Game.enemies[i];
     enemy.update(dt, Game.state);
@@ -155,13 +161,19 @@ function updatePlaying(dt) {
     }
   }
   
-  // 更新子弹
+  // Update bullets
   bulletsManager.update(dt, Game.state);
   
-  // 检查波次完成
+  // Update particles
+  particlesManager.update(dt);
+  
+  // Update power-ups
+  PowerUpSpawner.update(dt);
+  
+  // Check wave progress
   checkWaveProgress();
   
-  // 自动保存
+  // Auto-save
   if (Date.now() - Game.lastAutoSave > 30000) {
     autoSave();
   }
@@ -179,16 +191,25 @@ function checkWaveProgress() {
 function completeWave() {
   Game.waveInProgress = false;
   
-  // 播放胜利音效
+  // Play victory sound
   playSound('powerup');
   
-  // 显示波次完成提示
+  // Show wave clear message
   hudSystem.showWaveClear(Game.wave);
   
-  // 生成奖励卡牌
+  // Give XP based on kills this wave
+  const xpGained = Game.player.kills * 10;
+  Game.player.addXp(xpGained);
+  
+  // Check for level up and show cards
   setTimeout(() => {
     if (Game.player.level >= 3) {
       cardSelector.showLevelUpCards();
+    } else {
+      // Continue to next wave
+      setTimeout(() => {
+        startWave(Game.wave + 1);
+      }, 2000);
     }
   }, 1000);
 }
@@ -240,7 +261,11 @@ function drawGameEntities(ctx) {
     Game.player.draw(ctx);
   }
   
-  // TODO: 绘制粒子效果
+  // 绘制粒子效果
+  particlesManager.render(ctx);
+  
+  // 绘制道具
+  PowerUpSpawner.render(ctx);
 }
 
 function drawStarfield(ctx) {
@@ -263,49 +288,33 @@ function drawStarfield(ctx) {
 // ==================== 事件处理 ====================
 
 function handleEnemyDeath(enemy, index) {
-  // 移除敌人
+  // Remove enemy
   Game.enemies.splice(index, 1);
   
-  // 给予分数
+  // Give score
   Game.score += enemy.scoreValue;
   
-  // 统计击杀
+  // Stat kill count
   Game.player.kills++;
   
-  // 播放爆炸音效
-  playSound('explosion', { x: enemy.x, y: enemy.y });
-  
-  // 检查 Boss 死亡
+  // Check boss defeat
   if (enemy.type === 'boss') {
     handleBossDefeat();
   }
-  
-  // 掉落道具
-  maybeDropPowerup(enemy.x, enemy.y);
 }
 
 function handleBossDefeat() {
-  // Boss 战胜利处理
+  // Boss battle victory handling
   Game.waveInProgress = false;
   playSound('powerup');
   
-  // 解锁新船体？
+  // Unlock new hull?
   if (Game.wave === 15) {
     achievements.unlockAchievement('defeat_first_boss');
   }
 }
 
-function maybeDropPowerup(x, y) {
-  // 小概率掉落
-  if (Math.random() < 0.1 * Game.dropRate) {
-    // 生成掉落物
-    const powerups = ['health', 'shield', 'fire_rate', 'homing'];
-    const type = powerups[Math.floor(Math.random() * powerups.length)];
-    
-    // TODO: 添加掉落物到游戏世界
-    console.log(`Dropped: ${type}`);
-  }
-}
+// Old function - no longer needed, PowerUpSpawner handles all drops
 
 // ==================== 波次生成 ====================
 

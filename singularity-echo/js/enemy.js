@@ -9,6 +9,7 @@ import { DIFFICULTIES, BOSS_CONFIGS } from './config.js';
 import { MovementPatterns as MP } from './entity-base.js';
 import { particlesManager } from './particles.js';
 import { playSound } from './audio.js';
+import { PowerUpSpawner } from './power-ups.js';
 
 // ==================== 敌人类型定义 ====================
 export const ENEMY_TYPES = Object.freeze({
@@ -230,9 +231,17 @@ export class Enemy extends BaseEntity {
     if (this.type === 'boss') {
       particlesManager.spawn('deathShatter', this.x, this.y, color, 80);
       playSound('explosion', { vol: 1.5 });
+      
+      // Boss drops special power-up cascade
+      setTimeout(() => {
+        PowerUpSpawner.cascadeSpawn(this.x, this.y, 5);
+      }, 500);
     } else {
       particlesManager.spawn('explosion', this.x, this.y, 30, color);
       playSound('enemy_die');
+      
+      // Regular enemies have 10% chance to drop power-up
+      PowerUpSpawner.dropFromEnemy(this, 0.10);
     }
     
     // Remove old explosion tracking
