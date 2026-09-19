@@ -43,6 +43,13 @@
       this.headVx = 0;
       this.headVy = 0;
       this.headRot = 0;
+
+      // 蹦极僵尸：垂直位移与阶段（移速为 0，靠这套阶段自己离场）
+      // 起点抬到画布上沿之外，保证任何一行都能看见它掉下来
+      this.yOff = 0;
+      this.bungeeDrop = this.config.bungee ? this.py + 60 : 0;
+      this.bungeePhase = 'descend';
+      this.phaseT = 0;
     }
 
     applySlow(sec) {
@@ -68,6 +75,11 @@
         this.jumpT += dt;
         this.x -= this.speed * 7 * dt; // 快速前冲跳过植物
         if (this.jumpT > 0.7) this.state = 'walk';
+        return;
+      }
+
+      if (this.config.bungee) {
+        this.updateBungee(dt, game);
         return;
       }
 
@@ -97,6 +109,33 @@
       }
     }
 
+    // 下降 → 落地抓取 → 升空离场。升空是它唯一的退场方式，
+    // 否则会永久留在场上，本波永远判定不清空。
+    updateBungee(dt, game) {
+      const B = PVZ.config.BUNGEE;
+      this.phaseT += dt;
+
+      if (this.bungeePhase === 'descend') {
+        const p = Math.min(1, this.phaseT / B.descend);
+        this.yOff = -this.bungeeDrop * (1 - p);
+        if (p >= 1) { this.bungeePhase = 'grab'; this.phaseT = 0; }
+        return;
+      }
+
+      if (this.bungeePhase === 'grab') {
+        if (this.phaseT < B.hold) return;
+        const plant = game.getPlantInRow(this.row, this.x);
+        if (plant) game.stealPlant(plant);
+        this.bungeePhase = 'ascend';
+        this.phaseT = 0;
+        return;
+      }
+
+      const p = Math.min(1, this.phaseT / B.ascend);
+      this.yOff = -this.bungeeDrop * p;
+      if (p >= 1) game.removeZombie(this);
+    }
+
     takeDamage(dmg, silent) {
       if (this.armorHp > 0) {
         this.armorHp -= dmg;
@@ -121,7 +160,7 @@
         this.state = 'dead';
         this.deadT = 0;
         this.headX = this.x - 2;
-        this.headY = this.py - 70;
+        this.headY = this.py + this.yOff - 70;
         this.headVx = -80 + Math.random() * 40;
         this.headVy = -200 - Math.random() * 80;
         this.headRot = 0;
@@ -155,7 +194,7 @@
         ctx.save();
         if (this.hitT > 0) ctx.translate((Math.random() - 0.5) * 4, 0);
         ctx.globalAlpha = fade;
-        ctx.translate(this.x, this.py);
+        ctx.translate(this.x, this.py + this.yOff);
         ctx.rotate(-Math.min(this.deadT * 1.4, 1.4));
         PVZ.art.drawZombieBody(ctx, 0, 0, this.t, 'walk', Object.assign({}, opts, { noHead: true }));
         ctx.restore();
@@ -172,13 +211,24 @@
       ctx.save();
       if (this.hitT > 0) ctx.translate((Math.random() - 0.5) * 4, 0);
 
+      // 悬吊时画出蹦极绳，让玩家看得见它从哪来
+      if (this.config.bungee && this.yOff < -1) {
+        const s = PVZ.config.cellWidth / 80;
+        ctx.strokeStyle = 'rgba(158,158,158,0.75)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x - 2 * s, this.py + this.yOff - 130 * s);
+        ctx.lineTo(this.x - 2 * s, 0);
+        ctx.stroke();
+      }
+
       if (this.state === 'jump') {
         const p = Math.min(1, this.jumpT / 0.7);
         ctx.translate(0, -Math.sin(p * Math.PI) * 55);
         ctx.rotate(-0.3 * Math.sin(p * Math.PI));
-        PVZ.art.drawZombieBody(ctx, this.x, this.py, this.t, 'jump', opts);
+        PVZ.art.drawZombieBody(ctx, this.x, this.py + this.yOff, this.t, 'jump', opts);
       } else {
-        PVZ.art.drawZombieBody(ctx, this.x, this.py, this.t, this.state, opts);
+        PVZ.art.drawZombieBody(ctx, this.x, this.py + this.yOff, this.t, this.state, opts);
       }
       ctx.restore();
     }

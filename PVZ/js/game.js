@@ -329,12 +329,24 @@
     spawnZombie(type) {
       const g = PVZ.config;
       let row = Math.floor(Math.random() * g.gridRows);
+      let x = g.lawnEndX + 40;
       // 潜水僵尸偏好泳池行
       const zCfg = g.ZOMBIES[type];
       if (zCfg && zCfg.dive && this.poolRows.length) {
         if (Math.random() < 0.6) row = this.poolRows[Math.floor(Math.random() * this.poolRows.length)];
       }
-      const x = g.lawnEndX + 40;
+      // 蹦极僵尸不走进草坪，直接降落在目标格上（优先偷走已有植物）
+      if (zCfg && zCfg.bungee) {
+        const planted = [];
+        for (let r = 0; r < g.gridRows; r++) {
+          for (let c = 0; c < g.gridCols; c++) if (this.grid[r][c]) planted.push({ r, c });
+        }
+        const cell = planted.length
+          ? planted[Math.floor(Math.random() * planted.length)]
+          : { r: row, c: 1 + Math.floor(Math.random() * (g.gridCols - 2)) };
+        row = cell.r;
+        x = g.lawnOffsetX + cell.c * g.cellWidth + g.cellWidth / 2;
+      }
       const z = new PVZ.Zombie(type, row, x, this.level.speedMul);
       if (z.isBoss) {
         z.summonTimer = 7;
@@ -524,6 +536,18 @@
       if (this.grid[p.row] && this.grid[p.row][p.col] === p) this.grid[p.row][p.col] = null;
       const i = this.plants.indexOf(p);
       if (i >= 0) this.plants.splice(i, 1);
+    }
+
+    // 蹦极僵尸连根拔走植物，区别于僵尸的逐口啃食
+    stealPlant(p) {
+      p.dead = true;
+      this.removePlant(p);
+      this.addEffect(new PVZ.FloatingText('被偷走了！', '#ef5350', p.cx, p.cellYTop + 30));
+      this.spawnParticles(p.cx, p.py - 20, {
+        colors: ['#8d6e63', '#6d4c41', '#a1887f'],
+        count: 14, speed: 170, life: 0.6, size: 3.5, gravity: 480
+      });
+      PVZ.audio.play('eat');
     }
 
     removeZombie(z) {

@@ -1364,8 +1364,10 @@ try{const v=parseFloat(localStorage.getItem('ch_vol'));if(v>=0&&v<=1)volume=v;}c
 function applyVolume(){if(master)master.gain.value=muted?0:volume;}
 function toggleMute(){muted=!muted;applyVolume();}
 function at(){return AC?AC.currentTime:0;}
-function noiseDur(dur){const s=AC.createBufferSource();s.buffer=noiseBuf;s.start(at()+0.01,Math.random(),dur);return s;}
-function footstep(){const t=at();const s=noiseDur(0.11);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=300;const g=AC.createGain();g.gain.setValueAtTime(0.001,t);g.gain.linearRampToValueAtTime(0.22,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);s.connect(lp);lp.connect(g);g.connect(master);s.start(t);const o=AC.createOscillator();o.frequency.value=65+Math.random()*10;o.type='sine';const og=AC.createGain();og.gain.setValueAtTime(0.0001,t);og.gain.linearRampToValueAtTime(0.08,t+0.01);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);o.connect(og);og.connect(master);o.start(t);o.stop(t+0.12);}
+// 噪声源只在这里 start 一次，调用方再 start 会抛 "cannot call start more than once"，
+// 把 interact()/doRitual()/sinkOffering() 里排在声音之后的状态推进整段吞掉（章节因此无法通关）。
+function noiseDur(dur,when){const s=AC.createBufferSource();s.buffer=noiseBuf;s.start(when===undefined?at():when,Math.random(),dur);return s;}
+function footstep(){const t=at();const s=noiseDur(0.11,t);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=300;const g=AC.createGain();g.gain.setValueAtTime(0.001,t);g.gain.linearRampToValueAtTime(0.22,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);s.connect(lp);lp.connect(g);g.connect(master);const o=AC.createOscillator();o.frequency.value=65+Math.random()*10;o.type='sine';const og=AC.createGain();og.gain.setValueAtTime(0.0001,t);og.gain.linearRampToValueAtTime(0.08,t+0.01);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);o.connect(og);og.connect(master);o.start(t);o.stop(t+0.12);}
 function beat(){const t=at();for(let i=0;i<2;i++){const tt=t+i*0.32;const o=AC.createOscillator();o.frequency.value=52;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.5,tt+0.015);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.16);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.2);}}
 function birdChirp(){const t=at();   // 第〇章：麻雀两三声，明亮跳跃
   const base=2400+Math.random()*900;
@@ -1380,14 +1382,14 @@ function birdChirp(){const t=at();   // 第〇章：麻雀两三声，明亮跳�
     o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.12);
   }}
 function cricket(){const t=at();for(let i=0;i<3;i++){const tt=t+i*0.11;const o=AC.createOscillator();o.frequency.value=4200+Math.random()*600;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.03,tt+0.012);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.05);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.07);}}
-function whisper(){const t=at();const s=noiseDur(2.4);const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1900;bp.Q.value=7;const g=AC.createGain();const tr=AC.createOscillator();tr.frequency.value=11;const tg=AC.createGain();tg.gain.value=0.05;tr.connect(tg);tg.connect(g.gain);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.14,t+0.25);g.gain.setValueAtTime(0.14,t+1.5);g.gain.exponentialRampToValueAtTime(0.0001,t+2.4);s.connect(bp);bp.connect(g);if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=rand(-0.7,0.7);g.connect(p);p.connect(master);}else{g.connect(master);}s.start(t);tr.start(t);tr.stop(t+2.5);}
-function knock(){const t=at();for(let i=0;i<3;i++){const tt=t+i*0.24;const o=AC.createOscillator();o.frequency.value=72;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.42,tt+0.008);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.12);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.14);const s=noiseDur(0.08);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=480;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,tt);sg.gain.linearRampToValueAtTime(0.3,tt+0.006);sg.gain.exponentialRampToValueAtTime(0.0001,tt+0.09);s.connect(lp);lp.connect(sg);sg.connect(master);s.start(tt);}}
+function whisper(){const t=at();const s=noiseDur(2.4,t);const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1900;bp.Q.value=7;const g=AC.createGain();const tr=AC.createOscillator();tr.frequency.value=11;const tg=AC.createGain();tg.gain.value=0.05;tr.connect(tg);tg.connect(g.gain);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.14,t+0.25);g.gain.setValueAtTime(0.14,t+1.5);g.gain.exponentialRampToValueAtTime(0.0001,t+2.4);s.connect(bp);bp.connect(g);if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=rand(-0.7,0.7);g.connect(p);p.connect(master);}else{g.connect(master);}tr.start(t);tr.stop(t+2.5);}
+function knock(){const t=at();for(let i=0;i<3;i++){const tt=t+i*0.24;const o=AC.createOscillator();o.frequency.value=72;o.type='sine';const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.42,tt+0.008);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.12);o.connect(g);g.connect(master);o.start(tt);o.stop(tt+0.14);const s=noiseDur(0.08,tt);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=480;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,tt);sg.gain.linearRampToValueAtTime(0.3,tt+0.006);sg.gain.exponentialRampToValueAtTime(0.0001,tt+0.09);s.connect(lp);lp.connect(sg);sg.connect(master);}}
 function creak(){const t=at();const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(85,t);o.frequency.linearRampToValueAtTime(140,t+0.3);o.frequency.linearRampToValueAtTime(60,t+0.9);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=500;const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.09,t+0.15);g.gain.exponentialRampToValueAtTime(0.0001,t+1.0);o.connect(lp);lp.connect(g);g.connect(master);o.start(t);o.stop(t+1.05);}
 function bell(f,delay,gain){const t0=at()+delay;const o=AC.createOscillator();o.frequency.value=f;o.type='sine';const vib=AC.createOscillator();vib.frequency.value=5.5;const vg=AC.createGain();vg.gain.value=f*0.004;vib.connect(vg);vg.connect(o.frequency);const g=AC.createGain();g.gain.setValueAtTime(0.0001,t0);g.gain.linearRampToValueAtTime(gain,t0+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.9);o.connect(g);g.connect(master);o.start(t0);vib.start(t0);o.stop(t0+1);vib.stop(t0+1);const o2=AC.createOscillator();o2.frequency.value=f*2.01;o2.type='sine';const g2=AC.createGain();g2.gain.setValueAtTime(0.0001,t0);g2.gain.linearRampToValueAtTime(gain*0.35,t0+0.01);g2.gain.exponentialRampToValueAtTime(0.0001,t0+0.5);o2.connect(g2);g2.connect(master);o2.start(t0);o2.stop(t0+0.6);}
 function dollPickup(){[1046,988,880,784].forEach((f,i)=>bell(f,i*0.16,0.09));}
-function keyPickup(){const t=at();for(let i=0;i<2;i++){const tt=t+i*0.09;const s=noiseDur(0.05);const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3400;bp.Q.value=12;const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.16,tt+0.005);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.07);s.connect(bp);bp.connect(g);g.connect(master);s.start(tt);}bell(1760,0.02,0.06);}
-function shriek(dur){const t=at();const sh=AC.createWaveShaper();const curve=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curve[i]=Math.tanh(4*x);}sh.curve=curve;const g=AC.createGain();g.gain.value=0.85;sh.connect(g);g.connect(master);[-0.06,0.08].forEach(det=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(480,t);o.frequency.exponentialRampToValueAtTime(90,t+dur);o.detune.value=det*440;const og=AC.createGain();og.gain.value=0.6;o.connect(og);og.connect(sh);o.start(t);o.stop(t+dur+0.05);});const s=noiseDur(dur*0.6);const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=900;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,t);sg.gain.linearRampToValueAtTime(0.5,t+0.03);sg.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.6);s.connect(hp);hp.connect(sg);sg.connect(sh);s.start(t);const r=AC.createOscillator();r.frequency.value=40;r.type='sine';const rg=AC.createGain();rg.gain.setValueAtTime(0.0001,t);rg.gain.linearRampToValueAtTime(0.6,t+0.04);rg.gain.exponentialRampToValueAtTime(0.0001,t+1.2);r.connect(rg);rg.connect(master);r.start(t);r.stop(t+1.3);const ring=AC.createOscillator();ring.frequency.value=2800;ring.type='sine';const ringG=AC.createGain();ringG.gain.setValueAtTime(0.0001,t+0.9);ringG.gain.linearRampToValueAtTime(0.05,t+1.0);ringG.gain.exponentialRampToValueAtTime(0.0001,t+2.4);ring.connect(ringG);ringG.connect(master);ring.start(t+0.9);ring.stop(t+2.5);}
-function deathSound(){const t=at();const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(55,t+3);const sh=AC.createWaveShaper();const curve=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curve[i]=Math.tanh(3*x);}sh.curve=curve;const g=AC.createGain();g.gain.value=0.9;o.connect(sh);sh.connect(g);g.connect(master);o.start(t);o.stop(t+3.2);const s=noiseDur(2.5);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,t);sg.gain.linearRampToValueAtTime(0.6,t+0.05);sg.gain.exponentialRampToValueAtTime(0.0001,t+2.5);s.connect(lp);lp.connect(sg);sg.connect(sh);s.start(t);const ring=AC.createOscillator();ring.frequency.value=2350;ring.type='sine';const rg=AC.createGain();rg.gain.setValueAtTime(0.0001,t+1.4);rg.gain.linearRampToValueAtTime(0.08,t+1.7);rg.gain.exponentialRampToValueAtTime(0.0001,t+3.2);ring.connect(rg);rg.connect(master);ring.start(t+1.4);ring.stop(t+3.3);}
+function keyPickup(){const t=at();for(let i=0;i<2;i++){const tt=t+i*0.09;const s=noiseDur(0.05,tt);const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3400;bp.Q.value=12;const g=AC.createGain();g.gain.setValueAtTime(0.0001,tt);g.gain.linearRampToValueAtTime(0.16,tt+0.005);g.gain.exponentialRampToValueAtTime(0.0001,tt+0.07);s.connect(bp);bp.connect(g);g.connect(master);}bell(1760,0.02,0.06);}
+function shriek(dur){const t=at();const sh=AC.createWaveShaper();const curve=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curve[i]=Math.tanh(4*x);}sh.curve=curve;const g=AC.createGain();g.gain.value=0.85;sh.connect(g);g.connect(master);[-0.06,0.08].forEach(det=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(480,t);o.frequency.exponentialRampToValueAtTime(90,t+dur);o.detune.value=det*440;const og=AC.createGain();og.gain.value=0.6;o.connect(og);og.connect(sh);o.start(t);o.stop(t+dur+0.05);});const s=noiseDur(dur*0.6,t);const hp=AC.createBiquadFilter();hp.type='highpass';hp.frequency.value=900;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,t);sg.gain.linearRampToValueAtTime(0.5,t+0.03);sg.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.6);s.connect(hp);hp.connect(sg);sg.connect(sh);const r=AC.createOscillator();r.frequency.value=40;r.type='sine';const rg=AC.createGain();rg.gain.setValueAtTime(0.0001,t);rg.gain.linearRampToValueAtTime(0.6,t+0.04);rg.gain.exponentialRampToValueAtTime(0.0001,t+1.2);r.connect(rg);rg.connect(master);r.start(t);r.stop(t+1.3);const ring=AC.createOscillator();ring.frequency.value=2800;ring.type='sine';const ringG=AC.createGain();ringG.gain.setValueAtTime(0.0001,t+0.9);ringG.gain.linearRampToValueAtTime(0.05,t+1.0);ringG.gain.exponentialRampToValueAtTime(0.0001,t+2.4);ring.connect(ringG);ringG.connect(master);ring.start(t+0.9);ring.stop(t+2.5);}
+function deathSound(){const t=at();const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(55,t+3);const sh=AC.createWaveShaper();const curve=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;curve[i]=Math.tanh(3*x);}sh.curve=curve;const g=AC.createGain();g.gain.value=0.9;o.connect(sh);sh.connect(g);g.connect(master);o.start(t);o.stop(t+3.2);const s=noiseDur(2.5,t);const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;const sg=AC.createGain();sg.gain.setValueAtTime(0.0001,t);sg.gain.linearRampToValueAtTime(0.6,t+0.05);sg.gain.exponentialRampToValueAtTime(0.0001,t+2.5);s.connect(lp);lp.connect(sg);sg.connect(sh);const ring=AC.createOscillator();ring.frequency.value=2350;ring.type='sine';const rg=AC.createGain();rg.gain.setValueAtTime(0.0001,t+1.4);rg.gain.linearRampToValueAtTime(0.08,t+1.7);rg.gain.exponentialRampToValueAtTime(0.0001,t+3.2);ring.connect(rg);rg.connect(master);ring.start(t+1.4);ring.stop(t+3.3);}
 function winSound(){const t=at();ambGains.forEach(g=>g.gain.linearRampToValueAtTime(0.0001,t+2));[523.25,659.25,784,1046.5].forEach((f,i)=>bell(f,0.3+i*0.25,0.1));}
 
 // ==================== 第二章系统：怨灵 / 躲藏 / 送还仪式 ====================
@@ -1727,10 +1729,10 @@ function resetCh3State(){
 function oilPickup(){bell(392,0,0.08);bell(523,0.12,0.06);toastMsg('一坛灯油。长明灯又能烧一阵了……');}
 
 function paperRustle(){
-  const t=at();const s=noiseDur(0.22);
+  const t=at();const s=noiseDur(0.22,t);
   const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2600+Math.random()*900;bp.Q.value=3;
   const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.07,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.22);
-  s.connect(bp);bp.connect(g);g.connect(master);s.start(t);
+  s.connect(bp);bp.connect(g);g.connect(master);
 }
 
 function updatePapers(dt){
@@ -2106,6 +2108,9 @@ function update(dt){
 }
 
 // ---- 全程引导：返回「当前目标点+一句话提示」（无目标时返回 null）----
+// 目标点一律从地图里取，不写死坐标：写死的 (23,9.5) 曾是右下角一块空地，
+// 引导箭头会把玩家从真正的大门（一张 1,1）带偏，看起来就像这关没有出口。
+function findTile(L,ch){const t=tiles[L];for(let y=0;y<t.length;y++)for(let x=0;x<t[0].length;x++)if(t[y][x]===ch)return{x:x+0.5,y:y+0.5};return null;}
 function guideGoal(){
   const d=(x,y)=>Math.hypot(player.x-x,player.y-y);
   if(chapter===0){
@@ -2116,7 +2121,9 @@ function guideGoal(){
   if(chapter===1){
     if(dollsTaken<6){const dl=dolls.find(dd=>!dd.taken&&dd.lvl===lvl);return dl?{x:dl.x,y:dl.y,label:'找纸人偶 ('+dollsTaken+'/6)'}:null;}
     if(!hasKey)return keyItem.lvl===lvl?{x:keyItem.x,y:keyItem.y,label:'寻找大门钥匙'}:null;
-    return {x:23.0,y:9.5,label:'回一层大门逃生'};
+    if(lvl!==0){const u=findTile(1,'U');return u?{x:u.x,y:u.y,label:'上楼回一层，再从大门逃生'}:null;}
+    const dr=findTile(0,'D');
+    return dr?{x:dr.x,y:dr.y,label:'打开大门逃生'}:null;
   }
   if(chapter===2){
     if(ritualN<6)return {x:ALTAR_X,y:ALTAR_Y,label:'送还人偶到香坛 ('+ritualN+'/6)'};
@@ -2138,24 +2145,25 @@ function guideGoal(){
 
 
 const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34],g:[158,176,92],p:[198,172,122]};   // g/p：第〇章草地/土路
-function floorStyle(x,y){
+function floorStyle(x,y,L){
+  if(L===undefined)L=lvl;
   const ix=Math.floor(x),iy=Math.floor(y);
-  if(lvl===4){   // 第〇章：青草晒场 + 中央土路
+  if(L===4){   // 第〇章：青草晒场 + 中央土路
     if(Math.abs(ix-11.5)<=1)return 'p';
     if(iy>=3&&iy<=16&&hashInt(ix*13,iy*29)%23===0)return 'p';
     return 'g';
   }
-  if(lvl===1)return hashInt(ix*2,iy*3)%9===0?'D':'S';
-  if(lvl===2){   // 第二章：大堂铺石板，其余木地板
+  if(L===1)return hashInt(ix*2,iy*3)%9===0?'D':'S';
+  if(L===2){   // 第二章：大堂铺石板，其余木地板
     if(ix>=8&&ix<=17&&iy>=9&&iy<=14)return 'S';
     return hashInt(ix*5,iy*7)%11===0?'W':'T';
   }
-  if(lvl===3){   // 第三章义庄：中央停尸堂石板，南院荒草，其余朽木
+  if(L===3){   // 第三章义庄：中央停尸堂石板，南院荒草，其余朽木
     if(ix>=6&&ix<=18&&iy>=8&&iy<=13)return 'S';
     if(iy>=14)return hashInt(ix*3,iy*11)%13===0?'G':'W';
     return hashInt(ix*5,iy*7)%11===0?'W':'T';
   }
-  if(lvl===5){   // 终章：夜村荒草 + 一条通往老井的土路（中央引导线）
+  if(L===5){   // 终章：夜村荒草 + 一条通往老井的土路（中央引导线）
     if((ix===11||ix===12)&&iy>=2&&iy<=16)return 'p';
     return hashInt(ix*3,iy*11)%17===0?'W':'G';
   }
@@ -2165,11 +2173,34 @@ function floorStyle(x,y){
   return 'T';
 }
 
+// ---- 地面底色缓存 ----
+// floorStyle / 其内部 hashInt 只依赖整数格 (ix,iy)，但原来每个像素都重算一遍
+// （两次 Math.floor + 字符串返回 + 对象属性查表 + 越界判断），实测占单帧 58~76%。
+// 地图静态不变 → 每层预计算一次底色调色板与楼梯暗化标记。
+const floorCache=[];
+function buildFloorCache(L){
+  const t=tiles[L],th=t.length,tw=t[0].length;
+  const f={tw,th,R:new Uint8Array(tw*th),G:new Uint8Array(tw*th),B:new Uint8Array(tw*th),U:new Uint8Array(tw*th)};
+  for(let y=0;y<th;y++)for(let x=0;x<tw;x++){
+    const c=FLOOR_COLORS[floorStyle(x+0.5,y+0.5,L)],k=y*tw+x;
+    f.R[k]=c[0];f.G[k]=c[1];f.B[k]=c[2];f.U[k]=t[y][x]==='U'?1:0;
+  }
+  return f;
+}
+function floorOf(L){return floorCache[L]||(floorCache[L]=buildFloorCache(L));}
+// 楼梯贴图精灵位：同样每帧扫全图，预计算一次
+const stairsCache=[];
+function stairsOf(L){
+  if(stairsCache[L])return stairsCache[L];
+  const t=tiles[L],a=[];
+  for(let y=0;y<t.length;y++)for(let x=0;x<t[0].length;x++)if(t[y][x]==='U')a.push({x:x+0.5,y:y+0.5});
+  return stairsCache[L]=a;
+}
+
 function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度，基线提亮；随机抖动减到 0.02
   const flicker=lvl===4?1:(0.95+0.045*Math.sin(tSec*4.1)+Math.random()*0.02)*(flickerEvent>0?0.55:1)*(lvl===1?0.93:1);   // 第〇章白昼恒亮
   const horizon=VH>>1;
   const hw=VH/2;
-  const tl=tiles[lvl],tlW=tl[0].length,tlH=tl.length;
   for(let y=0;y<horizon;y++){const tt=y/horizon;
     if(lvl===4){   // 第〇章：盛夏晴空，湛蓝→地平线暖白
       const r=(120+115*tt)|0,g=(185+52*tt)|0,b=(235+(255-235)*tt)|0;
@@ -2180,32 +2211,40 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     else if(lvl===5){const v=(4+20*tt)|0;buf32.fill(pack((v*0.82)|0,(v*1.02)|0,Math.min(255,(v*1.5+6)|0)),y*VW,y*VW+VW);} // 终章：深水蓝黑夜空
     else{const v=(7+32*tt)|0;buf32.fill(pack(v,v,Math.min(255,v+6)),y*VW,y*VW+VW);}
   }
+  // 地面：底色调色板按层预计算（见 floorOf），雾系数按行外提
+  const FC=floorOf(lvl),ftw=FC.tw,fth=FC.th,fR=FC.R,fG=FC.G,fB=FC.B,fU=FC.U;
+  const fogK=lvl===4?0.25:0.78,fogDiv=lvl===4?24:14;
   for(let y=horizon;y<VH;y++){
     const rf=1/(y+0.5-horizon);
     const rowDist=hw*rf;
+    const rowShade=(1-Math.min(1,rowDist/fogDiv)*fogK)*flicker;
+    const row=y*VW;
     for(let x=0;x<VW;x++){
       const cam=2*x/VW-1;
       const fx=player.x+rowDist*(player.dirX+player.planeX*cam);
       const fy=player.y+rowDist*(player.dirY+player.planeY*cam);
       const ix=Math.floor(fx),iy=Math.floor(fy);
-      const c=FLOOR_COLORS[floorStyle(fx,fy)];
-      const n=hashInt(fx*31,fy*57)%15-7;
-      const fog=lvl===4?Math.min(1,rowDist/24):Math.min(1,rowDist/14);   // 第〇章：白昼远景几乎无雾
-      const fk=1-fog*(lvl===4?0.25:0.78);
       const ex=fx-ix,ey=fy-iy;
       // 体素地砖：北/西棱受光、南/东棱落影（凸块感）
       const m=(ex<0.045||ey<0.045)?1.09:((ex>0.955||ey>0.955)?0.78:1);
-      let r=clamp((c[0]+n)*fk*flicker*m,0,255);
-      let g=clamp((c[1]+n)*fk*flicker*m,0,255);
-      let b=clamp((c[2]+n)*fk*flicker*m,0,255);
-      if(iy>=0&&iy<tlH&&ix>=0&&ix<tlW&&tl[iy][ix]==='U'){r*=0.16;g*=0.18;b*=0.24;}
-      buf32[y*VW+x]=pack(r,g,b);
+      const s=rowShade*m,n=hashInt(fx*31,fy*57)%15-7;
+      let r,g,b;
+      if(ix>=0&&iy>=0&&ix<ftw&&iy<fth){
+        const k=iy*ftw+ix;
+        r=clamp((fR[k]+n)*s,0,255);g=clamp((fG[k]+n)*s,0,255);b=clamp((fB[k]+n)*s,0,255);
+        if(fU[k]){r*=0.16;g*=0.18;b*=0.24;}
+      }else{
+        const c=FLOOR_COLORS[floorStyle(fx,fy)];
+        r=clamp((c[0]+n)*s,0,255);g=clamp((c[1]+n)*s,0,255);b=clamp((c[2]+n)*s,0,255);
+      }
+      buf32[row+x]=pack(r,g,b);
     }
   }
   // 每帧常量外提（性能：避免列循环内重复分配数组）
   const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾 / 终章深水雾（已提亮）
   const fogDenom=lvl===1?12:(lvl===4?20:15);
   const hits=[],vhits=[];
+  const VL=volByLvl[lvl];   // 实体几何列表：每层固定，提到列循环外
   for(let x=0;x<VW;x++){
     const cam=2*x/VW-1;
     const rdx=player.dirX+player.planeX*cam,rdy=player.dirY+player.planeY*cam;
@@ -2285,13 +2324,15 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         }
       }
       // ---- 实体几何（井亭 / 香坛 / 神龛 / 石碑 / 封石）：有体积的真实建筑 ----
-      const VL=volByLvl[lvl];
       if(VL.length){
         vhits.length=0;
+        // vdd 是「本列光线方向模长²」，只与列有关：必须放在列层级作用域里，
+        // 原来声明在 vi 循环内、却在 hi 循环的顶面分支引用 → 视角扫到井台/神龛顶面就 ReferenceError，
+        // 整帧后续的 putImageData/精灵/HUD 全部丢失（画面卡死在上一帧）。
+        const vdd=rdx*rdx+rdy*rdy;
         for(let vi=0;vi<VL.length;vi++){
           const vo=VL[vi];
           const vex=player.x-vo.x,vey=player.y-vo.y;
-          const vdd=rdx*rdx+rdy*rdy;
           const vpr=vex*rdx+vey*rdy;
           if(vpr<=0)continue;                                   // 在身后
           const vperp=(vex*vex+vey*vey)-vpr*vpr/vdd;             // 射线到中心的垂距²
@@ -2442,9 +2483,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   for(const d of decor){if(d.lvl===lvl)sprites.push({x:d.x,y:d.y,img:d.img,scale:d.scale,glow:d.glow});}
   for(const n of NOTES){if(n.lvl===lvl&&notesFound.indexOf(n.i)<0)sprites.push({x:n.x,y:n.y,img:noteImg,scale:0.5,bob:true,phase:n.i*2.3});}
   {
-    const ts=tiles[lvl];
     const sb=lvl===1?1.3:1.05,sg=lvl===1?0.35:0;
-    for(let y=0;y<ts.length;y++)for(let x=0;x<ts[0].length;x++)if(ts[y][x]==='U')sprites.push({x:x+0.5,y:y+0.5,img:stairsImg,scale:sb,glow:sg});
+    for(const st of stairsOf(lvl))sprites.push({x:st.x,y:st.y,img:stairsImg,scale:sb,glow:sg});   // 楼梯位已缓存
   }
   if(chapter===2&&lvl===2){
     if(ghost)sprites.push({x:ghost.x,y:ghost.y,img:ghostImg,scale:1.2,bob:true,phase:0,alpha:0.94,squash:ghost.state==='CHASE'?0.82:1});
