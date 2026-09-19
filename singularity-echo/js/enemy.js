@@ -237,6 +237,15 @@ export class Enemy extends BaseEntity {
         PowerUpSpawner.cascadeSpawn(this.x, this.y, 5);
       }, 500);
     } else {
+      // Spawn damage numbers for score feedback
+      if (Game && Game.player) {
+        const comboMultiplier = Game.player.getComboMultiplier();
+        const finalScore = Math.floor(this.scoreValue * comboMultiplier);
+        
+        // Show damage number at enemy position with combo color
+        particlesManager.spawn('damageNumber', this.x, this.y - 30, finalScore, false, comboMultiplier);
+      }
+      
       particlesManager.spawn('explosion', this.x, this.y, 30, color);
       playSound('enemy_die');
       

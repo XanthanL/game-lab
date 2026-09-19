@@ -77,15 +77,16 @@ class Particle {
     
     // Render text if present
     if (this.text && typeof this.text === 'string') {
-      ctx.font = `bold ${this.size * 10}px Consolas, monospace`;
+      const fontSize = (this.size * 10) * (this.textScale || 1.0);
+      ctx.font = `bold ${fontSize}px Consolas, monospace`;
       ctx.fillStyle = this.color;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
       // Add shadow for better readability
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetY = -2;
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = -3;
       
       ctx.fillText(this.text, this.x, this.y - 5);
       
@@ -287,20 +288,50 @@ const ParticleEffects = {
   
   /**
    * Create damage number popup
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} amount - Damage/score amount
+   * @param {boolean} isCrit - Is critical hit
+   * @param {number} comboMultiplier - Current combo multiplier for color variation
    */
-  damageNumber(x, y, amount, isCrit = false) {
-    const color = isCrit ? '#c0402b' : '#ff6060';
+  damageNumber(x, y, amount, isCrit = false, comboMultiplier = 1.0) {
+    // Determine color based on combo level and crit
+    let color;
+    let sizeMultiplier = 1.0;
+    let textScale = 1.0;
+    
+    if (comboMultiplier >= 2.5) {
+      // 3x combo - gold/legendary
+      color = '#f59e0b';
+      sizeMultiplier = 1.8;
+      textScale = 1.5;
+    } else if (comboMultiplier >= 2.0) {
+      // 2x combo - orange/combo
+      color = '#fb7185';
+      sizeMultiplier = 1.5;
+      textScale = 1.2;
+    } else if (isCrit) {
+      // Critical hit - red
+      color = '#c0402b';
+      sizeMultiplier = 1.3;
+      textScale = 1.1;
+    } else {
+      // Normal - pink
+      color = '#ff6060';
+    }
+    
     return [new Particle({
       x, y,
-      vx: 0,
-      vy: -30,
-      size: 2,
+      vx: (Math.random() - 0.5) * 20,
+      vy: -50 - Math.random() * 20,
+      size: 2 * sizeMultiplier,
       color: color,
       alpha: 1.0,
-      decay: 0.01,
-      life: 1.0,
+      decay: 0.008,
+      life: 1.2,
       text: `-${amount}`,
-      floatUp: true
+      floatUp: true,
+      textScale: textScale
     })];
   },
   
