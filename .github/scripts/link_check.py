@@ -28,11 +28,13 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parent.parent.parent
 SITE_PREFIX = "/game-lab/"  # Pages 把仓库挂在 /game-lab/ 下
 
-# 扫都不扫的目录：依赖、本地工程、agent 工作区、版本库自身
+# 扫都不扫的目录：依赖、本地工程、agent 工作区、版本库自身、独立部署的子项目
 SKIP_DIRS = {
     "node_modules", ".git", ".next", "local-only",
     ".workbuddy", ".workbuddy-ai", ".github",
     "run", "run2", "saves", "data", "logs",
+    # 独立部署的子项目（由专门的工作流处理）
+    "resonance-era",
 }
 
 # 已知豁免：(文件, 前缀) —— 只在理由充分时加，且必须写清为什么
