@@ -9392,8 +9392,10 @@ function drawLogbook(){
   if(el.lbEnemies)el.lbEnemies.innerHTML=EN_LIST.map(t=>{
     const need=EN_UNLOCK[t],ok=reached>=need,d=ENEMY_DEFS[t]||{};
     const c=d.c||'192,64,43';
-    /* 7.11：色点方块换成 canvas 建模（drawFoeCodex 稍后填）。data-foe 是绘制的取型键 */
-    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})" onclick="${ok?`openFoeDetail('${t}')`:'javascript:void(0)'}">
+    /* 7.11：色点方块换成 canvas 建模（drawFoeCodex 稍后填）。data-foe 是绘制的取型键
+       注：**不能用 inline onclick** —— openFoeDetail 在 IIFE 作用域里，inline handler 只在
+       window 上找，点了必抛 ReferenceError。统一交给下面 openCodex 里的委托监听。 */
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${c},${ok?.9:.28})"${ok?' data-open-foe="'+t+'"':''}>
       <canvas class="cxmodel" width="180" height="120" data-foe="${t}"></canvas>
       <span style="min-width:0;flex:1" class="lbcell-inner">
         <span class="lbname">${T(EN_ZH[t]||t,EN_EN[t]||t)}</span>
@@ -9407,7 +9409,7 @@ function drawLogbook(){
   // BOSS_AT 是「波次 → 巨像 kind」的映射，必须迭代它的值而不是键。
   if(el.lbBosses)el.lbBosses.innerHTML=Object.keys(BOSS_AT).sort((a,b)=>a-b).map(w=>{
     const k=BOSS_AT[w],need=+w,ok=reached>=need,st=BOSS_STYLE[k]||{c:'192,64,43'};
-    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})" onclick="${ok?`openBossDetail('${k}')`:'javascript:void(0)'}">
+    return `<div class="lbcell${ok?'':' locked'}" style="border-left-color:rgba(${st.c},${ok?.9:.28})"${ok?' data-open-boss="'+k+'"':''}>
       <canvas class="cxmodel" width="180" height="120" data-boss="${k}"></canvas>
       <span style="min-width:0;flex:1">
         <span class="lbname">${T(BOSS_ZH[k]||k,BOSS_NAME[k]||k)}</span>
@@ -9768,7 +9770,7 @@ function drawHullCodex(){
     const note=typeof h.lockNote==='function'?h.lockNote():h.lockNote;
     const lk=HULL_LOCK_EN[h.id];
     const noteEn=typeof lk==='function'?lk():(lk||note);
-    return `<div class="cxitem${ok?'':' locked'}" onclick="${ok?`openHullDetail('${h.id}')`:'javascript:void(0)'}">
+    return `<div class="cxitem${ok?'':' locked'}"${ok?' data-open-hull="'+h.id+'"':''}>
       <canvas class="cxmodel" width="150" height="92"></canvas>
       <div class="cxbody">
         <div class="cxname">${h.g} ${T(h.zh,h.en)}<em>${h.en.toUpperCase()}</em></div>
@@ -9872,7 +9874,7 @@ function drawUpCodex(){
   if(el.cxUps)el.cxUps.innerHTML=MODULES.map(m=>{
     const mx=(m.lv&&m.lv.length)||m.max||1;
     const l0=(m.lv&&m.lv[0])||'',l0e=(LV_EN[m.id]&&LV_EN[m.id][0])||l0;
-    return `<div class="cxitem">
+    return `<div class="cxitem" data-open-up="${m.id}">
       <div class="cxg">${m.g||'·'}</div>
       <div class="cxbody">
         <div class="cxname">${T(m.zh,m.en)}<em>${(m.en||'').toUpperCase()}</em></div>
@@ -10194,16 +10196,22 @@ $('btnLbBack').addEventListener('click',toMenu);
 $('btnCodex').addEventListener('click',openCodex);
 $('btnCxBack').addEventListener('click',toMenu);
 
-/* Codex Detail Modal Handlers */
-$$('#cxDetailModal .lbcell').forEach(cell => {
-  cell.addEventListener('click', () => {
-    const foe = cell.querySelector('[data-foe]');
-    if (foe) openFoeDetail(foe.dataset.foe);
-    
-    const boss = cell.querySelector('[data-boss]');
-    if (boss) openBossDetail(boss.dataset.boss);
+/* Codex Detail Modal Handlers
+   图鉴条目的点击**必须走事件委托**：openFoeDetail / openBossDetail / openHullDetail 都是
+   IIFE 内的函数，inline onclick 只在 window 上解析标识符，点了必抛 ReferenceError。
+   所以格子只挂 data-open-foe / data-open-boss / data-open-hull，这里统一接。
+   （更早这行是 $$('#cxDetailModal .lbcell') —— 既没有 $$ 这个别名，'#cxDetailModal'
+     这个容器也不存在，页面一加载就抛 ReferenceError，把后面所有绑定全带崩。） */
+if (el.codex) {
+  el.codex.addEventListener('click', (e) => {
+    const hit = e.target && e.target.closest ? e.target.closest('[data-open-foe],[data-open-boss],[data-open-hull],[data-open-up]') : null;
+    if (!hit || hit.classList.contains('locked')) return;
+    if (hit.dataset.openFoe) openFoeDetail(hit.dataset.openFoe);
+    else if (hit.dataset.openBoss) openBossDetail(hit.dataset.openBoss);
+    else if (hit.dataset.openHull) openHullDetail(hit.dataset.openHull);
+    else if (hit.dataset.openUp) openUpgradeDetail(hit.dataset.openUp);
   });
-});
+}
 
 document.getElementById('btnCxClose').addEventListener('click', closeCodexDetail);
 document.getElementById('btnCxDetailOk').addEventListener('click', closeCodexDetail);
@@ -10302,6 +10310,8 @@ function openHullDetail(hullId) {
 }
 
 function openFoeDetail(enemyType) {
+  /* 数值栏读 def —— ENEMY_DEFS 才是唯一数据源（键是 hp / dmg）。
+     cxFoeStub 只供 drawEnemy 画图，实例上叫 maxHp 且没有 dmg，别拿它当数据源。 */
   const def = ENEMY_DEFS[enemyType] || {};
   const stub = cxFoeStub(enemyType);
   
@@ -10343,6 +10353,8 @@ function openFoeDetail(enemyType) {
 }
 
 function openBossDetail(bossKind) {
+  /* 注意：实例变量叫 stub，BOSS_STYLE 的样式表叫 st —— 之前下面误写成 st.hp / st.r
+     （那两个键在 BOSS_STYLE 里不存在），数值栏永远显示 "?"。 */
   const stub = cxBossStub(bossKind);
   const st = BOSS_STYLE[bossKind] || {};
   
