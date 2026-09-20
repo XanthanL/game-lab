@@ -1,493 +1,96 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>共振纪元 | RESONANCE ERA</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-    <style>
-        /* ===== Minimal Design System ===== */
-        :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f9fafb;
-            --text-primary: #1a1a1a;
-            --text-secondary: #525252;
-            --text-muted: #a3a3a3;
-            --accent-color: #000000;
-            --border-color: #e5e5e5;
-            --spacing-xs: 0.5rem;
-            --spacing-sm: 1rem;
-            --spacing-md: 1.5rem;
-            --spacing-lg: 2rem;
-            --spacing-xl: 3rem;
-            --spacing-2xl: 4rem;
-        }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>共振纪元 | RESONANCE ERA</title>
+<meta name="description" content="硬科幻长篇《共振纪元》在线阅读：25 章，架空宇宙纪元 1018 年，六层级社会与 12.7Hz 共振频率。">
+<meta name="theme-color" content="#002FA7">
+<meta property="og:type" content="book">
+<meta property="og:title" content="共振纪元 | RESONANCE ERA">
+<meta property="og:description" content="硬科幻长篇《共振纪元》在线阅读：25 章，架空宇宙纪元 1018 年，六层级社会与 12.7Hz 共振频率。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23002FA7'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23EDFF45' stroke-width='2'/%3E%3C/svg%3E">
 
-        [data-theme="dark"] {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #171717;
-            --text-primary: #f5f5f5;
-            --text-secondary: #a3a3a3;
-            --text-muted: #525252;
-            --accent-color: #ffffff;
-            --border-color: #262626;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Noto Serif SC', 'Songti SC', serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.8;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            /* Disable text selection by default */
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-
-        /* Allow text selection only in book content */
-        .chapter-body,
-        .chapter-body * {
-            user-select: text !important;
-            -webkit-user-select: text !important;
-            -moz-user-select: text !important;
-            -ms-user-select: text !important;
-        }
-
-        /* ===== Layout ===== */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 var(--spacing-lg);
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: var(--spacing-2xl);
-            min-height: 100vh;
-        }
-
-        /* ===== Header ===== */
-        .header {
-            grid-column: 1 / -1;
-            padding: var(--spacing-xl) 0;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .back-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 400;
-            letter-spacing: 0.05em;
-            transition: color 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .back-link:hover {
-            color: var(--text-primary);
-        }
-
-        .title-block {
-            text-align: center;
-            flex: 1;
-        }
-
-        .novel-title {
-            font-size: clamp(1.75rem, 4vw, 2.5rem);
-            font-weight: 400;
-            letter-spacing: 0.3em;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            line-height: 1.3;
-        }
-
-        .novel-title-en {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 300;
-            letter-spacing: 0.4em;
-            color: var(--text-secondary);
-            margin-bottom: 0.3rem;
-            text-transform: uppercase;
-        }
-
-        /* ===== Sidebar ===== */
-        .sidebar {
-            position: sticky;
-            top: var(--spacing-lg);
-            height: calc(100vh - var(--spacing-xl));
-            overflow-y: auto;
-            padding-right: var(--spacing-md);
-            border-right: 1px solid var(--border-color);
-        }
-
-        .toc-section {
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .section-title {
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.15em;
-            color: var(--text-secondary);
-            margin-bottom: var(--spacing-sm);
-            text-transform: uppercase;
-        }
-
-        .chapter-list {
-            list-style: none;
-        }
-
-        .chapter-list li {
-            margin-bottom: 0.25rem;
-        }
-
-        .chapter-list a {
-            display: block;
-            padding: 0.5rem 0;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 300;
-            transition: all 0.2s;
-            border-left: 2px solid transparent;
-            padding-left: 0.75rem;
-        }
-
-        .chapter-list a:hover {
-            color: var(--text-primary);
-            border-left-color: var(--text-primary);
-        }
-
-        .chapter-list a.active {
-            color: var(--accent-color);
-            border-left-color: var(--accent-color);
-            font-weight: 500;
-        }
-
-        /* ===== Settings Panel ===== */
-        .settings-panel {
-            margin-top: var(--spacing-xl);
-            padding-top: var(--spacing-lg);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .setting-group {
-            margin-bottom: var(--spacing-md);
-        }
-
-        .setting-label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-        }
-
-        .setting-control {
-            width: 100%;
-            padding: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-
-        .setting-control:focus {
-            outline: none;
-            border-color: var(--text-primary);
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 2px;
-            background: var(--border-color);
-            border-radius: 1px;
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 12px;
-            height: 12px;
-            background: var(--text-primary);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        /* ===== Book Content ===== */
-        .book-content {
-            padding-top: var(--spacing-xl);
-            padding-bottom: var(--spacing-2xl);
-        }
-
-        .chapter-container {
-            max-width: 720px;
-            margin: 0 auto;
-        }
-
-        .chapter-title {
-            font-size: 1.25rem;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            color: var(--text-secondary);
-            margin-bottom: var(--spacing-xl);
-            padding-bottom: var(--spacing-lg);
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .chapter-body {
-            font-size: 1.0625rem;
-            line-height: 1.9;
-            text-align: justify;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .chapter-body p {
-            margin-bottom: var(--spacing-md);
-        }
-
-        .chapter-body p:first-child::first-letter {
-            font-size: 3rem;
-            float: left;
-            margin-right: 0.75rem;
-            line-height: 1;
-            color: var(--text-primary);
-            font-weight: 400;
-        }
-
-        /* ===== Navigation Buttons ===== */
-        .nav-buttons {
-            display: flex;
-            justify-content: center;
-            gap: var(--spacing-md);
-            margin-top: var(--spacing-2xl);
-            padding-top: var(--spacing-xl);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .nav-btn {
-            padding: 0.75rem 1.5rem;
-            font-size: 0.875rem;
-            font-weight: 400;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .nav-btn:hover:not(:disabled) {
-            border-color: var(--text-primary);
-            color: var(--text-primary);
-        }
-
-        .nav-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* ===== Footer ===== */
-        .footer {
-            grid-column: 1 / -1;
-            padding: var(--spacing-lg) 0;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            letter-spacing: 0.05em;
-        }
-
-        /* ===== Responsive ===== */
-        @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                position: static;
-                height: auto;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                padding-bottom: var(--spacing-lg);
-            }
-
-            .chapter-container {
-                max-width: 100%;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .container {
-                padding: 0 var(--spacing-sm);
-            }
-
-            .header {
-                flex-direction: column;
-                gap: var(--spacing-sm);
-            }
-
-            .title-block {
-                order: -1;
-            }
-
-            .novel-title-en {
-                font-size: 0.7rem;
-            }
-
-            .novel-title {
-                font-size: 1.5rem;
-            }
-
-            .back-link {
-                order: 1;
-                align-self: flex-start;
-            }
-
-            #theme-toggle {
-                order: 0;
-            }
-
-            .chapter-body {
-                font-size: 1rem;
-                text-align: left;
-                padding: 0 var(--spacing-xs);
-            }
-
-            .chapter-body p:first-child::first-letter {
-                font-size: 2.5rem;
-                margin-right: 0.5rem;
-            }
-
-            .chapter-title {
-                font-size: 1.1rem;
-                padding-bottom: var(--spacing-md);
-                margin-bottom: var(--spacing-lg);
-            }
-
-            .nav-buttons {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 0.5rem;
-            }
-
-            .nav-btn {
-                width: 100%;
-                max-width: none;
-                flex: 1;
-                min-width: 120px;
-                padding: 0.6rem 1rem;
-                font-size: 0.8rem;
-            }
-
-            .setting-label {
-                font-size: 0.7rem;
-            }
-
-            .section-title {
-                font-size: 0.7rem;
-            }
-
-            .chapter-list a {
-                font-size: 0.8rem;
-                padding: 0.4rem 0;
-            }
-
-            footer {
-                font-size: 0.65rem;
-                padding: var(--spacing-md) 0;
-            }
-        }
-    </style>
+<!-- 主题在样式生效前定好，避免刷新时闪一下 -->
+<script>
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem("re-theme");
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    d.setAttribute("data-theme", t);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="./assets/style.css">
 </head>
-<body data-theme="light">
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <a href="../index.html" class="back-link">← GAME LAB</a>
-            <div class="title-block">
-                <h1 class="novel-title-en">RESONANCE ERA</h1>
-                <h2 class="novel-title">共振纪元</h2>
-            </div>
-            <button id="theme-toggle" class="nav-btn" aria-label="切换主题">
-                <span data-zh="深色" data-en="Dark">深色</span>
-            </button>
-        </header>
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="toc-section">
-                <h3 class="section-title">目录 / CONTENTS</h3>
-                <ul id="chapter-list" class="chapter-list">
-                    <!-- Chapters will be loaded here -->
-                </ul>
-            </div>
+<body data-view="catalog">
 
-            <div class="settings-panel">
-                <div class="setting-group">
-                    <label class="setting-label">字号 / FONT SIZE</label>
-                    <input type="range" id="font-size" min="14" max="24" value="17">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">行距 / LINE HEIGHT</label>
-                    <input type="range" id="line-height" min="1.5" max="2.2" step="0.1" value="1.8">
-                </div>
-            </div>
-        </aside>
+<div class="progress" aria-hidden="true"><i id="progressFill"></i></div>
 
-        <!-- Main Content -->
-        <main class="book-content">
-            <div class="chapter-container">
-                <div id="book-content">
-                    <!-- Chapter content will be loaded here -->
-                </div>
-                <nav class="nav-buttons">
-                    <button id="prev-chapter" class="nav-btn" disabled>← 上一章</button>
-                    <button id="to-catalog" class="nav-btn">返回目录</button>
-                    <button id="next-chapter" class="nav-btn">下一章 →</button>
-                </nav>
-            </div>
-        </main>
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" type="button" aria-label="打开目录" aria-expanded="false">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    <span>目录</span>
+  </button>
+  <a class="brand" href="#/catalog">
+    <b>共振纪元</b>
+    <span>Resonance Era</span>
+  </a>
+  <div class="topbar-right">
+    <a class="home" href="../index.html">GAME LAB</a>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换日间 / 夜间">夜间</button>
+  </div>
+</header>
 
-        <!-- Footer -->
-        <footer class="footer">
-            © 2026 共振纪元 | RESONANCE ERA BY XANTHANL
-        </footer>
+<div class="scrim" id="scrim"></div>
+
+<div class="shell">
+  <aside class="rail" id="rail" aria-label="目录与阅读设置">
+    <div class="rail-close">
+      <span>Contents</span>
+      <button type="button" id="railClose" aria-label="关闭目录">✕</button>
     </div>
 
-    <script src="./chapters.js"></script>
-    <script src="./reader.js"></script>
+    <h2 class="rail-h"><span>目录 / Contents</span><span id="railCount">25 章</span></h2>
+    <div id="toc"></div>
+
+    <div class="panel">
+      <div class="field">
+        <div class="field-h"><span>字号 / Size</span><b id="fsVal">17px</b></div>
+        <input type="range" id="fontSize" min="15" max="24" step="1" value="17" aria-label="字号">
+      </div>
+      <div class="field">
+        <div class="field-h"><span>行距 / Leading</span><b id="lhVal">1.9</b></div>
+        <input type="range" id="lineHeight" min="1.5" max="2.4" step="0.1" value="1.9" aria-label="行距">
+      </div>
+      <div class="field">
+        <div class="field-h"><span>主题 / Theme</span></div>
+        <div class="seg">
+          <button type="button" id="themeLight" aria-pressed="true">日间</button>
+          <button type="button" id="themeDark" aria-pressed="false">夜间</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rail-foot">XANTHANL · 2026<br>静态托管 · 无追踪 · 无广告</div>
+  </aside>
+
+  <main class="stage">
+    <div class="column" id="view"></div>
+  </main>
+</div>
+
+<nav class="mobilebar" aria-label="章节导航">
+  <button type="button" class="toc-btn" id="mbToc">目录</button>
+  <button type="button" class="jump prev" id="mbPrev">← 上一章</button>
+  <button type="button" class="jump next" id="mbNext">下一章 →</button>
+</nav>
+
+<script src="./chapters.js"></script>
+<script src="./reader.js"></script>
 </body>
 </html>

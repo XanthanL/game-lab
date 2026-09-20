@@ -23,25 +23,30 @@
 
 ### 前端技术栈
 ```
-├── index.html              # 阅读器主页面
+├── index.html              # 阅读器主页面（壳）
 ├── assets/
-│   ├── style.css          # 全局样式与响应式设计
-│   ├── novel.js           # 阅读器核心逻辑
-│   └── chapters.js        # 章节元数据
-└── 03_manuscript/         # 小说原始稿
-    ├── 第 1 章_*.md
-    ├── 第 2 章_*.md
+│   └── style.css           # 克莱因蓝设计系统（含日/夜主题、移动端）
+├── chapters.js             # 章节清单：标题、卷、文件名（唯一数据源）
+├── reader.js               # 阅读器逻辑：路由 / 取文件 / Markdown / 设置
+└── 03_manuscript/          # 小说原始稿
+    ├── 第 1 章_测地线方程的非线性解.md
+    ├── 第 2 章_诺特定理的例外情况.md
     └── ... (共 25 章)
+
+文件名规则：「第 {n} 章_{标题}.md」——「第」「章」与数字之间各有一个空格。
+例：第 8 章_杨 - 米尔斯理论的社会学延伸.md
 ```
 
 ### 功能特性
-- ✅ 响应式设计（适配移动端）
-- ✅ 深色/浅色主题切换
-- ✅ 字号与行距调节
-- ✅ 章节目录导航
-- ✅ 上一章/下一章快速跳转
-- ✅ Markdown 格式渲染
-- ✅ 本地存储用户偏好
+- ✅ 克莱因蓝设计系统（IKB #002FA7 + 酸黄 #EDFF45）
+- ✅ 日间 / 夜间双主题，自动跟随系统
+- ✅ 字号、行距调节（写到 CSS 变量，换章不会失效）
+- ✅ 响应式：移动端侧栏变抽屉 + 底部悬浮翻章栏 + 安全区适配
+- ✅ 目录页 + 深链：`#/catalog` 和 `#/3` 可分享、可刷新
+- ✅ 上次读到哪章自动恢复（localStorage）
+- ✅ 键盘 ←/→ 翻章，Esc 关抽屉
+- ✅ 阅读进度条（顶部 2px 酸黄）
+- ✅ 25 章手稿 0 取不到
 
 ---
 
@@ -101,36 +106,58 @@ jobs:
 
 ## 🔧 自定义配置
 
+### 本地预览
+章节文件用 fetch 加载，浏览器禁止从 `file://` 直接读。需要在本目录起一个静态服务：
+
+```powershell
+# PowerShell
+python -m http.server 8000
+# 然后访问 http://localhost:8000/
+```
+
+（或用 VS Code 的 Live Server 插件）
+
 ### 修改颜色主题
-编辑 `assets/style.css` 中的 CSS 变量：
+编辑 `assets/style.css` 顶部 `:root` 里的 token：
 
 ```css
-.novel-title {
-    background: linear-gradient(45deg, #00f2ff, #0066ff, #00f2ff);
+:root {
+  --ikb: #002FA7;     /* 克莱因蓝本体 —— 整本书的颜色基石 */
+  --acid: #EDFF45;    /* 酸黄，只用在「当前」与「进度」 */
 }
 ```
 
-### 调整字体设置
-在 `novel.js` 中修改默认值：
+日间主题调整 `--bg`（页底）/ `--surface`（阅读卡）/ `--ink`（正文）。
+夜间主题调整：`:root[data-theme="dark"] { ... }` 区块。
 
-```javascript
-const fontSize = localStorage.getItem('novel-font-size') || '18';
-const lineHeight = localStorage.getItem('novel-line-height') || '1.8';
+### 调整字体设置
+滑杆范围与默认值在 `assets/style.css` 根 token：
+
+```css
+--reader-fs: 17px;   /* 字号，滑杆 15–24 */
+--reader-lh: 1.9;    /* 行距，滑杆 1.5–2.4 */
 ```
 
 ---
 
-## 📊 数据结构示例
+## 📊 数据结构
+
+`chapters.js` 是唯一数据源，结构：
 
 ```javascript
 window.NOVEL_DATA = {
-    title: "共振纪元",
-    totalChapters: 25,
-    chapters: [
-        { number: 1, title: "测地线方程的非线性解" },
-        { number: 2, title: "诺特定理的例外情况" },
-        // ...更多章节
-    ]
+  title: "共振纪元",
+  titleEn: "RESONANCE ERA",
+  subtitle: "硬科幻 / 反乌托邦 / 革命叙事",
+  manuscriptDir: "03_manuscript",
+  volumes: [
+    { id: 1, title: "第一卷", subtitle: "世界观奠基篇", range: [1, 12] },
+    { id: 2, title: "第二卷", subtitle: "量子纠缠态的社会显现篇", range: [13, 25] }
+  ],
+  chapters: [
+    { number: 1, title: "测地线方程的非线性解", file: "...", volume: 1 },
+    ...
+  ]
 };
 ```
 
@@ -139,7 +166,7 @@ window.NOVEL_DATA = {
 ## 🎯 后续规划
 
 ### 功能增强
-- [ ] 目录页显示所有章节列表
+- [x] 目录页显示所有章节列表（封面 + 双卷网格）
 - [ ] 书签功能
 - [ ] 笔记标注
 - [ ] 搜索功能
