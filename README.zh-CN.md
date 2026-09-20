@@ -39,6 +39,7 @@
 | **树言 · 旅记**<br>*Shuyan Travel* | 私人旅行时间线：53 篇长文札记、53 个地点——八年驾车，之后两年零一个月徒步走完西南→东北对角线（雨崩到鹤岗）。路线用本地 vendored 的 Leaflet 画。 | [`/shuyan-travel/`](https://xanthanl.github.io/game-lab/shuyan-travel/) |
 | **Electric Mirage** | 以 XanthanL 名义发的 5 首曲子，站内流式播放（缓冲探测 / 重试 / 拖动 / 自动续播），中英双语。也收录《静电合唱团》——一首用 numpy 从零合成、自带 Web Audio 可视化的曲子。 | [`/XanthanLMusic/dist/`](https://xanthanl.github.io/game-lab/XanthanLMusic/dist/) |
 | **金价观象台**<br>*Golden Wind* | 金价看板，Next.js 静态导出：实时报价 + 均线 + 金叉 / 死叉标记（lightweight-charts）。 | [`/golden-wind/out/`](https://xanthanl.github.io/game-lab/golden-wind/out/) |
+| **共振纪元**<br>*Resonance Era* | 25 章硬科幻长篇（约 33.6 万字）：架空宇宙纪元 1018 年，六层级垂直社会、多走一步都要扣钱的度规阻力梯度，以及一个不该被听见的 12.7Hz 共振频率。克莱因蓝阅读器——日/夜双主题、字号行距可调、手机端抽屉目录、`#/3` 深链直达。 | [`/resonance-era/`](https://xanthanl.github.io/game-lab/resonance-era/) |
 | **ARH — 意识形态坐标测试** | 7 个维度的光谱定位问卷，30 / 65 / 95 题三档。 | [`/ARH/dist/`](https://xanthanl.github.io/game-lab/ARH/dist/) |
 
 ## 各项目文档
@@ -69,6 +70,7 @@ game-lab/
 ├── persona/              11 部像素舞台剧 + 子索引    (static)
 ├── ascii-art/            ASCII 文字工坊             (static)
 ├── shuyan-travel/        旅行时间线 + 地图          (static, Leaflet vendored)
+├── resonance-era/        25 章硬科幻小说 + 阅读器     (static, 克莱因蓝)
 ├── testing-example/      12 套小生意站点样例        (static + 一个 Astro 构建)
 ├── XanthanLMusic/        音乐站 → dist/ 已提交      (Vite + React 19)
 ├── golden-wind/          金价看板 → out/ 已提交     (Next.js 静态导出)

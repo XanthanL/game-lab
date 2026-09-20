@@ -41,6 +41,7 @@ same one-line brief.
 | **树言 · 旅记**<br>*Shuyan Travel* | A private travel timeline: 53 long-form entries across 53 places — eight years of driving, then two years and a month walking the south-west → north-east diagonal from Yubeng to Hegang. Route map drawn with a locally vendored Leaflet. | [`/shuyan-travel/`](https://xanthanl.github.io/game-lab/shuyan-travel/) |
 | **Electric Mirage** | Singles page for music released under the name *XanthanL*: 5 tracks streamed in place with buffer probing, retry, seek and auto-advance, bilingual. Also hosts *Choir of Static*, a track synthesized from scratch in numpy, with its own Web Audio visualizer. | [`/XanthanLMusic/dist/`](https://xanthanl.github.io/game-lab/XanthanLMusic/dist/) |
 | **金价观象台**<br>*Golden Wind* | Gold dashboard, statically exported from Next.js: live quote, moving averages and golden/death-cross markers via lightweight-charts. | [`/golden-wind/out/`](https://xanthanl.github.io/game-lab/golden-wind/out/) |
+| **共振纪元**<br>*Resonance Era* | A 25-chapter hard-SF novel (~336k characters) set in year 1018 of an invented era: a six-tier vertical society, metric drag gradients that tax every extra metre walked, and a 12.7 Hz resonance nobody is supposed to hear. Read in a Klein-blue reader — day/night themes, adjustable size and leading, drawer TOC on mobile, `#/3` deep links. | [`/resonance-era/`](https://xanthanl.github.io/game-lab/resonance-era/) |
 | **ARH — Ideology Coordinate Test** | A 7-axis spectrum quiz in three lengths — 30 / 65 / 95 questions. | [`/ARH/dist/`](https://xanthanl.github.io/game-lab/ARH/dist/) |
 
 ## Per-project docs
@@ -72,6 +73,7 @@ game-lab/
 ├── persona/              11 pixel stage plays + sub-index  (static)
 ├── ascii-art/            ASCII text studio                 (static)
 ├── shuyan-travel/        travel timeline + map             (static, Leaflet vendored)
+├── resonance-era/        25-chapter hard-SF novel + reader (static, Klein-blue)
 ├── testing-example/      12 small-business site samples    (static + one Astro build)
 ├── XanthanLMusic/        music site  → dist/ committed     (Vite + React 19)
 ├── golden-wind/          gold dashboard → out/ committed   (Next.js static export)
