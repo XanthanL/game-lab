@@ -145,27 +145,38 @@ class NovelReader {
         this.currentChapter = chapterNumber;
 
         try {
-            // Get subtitle directly from file name mapping using a simple approach
-            let subtitle = '';
-            
-            // Try to match exact file pattern
-            const exactMatch = Object.keys(this.fileToTitleMap).find(key => 
-                key === `第${chapterNumber}章_${this.fileToTitleMap[key]}.md`
-            );
-            
-            if (exactMatch) {
-                subtitle = this.fileToTitleMap[exactMatch];
-            } else {
-                // Fallback: just use the key as subtitle
-                const fallbackKey = Object.keys(this.fileToTitleMap).find(key => 
-                    key.startsWith(`第${chapterNumber}章`)
-                );
-                if (fallbackKey) {
-                    subtitle = this.fileToTitleMap[fallbackKey];
-                }
-            }
+            // Direct mapping for each chapter
+            const chapterTitles = {
+                1: "测地线方程的非线性解",
+                2: "诺特定理的例外情况",
+                3: "卡西米尔效应的社会形态",
+                4: "彭罗斯过程的底层实现",
+                5: "贝尓不等式的背叛",
+                6: "霍金辐射的逆向应用",
+                7: "乌姆拉夫波动的阈值",
+                8: "杨 - 米尔斯理论的社会学延伸",
+                9: "自发对称性破缺的临界点",
+                10: "重正化群的错误项",
+                11: "拓扑相变的不可逆性",
+                12: "重整化流动的稳定点",
+                13: "多世界诠释的代价",
+                14: "量子纠缠态的宏观显现",
+                15: "贝尓不等式的社会应用",
+                16: "量子芝诺效应的迟钝",
+                17: "量子隧穿的概率分布",
+                18: "色散关系的非线性修正",
+                19: "斯塔克效应与环境噪声",
+                20: "冯诺依曼架构的社会学延伸",
+                21: "混沌理论的非线性预测",
+                22: "洛伦兹吸引子的社会形态",
+                23: "海森堡不确定性原理的社会应用",
+                24: "量子退相干的集体意识",
+                25: "量子纠缠的宏观显现"
+            };
 
-            console.log(`Chapter ${chapterNumber}: subtitle = "${subtitle}"`);
+            const subtitle = chapterTitles[chapterNumber] || '';
+            
+            console.log(`Chapter ${chapterNumber}: title = "${subtitle}"`);
             
             // Use correct relative path from index.html location
             const chapterFile = `03_manuscript/第${chapterNumber}章_${subtitle}.md`;
