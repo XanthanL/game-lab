@@ -6,6 +6,35 @@ class NovelReader {
         this.chapters = window.NOVEL_DATA?.chapters || [];
         this.totalChapters = window.NOVEL_DATA?.totalChapters || this.chapters.length;
         
+        // Chapter title mapping from file names
+        this.fileToTitleMap = {
+            "第 1 章_测地线方程的非线性解.md": "测地线方程的非线性解",
+            "第 2 章_诺特定理的例外情况.md": "诺特定理的例外情况",
+            "第 3 章_卡西米尔效应的社会形态.md": "卡西米尔效应的社会形态",
+            "第 4 章_彭罗斯过程的底层实现.md": "彭罗斯过程的底层实现",
+            "第 5 章_贝尓不等式的背叛.md": "贝尓不等式的背叛",
+            "第 6 章_霍金辐射的逆向应用.md": "霍金辐射的逆向应用",
+            "第 7 章_乌姆拉夫波动的阈值.md": "乌姆拉夫波动的阈值",
+            "第 8 章_杨 - 米尔斯理论的社会学延伸.md": "杨 - 米尔斯理论的社会学延伸",
+            "第 9 章_自发对称性破缺的临界点.md": "自发对称性破缺的临界点",
+            "第 10 章_重正化群的错误项.md": "重正化群的错误项",
+            "第 11 章_拓扑相变的不可逆性.md": "拓扑相变的不可逆性",
+            "第 12 章_重整化流动的稳定点.md": "重整化流动的稳定点",
+            "第 13 章_多世界诠释的代价.md": "多世界诠释的代价",
+            "第 14 章_量子纠缠态的宏观显现.md": "量子纠缠态的宏观显现",
+            "第 15 章_贝尓不等式的社会应用.md": "贝尓不等式的社会应用",
+            "第 16 章_量子芝诺效应的迟钝.md": "量子芝诺效应的迟钝",
+            "第 17 章_量子隧穿的概率分布.md": "量子隧穿的概率分布",
+            "第 18 章_色散关系的非线性修正.md": "色散关系的非线性修正",
+            "第 19 章_斯塔克效应与环境噪声.md": "斯塔克效应与环境噪声",
+            "第 20 章_冯诺依曼架构的社会学延伸.md": "冯诺依曼架构的社会学延伸",
+            "第 21 章_混沌理论的非线性预测.md": "混沌理论的非线性预测",
+            "第 22 章_洛伦兹吸引子的社会形态.md": "洛伦兹吸引子的社会形态",
+            "第 23 章_海森堡不确定性原理的社会应用.md": "海森堡不确定性原理的社会应用",
+            "第 24 章_量子退相干的集体意识.md": "量子退相干的集体意识",
+            "第 25 章_量子纠缠的宏观显现.md": "量子纠缠的宏观显现"
+        };
+
         this.init();
     }
 
@@ -75,20 +104,38 @@ class NovelReader {
         const chapterList = document.getElementById('chapter-list');
         if (!chapterList) return;
 
-        // Group by volume
-        const volumes = [
-            { name: '第一卷：世界观奠基篇', chapters: '1-12' },
-            { name: '第二卷：量子纠缠态的社会显现篇', chapters: '13-25' }
-        ];
+        let html = '';
+        
+        // First volume (1-12)
+        html += '<li style="margin-bottom: 1.5rem;"><span style="color: var(--text-secondary); font-weight: 400; margin-bottom: 0.75rem; display: block; font-size: 0.875rem;">第一卷：世界观奠基篇</span>';
+        for (let i = 1; i <= 12; i++) {
+            const title = this.getChapterSubtitle(i);
+            const activeClass = i === this.currentChapter ? 'active' : '';
+            html += `<li><a href="#" class="${activeClass}" onclick="reader.loadChapter(${i}); return false;">第${i}章 ${title}</a></li>`;
+        }
+        html += '</li>';
 
-        let html = '<li style="margin-bottom: 1rem;"><a href="#" style="pointer-events: none;">';
-        volumes.forEach(vol => {
-            html += `<span style="color: var(--text-secondary); font-weight: 400; margin-bottom: 0.5rem; display: block; font-size: 0.875rem;">${vol.name}</span>`;
-            html += `<span style="color: var(--text-muted); font-weight: 300;">Chapter ${vol.chapters}</span>`;
-        });
-        html += '</a></li>';
+        // Second volume (13-25)
+        html += '<li style="margin-bottom: 1.5rem;"><span style="color: var(--text-secondary); font-weight: 400; margin-bottom: 0.75rem; display: block; font-size: 0.875rem;">第二卷：量子纠缠态的社会显现篇</span>';
+        for (let i = 13; i <= 25; i++) {
+            const title = this.getChapterSubtitle(i);
+            const activeClass = i === this.currentChapter ? 'active' : '';
+            html += `<li><a href="#" class="${activeClass}" onclick="reader.loadChapter(${i}); return false;">第${i}章 ${title}</a></li>`;
+        }
+        html += '</li>';
 
         chapterList.innerHTML = html;
+    }
+
+    getChapterSubtitle(chapterNumber) {
+        const fileName = `第${chapterNumber}章_${this.fileToTitleMap[`第${chapterNumber}章_*.md`] || ''}.md`;
+        // Extract subtitle from filename
+        for (const [key, value] of Object.entries(this.fileToTitleMap)) {
+            if (key.includes(`第${chapterNumber}章`)) {
+                return value;
+            }
+        }
+        return '';
     }
 
     async loadChapter(chapterNumber) {
@@ -98,56 +145,38 @@ class NovelReader {
         this.currentChapter = chapterNumber;
 
         try {
-            // Map chapter number to actual file name
-            const fileMap = {
-                1: "测地线方程的非线性解",
-                2: "诺特定理的例外情况",
-                3: "卡西米尔效应的社会形态",
-                4: "彭罗斯过程的底层实现",
-                5: "贝尓不等式的背叛",
-                6: "霍金辐射的逆向应用",
-                7: "乌姆拉夫波动的阈值",
-                8: "杨 - 米尔斯理论的社会学延伸",
-                9: "自发对称性破缺的临界点",
-                10: "重正化群的错误项",
-                11: "拓扑相变的不可逆性",
-                12: "重整化流动的稳定点",
-                13: "多世界诠释的代价",
-                14: "量子纠缠态的宏观显现",
-                15: "贝尓不等式的社会应用",
-                16: "量子芝诺效应的迟钝",
-                17: "量子隧穿的概率分布",
-                18: "色散关系的非线性修正",
-                19: "斯塔克效应与环境噪声",
-                20: "冯诺依曼架构的社会学延伸",
-                21: "混沌理论的非线性预测",
-                22: "洛伦兹吸引子的社会形态",
-                23: "海森堡不确定性原理的社会应用",
-                24: "量子退相干的集体意识",
-                25: "量子纠缠的宏观显现"
-            };
+            // Get the correct subtitle for this chapter
+            let subtitle = '';
+            for (const [fileName, title] of Object.entries(this.fileToTitleMap)) {
+                if (fileName.includes(`第${chapterNumber}章`)) {
+                    subtitle = title;
+                    break;
+                }
+            }
 
-            const subtitle = fileMap[chapterNumber] || "测地线方程的非线性解";
             const chapterFile = `./03_manuscript/第${chapterNumber}章_${subtitle}.md`;
+            
+            console.log('Loading:', chapterFile);
             
             const response = await fetch(chapterFile);
             
-            if (!response.ok) throw new Error('Chapter not found');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const markdown = await response.text();
             const htmlContent = this.markdownToHtml(markdown);
 
             const bookContent = document.getElementById('book-content');
             
-            // Use the mapped title
-            const chapterTitle = `第${chapterNumber}章 ${chapter.title || subtitle}`;
+            const chapterTitle = `第${chapterNumber}章 ${subtitle}`;
 
             bookContent.innerHTML = `
                 <h2 class="chapter-title">${chapterTitle}</h2>
                 <div class="chapter-body">${htmlContent}</div>
             `;
 
-            // Update active state
+            // Update active state in sidebar
             this.updateActiveState(chapterNumber);
 
             // Scroll to top
@@ -159,7 +188,7 @@ class NovelReader {
         } catch (error) {
             console.error('Error loading chapter:', error);
             document.getElementById('book-content').innerHTML = 
-                `<p style="text-align:center;color:var(--text-secondary);padding:${this.spacing(2)}">无法加载该章节内容</p>`;
+                `<p style="text-align:center;color:var(--text-secondary);padding:2rem;">无法加载该章节内容<br/><small>${error.message}</small></p>`;
         }
     }
 
@@ -186,7 +215,13 @@ class NovelReader {
     }
 
     updateActiveState(currentChapter) {
-        // Currently showing TOC summary only
+        const links = document.querySelectorAll('.chapter-list a');
+        links.forEach(link => link.classList.remove('active'));
+        
+        const currentLink = document.querySelector(`.chapter-list a[onclick*="loadChapter(${currentChapter})"]`);
+        if (currentLink) {
+            currentLink.classList.add('active');
+        }
     }
 
     updateButtonStates() {
@@ -223,21 +258,12 @@ class NovelReader {
             body.style.lineHeight = ratio;
         }
     }
-
-    spacing(unit) {
-        const units = {
-            0.5: '0.5rem',
-            1: '1rem',
-            1.5: '1.5rem',
-            2: '2rem',
-            3: '3rem',
-            4: '4rem'
-        };
-        return units[unit] || unit + 'rem';
-    }
 }
+
+// Make reader instance globally accessible for onclick handlers
+let reader;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new NovelReader();
+    reader = new NovelReader();
 });
