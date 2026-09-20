@@ -145,15 +145,28 @@ class NovelReader {
         this.currentChapter = chapterNumber;
 
         try {
-            // Get the correct subtitle for this chapter
+            // Get subtitle directly from file name mapping using a simple approach
             let subtitle = '';
-            for (const [fileName, title] of Object.entries(this.fileToTitleMap)) {
-                if (fileName.includes(`第${chapterNumber}章`)) {
-                    subtitle = title;
-                    break;
+            
+            // Try to match exact file pattern
+            const exactMatch = Object.keys(this.fileToTitleMap).find(key => 
+                key === `第${chapterNumber}章_${this.fileToTitleMap[key]}.md`
+            );
+            
+            if (exactMatch) {
+                subtitle = this.fileToTitleMap[exactMatch];
+            } else {
+                // Fallback: just use the key as subtitle
+                const fallbackKey = Object.keys(this.fileToTitleMap).find(key => 
+                    key.startsWith(`第${chapterNumber}章`)
+                );
+                if (fallbackKey) {
+                    subtitle = this.fileToTitleMap[fallbackKey];
                 }
             }
 
+            console.log(`Chapter ${chapterNumber}: subtitle = "${subtitle}"`);
+            
             // Use correct relative path from index.html location
             const chapterFile = `03_manuscript/第${chapterNumber}章_${subtitle}.md`;
             
