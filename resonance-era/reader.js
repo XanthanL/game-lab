@@ -154,7 +154,8 @@ class NovelReader {
                 }
             }
 
-            const chapterFile = `./03_manuscript/第${chapterNumber}章_${subtitle}.md`;
+            // Use correct relative path from index.html location
+            const chapterFile = `03_manuscript/第${chapterNumber}章_${subtitle}.md`;
             
             console.log('Loading:', chapterFile);
             
