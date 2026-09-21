@@ -10,6 +10,9 @@
  * 标题制度（2026-09-21 定稿，见 04_editing/title-system.md）：
  *   像《地球往事》那样 —— 只命名不评价，2—5 字为主，优先用本章的那个「物」。
  *   不许出现判断词（背叛／例外／错误／代价／不可逆），不许用「物理概念 + 社会学延伸」的论文腔。
+ *   ⚠️ 全书最多一个带度量单位的标题（现为第 1 章「每年两米九」）—— 见 04_editing/numeric-discipline.md。
+ *      作者 2026-09-21 拍板：前六章曾有四个（每年两米九／三十克／一点一米／十二点七），
+ *      1、2、3 连着三章，读起来像报表。已改成 名册 / 一格 / 第一项。
  *   改 title = 改文件名（file 由 title 派生），改完必须跑 .workbuddy/res-probe.cjs。
  */
 window.NOVEL_DATA = {
@@ -24,11 +27,11 @@ window.NOVEL_DATA = {
   chapters: [
     // 第一卷 · 众生 —— 前六章着力众生面貌，第七章起才说七四
     { number: 1,  title: "每年两米九" },
-    { number: 2,  title: "三十克" },
-    { number: 3,  title: "一点一米" },
+    { number: 2,  title: "名册" },
+    { number: 3,  title: "一格" },
     { number: 4,  title: "过账" },
     { number: 5,  title: "瑟拉" },
-    { number: 6,  title: "十二点七" },
+    { number: 6,  title: "第一项" },
     { number: 7,  title: "七四" },
     { number: 8,  title: "第十四任" },
     { number: 9,  title: "三个人" },
