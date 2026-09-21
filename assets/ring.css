@@ -185,7 +185,9 @@ body { overflow: hidden; }
 }
 .hero {
   flex: none; min-height: 0;
-  padding-block: clamp(10px, 2.5vh, 26px) clamp(4px, 1vh, 12px);
+  /* 没有大 logo，hero 只挂分类 tabs。上 padding 留呼吸、下 padding 紧凑——
+     让 .ring-sec 拿到更多高度，转盘卡片能学样例站点那样粘连。 */
+  padding-block: clamp(14px, 2.2vh, 22px) clamp(6px, 1vh, 12px);
 }
 .ring-sec {
   flex: 1 1 auto; min-height: 280px;
