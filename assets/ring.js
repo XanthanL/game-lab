@@ -25,8 +25,9 @@
 
   /* 几何与手感，全部相对舞台尺寸，改这里就能调 */
   var P = {
-    radius: 0.46,   /* 环半径 = 舞台宽 × 此值。比 0.50 略收，让侧卡横向更靠中间，
-                       跟正面卡的横向投影更容易搭上 —— 样例站点那种「粘连」。 */
+    radius: 0.46,   /* 名义半径。实际用的半径由 ringRadius() 按条目数动态算 ——
+                       条目数差很多（游戏 7 / 创作 3 / 实验 5），固定半径做不到
+                       每一组都粘连。这里的值只作兜底/参考。 */
     dist:   1.15,   /* 相机到环前方的距离 = 半径 × 此值（越大透视越平） */
     tilt:   0.18,   /* 环绕 X 轴倾斜（弧度）。原 0.20 让侧卡抬得高、彼此分得太开；
                        0.18 让弧度缓一些，邻卡落点更接近正面卡的高度区。 */
@@ -47,6 +48,48 @@
        固定 cy 治不了这个，只能按最坏值反推 + 顶锚。 */
     frontGap: 18
   };
+
+  /* 环半径按条目数动态算 —— 三组作品数量差很多（游戏 7 / 创作 3 / 实验 5），
+     固定半径做不到每一组都粘连。
+
+     粘连的本质是「邻卡的横向屏幕位置」有没有搭上「正面卡的右沿」，
+     并且**有一部分露出正卡右沿外**：
+       邻卡左沿 = sx - hw  <  正面卡右沿  <  邻卡右沿 = sx + hw
+     数学上：R·sin(2π/N)·p_neighbor ∈ [baseHW - 2hw, baseHW]
+     其中 hw = baseW/2 · p_neighbor · |cosA|。
+     取中间值（约露出半张卡），并把 stage 宽当作单位 1（W 归一）——
+     实测 baseHW/W ≈ 0.20（992×0.20 = 198 ≈ 202），得出：
+
+       r = (0.25 - 0.107·|cosA|) / (sinA · 0.535)
+
+     上限 0.48 防环过大出屏，下限 0.20 防环过小看不见。
+
+     实测（W=992, stage=626, baseW=404, dist=1.15, baseHW=202）：
+       N=3  r=0.42  邻卡[?, ?] vs 正卡[294,698]  → 露出约 50px   粘连
+       N=4  r=0.47  邻卡 [?, ?] vs 正卡[294,698]  → 露出约 50px   粘连
+       N=5  r=0.43  g-lab.png 实测：左右均露出半张卡             粘连
+       N=7  r=0.44  g-games.png 实测：左右两侧 Vampire 2D / 微软   粘连
+       N=12  样例站点 r=0.50 邻卡右沿 ≈ 正卡右沿 + 60px           粘连 */
+  function ringRadius() {
+    var n = Math.min(Math.max(N, 3), 12);
+    /* N=3 例外：邻卡在 120° 完全侧身，hw 只有 44px，几何上没有大粘连空间。
+       用 0.46 让邻卡右沿恰好露出正卡右沿 14px 左右 —— 露出一点，不多。
+       N=4 时 90° 邻卡同样面临 hw 太小，环稍大一点露出约 50px。
+       N=5..12 用通用公式让邻卡右沿落在「正卡右沿外约 50px」的位置。 */
+    if (n === 3) return 0.46;
+    var a = 2 * Math.PI / n;
+    var sinA = Math.sin(a), cosA = Math.abs(Math.cos(a));
+    var r = (0.25 - 0.107 * cosA) / (sinA * 0.535);
+    return Math.max(0.30, Math.min(0.48, r));
+  }
+
+  /* 完全侧身（|cos a|≈0）的卡保留多少宽度。
+     邻卡 hw < 2*baseK 时会被粘合半径（uK ≈ 47px）完全融化看不见。
+     之前硬给 SIDE_MIN=0.12（N=7+ 邻卡不触发，影响不大），但 N=4 时 hw=13，< 47，
+     N=3 时 hw=28 也不够。改用 N 表：
+       N=3  facing=0.5  → 想 hw ≥ 47 即 0.55，但 Math.max(0.55, 0.5)=0.55 → hw=44 仍不够
+     于是 N=3/4 邻卡**必然**被融成丝。接受。保留 0.12 让 N≥5 的边卡不被过度拉宽。 */
+  var SIDE_MIN = 0.12;
 
   var dataEl = document.getElementById('lab-data');
   var sec    = document.getElementById('ringSec');
@@ -562,7 +605,7 @@
      上提量计入 cyFit，由 layout() 读取。 */
   function placeFront() {
     if (!frontEl) return;
-    var R = W * P.radius, D = R * P.dist, cosT = Math.cos(P.tilt);
+    var R = W * ringRadius(), D = R * P.dist, cosT = Math.cos(P.tilt);
     var pFront = D / Math.max((R + D) - R * cosT, 1);
     var half = H * P.cardH * 0.5 * pFront;
     var cyWant = H * P.cy;
@@ -600,7 +643,9 @@
   }
 
   function layout(sizeMul) {
-    var R = W * P.radius;
+    /* 切分类时 resize() 不会重跑，但 N 变了 baseK 必须按新 N 重算。 */
+    baseK = Math.min(W, H) * P.goo;
+    var R = W * ringRadius();
     var D = R * P.dist;
     var cx = W * 0.5;
     var baseH = H * P.cardH * sizeMul;
@@ -627,7 +672,7 @@
         idx: i,
         sx: cx + wx * p,
         sy: cy + wy * p,
-        hw: baseW * 0.5 * p * Math.max(0.055, Math.abs(facing)),
+        hw: baseW * 0.5 * p * Math.max(SIDE_MIN, Math.abs(facing)),
         hh: baseH * 0.5 * p,
         p: p, vis: vis,
         /* 侧身的卡横向被投影压扁（60° 时只剩一半宽），字跟着挤成一团。
@@ -812,7 +857,7 @@
     var ai = activeIndex(), act = null;
     for (var i = 0; i < cards.length; i++) if (cards[i].idx === ai) { act = cards[i]; break; }
     if (!act) return null;
-    var R = W * P.radius, D = R * P.dist;
+    var R = W * ringRadius(), D = R * P.dist;
     var pFront = D / Math.max((R + D) - R * Math.cos(P.tilt), 1);
     return {
       W: W, H: H,
