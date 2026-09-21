@@ -61,7 +61,7 @@ window.NOVEL_DATA = {
     { number: 14,  title: "回响",
       epigraph: { quote: "余音绕梁，三日不绝。", source: "古泰拉典故。第 12 扇区阅听室门楣，字迹完好——该室自纪元 1013 年起无人进入。" } },
     { number: 15,  title: "拷问",
-      epigraph: { quote: "欲加之罪，何患无辞。", source: "古泰拉典籍。第 31 扇区审讯室外墙，纪元 1017 年重刷时保留。" } },
+      epigraph: { quote: "欲加之罪，何患无辞。", source: "古泰拉典籍。第 12 扇区判定处门内墙，白底黑字，四个字。判定处纪元 1013 年撤销，该层封闭；字还在墙上。" } },
     { number: 16,  title: "每天一次",
       epigraph: { quote: "一日之计在于晨。", source: "古泰拉谚语。第 8 扇区采集站值班室外，与作息表并排张贴。" } },
     { number: 17,  title: "缝隙",
