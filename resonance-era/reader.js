@@ -21,7 +21,8 @@
     theme: 're-theme',
     fs: 're-font-size',
     lh: 're-line-height',
-    last: 're-last-chapter'
+    last: 're-last-chapter',
+    pos: 're-read-pos'
   };
 
   var el = {};
@@ -218,6 +219,9 @@
     var ch = DATA.byNumber[n];
     if (!ch) { go('catalog'); return; }
 
+    /* 离开上一章之前，先把它的位置存下来 */
+    if (current && current !== n) savePos();
+
     current = n;
     el.body.setAttribute('data-view', 'chapter');
     el.root.setAttribute('data-view', 'chapter');
@@ -270,14 +274,32 @@
             '<span>' + esc(DATA.titleEn) + '</span>' +
           '</div>' +
         '</header>' +
+        epigraphHtml(ch) +
         '<div class="prose">' + parsed.html + '</div>' +
         nav +
         '<a class="back-catalog" href="#/catalog">返回目录</a>' +
       '</article>';
 
     document.title = '第 ' + ch.number + ' 章 ' + ch.title + ' · ' + DATA.title;
+
+    /* 恢复上次读到的位置（换字号/换屏宽也不会错位，因为记的是块序号） */
     window.scrollTo(0, 0);
-    onScroll();
+    afterLayout(function () {
+      var y = restorePos(ch.number);
+      if (y > 0) { window.scrollTo(0, y); showResumeTip(); } else { hideResumeTip(); }
+      onScroll();
+    });
+  }
+
+  /* 章首引文：古泰拉谚语 / 角色台词。古泰拉 = 我们的时代，
+     所以用的都是中文读者耳熟能详的句子 —— 出处说明本身就是世界感。 */
+  function epigraphHtml(ch) {
+    var e = ch && ch.epigraph;
+    if (!e || !e.quote) return '';
+    return '<blockquote class="ch-epigraph">' +
+             '<p class="epi-q">' + esc(e.quote) + '</p>' +
+             (e.source ? '<p class="epi-s">' + esc(e.source) + '</p>' : '') +
+           '</blockquote>';
   }
 
   function paintError(ch, err) {
@@ -356,10 +378,72 @@
     }
   }
 
+  /* ---------- 阅读位置记忆 ----------
+   * 记的是「视口顶部落在第几个块上」，不是像素。
+   * 这样读者改了字号/行距，或者换个屏幕宽度，位置依然对得上。
+   */
+  function proseBlocks() {
+    return el.view.querySelectorAll('.prose > *');
+  }
+
+  function savePos() {
+    if (!current || el.body.getAttribute('data-view') !== 'chapter') return;
+    var blocks = proseBlocks();
+    if (!blocks.length) return;
+    var top = window.scrollY + 100;
+    var idx = 0;
+    for (var i = 0; i < blocks.length; i++) {
+      if (blocks[i].offsetTop <= top) idx = i; else break;
+    }
+    /* 按章节分开存：只存一份的话，切到别的章一滚动就把它冲掉了 */
+    save(KEY.pos + '.' + current, JSON.stringify({ n: current, i: idx, t: Date.now() }));
+  }
+
+  function restorePos(n) {
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem(KEY.pos + '.' + n) || 'null'); } catch (e) { raw = null; }
+    if (!raw || raw.n !== n) return 0;
+    /* 第 0 块就是开头，不用跳 —— 跳了反而像 bug */
+    if (!raw.i) return 0;
+    var blocks = proseBlocks();
+    var target = blocks[raw.i];
+    if (!target) return 0;
+    var y = target.offsetTop - 100;
+    return y > 200 ? y : 0;
+  }
+
+  /* 等布局真的稳了再定位：字体没加载完时 offsetTop 是错的，
+     恢复过去会偏掉几十个块。字体 + 两帧。 */
+  function afterLayout(fn) {
+    var done = function () {
+      requestAnimationFrame(function () { requestAnimationFrame(fn); });
+    };
+    try {
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(done, done);
+        return;
+      }
+    } catch (e) {}
+    done();
+  }
+
+  function showResumeTip() {
+    var tip = document.getElementById('resumeTip');
+    if (!tip) return;
+    tip.hidden = false;
+    clearTimeout(tip._timer);
+    tip._timer = setTimeout(function () { tip.hidden = true; }, 6000);
+  }
+  function hideResumeTip() {
+    var tip = document.getElementById('resumeTip');
+    if (tip) { clearTimeout(tip._timer); tip.hidden = true; }
+  }
+
   function onScroll() {
     var max = document.documentElement.scrollHeight - window.innerHeight;
     var p = max > 0 ? clamp(window.scrollY / max, 0, 1) : 0;
     el.progress.style.width = (p * 100).toFixed(2) + '%';
+    savePos();
   }
   function onScrollRaf() {
     if (rafPending) return;
@@ -374,6 +458,20 @@
     });
     el.railClose.addEventListener('click', closeDrawer);
     el.scrim.addEventListener('click', closeDrawer);
+
+    /* 恢复位置提示条 */
+    var resumeTop = document.getElementById('resumeTop');
+    var resumeClose = document.getElementById('resumeClose');
+    if (resumeTop) resumeTop.addEventListener('click', function () {
+      window.scrollTo(0, 0); hideResumeTip();
+    });
+    if (resumeClose) resumeClose.addEventListener('click', hideResumeTip);
+
+    /* 关掉页面 / 刷新之前再存一次，滚动节流可能还没落盘 */
+    window.addEventListener('beforeunload', savePos);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') savePos();
+    });
 
     /* 抽屉里点章节就关掉抽屉（hashchange 会负责换页） */
     el.rail.addEventListener('click', function (e) {

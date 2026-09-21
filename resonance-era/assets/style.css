@@ -116,6 +116,66 @@ input { font: inherit; color: inherit; }
   transition: width .12s linear;
 }
 
+/* 回到上次位置时的提示条。克莱因蓝底、酸黄字，跟顶栏同一套语言。 */
+.resume-tip {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 7px 8px 7px 14px;
+  background: var(--chrome);
+  color: var(--chrome-ink);
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: .04em;
+  box-shadow: 0 2px 12px rgba(0, 12, 46, .3);
+  animation: rtIn .2s ease-out;
+}
+/* flex 会盖掉 UA 的 [hidden]，必须自己声明 */
+.resume-tip[hidden] { display: none !important; }
+.rt-x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-btn {
+  flex: none;
+  background: transparent;
+  color: var(--acid);
+  border: 1px solid rgba(237, 255, 69, .55);
+  padding: 3px 9px;
+  font: inherit;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+.rt-btn:hover { background: rgba(237, 255, 69, .12); }
+.rt-close {
+  flex: none;
+  background: transparent;
+  color: rgba(255, 255, 255, .6);
+  border: 0;
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rt-close:hover { color: #fff; }
+@keyframes rtIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+/* 移动端底部有 52px 翻章条，提示条要让开 */
+@media (max-width: 900px) {
+  .resume-tip {
+    bottom: calc(52px + 14px + env(safe-area-inset-bottom, 0px));
+    font-size: 11.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .resume-tip { animation: none; }
+}
+
 /* ---------- 4. 顶栏 ---------- */
 .topbar {
   position: sticky;
@@ -388,6 +448,37 @@ input[type="range"]::-moz-range-thumb {
   color: var(--ink-3);
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
+}
+
+/* 章首引文 —— 古泰拉谚语 / 角色台词。
+   古泰拉 = 我们的时代，所以句子是读者认得的；出处说明才是这个世界的。
+   不加引号、不加装饰，只用一条发丝线和两级灰，让它像拓片不像花边。 */
+.ch-epigraph {
+  margin: 26px 0 30px;
+  padding: 2px 0 2px 1.15em;
+  border-left: 1px solid var(--line-2);
+}
+.ch-epigraph .epi-q {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: calc(var(--reader-fs) * 0.96);
+  line-height: 1.85;
+  color: var(--ink-2);
+  letter-spacing: .03em;
+  text-align: left;
+  text-indent: 0;
+}
+.ch-epigraph .epi-s {
+  margin: .55em 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.75;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+  text-indent: 0;
+}
+@media (max-width: 900px) {
+  .ch-epigraph { margin: 20px 0 24px; }
 }
 
 /* 正文 */

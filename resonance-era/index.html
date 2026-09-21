@@ -35,6 +35,14 @@
 
 <div class="progress" aria-hidden="true"><i id="progressFill"></i></div>
 
+<!-- 回到上次读到的位置时的提示条。刷新/关掉再进来会自动定位，
+     这里给一个「从头读」的退路，免得读者以为页面坏了。 -->
+<div class="resume-tip" id="resumeTip" hidden>
+  <span class="rt-x">已回到上次读到的位置</span>
+  <button type="button" class="rt-btn" id="resumeTop">从头读</button>
+  <button type="button" class="rt-close" id="resumeClose" aria-label="关闭">&times;</button>
+</div>
+
 <header class="topbar">
   <button class="icon-btn" id="menuBtn" type="button" aria-label="打开目录" aria-expanded="false">
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
