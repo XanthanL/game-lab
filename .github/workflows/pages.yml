@@ -1,5 +1,10 @@
 name: Deploy to GitHub Pages
 
+# 一个仓库只有一个 Pages 站点。本工作流把【仓库根目录】作为站点根发布，
+# 所有子项目（resonance-era/、golden-wind/out/ 等）都是根下面的子路径。
+# 不要再新增第二份 deploy 工作流去发布某个子目录 —— 那份会把整个域名覆盖成
+# 那个子项目，根首页会消失。（2026-09-21 踩过：novel-deploy.yml 已删）
+
 on:
   push:
     branches: [main]
