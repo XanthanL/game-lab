@@ -28,7 +28,7 @@
    小屏上反而要溢出。换成 calc(100vh-200) 后，环直接顶满。 */
 .ring-stage {
   position: relative; isolation: isolate;
-  height: clamp(580px, calc(100vh - 200px), 940px);
+  height: 100%;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: var(--bg);
@@ -139,7 +139,7 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
 @media (max-width: 700px) {
   /* 窄屏 footer 也得给空间：减到 180 留给版权区。最小 500，够两张卡侧身。
      真到 380px (iPhone SE) 上限收到 720，再大就溢到 footer 上面了。 */
-  .ring-stage { height: clamp(500px, calc(100vh - 180px), 720px); }
+  .ring-stage { height: 100%; }
   .ring-col { display: none; }          /* 窄屏放不下，改靠拖动 */
   .ring-front {
     padding: 0 18px;
@@ -167,3 +167,85 @@ a.rl-row:hover, a.rl-row:focus-visible { background: var(--glass-bg); }
 .cat-tabs button.is-on { color: var(--accent); border-color: var(--accent); border-style: solid; }
 .cat-tabs em { font-style: normal; color: var(--ink-3); }
 .cat-tabs button.is-on em { color: inherit; opacity: .75; }
+
+
+/* ============================================================
+   一屏：整个首页锁进 100dvh，滚轮只用来翻转盘上的卡片
+   之前文档高 1503 / 视口 900（超出 603）：lede 56 + 风格条 102 + footer 156
+   三块就吃掉了小半屏。现在 lede 去掉、风格收进顶栏浮层、footer 压成一行，
+   剩下的高度全部给转盘 —— 用户进站就能看见全貌，滚动只发生在卡片上。
+   ============================================================ */
+html, body { height: 100%; }
+body { overflow: hidden; }
+
+.wrap {
+  height: 100vh;
+  height: 100dvh;              /* 移动端地址栏收起/展开时不跳 */
+  display: flex; flex-direction: column;
+}
+.hero {
+  flex: none; min-height: 0;
+  padding-block: clamp(10px, 2.5vh, 26px) clamp(4px, 1vh, 12px);
+}
+.ring-sec {
+  flex: 1 1 auto; min-height: 280px;
+  margin-top: 0; overflow-y: auto;   /* 无 WebGL 退回列表时，滚动发生在这一层 */
+}
+footer { flex: none; margin-top: 0; padding: 10px 0 12px; }
+.foot-meta { line-height: 1.7; }
+
+/* 矮屏（横屏手机 / 小窗）放不下就别硬锁，交还给页面滚动 */
+@media (max-height: 520px) {
+  html, body { height: auto; }
+  body { overflow: auto; }
+  .wrap { height: auto; }
+  .ring-sec { min-height: 420px; overflow: visible; }
+}
+
+/* 浮层要贴着右上角的按钮展开，锚点就设在按钮所在的这一格上 */
+.topbar-right { position: relative; }
+
+/* ============================================================
+   风格面板：收进顶栏，点「风格」展开
+   #skinBar 还在（只是搬进浮层），i18n.js 照旧走「平铺」分支注入分组+芯片，
+   不用改任何脚本。按钮上那颗小圆点取 --accent，跟着当前风格实时变色。
+   ============================================================ */
+.skin-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 13px; border-radius: 999px; cursor: pointer;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+  color: var(--ink-2); background: none;
+  border: 1px double var(--glass-border);
+  transition: color .4s var(--ease), border-color .4s var(--ease);
+}
+.skin-toggle:hover { color: var(--ink); }
+.skin-toggle[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); border-style: solid; }
+.skin-toggle-dot {
+  flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px var(--spot-c, transparent);
+}
+
+.skin-panel {
+  position: absolute; z-index: 60; top: calc(100% + 10px); right: 0;
+  width: min(340px, calc(100vw - 32px));
+  padding: 16px 16px 14px; border-radius: 18px;
+  background: var(--card-bg, var(--bg));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  /* 页面锁了一屏（body overflow:hidden），浮层自己超了就滚自己 ——
+     否则「游戏界面」14 个芯片会顶出视口，既看不见也滚不到。 */
+  max-height: calc(100dvh - 84px);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.skin-panel[hidden] { display: none; }
+.skin-panel .skin-bar { margin-bottom: 10px; }
+.skin-panel .skin-random { align-self: stretch; justify-content: center; margin: 0; }
+
+@keyframes skinDrop {
+  from { opacity: 0; transform: translateY(-6px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skin-panel:not([hidden]) { animation: skinDrop .18s var(--ease); }
+}
