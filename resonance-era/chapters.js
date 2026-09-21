@@ -54,7 +54,7 @@ window.NOVEL_DATA = {
     { number: 11,  title: "原因栏",
       epigraph: { quote: "事出有因。", source: "古泰拉谚语。第 31 扇区档案室索引卡片背面印刷，每张都有。" } },
     { number: 12,  title: "塔",
-      epigraph: { quote: "欲穷千里目，更上一层楼。", source: "古泰拉诗。塔第 400 级平台内壁刻字。" } },
+      epigraph: { quote: "欲穷千里目，更上一层楼。", source: "古泰拉诗。塔第 400 级内壁，指甲划成，非刀刻。塔顶平台在 427 级——划字的人没有上去。" } },
     // 第二卷 · 回响 —— 标题是方向不是锁死，重写时按各章实际的「物」复核
     { number: 13,  title: "两本账",
       epigraph: { quote: "亲兄弟，明算账。", source: "古泰拉谚语。第 37 扇区账目核对处门联，下联缺失。" } },
