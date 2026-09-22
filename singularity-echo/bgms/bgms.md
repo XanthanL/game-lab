@@ -121,6 +121,8 @@ class BGMManager {
 
 ## 4. 分曲参考（Suno 提示词，留档）
 
+> **扩展曲库**（两套互斥人格：Blood Cultures 系 / Daft Punk 系，各 4 首）见 `bgms/suno-prompts-persona.md`。
+
 ### 1. 「凝醒 / Cryo Wake」 · 82 BPM — 主菜单
 - Style：`chillsynth, space ambient, ethereal warm analog pads, sparse lo-fi beats, reverb-drenched synth arpeggio, dreamy cosmic, weightless, 82 BPM, instrumental`
 - Lyrics：`[Slow Intro] [Ambient Pad Swell] [Verse Instrumental] [Chorus Instrumental] [Bridge] [Outro Fade]`
