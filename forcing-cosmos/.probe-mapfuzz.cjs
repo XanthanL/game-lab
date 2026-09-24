@@ -7,7 +7,8 @@
 'use strict';
 const { chromium } = require('playwright-core');
 const CHROME = 'C:/Users/www27/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe';
-const BASE = 'http://127.0.0.1:8126/index.html';
+// 默认打本地；验线上就 PROBE_BASE=https://xanthanl.github.io/game-lab/forcing-cosmos/index.html
+const BASE = process.env.PROBE_BASE || 'http://127.0.0.1:8126/index.html';
 
 const FUZZ = `(() => {
   const fails = [], shapeFails = [];
