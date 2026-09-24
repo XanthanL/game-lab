@@ -112,6 +112,20 @@ const Sound = (() => {
       tone({ f: 880, f2: 1320, d: 0.1, type: 'square', v: 0.08 });
       tone({ f: 1175, f2: 1760, d: 0.14, type: 'square', v: 0.07, t0: 0.09 });
     },
+    // 轨道长枪：低频蓄能 + 高频撕裂，比 Boss 激光更短更干
+    lance() {
+      tone({ f: 2200, f2: 90, d: 0.34, type: 'sawtooth', v: 0.2 });
+      noise({ d: 0.3, v: 0.34, f: 5200, f2: 300, type: 'bandpass', q: 1.6 });
+      tone({ f: 70, f2: 30, d: 0.3, type: 'sine', v: 0.55 });
+    },
+    // 相位折跃：短促的空间撕裂（上行 + 下行各一瞬）
+    blink() {
+      tone({ f: 320, f2: 2600, d: 0.11, type: 'triangle', v: 0.1 });
+      tone({ f: 2600, f2: 420, d: 0.13, type: 'triangle', v: 0.08, t0: 0.08 });
+      noise({ d: 0.16, v: 0.12, f: 3000, f2: 9000, type: 'bandpass', q: 2.2 });
+    },
+    // 磁暴雷布设：两下金属轻响；触爆复用 boom()
+    mine() { if (!thr('mine', 55)) return; tone({ f: 620, f2: 940, d: 0.07, type: 'square', v: 0.06 }); tone({ f: 940, d: 0.05, type: 'triangle', v: 0.05, t0: 0.07 }); },
   };
 
   // ---------------- BGM ----------------

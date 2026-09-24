@@ -103,3 +103,12 @@ europa/tools/*small*
 singularity-echo/.tmp_test/
 # 回归脚本本身要进仓库（singularity-echo/test/*.js），但跑出来的截图不要
 singularity-echo/test/phase*/
+
+# ============ 无头 Chrome 探针的注入页（.workbuddy/sv-*.py 生成）============
+# 每个探针把自己的 JS 注入 index.html 后写成一个临时页面再喂给无头 Chrome，
+# 跑完自己删。探针中途崩掉时可能留下，绝不该进仓库。
+# ⚠️ 各探针**必须**用各自的文件名（__svprobe / __svui / __svport …）。
+#    曾经 7 个探针共用 singularity-voyage/__probe.html，一个残留的探针页面
+#    就能把别的探针的结果打进新 server，表现为「断言集体 FAIL」甚至假 PASS。
+singularity-voyage/__*.html
+**/__probe.html

@@ -25,6 +25,11 @@ let touchMode = false, hangarSel = 0;
 let pointerKind = 'mouse';
 const keys = {}, mouse = { x: W / 2, y: H / 2, down: false, inside: false };
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
+// 跟奇点回响对齐的「最近一次输入决定朝向控制方式」：
+// 'key' = A/D 转向；'mouse' = 朝鼠标方向缓慢转向。光标动了切到 mouse；A/D 一按切回 key。
+// ⚠️ 必须用 var 而不是 let —— 探针通过 window.aimMode 读这个状态，
+//    plain <script> 下 let 是 script-scope，不会挂到 window。
+var aimMode = 'key';
 
 // ============ 像素文字（缓存 canvas） ============
 const tcache = new Map();
@@ -104,7 +109,7 @@ const HULLS = [
     unlock: { kills: 300, text: '累计击坠 300' },
   },
   {
-    id: 'swarm', name: '蜂群', en: 'SWARM', tag: '编队', color: '#a7f070',
+    id: 'swarm', name: '蜂群', en: 'SWARM', tag: '编队', color: '#ffcd75',
     desc: '出击就带两架僚机。\n自己不开火也能打。',
     hp: 92, spd: 1.06, dmg: 0.86, rate: 0.94, turn: 1.05,
     stats: '船体 92\n速度 106%\n火力 86%',
@@ -156,13 +161,72 @@ const ZONES = [
   { name: '深空奇点',   en: 'DEEP SINGULARITY', from: 9, to: 12, squads: ['fort', 'flock', 'weave', 'mixed'] },
 ];
 const zoneOf = w => ZONES.find(z => w >= z.from && w <= z.to) || ZONES[2];
-const WAVES = 12;
+const WAVES = 12;                 // 主线航段数：打完这 12 段 = 通关，但**不停机**，转入无尽
 const BOSS_WAVES = { 4: 'motherrock', 8: 'warden', 12: 'gate' };
 const BOSSES = {
   motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 900, r: 21, pats: ['charge', 'spread'], color: '#c070f0' },
   warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 2000, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577' },
   gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 3600, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7' },
 };
+
+/* ============ 无尽航程 & 深渊强度（搬运自《奇点回响》的 ETIER_* 档位） ============
+   echo 的做法是：主线跑完之后不结束，而是每 5 段抬一档全局强度，
+   血量**指数**上涨（1.14^n），伤害 / 速度小幅跟涨且**各自封顶**。
+   这里照搬同一套曲线，只把起点从 echo 的第 41 段挪到第 13 段。
+
+   ⚠️ 三处必须一起改，漏一处就会出现「只有血变厚、弹幕还是挠痒」的半吊子难度：
+       ① hpScale()      —— 杂兵血量
+       ② spawnEnemy()   —— e.dmg / e.spdMul（接触伤害 / 移动速度）
+       ③ eShot()        —— 敌弹自带 dmg，updateEBullets 直接读它
+   ⚠️ 线性成长在主线末段封顶（min(w, WAVES)），否则线性和指数会**叠乘**：
+      wave 50 会变成 6.4 × 2.85 ≈ 18 倍血，曲线直接失控。 */
+const ENDLESS_FROM = WAVES + 1;       // 13 段起 = 无尽航程
+const ENDLESS_EVERY = 5;              // 每 5 段抬一档
+const TIER_HP = 1.14;                 // 每档血量 ×1.14（指数，不封顶）
+const TIER_DMG = 1.08;                // 每档伤害 ×1.08
+const TIER_SPD = 1.03, TIER_SPD_CAP = 1.5;      // 每档速度 ×1.03，封顶 1.5
+const TIER_EXTRA = 1, TIER_EXTRA_CAP = 10;      // 每档多 1 只杂兵，封顶 +10
+const ENDLESS_BOSS_EVERY = 4;         // 无尽里每 4 段来一只巨像（主线是固定的 4/8/12）
+
+// 档位序号：主线恒为 0 档；13 段 = 1 档，18 段 = 2 档 ……
+function eTier(w) {
+  if (w < ENDLESS_FROM) return 0;
+  return Math.floor((w - ENDLESS_FROM) / ENDLESS_EVERY) + 1;
+}
+const eTierHp    = w => Math.pow(TIER_HP, eTier(w));
+const eTierDmg   = w => Math.pow(TIER_DMG, eTier(w));
+const eTierSpd   = w => Math.min(TIER_SPD_CAP, Math.pow(TIER_SPD, eTier(w)));
+const eTierExtra = w => Math.min(TIER_EXTRA_CAP, eTier(w) * TIER_EXTRA);
+
+// 巨像轮换袋（搬运 echo 的 bagPick）：一轮里三只巨像各来一次才重洗，
+// 避免「连出两只奇点之门」这种既单调又劝退的排列。
+const BOSS_BAG = [];
+function bagPickBoss() {
+  if (!BOSS_BAG.length) {
+    BOSS_BAG.push.apply(BOSS_BAG, Object.keys(BOSSES));
+    for (let i = BOSS_BAG.length - 1; i > 0; i--) {
+      // ⚠️ irand 是 (a, b) 两参数签名，不是 (n)！写成 irand(i + 1) 会得到 NaN，
+      //    `BOSS_BAG[NaN]` 是 undefined → 洗牌把 undefined 塞进袋里 → pop() 返回 undefined
+      //    → bossForWave 判成「本段不是巨像段」→ 巨像段**静默退化成普通编队**。
+      //    不抛异常、没有 JS 错误、banner 也不报错，只有真的去数「第 20 段怎么没巨像」才抓得到。
+      const j = irand(0, i); const t = BOSS_BAG[i]; BOSS_BAG[i] = BOSS_BAG[j]; BOSS_BAG[j] = t;
+    }
+  }
+  return BOSS_BAG.pop();
+}
+// 本段该不该出巨像。⚠️ 只在 startWave 里调用一次 —— bagPickBoss 有副作用（抽走一张牌），
+//    任何「预判式」的重复调用都会白白吃掉一轮轮换。
+function bossForWave(w) {
+  if (BOSS_WAVES[w]) return BOSS_WAVES[w];
+  if (w >= ENDLESS_FROM && (w - WAVES) % ENDLESS_BOSS_EVERY === 0) return bagPickBoss();
+  return null;
+}
+// 段数标签（HUD 用，带单位）：主线「第 N/12 段」，无尽「第 N 段 · 深渊 K 档」。
+// ⚠️ 返回值已经含「段」字，调用方不要再拼一次 —— 否则无尽里会印成
+//    「第 17 · 深渊 1 档 段」这种断句。
+function waveLabel(w) {
+  return w <= WAVES ? '第 ' + w + '/' + WAVES + ' 段' : '第 ' + w + ' 段 · 深渊 ' + eTier(w) + ' 档';
+}
 
 // ============ 模块卡（16） ============
 // type: stat(数值) / weapon(弹体) / ability(装置)
@@ -238,6 +302,82 @@ const MODULES = [
     desc: '范围内敌人减速',
     apply: S => { S.stasis += 1; S.stasisR += 34; },
     bloom: S => { S.stasisR += 90; S.stasisSlow += 0.2; } },
+
+  // ---- 从《奇点回响》搬运的机制（搬运机制，不照抄模型：数值 / 上限 / 视觉全部重定） ----
+  // ⚠️ 上限一律用本作的 3，不是 echo 的 6 —— 本作一局只升到 8 级左右，6 级卡等于永远拿不满。
+  { id: 'backshot', name: '尾炮', type: 'ability', glyph: '尾', max: 3,
+    desc: '齐射时向船尾开火\n每级 +1 门',
+    apply: S => { S.backshot += 1; },
+    bloom: S => { S.backshot += 2; S.backGold = 1; } },
+  { id: 'ricochet', name: '跳弹', type: 'weapon', glyph: '跳', max: 3,
+    desc: '炮弹撞到屏边\n反弹一次继续飞',
+    apply: S => { S.bounce += 1; },
+    bloom: S => { S.bounce += 2; } },
+  { id: 'guided', name: '制导弹药', type: 'weapon', glyph: '导', max: 3,
+    desc: '炮弹自动咬住\n最近的敌人',
+    // homeR 不做上限截断：140→170→200→230，满级质变直接 260（接近全屏）。
+    // 敢给这么大是因为 updateBullets 里按弹缓存了目标，每 0.12 秒才搜一次 ——
+    // 没有那层缓存的话 (R/24)² 个格子 × 每发弹每帧会把帧率吃干净。
+    apply: S => { S.homing += 1.1; S.homeR += 30; },
+    bloom: S => { S.homing += 1.4; S.homeR = 260; } },
+  { id: 'ram', name: '冲角装甲', type: 'ability', glyph: '角', max: 3,
+    desc: '撞上去就能杀伤\n撞击自伤 -40%\n射速 -30%（仅首级）',
+    apply: (S, n) => { S.ram += 1; if (n === 1) S.rate *= 0.7; },
+    bloom: S => { S.ram += 1; S.ramGold = 1; } },
+  { id: 'deathtrail', name: '死亡尾流', type: 'ability', glyph: '流', max: 3,
+    desc: '高速拖出灼热尾流\n消解触及的敌弹',
+    apply: S => { S.death += 1; S.spd *= 1.06; S.rate *= 0.93; },
+    bloom: S => { S.death += 1; S.spd *= 1.10; S.deathGold = 1; } },
+
+  // ---- 第二批搬运：《奇点回响》的「弹丸改造」与生存系 ----
+  // 这一批的共同点是**改动弹丸本身**或**改动击杀的回报**，而不是再堆一层数值。
+  { id: 'caliber', name: '口径校准', type: 'stat', glyph: '径', max: 3,
+    desc: '弹丸更粗、飞得更远\n弹速 +8%',
+    // 本作唯一同时动「半径 / 弹速 / 射程」三个维度的卡。三者都在 pBullet 里读，
+    // 所以扇形弹、尾炮、弹片会一起变粗 —— 它是乘法放大器，不是加法。
+    apply: S => { S.bulletR += 1.0; S.bspd *= 1.08; S.rangeMul *= 1.10; },
+    bloom: S => { S.bulletR += 2.5; S.bspd *= 1.25; S.rangeMul *= 1.35; S.caliberGold = 1; } },
+  { id: 'spray', name: '散射喷嘴', type: 'weapon', glyph: '扇', max: 3,
+    desc: '齐射额外喷出扇形弹\n单发伤害较低',
+    // ⚠️ 用 n 而不是累乘写等级表：sprayMul 是「覆盖式赋值」，续档逐级重放时
+    //    累乘写法（*0.7 之类）会把同一个惩罚叠三次。这一点和 ram 的首级惩罚是同一个坑。
+    apply: (S, n) => { S.spray += 2; S.sprayMul = 0.62 + (n - 1) * 0.07; },
+    bloom: S => { S.spray += 3; S.sprayMul = 1.0; S.sprayArc = 0.30; S.sprayGold = 1; } },
+  { id: 'fission', name: '裂变弹芯', type: 'weapon', glyph: '裂', max: 3,
+    desc: '炮弹首次命中时\n炸成一圈弹片',
+    apply: (S, n) => { S.fission += 1; S.fissionMul = 0.45 + (n - 1) * 0.13; },
+    bloom: S => { S.fission += 2; S.fissionMul = 0.85; S.fissionGold = 1; } },
+  { id: 'overclock', name: '过载超频', type: 'stat', glyph: '频', max: 3,
+    desc: '射速 +9%、伤害 +7%\n最大船体 -9',
+    // 高风险高回报：拿血换输出。⚠️ 必须同时夹住 hp（见 apply 末句），
+    //    否则拿卡瞬间 S.hp 会大于新的 S.maxHp，血条直接画出界。
+    apply: S => { S.rate *= 1.09; S.dmg *= 1.07; S.maxHp = Math.max(30, S.maxHp - 9); S.hp = Math.min(S.hp, S.maxHp); },
+    bloom: S => { S.rate *= 1.22; S.dmg *= 1.18; S.maxHp = Math.max(30, S.maxHp - 20); S.hp = Math.min(S.hp, S.maxHp); S.ovGold = 1; } },
+  { id: 'leech', name: '噬能回收', type: 'ability', glyph: '噬', max: 3,
+    desc: '每次击坠回复\n最大船体的 1.1%',
+    // 按**最大**船体的百分比回血 → 与「装甲板」是乘法关系，堆血同时买生存和续航。
+    apply: S => { S.leech += 1.1; },
+    bloom: S => { S.leech += 3.4; S.leechGold = 1; } },
+
+  // ---- 第三批搬运：《奇点回响》的三张「主动/被动触发」能力 ----
+  // 这三张和前面两批的区别是：它们都不是「加一个持续输出源」，而是**改变一次事件的结果**。
+  //   lance 把「一次射击」变成贯穿全场的一击
+  //   blink 把「一次受击」变成一次脱险
+  //   mine  把「一段走位」变成一片雷区
+  { id: 'lance', name: '轨道长枪', type: 'ability', glyph: '枪', max: 3,
+    desc: '冷却就绪时\n下一发变成贯穿光矛',
+    // 冷却用 S.lanceCd 秒；装弹期间照常开火，所以这张卡不会「禁用主炮」。
+    apply: (S, n) => { S.lance = n; S.lanceCd = 7.2 - (n - 1) * 1.6; },
+    bloom: S => { S.lance = 3; S.lanceCd = 3.2; S.lanceGold = 1; } },
+  { id: 'blink', name: '相位折跃', type: 'ability', glyph: '跃', max: 3,
+    desc: '重击袭来时自动折跃\n该次伤害作废',
+    // ⚠️ 只对「足以破盾的重击」触发（阈值 22）—— 对每一发流弹都触发等于全程无敌。
+    apply: (S, n) => { S.blink = n; S.blinkCd = 15 - (n - 1) * 3.5; },
+    bloom: S => { S.blink = 3; S.blinkCd = 6.5; S.blinkMax = 1; } },
+  { id: 'mine', name: '磁暴雷', type: 'ability', glyph: '雷', max: 3,
+    desc: '定时在船尾布设磁雷\n触爆后炸伤一片',
+    apply: (S, n) => { S.mine = n; S.mineCd = 6.4 - (n - 1) * 1.4; S.mineMax = 1 + n; },
+    bloom: S => { S.mine = 3; S.mineCd = 2.6; S.mineMax = 5; S.mineGold = 1; } },
 ];
 const TYPE_NAME = { stat: '数值', weapon: '弹体', ability: '装置' };
 
@@ -252,6 +392,31 @@ const SYNERGIES = [
   { id: 'cluster',    name: '霰爆',     a: 'hesh',      b: 'multigun',   desc: '爆炸范围 +30%' },
   { id: 'pierceCrit', name: '穿甲暴击', a: 'critcap',   b: 'warhead',    desc: '暴击倍率提到 3.3 倍' },
   { id: 'recycle',    name: '回收循环', a: 'magnet',    b: 'nanorepair', desc: '拾取星尘额外回血' },
+
+  // ---- 新机制的配对协同（效果一律在运行时读 synOn()，不在装配那一刻改数值） ----
+  { id: 'rearPierce',   name: '贯穿尾炮', a: 'backshot',   b: 'piercer',   desc: '尾炮火力 +45%，并且能穿透' },
+  { id: 'rearVolley',   name: '回马枪',   a: 'backshot',   b: 'multigun',  desc: '齐射时尾炮再多 1 门' },
+  { id: 'bouncePierce', name: '穿甲跳弹', a: 'piercer',    b: 'ricochet',  desc: '反弹次数 +1' },
+  { id: 'moltenRam',    name: '熔火撞角', a: 'deathtrail', b: 'ram',       desc: '冲角杀伤 +50%' },
+  { id: 'guidedPierce', name: '制导穿甲', a: 'guided',     b: 'piercer',   desc: '制导转向更急、锁定更远' },
+  { id: 'bounceBlast',  name: '跳雷',     a: 'ricochet',   b: 'hesh',      desc: '反弹过的炮弹爆炸范围 +35%' },
+
+  // ---- 第二批机制的配对协同 ----
+  // 这一批刻意让新卡去「咬」旧卡：口径咬穿甲、散射咬多联、裂变咬跳弹与高爆、噬能咬冲角与纳米。
+  { id: 'heavyBore',    name: '重弹穿甲', a: 'caliber',   b: 'piercer',    desc: '弹丸半径再 +1.5，穿透 +1' },
+  { id: 'bulletWall',   name: '弹幕墙',   a: 'spray',     b: 'multigun',   desc: '扇形弹 +3 发、扇形更宽' },
+  { id: 'fissionBoom',  name: '裂变爆破', a: 'fission',   b: 'hesh',       desc: '弹片命中也会炸开' },
+  { id: 'bounceFission',name: '跳弹裂变', a: 'fission',   b: 'ricochet',   desc: '弹片继承 1 次反弹' },
+  { id: 'ramLeech',     name: '撞击汲取', a: 'leech',     b: 'ram',        desc: '冲角每次命中额外回血' },
+  { id: 'fieldMedic',   name: '战地回收', a: 'leech',     b: 'nanorepair', desc: '所有回血 ×1.5' },
+
+  // ---- 第三批机制的配对协同 ----
+  { id: 'lanceCaliber', name: '重矛',     a: 'lance',  b: 'caliber',  desc: '光矛更宽，贯穿伤害 +40%' },
+  { id: 'lancePierce',  name: '透体圣光', a: 'lance',  b: 'piercer',  desc: '光矛命中后留下一道灼烧带' },
+  { id: 'blinkNova',    name: '折跃冲击', a: 'blink',  b: 'nova',     desc: '折跃起点炸开一发冲击波' },
+  { id: 'blinkPhase',   name: '相位残响', a: 'blink',  b: 'phasehull',desc: '折跃后的无敌时间 ×2' },
+  { id: 'mineHesh',     name: '磁暴高爆', a: 'mine',   b: 'hesh',     desc: '磁雷爆炸范围 +45%' },
+  { id: 'mineStasis',   name: '迟滞雷场', a: 'mine',   b: 'stasis',   desc: '磁雷爆炸后留下一片减速场' },
 ];
 const synOn = id => !!G.syn[id];
 function recalcSynergies() {
@@ -367,6 +532,79 @@ function drawWebs() {
   }
 }
 
+// 死亡尾流：一条会自己淡掉的灼热带。
+// 只用 fillRect / disc 画方块（不做圆形抗锯齿），观感和其余像素素材一致；
+// 颜色随「还剩多少寿命」从亮白 → 橙 → 暗红，玩家能直接读出这条带子快没了。
+// ⚠️ 单块 alpha 压得比较低（0.10—0.38）是有意的：带子每 0.055 秒落一块，
+//    五六块必然重叠，alpha 给高了叠出来是一坨发浑的土黄，反而看不出是「尾流」。
+function drawWakes() {
+  if (!G.wakes.length) return;
+  for (const w of G.wakes) {
+    if (!onScreen(w.x, w.y, w.r + 8)) continue;
+    // 长枪留下的灼烧带（透体圣光协同）走自己的配色，别跟死亡尾流混成一片橙
+    const gold = w.lanceGold ? 1 : G.S.deathGold;
+    const f = 1 - w.t / w.life;                 // 1 → 0
+    const R = w.r * (0.45 + f * 0.5);
+    ctx.globalAlpha = 0.10 + f * 0.28;
+    ctx.fillStyle = w.lanceGold
+      ? (f > 0.6 ? '#ffffff' : '#73eff7')
+      : (gold ? (f > 0.6 ? '#ffe9a8' : '#ffcd75') : (f > 0.6 ? '#ffcd75' : '#ef7d57'));
+    disc(w.x, w.y, R);
+    ctx.globalAlpha = 0.35 + f * 0.5;
+    ctx.fillStyle = f > 0.5 ? '#f4f4f4'
+      : (w.lanceGold ? '#73eff7' : (gold ? '#ffcd75' : '#ef7d57'));
+    ctx.fillRect(Math.round(w.x) - 1, Math.round(w.y) - 1, 2, 2);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ============ 轨道长枪 / 磁暴雷 的绘制 ============
+// 长枪是一道**瞬时**光束：伤害在 fireLance 里已经结算完，这里只做 0.26 秒的视觉残留。
+// 三层叠加（外辉光 / 中层 / 白芯）+ 炮口闪，用 lighter 混合叠出「过曝」的金属感。
+function drawLances() {
+  if (!G.lances.length) return;
+  for (const L of G.lances) {
+    const f = 1 - L.t / L.life;
+    if (f <= 0) continue;
+    const col = L.gold ? '#ffcd75' : '#73eff7';
+    const w = L.w;
+    ctx.save();
+    ctx.translate(Math.round(L.x), Math.round(L.y)); ctx.rotate(L.a);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.18 * f; ctx.fillRect(0, -w * 2.1, L.len, w * 4.2);
+    ctx.globalAlpha = 0.50 * f; ctx.fillRect(0, -w * 0.95, L.len, w * 1.9);
+    ctx.fillStyle = '#f4f4f4';
+    ctx.globalAlpha = 0.92 * f; ctx.fillRect(0, -w * 0.30, L.len, w * 0.6);
+    ctx.globalAlpha = f; ctx.fillStyle = '#ffffff';
+    disc(0, 0, w * (0.9 + f * 0.8));
+    ctx.restore();
+  }
+}
+
+function drawMines() {
+  if (!G.mines.length) return;
+  for (const m of G.mines) {
+    if (!onScreen(m.x, m.y, m.pull + 10)) continue;
+    const col = m.gold ? '#ffcd75' : '#c070f0';
+    const pulse = 0.5 + Math.sin(m.t * 5.2) * 0.5;
+    // 磁引范围：一圈极淡的虚环，给玩家「这里会被吸」的预告
+    if (m.t >= m.arm) {
+      ctx.globalAlpha = 0.09 + 0.07 * pulse;
+      ctx.strokeStyle = col; ringPx(m.x, m.y, m.pull, 1);
+    }
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#1a1c2c'; disc(m.x, m.y, m.r + 1.5);
+    ctx.fillStyle = col;       disc(m.x, m.y, m.r * (0.55 + pulse * 0.45));
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = '#f4f4f4';
+    ctx.fillRect(Math.round(m.x) - 1, Math.round(m.y) - 1, 2, 2);
+    // 待机期（arm）外圈闪一圈：刚布下还不能引爆
+    if (m.t < m.arm) { ctx.globalAlpha = 0.55; ctx.strokeStyle = '#f4f4f4'; ringPx(m.x, m.y, m.r + 4, 1); }
+    ctx.globalAlpha = 1;
+  }
+}
+
 // ============ 开局 ============
 function newGame(hullId) {
   const hull = HULLS.find(h => h.id === hullId) || HULLS[0];
@@ -376,6 +614,23 @@ function newGame(hullId) {
     spd: hull.spd, dmg: hull.dmg, rate: hull.rate, turn: hull.turn,
     crit: 0.05, critMul: 2.4, pierce: 0, blast: 0, blastMul: 1,
     barrels: 1, drones: 0,
+    // 搬运过来的机制：尾炮 / 跳弹 / 制导 / 冲角 / 尾流
+    backshot: 0, backGold: 0,
+    bounce: 0,
+    homing: 0, homeR: 140,
+    ram: 0, ramGold: 0,
+    death: 0, deathGold: 0,
+    // 第二批搬运：口径 / 散射 / 裂变 / 过载 / 噬能
+    // bulletR / bspd / rangeMul 是**弹丸的物理参数**，pBullet 里读，所以所有友方弹丸共用。
+    bulletR: 3, bspd: 1, rangeMul: 1,
+    spray: 0, sprayMul: 0.62, sprayArc: 0.34,
+    fission: 0, fissionMul: 0.45,
+    leech: 0,
+    caliberGold: 0, sprayGold: 0, fissionGold: 0, ovGold: 0, leechGold: 0,
+    // 第三批搬运：轨道长枪 / 相位折跃 / 磁暴雷
+    lance: 0, lanceCd: 0, lanceGold: 0, lanceT: 0,
+    blink: 0, blinkCd: 0, blinkMax: 0, blinkT: 0,
+    mine: 0, mineCd: 0, mineMax: 0, mineGold: 0, mineT: 0,
     shield: 0, shieldMax: 0, shieldRegenMul: 1, magnet: 46,
     regen: 0, invBonus: 0, dustHeal: 0,
     // 装置型能力状态
@@ -401,6 +656,9 @@ function newGame(hullId) {
     dust: 0,
     enemies: [], ebullets: [], bullets: [], pickups: [], parts: [], fx: [], drones: [],
     webs: [],   // 织网者铺下的减速场
+    wakes: [], wakeT: 0,   // 死亡尾流留下的灼热带（updateWakes 消费）
+    lances: [],   // 轨道长枪的瞬时贯穿光矛（纯视觉，伤害在 fireLance 里一次结算完）
+    mines: [],    // 磁暴雷（场上至多 S.mineMax 枚）
     boss: null, bossRef: null, bossWarn: 0, bossPending: null, bossT: 0,
     shake: 0, banners: [], toasts: [], hitFlashN: 0,
     hitstop: 0, heartT: 0, vign: 0,     // 打击感：命中凝滞 / 心跳计时 / 受击暗角
@@ -473,28 +731,119 @@ function ring(x, y, R, color, life = 0.35, th = 2) { G.fx.push({ type: 'ring', x
 // ============ 射击 ============
 function pBullet(x, y, ang, spd, dmg, o = {}) {
   if (G.bullets.length > 420) return;
+  // 制导弹药要拐弯，射程得给够，否则弹丸在半路就寿终、看起来像「制导没生效」
+  const homing = o.homing ?? G.S.homing;
+  // 口径校准：半径与射程都从这里读，所以扇形弹 / 尾炮 / 弹片会一起变粗变远。
+  // 重弹穿甲协同再给一层半径 —— 叠在口径之上，而不是替换它。
+  const extraR = synOn('heavyBore') ? 1.5 : 0;
   G.bullets.push({
     x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, dmg,
-    r: o.r || 3, life: o.life || 1.1,
+    r: o.r || (G.S.bulletR + extraR),
+    life: o.life || (homing ? 1.45 : 1.1) * G.S.rangeMul,
     // 齐射穿甲：每根枪管额外 +1 穿透，所以要在发射时算（枪管数会变）
-    pierce: o.pierce ?? (G.S.pierce + (synOn('volley') ? G.S.barrels : 0)),
-    blast: o.blast ?? G.S.blast, homing: o.homing || 0, hit: null, col: o.col || '#73eff7',
+    pierce: o.pierce ?? (G.S.pierce + (synOn('volley') ? G.S.barrels : 0)
+                          + (synOn('heavyBore') ? 1 : 0)),
+    // 跳弹：反弹次数同样发射时定格；穿甲跳弹协同额外 +1
+    bounce: o.bounce ?? (G.S.bounce + (synOn('bouncePierce') ? 1 : 0)),
+    blast: o.blast ?? G.S.blast, homing, hit: null, col: o.col || null,
+    tgt: null, retarget: 0, bounced: false,
+    // 裂变弹芯：随弹丸走，命中那一刻才决定炸几片 —— 这样它也能被尾炮 / 弹片继承。
+    fission: o.fission ?? G.S.fission, fissionMul: o.fissionMul ?? G.S.fissionMul,
+    fissioned: false,
   });
 }
+// 敌弹自带 dmg（默认 9）。⚠️ 不要在 updateEBullets 里写死 9 ——
+// 无尽档位要靠这里把 TIER_DMG 传播到每一发弹丸上，写死就等于弹幕永远挠痒。
 function eShot(x, y, ang, spd, r, color, o = {}) {
   if (G.ebullets.length > 900) return;
-  G.ebullets.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r, color, life: o.life || 6, t: 0 });
+  G.ebullets.push({
+    x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r, color,
+    dmg: (o.dmg || 9) * eTierDmg(G.wave), life: o.life || 6, t: 0,
+  });
 }
 const HOSTILE = { red: '#ff3355', pink: '#ff66cc', purple: '#c070f0', amber: '#ffcd75' };
 
+/* 轨道长枪（搬运自 echo 的 lance）
+   冷却就绪时，**这一发主动射击**被换成贯穿光矛：不做成「另一门炮自动开火」，
+   而是把玩家自己扣的那一次扳机放大 —— 这样它才有「攒一发」的节奏感。
+   ⚠️ 判定用「点到线段距离」一次扫全部敌人（O(n)），不要沿矛身逐格 buildGrid+forNear：
+      矛长 540px、每 8px 一次查询就是 68 次网格检索，纯浪费。 */
+function fireLance(ang) {
+  const S = G.S;
+  const wide = synOn('lanceCaliber') ? 1.4 : 1;
+  const w = (4.5 + S.lance * 1.7) * wide;                     // 半宽
+  const len = W + 80;
+  const dmg = (44 + S.lance * 26) * S.dmg * (synOn('lanceCaliber') ? 1.4 : 1);
+  const ox = G.px + Math.cos(ang) * 10, oy = G.py + Math.sin(ang) * 10;
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  let hitN = 0;
+  for (const e of G.enemies) {
+    if (e.dead || e.hp <= 0) continue;
+    const dx = e.x - ox, dy = e.y - oy;
+    const along = dx * ca + dy * sa;
+    if (along < -e.r || along > len) continue;
+    const perp = Math.abs(-dx * sa + dy * ca);
+    if (perp > w + e.r) continue;
+    damageEnemy(e, dmg, ca, sa, false, 2.4);
+    hitN++;
+  }
+  G.lances.push({ x: ox, y: oy, a: ang, len, w, t: 0, life: 0.26, gold: S.lanceGold ? 1 : 0 });
+  // 透体圣光协同：矛身沿途留下一条灼烧带（复用死亡尾流那套 wake 结算）
+  if (synOn('lancePierce')) {
+    const gold = S.lanceGold ? 1 : 0;
+    for (let d = 30; d < len; d += 26) {
+      const x = ox + ca * d, y = oy + sa * d;
+      if (x < -30 || x > W + 30 || y < -30 || y > H + 30) break;
+      G.wakes.push({ x, y, t: 0, life: 0.7, r: w + 3, hitT: -1, lanceGold: gold });
+      if (G.wakes.length > 96) G.wakes.shift();
+    }
+  }
+  S.lanceT = S.lanceCd;
+  G.muzzle = 0.1;
+  addShake(S.lanceGold ? 7 : 5);
+  Sound.sfx.lance();
+  if (hitN) freeze(0.09);
+}
+
 function fireMain(ang, dmgMul = 1) {
   const S = G.S, n = S.barrels;
+  // 长枪就绪 → 这一发整个换成光矛（不叠主炮，避免「既开炮又开矛」变成双倍 DPS）
+  if (S.lance > 0 && S.lanceT <= 0) { fireLance(ang); return; }
   const base = 10 * S.dmg * dmgMul;
   const muzzle = 11;
+  const spd = 320 * S.bspd;      // 口径校准：弹速是全局弹丸参数，尾炮 / 扇形弹一起吃
   for (let i = 0; i < n; i++) {
     const spread = n === 1 ? 0 : (i - (n - 1) / 2) * 0.13;
     const a = ang + spread;
-    pBullet(G.px + Math.cos(a) * muzzle, G.py + Math.sin(a) * muzzle, a, 320, base);
+    pBullet(G.px + Math.cos(a) * muzzle, G.py + Math.sin(a) * muzzle, a, spd, base);
+  }
+  // 散射喷嘴：用「弹丸数量」换「单发威力」，把「命中」变成「覆盖」。
+  // ⚠️ 扇形弹走同一套 pBullet，所以穿甲 / 跳弹 / 制导 / 裂变会**全部自动继承**。
+  //    这是有意的：它是一张「放大其它弹体卡」的卡，不是一门独立的小炮。
+  //    也正因为如此，它的单发伤害必须明显低于主炮（0.62→0.76），否则直接变成纯加强。
+  if (S.spray > 0) {
+    const sn = S.spray + (synOn('bulletWall') ? 3 : 0);
+    const arc = S.sprayArc * (synOn('bulletWall') ? 1.25 : 1);
+    for (let i = 0; i < sn; i++) {
+      const t = sn === 1 ? 0 : (i / (sn - 1) - 0.5) * 2;   // -1 → +1
+      const a = ang + t * arc;
+      pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.92,
+        base * S.sprayMul, { col: S.sprayGold ? '#ffcd75' : '#94b0c2' });
+    }
+  }
+  // 尾炮：每次齐射同时向船尾开火。伤害只有正面的 55%，所以它不是「DPS 翻倍」，
+  // 而是把「背后永远安全」这条默认规则取消掉 —— 被追着跑的时候才有意义。
+  if (S.backshot > 0) {
+    const bn = S.backshot + (synOn('rearVolley') ? 1 : 0);
+    const back = ang + Math.PI;
+    const bMul = 0.55 * (synOn('rearPierce') ? 1.45 : 1);
+    const bpierce = S.pierce + (synOn('volley') ? S.barrels : 0) + (synOn('rearPierce') ? 1 : 0);
+    for (let i = 0; i < bn; i++) {
+      const spread = bn === 1 ? 0 : (i - (bn - 1) / 2) * 0.17;
+      const a = back + spread;
+      pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.94, base * bMul,
+        { col: S.backGold ? '#ffcd75' : '#ef7d57', pierce: bpierce });
+    }
   }
   Sound.sfx.shoot();
   G.muzzle = 0.06;
@@ -601,11 +950,66 @@ function killEnemy(e) {
   }
   if (e.boss) bossDeath(e);
   G.energy = Math.min(100, G.energy + (big ? 40 : 1.4));
+  // 噬能回收：以战养战。按**最大**船体的百分比回血，所以它和「装甲板」是乘法关系 ——
+  // 堆血同时买生存和续航。放在最后，让同一帧的击杀结算完再回。
+  if (G.S.leech > 0) healPlayer(G.S.leech / 100 * G.S.maxHp * (synOn('fieldMedic') ? 1.5 : 1));
+}
+
+// 统一回血入口。噬能回收 / 撞击汲取 / 战地回收都走这里 —— 免得三处各写一遍浮字、封顶
+// 和金色判定。返回实际回了多少，方便调用方判断要不要给音效。
+// ⚠️ 不在这里判 G.dead：击杀回血发生在同帧的 killEnemy 里，玩家可能已经死了。
+function healPlayer(v, silent = true) {
+  const S = G.S;
+  if (!(v > 0) || S.hp >= S.maxHp) return 0;
+  const h = Math.min(v, S.maxHp - S.hp);
+  S.hp += h;
+  if (h >= 1) floatText(G.px, G.py - 14, '+' + Math.round(h), S.leechGold ? '#ffcd75' : '#a7f070', .7);
+  if (!silent) Sound.sfx.heal();
+  return h;
+}
+
+/* 相位折跃（搬运自 echo 的 blink）
+   在「这次伤害会真正落到船体上」之前拦截一次。判定放在护盾之前 —— echo 的文案是
+   「足以破盾的重击」，也就是连盾带血一起打穿的那种，所以阈值要跟**总伤害**比。
+   ⚠️ 阈值以下的攻击一律不触发，否则「每发流弹都折跃」= 全程无敌，卡就废了。 */
+const BLINK_MIN = 22;
+function tryBlink(dmg) {
+  const S = G.S;
+  if (!S.blink || S.blinkT > 0 || dmg < BLINK_MIN) return false;
+  S.blinkT = S.blinkCd;
+  const fromX = G.px, fromY = G.py;
+  // 折跃方向：沿当前朝向「向后上方」拉开，再夹回场内 —— 永远落在能继续打的位置
+  const a = G.ang + Math.PI + rand(-0.6, 0.6);
+  const dist = 74 + S.blink * 16;
+  G.px = clamp(G.px + Math.cos(a) * dist, 16, W - 16);
+  G.py = clamp(G.py + Math.sin(a) * dist, 16, H - 16);
+  G.vx *= 0.25; G.vy *= 0.25;
+  G.inv = (0.8 + S.invBonus) * (synOn('blinkPhase') ? 2 : 1);
+  ring(fromX, fromY, 22, S.blinkMax ? '#ffcd75' : '#c070f0', .3, 2);
+  ring(G.px, G.py, 26, S.blinkMax ? '#ffcd75' : '#c070f0', .34, 2);
+  burst(fromX, fromY, 16, ['#c070f0', '#f4f4f4'], 140, .45, 2, true);
+  burst(G.px, G.py, 12, ['#c070f0', '#73eff7'], 110, .4, 2, true);
+  Sound.sfx.blink();
+  // 折跃冲击协同：起点炸开一发冲击波（借 nova 的范围与伤害公式）
+  if (synOn('blinkNova')) {
+    const R = 78 + (S.novaR || 0) * 0.5;
+    ring(fromX, fromY, R, S.novaVoid ? '#ffcd75' : '#c070f0', .4, 3);
+    for (const e of G.enemies) {
+      if (e.dead || e.hp <= 0) continue;
+      const d = Math.hypot(e.x - fromX, e.y - fromY);
+      if (d > R + e.r) continue;
+      damageEnemy(e, 24 * S.dmg, (e.x - fromX) / (d || 1), (e.y - fromY) / (d || 1), false, 3);
+    }
+    addShake(4);
+  }
+  return true;
 }
 
 function hurtPlayer(dmg) {
   if (G.inv > 0 || G.dead || GOD) return;
   const S = G.S;
+  // 相位折跃：够重的一击直接作废
+  if (tryBlink(dmg)) return;
   if (S.shield > 0) {
     const a = Math.min(S.shield, dmg);
     S.shield -= a; dmg -= a;
@@ -645,16 +1049,26 @@ function explode(x, y, R, dmg, small) {
 // 否则会出现「站在屏边、子弹够不着」的不死敌人 → updateWave 的「场上清空」永远不成立。
 // 踩过两次：浮游雷生成在屏外不移动；牧者一路后退被夹在 ±40 停住。
 const EDGE = 20;
+// ⚠️⚠️ 这里原来写的是 `irand(4)` —— 但 irand 是 (a, b) 两参数签名，
+//   `irand(4)` 的第二参是 undefined → `rand(4, undefined + 1)` = `rand(4, NaN)` = NaN。
+//   s 恒为 NaN，四个 `if (s === n)` 全部落空，**永远走最后一条 return** ——
+//   也就是说整局游戏的杂兵**只从右侧一条边进场**（四个方向的设计完全没生效）。
+//   不抛异常、不掉帧、没有任何报错，只是玩法悄悄少掉 3/4 的进场方向。
+//   同款错误在 bagPickBoss 的洗牌里也有一份（见那里注释）。
+//   以后新增 irand 调用一律写 irand(lo, hi)。
 function spawnPos() {
-  const s = irand(4), m = EDGE;
+  const s = irand(0, 3), m = EDGE;
   if (s === 0) return [rand(W), -m];
   if (s === 1) return [rand(W), H + m];
   if (s === 2) return [-m, rand(H)];
   return [W + m, rand(H)];
 }
 function hpScale() {
-  // 随航程线性变硬：第 1 段 1.0，第 12 段约 2.2
-  return 1 + (G.wave - 1) * 0.11;
+  // 随航程线性变硬：第 1 段 1.0，第 12 段约 2.2。
+  // ⚠️ 线性部分在 WAVES 封顶 —— 无尽里的成长交给 eTierHp 的指数曲线，
+  //    两条曲线叠乘会让中后期血量彻底失控（见文件上方 ENDLESS_* 注释）。
+  const w = Math.min(G.wave, WAVES);
+  return (1 + (w - 1) * 0.11) * eTierHp(G.wave);
 }
 function spawnEnemy(type, x, y, opt = {}) {
   const c = ETYPES[type];
@@ -668,6 +1082,17 @@ function spawnEnemy(type, x, y, opt = {}) {
   const hp = c.hp * hpScale() * (opt.hpMul || 1);
   const e = {
     type, cfg: c, x, y, vx: 0, vy: 0, hp, maxHp: hp, r: c.r,
+    // ⚠️ xp 必须在这里落到敌人身上。killEnemy 里有三处读 e.xp：
+    //   加分（`(e.xp * 10 + 5) * combo`）、掉落颗数分档（`>= 3 / >= 2`）、以及每颗星尘的面值。
+    //   漏了这一个字段，三处全部吃到 undefined —— 症状是 HUD 右上角「分数 NaN」常驻，
+    //   而且硬敌和杂兵掉的星尘一样多（永远走 `n = 1` 那一档），整局经验收入被砍掉一半。
+    //   ⚠️ 它不会抛异常、不会白屏，只是数字悄悄变成 NaN —— 靠肉眼看画面才抓得到。
+    xp: c.xp,
+    // ⚠️ 接触伤害 / 移动速度都**落到敌人自己身上**，不要在 updateEnemy 里现算：
+    //    那儿只有 `e.cfg`（静态表），拿不到「这只怪是哪一段生成的」这个信息。
+    //    无尽档位一开，同一张 cfg 在不同段数下必须是不同数值。
+    dmg: c.dmg * eTierDmg(G.wave),
+    spdMul: eTierSpd(G.wave),
     t: rand(TAU), flash: 0, cd: rand(0.4, c.cd || 1.5), touchCd: 0,
     split: opt.split !== undefined ? opt.split : c.split,
     alpha: 1, st: 0, ang: 0, elite: !!opt.elite,
@@ -678,10 +1103,15 @@ function spawnEnemy(type, x, y, opt = {}) {
 }
 function spawnBoss(id) {
   const b = BOSSES[id]; if (!b) return;
-  const hp = b.hp * (1 + (G.wave - 4) * 0.05);
+  // 巨像血量：主线的线性成长同样在 WAVES 封顶，之后交给深渊档位的指数曲线。
+  // 无尽里巨像会重复出场（轮换袋），所以它必须真的跟着档位变硬，否则第 3 轮就是纸糊的。
+  const hp = b.hp * (1 + (Math.min(G.wave, WAVES) - 4) * 0.05) * eTierHp(G.wave);
   const e = {
     type: 'boss', boss: id, name: b.name, en: b.en, spr: b.spr, color: b.color,
     x: W / 2, y: -40, vx: 0, vy: 0, hp, maxHp: hp, r: b.r,
+    // 巨像固定掉 12 颗星尘（killEnemy 的 big 分支），每颗 6 点 → 一只巨像约一级。
+    // 同样必须显式给，否则又是 undefined → NaN。
+    xp: 6,
     t: 0, flash: 0, cd: 1.6, touchCd: 0, alpha: 1, st: 0, ang: Math.PI / 2,
     pats: b.pats, patI: 0, patT: 2, phase: 1, enraged: false, entering: true,
   };
@@ -695,7 +1125,8 @@ function spawnBoss(id) {
 function bossFire(e, dx, dy) {
   const R = Math.hypot(dx, dy) || 1; dx /= R; dy /= R;
   const pat = e.pats[e.patI % e.pats.length];
-  const spd = 92 + G.wave * 3;
+  // 主线 +3/段，到 WAVES 封顶；无尽里交给档位速度倍率（它自己也有 1.5 的上限）
+  const spd = (92 + Math.min(G.wave, WAVES) * 3) * eTierSpd(G.wave);
   const fast = e.enraged ? 1.25 : 1;
   if (pat === 'charge') {
     e.vx += dx * 260; e.vy += dy * 260;
@@ -788,7 +1219,8 @@ function updateEnemies(dt) {
     const c = e.cfg || {};
     if (e.boss) { updateBoss(e, dt, dx, dy, d); continue; }
     // 静止场的减速由 updateAbilities 每帧挂上，这里用完就衰减，出圈立刻恢复
-    const spd = c.spd * (e.elite ? 1.15 : 1) * (1 - (e.slow || 0)) * (e.buffT > 0 ? 1.22 : 1);
+    // spdMul 是生成时按深渊档位定死的（见 spawnEnemy），这里只乘上去
+    const spd = c.spd * (e.spdMul || 1) * (e.elite ? 1.15 : 1) * (1 - (e.slow || 0)) * (e.buffT > 0 ? 1.22 : 1);
     if (e.slow) e.slow = Math.max(0, e.slow - dt * 2.2);
 
     switch (c.ai) {
@@ -917,8 +1349,8 @@ function updateEnemies(dt) {
         e.st -= dt;
         if (d < e.r + 12 && e.st <= 0) {
           e.st = 0.85;
-          hurtPlayer(c.dmg);
-          floatText(G.px, G.py - 16, '-' + c.dmg, '#ff5577', .7);
+          hurtPlayer(e.dmg);
+          floatText(G.px, G.py - 16, '-' + Math.round(e.dmg), '#ff5577', .7);
           // 吸血：回自己血
           e.hp = Math.min(e.maxHp, e.hp + 6);
         }
@@ -997,7 +1429,9 @@ function updateEnemies(dt) {
     // 接触伤害
     if (d < e.r + 9 && e.touchCd <= 0) {
       e.touchCd = 0.55;
-      hurtPlayer(c.dmg);
+      // 冲角装甲：撞上去是战术而不是失误，所以撞击自伤按等级递减（lv1 -40% → lv3 -75%）
+      const ramMul = G.S.ram > 0 ? Math.max(0.25, 1 - (0.4 + (G.S.ram - 1) * 0.18)) : 1;
+      hurtPlayer((e.dmg || c.dmg) * ramMul);
       // 撞击互推
       const push = c.ai === 'chase' || c.ai === 'swarm' ? 60 : 120;
       e.vx -= ux * push; e.vy -= uy * push;
@@ -1009,50 +1443,91 @@ function updateEnemies(dt) {
 }
 
 // ============ 玩家 ============
+// 操控向《奇点回响》看齐：
+//   转向：A / D（或方向键左/右） —— aimMode=='key' 时按角速度 S.turn 旋转
+//         鼠标（aimMode=='mouse'） —— 朝光标方向缓慢转向（最大 12 rad/s）
+//         摇杆（joy.active） —— 推满 = 满舵；微推 = 慢转
+//   推进：W（或方向键上） —— 沿当前 G.ang 方向施加加速度
+//   制动：S（或方向键下） —— 指数衰减速度（强于常规阻尼）
+//   常态阻尼：exp(-0.45*dt)，松手后慢慢漂停
+// 开火 / 冲刺 / 超载 / 子弹 / 冲角 / 死亡尾流 / 网黏粒子照旧。
 function updatePlayer(dt) {
   const S = G.S;
-  // 推进输入
-  let ix = 0, iy = 0;
-  if (keys['KeyW'] || keys['ArrowUp']) iy -= 1;
-  if (keys['KeyS'] || keys['ArrowDown']) iy += 1;
-  if (keys['KeyA'] || keys['ArrowLeft']) ix -= 1;
-  if (keys['KeyD'] || keys['ArrowRight']) ix += 1;
-  if (joy.active) { ix = joy.x; iy = joy.y; }
-  const im = Math.hypot(ix, iy);
-  if (im > 1) { ix /= im; iy /= im; }
-  G.thrust = im > 0.05;
-  // 蛛网减速：不扣血，只是让你在网里变笨重
+  // ---- 转向 ----
+  if (joy.active) {
+    // 摇杆：方向即目标，转速随推杆幅度线性放缩（模拟量手感）
+    const want = Math.atan2(joy.y, joy.x);
+    const mag = Math.hypot(joy.x, joy.y);
+    const rate = S.turn * (0.45 + 0.55 * Math.min(1, mag));
+    let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    if (d > rate * dt) d = rate * dt;
+    else if (d < -rate * dt) d = -rate * dt;
+    G.ang += d;
+  } else if (aimMode === 'mouse' && mouse.inside) {
+    const want = Math.atan2(mouse.y - G.py, mouse.x - G.px);
+    const d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    const max = 12 * dt;
+    G.ang += clamp(d, -max, max);
+  } else {
+    // 键盘 A/D：未按键不漂移
+    const kd = ((keys['KeyD'] || keys['ArrowRight']) ? 1 : 0)
+             - ((keys['KeyA'] || keys['ArrowLeft']) ? 1 : 0);
+    if (kd) G.ang += kd * S.turn * dt;
+  }
+  G.aim = G.ang;
+
+  // ---- 推进 / 制动 / 阻尼 ----
+  const wHeld = keys['KeyW'] || keys['ArrowUp'];
+  const sHeld = keys['KeyS'] || keys['ArrowDown'];
+  // 摇杆：mag > 死区 = 推进；按着不动（在死区里）= 制动
+  const joyMag = joy.active ? Math.hypot(joy.x, joy.y) : 0;
+  const joyThrust = joy.active && joyMag > 0.25;
+  const joyBrake = joy.active && joyMag <= 0.05;
+  const thrusting = wHeld || joyThrust;
+  const braking = sHeld || joyBrake;
+  G.thrust = thrusting;
+  // 蛛网减速
   const slow = webSlowAt(G.px, G.py);
   G.webSlow = slow;
   const slowMul = 1 - slow;
-  const ACC = 620 * S.spd * slowMul, MAXV = 168 * S.spd * slowMul;
-  G.vx += ix * ACC * dt; G.vy += iy * ACC * dt;
-  // 惯性阻尼（松手后继续漂移）
-  G.vx *= 0.955; G.vy *= 0.955;
+  const ACC = 620 * S.spd * slowMul;
+  const MAXV = 168 * S.spd * slowMul;
+  if (thrusting) {
+    G.vx += Math.cos(G.ang) * ACC * dt;
+    G.vy += Math.sin(G.ang) * ACC * dt;
+  }
+  // 阻尼：制动用 echo 的强衰减（exp -2.6），常态用轻阻尼（exp -0.45）保留太空感
+  const k = Math.exp((braking ? -2.6 : -0.45) * dt);
+  G.vx *= k; G.vy *= k;
   const vm = Math.hypot(G.vx, G.vy);
   if (vm > MAXV) { G.vx = G.vx / vm * MAXV; G.vy = G.vy / vm * MAXV; }
   G.px = clamp(G.px + G.vx * dt, 10, W - 10);
   G.py = clamp(G.py + G.vy * dt, 10, H - 10);
   if (G.px <= 10 || G.px >= W - 10) G.vx *= 0.4;
   if (G.py <= 10 || G.py >= H - 10) G.vy *= 0.4;
-  // 网里掉紫屑，给个「黏住了」的体感
+  // 冲角装甲
+  if (S.ram > 0) ramCheck();
+  // 死亡尾流
+  if (S.death > 0) {
+    G.wakeT -= dt;
+    if (G.wakeT <= 0 && Math.hypot(G.vx, G.vy) > 55) {
+      G.wakeT = 0.055;
+      G.wakes.push({ x: G.px, y: G.py, t: 0, life: 0.5 + S.death * 0.13, r: 6 + S.death * 1.7, hitT: -1 });
+      if (G.wakes.length > 64) G.wakes.shift();
+    }
+  }
+  // 网里掉紫屑
   if (slow > 0 && Math.random() < 0.25) {
     part({ x: G.px + rand(-8, 8), y: G.py + rand(-8, 8), vx: rand(-12, 12), vy: rand(-12, 12), life: .4, max: .4, col: '#c070f0', size: 1, drag: 2 });
   }
 
-  // 瞄准：机头平滑跟随光标
-  const aim = Math.atan2(mouse.y - G.py, mouse.x - G.px);
-  let da = ((aim - G.aim + Math.PI) % TAU + TAU) % TAU - Math.PI;
-  G.aim += da * Math.min(1, dt * 14 * S.turn);
-  G.ang = G.aim;
-
-  // 开火
+  // ---- 开火 ----
   G.fireT -= dt;
   const wantFire = (mouse.down || keys['Space'] || G.autoFire) && !G.dead;
   if (wantFire && G.fireT <= 0) {
     const iv = 0.17 / S.rate / (G.odT > 0 ? 2 : 1);
     G.fireT = iv;
-    fireMain(G.aim, G.odT > 0 ? 1.35 : 1);
+    fireMain(G.ang, G.odT > 0 ? 1.35 : 1);
   }
   if (G.muzzle > 0) G.muzzle -= dt;
   if (G.dashT > 0) G.dashT -= dt;
@@ -1064,7 +1539,7 @@ function updatePlayer(dt) {
     G.odT -= dt;
     if (Math.random() < 0.4) part({ x: G.px + rand(-8, 8), y: G.py + rand(-8, 8), vx: rand(-20, 20), vy: rand(-30, -10), life: .3, max: .3, col: '#73eff7', size: 2, drag: 2 });
   }
-  // 护盾脱战回复（相位护壁协同 / 护盾质变会翻倍）
+  // 护盾脱战回复
   if (S.shieldMax > 0) {
     G.noHitT = (G.noHitT || 0) + dt;
     if (G.noHitT > 3.5 && S.shield < S.shieldMax) {
@@ -1170,6 +1645,172 @@ function updateAbilities(dt) {
   if (S.regen > 0 && S.hp < S.maxHp && !G.dead) {
     S.hp = Math.min(S.maxHp, S.hp + S.regen * dt);
   }
+  // --- 冷却计时：长枪 / 折跃 / 磁雷 ---
+  if (S.lanceT > 0) S.lanceT -= dt;
+  if (S.blinkT > 0) S.blinkT -= dt;
+  // --- 磁暴雷：定时在船尾布设 ---
+  if (S.mine > 0) {
+    S.mineT -= dt;
+    if (S.mineT <= 0 && G.mines.length < S.mineMax) {
+      S.mineT = S.mineCd;
+      // 布在船尾稍后一点：贴着机尾会立刻被自己的碰撞体触发
+      const bx = clamp(G.px - Math.cos(G.ang) * 14, 8, W - 8);
+      const by = clamp(G.py - Math.sin(G.ang) * 14, 8, H - 8);
+      G.mines.push({
+        x: bx, y: by, t: 0, life: 11, arm: 0.35,   // arm：布设后短暂待机，免得刚落就被贴脸怪点掉
+        r: 7 + S.mine * 1.4, blast: 34 + S.mine * 14, dmg: (30 + S.mine * 22) * S.dmg,
+        gold: S.mineGold ? 1 : 0, pull: 34 + S.mine * 12,
+      });
+      ring(bx, by, 10, S.mineGold ? '#ffcd75' : '#c070f0', .22, 1);
+      Sound.sfx.mine();
+    }
+  }
+}
+
+/* 磁暴雷的场上结算（搬运自 echo 的 mine）
+   两段行为：① 磁引 —— 范围内敌人被缓慢拽过来；② 触爆 —— 敌人贴上或寿命到期时炸开。
+   ⚠️ 磁引必须**限速**（每分钟最多拉多远），直接把敌人坐标插值到雷上会变成「吸尘器」，
+      敌人瞬移过来就失去「走位引导」的意味了。 */
+function updateMines(dt) {
+  const S = G.S;
+  if (!G.mines.length) return;
+  for (let i = G.mines.length - 1; i >= 0; i--) {
+    const m = G.mines[i];
+    m.t += dt;
+    if (m.t < m.arm) continue;
+    let boom = m.t >= m.life;
+    buildGrid();
+    // 磁引 + 触爆
+    forNear(m.x, m.y, m.pull + 20, e => {
+      if (e.dead || e.hp <= 0) return;
+      const dx = e.x - m.x, dy = e.y - m.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d < m.r + e.r) { boom = true; return; }
+      if (d < m.pull) {
+        const k = 62 * (1 - d / m.pull) * dt;      // 越近拉得越快，但有上限
+        e.x -= dx / d * k; e.y -= dy / d * k;
+      }
+    });
+    if (!boom) continue;
+    explodeMine(m);
+    G.mines.splice(i, 1);
+  }
+  // 场上超出上限（降级不可能，但被 grant 之外的路径改过就有）→ 掐掉最老的
+  while (G.mines.length > S.mineMax) G.mines.shift();
+}
+
+function explodeMine(m) {
+  const S = G.S;
+  const R = m.blast * (synOn('mineHesh') ? 1.45 : 1);
+  const dmg = m.dmg * (synOn('mineHesh') ? 1.2 : 1);
+  ring(m.x, m.y, R, m.gold ? '#ffcd75' : '#c070f0', .42, 3);
+  burst(m.x, m.y, 20, m.gold ? ['#ffcd75', '#f4f4f4'] : ['#c070f0', '#ef7d57'], 180, .5, 2, true);
+  Sound.sfx.boom(); addShake(3.4);
+  buildGrid();
+  forNear(m.x, m.y, R, e => {
+    if (e.dead || e.hp <= 0) return;
+    const d = Math.hypot(e.x - m.x, e.y - m.y);
+    if (d > R + e.r) return;
+    damageEnemy(e, dmg, (e.x - m.x) / (d || 1), (e.y - m.y) / (d || 1), false, 3);
+  });
+  // 质变：磁暴湮灭波及的敌弹
+  if (m.gold) {
+    for (let j = G.ebullets.length - 1; j >= 0; j--) {
+      const b = G.ebullets[j];
+      if (Math.hypot(b.x - m.x, b.y - m.y) < R) G.ebullets.splice(j, 1);
+    }
+  }
+  // 迟滞雷场协同：炸完留下一片减速场（复用织网者的 webs 机制，1.6 秒后自然消散）
+  // ⚠️ webs 的元素必须带 grow（webSlowAt 用 w.r * w.grow 算半径），漏了会算出 NaN 半径
+  if (synOn('mineStasis')) {
+    G.webs.push({ x: m.x, y: m.y, r: R * 0.8, t: 0, life: 1.8, grow: 0 });
+    if (G.webs.length > 40) G.webs.shift();
+  }
+}
+
+// ============ 冲角装甲（搬运自 echo 的 ram，数值与判定全部重写） ============
+// echo 是「撞击即可杀伤」，本作原本只有敌人撞你会掉血。这里补上反过来的那半边：
+// 船身贴上敌人就持续造成伤害，代价是首级一次性砍掉 30% 射速、以及撞得越狠自己越疼。
+// ⚠️ 每帧都判会变成「贴上去一帧几十跳伤害」，所以按敌人各记一个 0.35 秒的重击间隔，
+//    用 G.t 时间戳比较而不是给每个敌人挂计时器 —— 敌人随时会被回收，计时器得跟着清。
+const RAM_CD = 0.35;
+function ramCheck() {
+  const S = G.S;
+  const gold = S.ramGold ? 1.6 : 1;
+  const syn = synOn('moltenRam') ? 1.5 : 1;
+  const dmg = (10 + S.ram * 6) * S.dmg * gold * syn;
+  buildGrid();
+  let hitAny = false;
+  forNear(G.px, G.py, 22, e => {
+    if (e.dead || e.hp <= 0) return;
+    const d = Math.hypot(e.x - G.px, e.y - G.py);
+    if (d > e.r + 9) return;
+    if (e.ramT !== undefined && G.t - e.ramT < RAM_CD) return;
+    e.ramT = G.t;
+    const dx = (e.x - G.px) / (d || 1), dy = (e.y - G.py) / (d || 1);
+    damageEnemy(e, dmg, dx, dy, false, 2.6);
+    hitAny = true;
+  });
+  if (!hitAny) return;
+  // 撞上去的手感：一小记震动 + 冲击环，但不能给无敌帧（无敌帧会把冲角变成免伤流）
+  addShake(2.2);
+  ring(G.px + Math.cos(G.aim) * 8, G.py + Math.sin(G.aim) * 8, 11, S.ramGold ? '#ffcd75' : '#ef7d57', .2, 1);
+  Sound.sfx.hit();
+  // 撞击汲取协同：撞上去也回血，但只给击坠回血的一半 ——
+  // 冲角是每 0.35 秒一次的持续接触，给满额会变成「贴着敌人无限回血」。
+  if (synOn('ramLeech') && S.leech > 0) healPlayer(S.leech / 100 * S.maxHp * 0.5);
+}
+
+// ============ 死亡尾流（搬运自 echo 的 deathtrail） ============
+// 两条效果：① 带子灼伤踩进去的敌人；② 带子消解碰到的敌弹。
+// 第二条才是这个模块真正的价值 —— 它是本作第一个「用走位清弹幕」的模块，
+// 别的模块都在加强输出，只有它在改变你怎么跑位。
+function updateWakes(dt) {
+  const S = G.S;
+  if (!G.wakes.length) return;
+  const gold = S.deathGold ? 1.5 : 1;
+  const dmg = (9 + S.death * 6) * S.dmg * gold;
+  buildGrid();
+  for (let i = G.wakes.length - 1; i >= 0; i--) {
+    const w = G.wakes[i];
+    w.t += dt;
+    if (w.t >= w.life) {
+      // 质变：熄灭那一刻横向炸裂，把整条尾流的伤害补成一发
+      if (S.deathGold) explode(w.x, w.y, 30, dmg * 0.9, true);
+      G.wakes.splice(i, 1);
+      continue;
+    }
+    // 灼伤（同样按时间戳节流，不然一条带子一帧打几十次）
+    if (G.t - (w.hitT || 0) > 0.16) {
+      let hit = false;
+      forNear(w.x, w.y, w.r + 12, e => {
+        if (e.dead || e.hp <= 0) return;
+        const d = Math.hypot(e.x - w.x, e.y - w.y);
+        if (d < w.r + e.r) {
+          damageEnemy(e, dmg * 0.55, (e.x - w.x) / (d || 1), (e.y - w.y) / (d || 1), false, 0.3, true);
+          hit = true;
+        }
+      });
+      if (hit) w.hitT = G.t;
+    }
+    // 消解敌弹
+    for (let j = G.ebullets.length - 1; j >= 0; j--) {
+      const b = G.ebullets[j];
+      if (Math.hypot(b.x - w.x, b.y - w.y) < w.r + b.r) {
+        burst(b.x, b.y, 3, [gold > 1 ? '#ffcd75' : '#73eff7'], 40, .16, 1);
+        G.ebullets.splice(j, 1);
+      }
+    }
+  }
+}
+
+// 轨道长枪的视觉残留：伤害在 fireLance 里一次结算完，这里只负责淡出
+function updateLances(dt) {
+  for (let i = G.lances.length - 1; i >= 0; i--) {
+    const L = G.lances[i];
+    L.t += dt;
+    if (L.t >= L.life) G.lances.splice(i, 1);
+  }
 }
 
 // ============ 子弹 ============
@@ -1178,18 +1819,43 @@ function updateBullets(dt) {
   for (let i = G.bullets.length - 1; i >= 0; i--) {
     const b = G.bullets[i];
     b.life -= dt;
+    // --- 制导：每隔 0.12 秒才重新找一次目标 ---
+    // ⚠️ 每帧都 nearest(homeR 满级 260) 的话是 (260/24)²≈118 个格子 × 场上每发弹，
+    //    装上制导就等于给整个弹幕系统加了一层固定开销。按弹缓存目标后开销降到 1/7。
+    //    正因为有这层缓存，homeR 才敢开到 260（近全屏）。
     if (b.homing) {
-      const t = nearest(b.x, b.y, 150, null);
+      b.retarget -= dt;
+      if (b.retarget <= 0 || !b.tgt || b.tgt.dead || b.tgt.hp <= 0) {
+        b.retarget = 0.12;
+        b.tgt = nearest(b.x, b.y, G.S.homeR, null);
+      }
+      const t = b.tgt;
       if (t) {
         const want = Math.atan2(t.y - b.y, t.x - b.x);
         let da = ((want - b.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
-        b.ang += clamp(da, -b.homing * dt, b.homing * dt);
+        const turn = b.homing * (synOn('guidedPierce') ? 1.45 : 1);
+        b.ang += clamp(da, -turn * dt, turn * dt);
         const sp = Math.hypot(b.vx, b.vy);
         b.vx = Math.cos(b.ang) * sp; b.vy = Math.sin(b.ang) * sp;
       }
     }
     b.x += b.vx * dt; b.y += b.vy * dt;
-    if (b.life <= 0 || b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) { G.bullets.splice(i, 1); continue; }
+    if (b.life <= 0) { G.bullets.splice(i, 1); continue; }
+    // --- 出界：跳弹先反弹，没次数了才回收 ---
+    // ⚠️ 反弹点固定在 ±20（和 EDGE 同一个值）。反弹后子弹一定留在场内，
+    //    所以不会出现「子弹在场外打转、永远打不到屏边敌人」的死循环。
+    if (b.x < -20 || b.x > W + 20 || b.y < -20 || b.y > H + 20) {
+      if (b.bounce > 0) {
+        b.bounce--;
+        if (b.x < -20 || b.x > W + 20) { b.vx = -b.vx; b.x = clamp(b.x, -19, W + 19); }
+        if (b.y < -20 || b.y > H + 20) { b.vy = -b.vy; b.y = clamp(b.y, -19, H + 19); }
+        b.ang = Math.atan2(b.vy, b.vx);
+        b.tgt = null; b.retarget = 0;
+        b.bounced = true;
+        b.life = Math.max(b.life, 0.55);   // 别刚弹回来就寿终，那玩家根本看不见这一跳
+        burst(b.x, b.y, 3, ['#73eff7', '#f4f4f4'], 46, .18, 1);
+      } else { G.bullets.splice(i, 1); continue; }
+    }
     // 命中
     let hit = null;
     forNear(b.x, b.y, 14, e => {
@@ -1203,10 +1869,32 @@ function updateBullets(dt) {
     const a = Math.atan2(b.vy, b.vx);
     damageEnemy(hit, dmg, Math.cos(a), Math.sin(a), crit, 0.6);
     if (b.blast) {
-      const R = (26 + b.blast * 12) * S.blastMul * (synOn('cluster') ? 1.3 : 1);
+      const R = (26 + b.blast * 12) * S.blastMul * (synOn('cluster') ? 1.3 : 1)
+        * (b.bounced && synOn('bounceBlast') ? 1.35 : 1);
       explode(b.x, b.y, R, b.dmg * (0.5 + b.blast * 0.22), R < 40);
     }
     burst(b.x, b.y, crit ? 7 : 3, crit ? ['#ffcd75', '#f4f4f4'] : ['#73eff7', '#f4f4f4'], 70, .25, 1);
+    // 裂变弹芯：只在**首次**命中时炸成弹片（b.fissioned 保证只发生一次 ——
+    // 不设这个闸，一颗带穿透的裂变弹会在每个目标上各炸一轮，直接变成无限弹幕）。
+    // 弹片用极短的 life 而不是让它继续飞：它是「命中点周围一圈」的二次杀伤，不是第二发炮弹。
+    // 弹片**不继承穿透**（否则一颗弹滚出去几十个目标），但按协同继承 1 次反弹与爆炸。
+    if (b.fission > 0 && !b.fissioned) {
+      b.fissioned = true;
+      const sn = b.fission, off = rand(TAU);
+      for (let k = 0; k < sn; k++) {
+        const sa = off + k / sn * TAU;
+        pBullet(b.x, b.y, sa, 195, b.dmg * b.fissionMul, {
+          r: 2, life: 0.34, homing: 0, pierce: 0,
+          // ⚠️ fission 必须显式置 0。pBullet 里是 `o.fission ?? G.S.fission`，
+          //    不传的话弹片会继承当前等级，于是「弹片命中再裂变」→ 指数级弹幕爆炸。
+          fission: 0,
+          bounce: synOn('bounceFission') ? 1 : 0,
+          blast: synOn('fissionBoom') ? 1 : 0,
+          col: G.S.fissionGold ? '#ffcd75' : '#ef7d57',
+        });
+      }
+      ring(b.x, b.y, 9, G.S.fissionGold ? '#ffcd75' : '#ef7d57', .16, 1);
+    }
     if (b.pierce > 0) { b.pierce--; }
     else G.bullets.splice(i, 1);
   }
@@ -1221,7 +1909,7 @@ function updateEBullets(dt) {
     const dx = b.x - G.px, dy = b.y - G.py, rr = b.r + 7;
     const dd = dx * dx + dy * dy;
     if (dd < rr * rr) {
-      hurtPlayer(9);
+      hurtPlayer(b.dmg || 9);
       burst(b.x, b.y, 8, ['#ff3355'], 90, .3, 2);
       G.ebullets.splice(i, 1); continue;
     }
@@ -1321,39 +2009,48 @@ function updateFx(dt) {
 // ============ 航程导演 ============
 function startWave(w) {
   G.wave = w;
-  const z = ZONES.findIndex(zz => w >= zz.from && w <= zz.to);
-  G.zone = z < 0 ? 2 : z;
+  // 星区：主线按 ZONES 的区间走；无尽里 1-2-3 循环，让星野背景也跟着换（视觉不至于腻）。
+  const zi = ZONES.findIndex(zz => w >= zz.from && w <= zz.to);
+  G.zone = zi >= 0 ? zi : (w - 1) % ZONES.length;
   const zone = ZONES[G.zone];
   G.waveKills = 0;
   G.spawnQueue = [];
   G.spawnT = 0.6;
   G.waveT = 0;
   Sound.sfx.warp();
-  if (BOSS_WAVES[w]) {
+  const tier = eTier(w);
+  const bossId = bossForWave(w);
+  if (bossId) {
     G.waveState = 'boss';
     // ⚠️ 不要用 setTimeout 排 boss 入场：那是**真实时间**，而 waveT 是**游戏时间**。
     // fast>1 时 waveT 先跑到 2 秒 → updateWave 判「场上没 boss 也没敌人」→ 直接 finishWave，
     // 巨像整段被跳过（实测 fast=4 时第 4/8 段只用 3.7s 就过了）。
-    G.bossPending = BOSS_WAVES[w];
+    G.bossPending = bossId;
     G.bossT = 1.2;
-    banner('第 ' + w + ' 段 · ' + zone.name, '巨像接近中', '#ff5577', 2.4);
+    const b = BOSSES[bossId];
+    // 无尽里巨像会重复出场，所以要把档位报出来 —— 不然玩家会以为游戏没在变难
+    banner('第 ' + w + ' 段 · ' + zone.name,
+      tier > 0 ? b.name + '（深渊 ' + tier + ' 档）' : '巨像接近中', '#ff5577', 2.4);
     G.waveNeed = 1;
   } else {
     G.waveState = 'spawn';
     G.bossPending = null;
     const sq = SQUADS[zone.squads[(w - 1) % 4]] || SQUADS.mixed;
     G.squadName = sq.name;
-    const base = 7 + w * 2.2;
-    const n = Math.round(base * sq.cnt);
+    // 无尽里每档额外加量（封顶 +10）—— 这是「越打越挤」的主要来源，比单纯加血更有压迫感
+    const base = 7 + Math.min(w, WAVES) * 2.2;
+    const n = Math.round(base * sq.cnt) + eTierExtra(w);
     G.waveNeed = n;
     for (let i = 0; i < n; i++) {
       let t = pick(sq.mix);
-      // 星区越深，混入更硬的敌型
-      if (G.zone === 2 && Math.random() < 0.26) t = pick(['bastion', 'stalker', 'bulwark', 'shepherd', 'weaver']);
-      else if (G.zone === 1 && Math.random() < 0.2) t = pick(['shifter', 'mine', 'leech', 'weaver', 'nova']);
+      // 星区越深，混入更硬的敌型；无尽里强度固定按最深的星区来配
+      if (G.zone === 2 || tier > 0) {
+        if (Math.random() < 0.26) t = pick(['bastion', 'stalker', 'bulwark', 'shepherd', 'weaver']);
+      } else if (G.zone === 1 && Math.random() < 0.2) t = pick(['shifter', 'mine', 'leech', 'weaver', 'nova']);
       G.spawnQueue.push(t);
     }
-    banner('第 ' + w + ' 段 · ' + zone.name, '编队主题：' + sq.name, '#73eff7', 2.2);
+    banner('第 ' + w + ' 段 · ' + zone.name,
+      tier > 0 ? '深渊 ' + tier + ' 档 · ' + sq.name : '编队主题：' + sq.name, '#73eff7', 2.2);
   }
 }
 
@@ -1387,10 +2084,18 @@ function updateWave(dt) {
 }
 
 function finishWave() {
-  if (G.wave >= WAVES) {
-    G.won = true; G.dead = true;
-    Sound.setMode('title');
-    setTimeout(gameOver, 700);
+  if (G.wave === WAVES) {
+    // 主线 12 段打通：记为「通关」，但**不结束这一局** —— 直接滚进无尽航程。
+    // ⚠️ 这里以前是 G.dead = true + gameOver()，等于把无尽模式的入口堵死了。
+    //    现在只有「船毁」才结束一局（见 die），通关只是把 G.won 记上，
+    //    结算页照样按 G.won 给 SAVE.won +1 —— 所以「通关率」统计没被破坏。
+    G.won = true;
+    G.score += 1500;
+    G.S.hp = G.S.maxHp;                 // 通关奖励：满血，别让无尽开局带着残血
+    banner('航程 · 抵达奇点', '通关 —— 无尽航程开启', '#ffcd75', 3.4);
+    Sound.sfx.ready();
+    addShake(8);
+    G.waveState = 'warp'; G.waveT = 0;
     return;
   }
   G.waveState = 'warp'; G.waveT = 0;
@@ -1427,10 +2132,15 @@ function step(dt) {
   }
   updateEnemies(dt);
   updateBullets(dt);
+  // ⚠️ 尾流必须在 updateEBullets 之前：它的职责之一是把敌弹吃掉，
+  //    排到后面就变成「先被弹打到、再把弹清掉」，玩家会觉得这模块根本没生效。
+  updateWakes(dt);
+  updateMines(dt);
   updateEBullets(dt);
   updatePickups(dt);
   updateParts(dt);
   updateFx(dt);
+  updateLances(dt);
   updateWebs(dt);
   updateWave(dt);
 }
@@ -1574,6 +2284,16 @@ function drawPlayer() {
     ringPx(G.px, G.py, S.stasisR, 1);
     ctx.globalAlpha = 1;
   }
+  // 冲角装甲：船首亮出的破风尖锥，随等级变长，质变后镀金 ——
+  // 一眼就能看出这条船是拿来撞的，不然玩家根本不会想到要主动贴上去。
+  if (S.ram > 0) {
+    const cx = Math.cos(G.ang), cy = Math.sin(G.ang);
+    const tip = 14 + S.ram * 2;
+    ctx.strokeStyle = S.ramGold ? '#ffcd75' : '#c0cbdc';
+    pline(G.px + cx * 8, G.py + cy * 8, G.px + cx * tip, G.py + cy * tip, S.ramGold ? 3 : 2);
+    ctx.fillStyle = '#f4f4f4';
+    ctx.fillRect(Math.round(G.px + cx * tip) - 1, Math.round(G.py + cy * tip) - 1, 2, 2);
+  }
 }
 
 function drawDrones() {
@@ -1601,9 +2321,9 @@ function drawPickups() {
 }
 
 function drawPBullets() {
-  // 友方：青白细针，画在敌人之下
+  // 友方：青白细针，画在敌人之下。带 col 的（尾炮橙 / 满级尾炮金 / 无人机金）走配色变体。
   for (const b of G.bullets) {
-    drawBulletSet(ctx, b.ang, b.x, b.y);
+    drawBulletSet(ctx, b.ang, b.x, b.y, b.col);
   }
 }
 function drawEBullets() {
@@ -1714,11 +2434,29 @@ function drawHUD() {
     if (mx > 110) { mx = 8; my += 16; }
   }
 
+  // 主动能力冷却（装了才显示）：长枪 / 折跃 / 磁雷。
+  // 这三张卡的强度全在「就绪」那一刻，玩家必须一眼看到还剩多久 —— 藏在暂停页里等于没有。
+  let ax = 8;
+  const ay = my + 17;
+  const cdPip = (g, ready, ratio, col) => {
+    ctx.fillStyle = '#1a1c2c'; ctx.fillRect(ax, ay, 15, 14);
+    // 就绪时外框亮起，未就绪时只画底部进度条
+    ctx.strokeStyle = ready ? col : '#333c57';
+    ctx.lineWidth = 1; ctx.strokeRect(ax - 0.5, ay - 0.5, 16, 15);
+    text(g, ax + 3, ay + 1, ready ? col : '#566c86');
+    ctx.fillStyle = ready ? col : '#41a6f6';
+    ctx.fillRect(ax, ay + 12, Math.round(15 * clamp(ratio, 0, 1)), 2);
+    ax += 18;
+  };
+  if (S.lance > 0) cdPip('枪', S.lanceT <= 0, 1 - S.lanceT / S.lanceCd, S.lanceGold ? '#ffcd75' : '#73eff7');
+  if (S.blink > 0) cdPip('跃', S.blinkT <= 0, 1 - S.blinkT / S.blinkCd, S.blinkMax ? '#ffcd75' : '#c070f0');
+  if (S.mine > 0) cdPip('雷', G.mines.length < S.mineMax, 1 - S.mineT / S.mineCd, S.mineGold ? '#ffcd75' : '#c070f0');
+
   // 右上：分数 / 航段 / 时间
   text('分数', W - 8, 6, '#7a86a8', 'r');
   text('' + G.score, W - 8, 16, '#f4f4f4', 'r');
   const z = ZONES[G.zone];
-  text('第 ' + G.wave + '/' + WAVES + ' 段', W - 8, 28, '#73eff7', 'r');
+  text(waveLabel(G.wave), W - 8, 28, G.wave > WAVES ? '#ffcd75' : '#73eff7', 'r');
   text(z.name, W - 8, 38, '#7a86a8', 'r');
   text(fmtTime(G.t), W - 8, 48, '#7a86a8', 'r');
   if (G.combo > 1) text('x' + G.combo, W - 8, 60, '#ffcd75', 'r');
@@ -1832,11 +2570,14 @@ function render() {
   }
   drawBackground();
   drawWebs();
+  drawWakes();
+  drawMines();
   drawPickups();
   drawPBullets();
   drawEnemies();
   drawDrones();
   drawPlayer();
+  drawLances();     // 光矛压在船身之上：它是「刚打出去」的一击，必须盖住一切
   drawEBullets();
   drawParts();
   drawFx();
@@ -1886,7 +2627,9 @@ function toTitle() {
   const locked = HULLS.filter(h => !hullUnlocked(h));
   const bits = [];
   if (SAVE.best) bits.push('最佳分数 ' + SAVE.best);
-  if (SAVE.maxWave) bits.push('最远 ' + SAVE.maxWave + '/' + WAVES + ' 段');
+  // 无尽打通之后 maxWave 会超过 WAVES，再写 "N/12" 就自相矛盾了
+  if (SAVE.maxWave) bits.push('最远 ' + SAVE.maxWave + ' 段'
+    + (SAVE.maxWave > WAVES ? '（深渊 ' + eTier(SAVE.maxWave) + ' 档）' : ''));
   if (SAVE.kills) bits.push('累计击坠 ' + SAVE.kills);
   if (locked.length) bits.push('还有 ' + locked.length + ' 台待解锁');
   $('best').textContent = bits.join(' · ');
@@ -1895,6 +2638,29 @@ function openHangar() {
   state = 'hangar';
   showOverlay('hangar');
   renderHangar();
+}
+// 操作说明的「从哪来回哪去」。之前 返回 写死回标题页 ——
+// 从暂停面板翻说明书再返回，会直接把你踢出这一局。
+let helpFrom = 'title';
+function openHelp() {
+  helpFrom = (state === 'pause' || state === 'hangar' || state === 'title') ? state : 'title';
+  state = 'help';
+  showOverlay('help');
+}
+function closeHelp() {
+  if (helpFrom === 'pause') { state = 'play'; togglePause(); }
+  else if (helpFrom === 'hangar') openHangar();
+  else toTitle();
+}
+// 竖屏提示的逃生口：万一 coarse/portrait 判定卡住，玩家还能点掉它继续玩。
+// 没有这个，一张全屏遮罩就能让游戏永久不可玩。
+let rotateDismissed = false;
+function dismissRotateHint() {
+  rotateDismissed = true;
+  document.documentElement.classList.add('norotate');
+}
+function updateRotateHint() {
+  document.documentElement.classList.toggle('norotate', rotateDismissed);
 }
 function renderHangar() {
   // 每次进机库都重算一次解锁：上一局可能刚好达标
@@ -2023,11 +2789,15 @@ function gameOver() {
   const fresh = checkUnlocks();
   $('over-title').textContent = G.won ? '航程 · 抵达奇点' : '航程 · 中断';
   $('over-title').className = 'over-title' + (G.won ? ' win' : '');
-  $('over-sub').textContent = G.won ? '你穿过了全部十二段航程。' : '船体解体于第 ' + G.wave + ' 段。';
+  $('over-sub').textContent = G.won
+    ? (G.wave > WAVES
+      ? '已通关，并在无尽航程中推进到第 ' + G.wave + ' 段（深渊 ' + eTier(G.wave) + ' 档）。'
+      : '你穿过了全部十二段航程。')
+    : '船体解体于第 ' + G.wave + ' 段。';
   $('over-stats').innerHTML = `
     <div><span>分数</span><b>${G.score}</b></div>
     <div><span>击坠</span><b>${G.kills}</b></div>
-    <div><span>航段</span><b>${G.wave}/${WAVES}</b></div>
+    <div><span>航段</span><b>${G.wave > WAVES ? G.wave + ' 段' : G.wave + '/' + WAVES}</b></div>
     <div><span>等级</span><b>${G.level}</b></div>
     <div><span>星尘</span><b>${G.dust}</b></div>
     <div><span>用时</span><b>${fmtTime(G.t)}</b></div>`;
@@ -2050,7 +2820,8 @@ function renderLog() {
       const nm = (hull ? hull.name : (r.hullName || '—'));
       const cls = i === 0 ? 'logrow now' : 'logrow';
       return `<div class="${cls}"><span>${nm}${r.won ? ' ·通' : ''}</span>`
-        + `<span>${r.wave}/${WAVES}</span><span>${r.kills}</span><span>${r.score}</span></div>`;
+        + `<span>${r.wave > WAVES ? r.wave + ' 段' : r.wave + '/' + WAVES}</span>`
+        + `<span>${r.kills}</span><span>${r.score}</span></div>`;
     }).join('');
 }
 
@@ -2094,6 +2865,18 @@ function rollChoices() {
   choices = a.slice(0, 3);
   renderCards();
 }
+// 卡池抽空时的唯一出口。
+// ⚠️ 不加这个，玩家会永久卡在升级面板上：卡池空 → 一张卡都不渲染，
+//    面板上只剩「重抽」（重抽也抽不出东西，次数用完还会禁用），
+//    Escape/Enter/Space/1 全部无效 —— 是真死路，不是理论问题。
+function closeUpgrade() {
+  if (state !== 'upgrade') return;
+  G.score += 200 + G.wave * 40;   // 白升一级总得给点什么
+  G.S.hp = G.S.maxHp;
+  toast('模块已全部满级', '本段奖励折算为分数 · 船体已修复', '#ffcd75', 2.2);
+  state = 'play';
+  showOverlay(null);
+}
 // 这张卡选下去会触发哪些协同（用于卡面预告）
 function synergyPreview(m) {
   const will = { ...G.mods };
@@ -2103,6 +2886,21 @@ function synergyPreview(m) {
 function renderCards() {
   const box = $('cards');
   box.classList.remove('locked');
+  // 卡池抽空：给一张明确的出口卡，别留一个只有「重抽」的死面板
+  if (!choices.length) {
+    box.innerHTML = `<div class="card t-stat" data-act="skipup" tabindex="0">
+      <div class="tag">满级</div>
+      <div class="glyph">满</div>
+      <div class="name">全部满级</div>
+      <div class="desc">所有模块都已升到顶<br>本段奖励折算为分数</div>
+      <div class="syn">&nbsp;</div>
+      <div class="key">[ENTER] 继续</div>
+    </div>`;
+    $('up-sub').textContent = 'LV ' + G.level + ' · 模块已全部满级';
+    $('btn-reroll').disabled = true;
+    $('btn-reroll').textContent = '无需重抽';
+    return;
+  }
   box.innerHTML = choices.map((m, i) => {
     const lv = G.mods[m.id] || 0;
     const nextLv = lv + 1;
@@ -2134,7 +2932,9 @@ function choose(i, viaPointer) {
   if (viaPointer && performance.now() - G.upOpen < UP_ARM) return;
   const m = choices[i]; if (!m) return;
   const lv = G.mods[m.id] = (G.mods[m.id] || 0) + 1;
-  m.apply(G.S);
+  // ⚠️ 第二个参数是本卡当前等级。绝大多数卡用不到，但「冲角装甲」的首级惩罚
+  //    （射速 -30%）必须只在 n === 1 时结算一次 —— 少了它续档重放会把惩罚叠三次。
+  m.apply(G.S, lv);
   if (lv >= m.max && m.bloom) {
     // 质变：满级那一刻额外执行一次，给音效 + 横幅（不是静默加数值）
     m.bloom(G.S);
@@ -2190,10 +2990,14 @@ function onKey(code, down) {
     if (code === 'Digit2') choose(1);
     if (code === 'Digit3') choose(2);
     if (code === 'KeyR') reroll();
+    // 卡池抽空时唯一的出路：不然玩家会永久卡在这一屏
+    if ((code === 'Enter' || code === 'Space' || code === 'Escape') && !choices.length) closeUpgrade();
     return;
   }
   if (state === 'pause') {
     if (code === 'Escape' || code === 'KeyP') togglePause();
+    if (code === 'KeyR') handleAct('restart');
+    if (code === 'KeyH') handleAct('title');
     return;
   }
   if (state === 'over') {
@@ -2201,7 +3005,7 @@ function onKey(code, down) {
     if (code === 'Escape') openHangar();
     return;
   }
-  if (state === 'help' && (code === 'Escape' || code === 'Enter')) toTitle();
+  if (state === 'help' && (code === 'Escape' || code === 'Enter')) closeHelp();
 }
 
 function toGame(cx, cy) { return [(cx - offX) / scale, (cy - offY) / scale]; }
@@ -2213,16 +3017,19 @@ function handleAct(a) {
   if (a === 'hangar') openHangar();
   else if (a === 'launch') startGame();
   else if (a === 'title') toTitle();
-  else if (a === 'help') { state = 'help'; showOverlay('help'); }
+  else if (a === 'help') openHelp();
+  else if (a === 'helpback') closeHelp();
   else if (a === 'start') openHangar();
   else if (a === 'resume') togglePause();
   else if (a === 'restart') { G = null; startGame(); }
   else if (a === 'mute') { const m = Sound.toggleMute(); $('btn-mute').textContent = m ? '声音 关' : '声音 开'; }
   else if (a === 'reroll') reroll(true);
+  else if (a === 'skipup') closeUpgrade();
   else if (a === 'pause') togglePause();
   else if (a === 'dash') tryDash();
   else if (a === 'od') activateOverdrive();
   else if (a === 'full') toggleFullscreen();
+  else if (a === 'rotatedismiss') dismissRotateHint();
 }
 
 // 安全区（刘海 / 圆角 / 手势条）。CSS 里把 env() 读进 --sa*，这里再取出来。
@@ -2274,9 +3081,13 @@ function updateLayoutMode() {
   const root = document.documentElement;
   root.classList.toggle('coarse', isTouchDevice());
   root.classList.toggle('portrait', matchMedia('(orientation: portrait)').matches);
+  updateRotateHint();
 }
 
 // ============ bot（?bot=1 自动游玩，用于平衡性验证） ============
+// 操控改成「A/D 转向 + W 推进」之后，bot 不再走 keys['KeyW/S/A/D']
+// 那一套八向推进（那套早就和现在不是一回事了）。直接吃 G.ang + KeyW
+// 两个自由度，开火仍走 mouse.down，仿真度和真人一致。
 let botA = 0;
 function botStep(dt) {
   if (!G) return;
@@ -2299,30 +3110,41 @@ function botStep(dt) {
     }
     return bp;
   };
-  // 瞄准：永远先瞄敌人（保证 DPS），没敌人才把炮口转向星尘
-  const aimAt = t || nearDust();
-  if (aimAt) {
-    const a = Math.atan2(aimAt.y - G.py, aimAt.x - G.px);
-    mouse.x = G.px + Math.cos(a) * 60; mouse.y = G.py + Math.sin(a) * 60;
-  }
-  // 走位：有近敌就中距缠斗，否则去捡星尘。
-  // ⚠️ 走位和瞄准必须分开 —— 早先写成「td>150 就整体转向星尘」，
-  // 结果炮口对着星尘发呆，第 9 段从 50s 拖到 106s。
-  let wx = 0, wy = 0;
-  if (t && td <= 150) {
-    botA += dt * 0.7;
-    const a = Math.atan2(t.y - G.py, t.x - G.px);
-    const want = td < 90 ? a + Math.PI : a;
-    wx = Math.cos(want); wy = Math.sin(want) + Math.sin(botA) * 0.5;
+  /* ⚠️ 单摇杆模型下的关键取舍：机首 = 航向 = 炮口，**掉头逃跑就是停火**。
+     第一版照搬了旧的双摇杆思路（近敌时 `G.ang = targetA + PI` 背身脱离 + 一直推进），
+     结果是「贴上去 → 掉头跑 → 打空 → 再贴上去」的循环，第 10 段从 ~30s 拖到 508s
+     （整局 565s → 1425s）。改成：**机首永远咬住最近的敌人**，靠推进/刹车控距。 */
+  let thrust = 0, brake = 0;
+  if (t && td <= 190) {
+    const ta = Math.atan2(t.y - G.py, t.x - G.px);
+    G.ang = ta; G.aim = ta;
+    mouse.x = G.px + Math.cos(ta) * 60; mouse.y = G.py + Math.sin(ta) * 60;
+    mouse.inside = true;
+    if (td > 140) thrust = 1;          // 远：贴上去
+    else if (td < 70) brake = 1;       // 太近：刹住，让它自己撞进火线（顺便少吃撞击）
+    // 70..140 之间滑行 —— 保持全 DPS，这才是「单摇杆」的正确打法
+    // 贴边时给一点向内的偏置，别把自己顶在墙角
+    if (G.px < 34 || G.px > W - 34 || G.py < 34 || G.py > H - 34) {
+      const ca = Math.atan2(H / 2 - G.py, W / 2 - G.px);
+      G.ang = ta + Math.sin(ca - ta) * 0.5;
+      thrust = 1;
+    }
   } else {
+    // 附近没敌人：去捡星尘（这时炮口无所谓），没星尘就绕着飘
     const bp = nearDust();
-    if (bp) { const a = Math.atan2(bp.y - G.py, bp.x - G.px); wx = Math.cos(a); wy = Math.sin(a); }
-    else { botA += dt * 0.5; wx = Math.cos(botA); wy = Math.sin(botA); }   // 没事干就绕着飘，别原地死等
+    if (bp) {
+      const ba = Math.atan2(bp.y - G.py, bp.x - G.px);
+      G.ang = ba; G.aim = ba; thrust = 1;
+    } else {
+      botA += dt * 0.5;
+      G.ang = botA; G.aim = botA; thrust = 1;
+    }
+    mouse.inside = false;
   }
-  keys['KeyW'] = wy < -0.25;
-  keys['KeyS'] = wy > 0.25;
-  keys['KeyA'] = wx < -0.25;
-  keys['KeyD'] = wx > 0.25;
+  keys['KeyW'] = thrust > 0;
+  keys['KeyS'] = brake > 0;
+  keys['KeyA'] = false;
+  keys['KeyD'] = false;
   mouse.down = true;
   if (G.energy >= 100) activateOverdrive();
 }
@@ -2350,6 +3172,15 @@ function loop(now) {
 
 // ============ 启动 ============
 function boot() {
+  // 启动阶段抛异常的话，页面会永远停在 LOADING —— 把错误直接写到那一屏上，
+  // 否则「白屏 / 卡 loading」只能靠猜。
+  window.addEventListener('error', e => {
+    if (state !== 'loading') return;
+    const el = $('loading'); if (!el) return;
+    el.innerHTML = '<div style="color:#ff5577">启动失败</div>'
+      + '<div class="dim" style="max-width:420px;text-align:center;line-height:14px">'
+      + String((e && (e.message || e.error)) || 'unknown error').slice(0, 200) + '</div>';
+  });
   buildSprites();
   STARSETS = makeStarTiles();
   ROCKS = makeRocks();
@@ -2367,13 +3198,19 @@ function boot() {
     // 滑杆要用方向键调音量，别把方向键吞掉（Esc 仍然交给游戏）
     if (inCtl) { if (e.code !== 'Escape') return; }
     else if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
+    // A/D 一按立刻切回「键盘朝向」模式 —— 否则鼠标控制下按了 A 机身却不转，会很怪
+    if (state === 'play' && (e.code === 'KeyA' || e.code === 'KeyD' ||
+        e.code === 'ArrowLeft' || e.code === 'ArrowRight')) aimMode = 'key';
     onKey(e.code, true);
   });
   window.addEventListener('keyup', e => onKey(e.code, false));
   window.addEventListener('blur', () => { for (const k in keys) delete keys[k]; mouse.down = false; });
 
-  // 鼠标
-  const upd = e => { const [x, y] = toGame(e.clientX, e.clientY); mouse.x = x; mouse.y = y; mouse.inside = true; };
+  // 鼠标：动了就接管朝向（切到 'mouse' 模式）
+  const upd = e => {
+    const [x, y] = toGame(e.clientX, e.clientY); mouse.x = x; mouse.y = y; mouse.inside = true;
+    if (state === 'play') aimMode = 'mouse';
+  };
   window.addEventListener('mousemove', upd);
   window.addEventListener('mousedown', e => {
     Sound.init();
@@ -2432,9 +3269,8 @@ function boot() {
   //    preventDefault() 就会把浏览器随后合成的 click 掐掉 —— 表现是
   //    「点『出击』完全没反应」（实测复现）。pointerdown 在任何手势判定之前触发，
   //    鼠标 / 触屏 / 触控笔一套通吃，也不会被后续的 preventDefault 影响。
-  function uiHit(x, y) {
-    const el = document.elementFromPoint(x, y);
-    if (!el) return false;
+  function uiAct(el) {
+    if (!el || !el.closest) return false;
     const b = el.closest('[data-act]');
     if (b) { handleAct(b.dataset.act); return true; }
     const c = el.closest('.card');
@@ -2443,6 +3279,7 @@ function boot() {
     if (h && state === 'hangar') { pickHull([...$('hulls').children].indexOf(h)); return true; }
     return false;
   }
+  function uiHit(x, y) { return uiAct(document.elementFromPoint(x, y)); }
   if (window.PointerEvent) {
     document.addEventListener('pointerdown', e => {
       pointerKind = e.pointerType === 'mouse' ? 'mouse' : 'touch';
@@ -2452,12 +3289,15 @@ function boot() {
     document.addEventListener('pointermove', e => {
       if (e.pointerType) pointerKind = e.pointerType === 'mouse' ? 'mouse' : 'touch';
     });
-  } else {
-    document.addEventListener('click', e => {
-      const el = e.target && e.target.closest && e.target.closest('[data-act],.card,.hull');
-      if (el) uiHit(e.clientX, e.clientY);
-    });
   }
+  // 键盘激活补丁：Tab 聚焦到 <button> 上按 Enter/Space，浏览器原生触发的是 click
+  // （且 detail === 0、没有前置 pointerdown）—— 只监听 pointerdown 会把这条路整段丢掉。
+  // 用 detail === 0 当判别式，触屏/鼠标点击一律放行给 pointerdown，不会重复触发。
+  document.addEventListener('click', e => {
+    if (e.detail !== 0) return;
+    const el = e.target && e.target.closest && e.target.closest('[data-act],.card,.hull');
+    if (el) uiAct(el);
+  });
 
   // 调试接口
   window.__dbg = {
@@ -2484,6 +3324,81 @@ function boot() {
     hit: (e, dmg, dx, dy) => damageEnemy(e, dmg, dx, dy, false, 0),
     setMods: m => { G.mods = Object.assign({}, m); recalcSynergies(); },
     clearMods: () => { G.mods = {}; G.syn = {}; },
+    // 探针专用：把属性表恢复成「刚开局」的样子。
+    // ⚠️ apply() 是就地改数值的，clearMods() 只清 mods 表 —— 不同时重置属性的话，
+    //    前一组用例给射速打的 0.7 会一直留在后面的用例里，测出来的数全是错的。
+    resetStats: () => { G.S = newGame(G.S.hull).S; },
+    // 探针专用：按等级逐级「真实装配」一张卡（走 apply / bloom 的正常路径）。
+    // ⚠️ 不能用 setMods 代替 —— setMods 只改 G.mods 这张表，一次 apply() 都不执行，
+    //    属性（射速 / 伤害 / 反弹次数…）一点没变，测出来的全是假的。
+    grant: (id, n = 1) => {
+      const m = MODULES.find(v => v.id === id); if (!m) return null;
+      for (let k = 0; k < n; k++) {
+        const lv = (G.mods[id] || 0) + 1;
+        if (lv > m.max) break;
+        G.mods[id] = lv;
+        m.apply(G.S, lv);
+        if (lv >= m.max && m.bloom) m.bloom(G.S);
+      }
+      recalcSynergies();
+      return { mods: Object.assign({}, G.mods), syn: Object.keys(G.syn) };
+    },
+    setPos: (x, y) => { G.px = x; G.py = y; G.vx = 0; G.vy = 0; },
+    // 探针专用：直接开一枪 / 按住某个键 / 塞一发敌弹。
+    // 这三种都是「不给探针开口就只能靠合成事件碰运气」的路径，直接暴露函数最稳。
+    fire: (ang) => fireMain(ang === undefined ? G.aim : ang, 1),
+    // 直接吃一次伤害：相位折跃的判定在 hurtPlayer 里，走这条路径才算真的测到
+    hurt: (dmg) => hurtPlayer(dmg === undefined ? 30 : dmg),
+    hold: (k, v) => { keys[k] = !!v; },
+    ebullet: (x, y, ang, spd, r, color) => eShot(x, y, ang, spd, r, color || HOSTILE.red),
+    // ---- 探针专用：无尽航程 / 深渊档位 ----
+    // ⚠️ bossForWave 有副作用（会从轮换袋里抽走一张），所以单独开一个 peek 版本给探针做
+    //    「只读式」检查；真要驱动关卡就用 gotoWave / nextWave 走正常路径。
+    get wave() { return G.wave; },
+    get won() { return !!G.won; },
+    get waveState() { return G.waveState; },
+    get waveNeed() { return G.waveNeed; },
+    get queueLen() { return G.spawnQueue.length; },
+    get bossId() { return G.bossPending || (G.boss ? G.boss.boss : null); },
+    tier: w => eTier(w === undefined ? G.wave : w),
+    tierMul: w => {
+      const x = w === undefined ? G.wave : w;
+      return { hp: eTierHp(x), dmg: eTierDmg(x), spd: eTierSpd(x), extra: eTierExtra(x) };
+    },
+    hpScale: () => hpScale(),
+    waveLabel: w => waveLabel(w === undefined ? G.wave : w),
+    // 只读地算「第 w 段该出哪只巨像」，不消耗轮换袋（照抄 bossForWave 但去掉 bagPick 副作用）
+    peekBoss: w => BOSS_WAVES[w] || (w >= ENDLESS_FROM && (w - WAVES) % ENDLESS_BOSS_EVERY === 0 ? '(袋)' : null),
+    bossBagLeft: () => BOSS_BAG.length,
+    // 真·抽一次巨像（会消耗轮换袋）—— 用来验证「一轮内三只不重复」
+    drawBoss: () => bagPickBoss(),
+    // 探针专用：把轮换袋倒空重来。gotoWave 到巨像段也会消耗袋子，
+    // 所以「三只不重复」这类用例必须先归零，否则测的是上一段留下的残局。
+    resetBossBag: () => { BOSS_BAG.length = 0; },
+    get squadName() { return G.squadName; },
+    // ---- 探针专用：进场方向 / 边界夹取 ----
+    // spawnPos 的四个方向曾是**死代码**（irand(4) 恒为 NaN，四个分支全落空，只从右边进场）。
+    // 这种「分支永远走不到」的 bug 没有任何报错，只能靠大量采样数分布来抓。
+    get wh() { return [W, H]; },
+    get edge() { return EDGE; },
+    spawnPosSample: () => spawnPos(),
+    spawnFromEdge: type => spawnEnemy(type),   // 不给 x/y → 走 spawnPos 的正常路径
+    gotoWave: w => {
+      G.enemies.length = 0; G.ebullets.length = 0; G.boss = null; G.bossPending = null;
+      startWave(w);
+    },
+    enemyInfo: () => G.enemies.map(e => ({
+      type: e.type, hp: Math.round(e.hp), maxHp: Math.round(e.maxHp),
+      dmg: Math.round((e.dmg || 0) * 100) / 100, spdMul: e.spdMul === undefined ? 1 : e.spdMul,
+      boss: !!e.boss,
+    })),
+    get wakeCount() { return G.wakes.length; },
+    get lanceCount() { return G.lances.length; },
+    get mineCount() { return G.mines.length; },
+    get bulletCount() { return G.bullets.length; },
+    get ebulletCount() { return G.ebullets.length; },
+    moduleIds: () => MODULES.map(m => m.id),
+    moduleInfo: () => MODULES.map(m => ({ id: m.id, name: m.name, type: m.type, max: m.max })),
     save: () => SAVE,
     writeSave,
     hullUnlocked: id => hullUnlocked(HULLS.find(h => h.id === id)),
@@ -2508,7 +3423,9 @@ function boot() {
       const r = document.documentElement;
       r.classList.toggle('coarse', !!coarse);
       r.classList.toggle('portrait', !!portrait);
+      rotateDismissed = false; updateRotateHint();
     },
+    get rotateDismissed() { return rotateDismissed; },
   };
 
   toTitle();

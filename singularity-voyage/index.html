@@ -22,15 +22,15 @@
       <div class="t1">奇点旅途</div>
       <div class="t2">S I N G U L A R I T Y &nbsp; V O Y A G E</div>
     </div>
-    <div class="tagline">像素太空弹幕射击 · 穿越十二段航程</div>
+    <div class="tagline">像素太空弹幕射击 · 穿越十二段航程 · 无尽深渊</div>
     <div class="menu">
       <button class="btn primary" data-act="hangar">&gt; 开始航行</button>
       <button class="btn" data-act="help">操作说明</button>
     </div>
     <div class="best" id="best"></div>
     <div class="volbox" id="vol-title"></div>
-    <div class="ctrl-hint desk-only">WASD 推进 · 鼠标瞄准 · 左键开火 · 空格冲刺</div>
-    <div class="ctrl-hint touch-only">左半屏拖动推进 · 右半屏拖动瞄准并自动开火</div>
+    <div class="ctrl-hint desk-only">A/D 转向 · W 推进 · S 制动 · 鼠标瞄准 · 左键/空格开火 · Shift/右键冲刺</div>
+    <div class="ctrl-hint touch-only">左半屏拖动推进与转向 · 右半屏拖动瞄准并自动开火</div>
     <div class="hint blink desk-only">按 ENTER 开始</div>
     <div class="hint blink touch-only">轻触「开始航行」</div>
   </div>
@@ -53,13 +53,15 @@
       <div class="ptitle">操作说明</div>
       <div class="cols">
         <div>
-          <p><b>WASD / 方向键</b> 推进器点火<br><span class="dim">飞船有惯性，松开后会继续漂移</span></p>
-          <p><b>鼠标</b> 瞄准，机头跟随光标</p>
+          <p><b>A / D</b>（或方向键）转向 — 不按键就保持当前朝向<br><span class="dim">按一下 A/D 切回键盘朝向；鼠标一动就切回鼠标朝向</span></p>
+          <p><b>W / 方向键上</b> 推进器点火 — 沿当前机首方向加速<br><span class="dim">松开会继续漂移（太空惯性）</span></p>
+          <p><b>S / 方向键下</b> 制动 — 速度指数衰减</p>
+          <p><b>鼠标</b> 瞄准 — 机头缓慢朝光标转向（最大 12 rad/s）</p>
           <p><b>左键 / 空格</b> 主炮开火（可长按）</p>
           <p><b>SHIFT / 右键</b> 助推冲刺（短暂无敌）</p>
           <p><b>E</b> 超载爆发（能量满时）</p>
           <p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>
-          <p class="dim">手机：左半屏拖动推进 · 右半屏自动开火<br>右下角按钮 冲刺 / 超载</p>
+          <p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏自动开火<br>右下角按钮 冲刺 / 超载</p>
         </div>
         <div>
           <p><em class="c-c">青白色细针</em> 是你的炮弹；<em class="c-r">红紫圆弹</em> 是敌弹，务必躲开</p>
@@ -68,11 +70,13 @@
           <p><em class="c-o">能量</em> 击坠与擦弹积攒，满格释放<b>超载</b>：清屏冲击波 + 火力翻倍</p>
           <p>每段航程清空全部敌人即可跃迁下一段</p>
           <p>第 <em class="c-r">4 / 8 / 12</em> 段是<b>巨像</b>，血更厚、弹更密</p>
+          <p>打通 12 段即<b>通关</b>，但不结束 —— 直接转入<em class="c-y">无尽航程</em><br><span class="dim">13 段起每 5 段抬一档「深渊强度」：敌人血量指数上涨、伤害与速度跟涨（各自封顶）</span></p>
+          <p>无尽里每 <em class="c-r">4</em> 段来一只巨像，三只<b>轮换</b>出场，不会连着重复</p>
           <p><em class="c-p">织网者</em>撒网减速 · <em class="c-y">牧者</em>给同伴回血 · <em class="c-y">新星</em>死亡炸弹 · <em class="c-c">铁壁</em>正面免伤<br><span class="dim">这四种不能硬碰，先点掉或绕后</span></p>
           <p class="dim">击坠与航段进度会存档；<em class="c-p">玄鸦</em> 与 <em class="c-y">蜂群</em> 需要解锁</p>
         </div>
       </div>
-      <button class="btn" data-act="title">返回</button>
+      <button class="btn" data-act="helpback">返回</button>
     </div>
   </div>
 
@@ -94,6 +98,7 @@
       <div class="menu row">
         <button class="btn primary" data-act="resume">继续</button>
         <button class="btn" id="btn-mute" data-act="mute">声音</button>
+        <button class="btn" data-act="help">操作说明</button>
         <button class="btn" data-act="restart">重新出击</button>
         <button class="btn" data-act="title">机库</button>
       </div>
@@ -121,10 +126,12 @@
   </div>
 </div>
 
-<!-- 竖屏提示：只在「粗指针 + 竖屏」时出现，横过来自动消失 -->
-<div id="rotate">
+<!-- 竖屏提示：只在「粗指针 + 竖屏」时出现，横过来自动消失。
+     整块可点 —— 万一判定卡住，玩家必须还有办法绕开，否则一张遮罩就让游戏永久不可玩 -->
+<div id="rotate" data-act="rotatedismiss">
   <div class="rt">请把手机横过来</div>
   <div class="rs">R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E</div>
+  <div class="rx">轻触此处仍然继续</div>
 </div>
 <script src="src/audio.js"></script>
 <script src="src/sprites.js"></script>

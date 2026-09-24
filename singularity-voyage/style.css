@@ -12,7 +12,27 @@ body { position: fixed; inset: 0; }
 #wrap.playing { cursor: none; }
 canvas { display: block; width: 480px; height: 270px; image-rendering: pixelated; image-rendering: crisp-edges; }
 .hidden { display: none !important; }
-.ov { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(8, 9, 20, .55); }
+/* ⚠️ #wrap 只有 480x270 且 overflow:hidden，遮罩里内容一旦超过 270px 就被**裁掉**：
+      按钮的 getBoundingClientRect 依然正常（所以任何「按矩形判断可见性」的检查都会误判为可见），
+      但它已经在 #wrap 的框外 → elementFromPoint 命不中 → **看得见、点不着**。
+      实测：满装配（29 卡 + 26 协同）时暂停面板高 682px，底部 5 个按钮全部掉到框外。
+      （2026-09-25 发现；无尽模式等级无上限，所以这是必然会踩到的，不是理论风险。）
+
+   两道保险：
+     ① 这里把「居中」从 justify-content:center 换成首尾 margin:auto。
+        flex 容器里内容超高时，justify-content:center 会把**顶部**顶到框外且滚不到；
+        auto margin 在放得下时吸收空白（等于居中），放不下时归零，顶部就还在。
+     ② overflow-y:auto + touch-action:pan-y —— 让遮罩自己能滚，手指才拖得动
+        （html/body/#wrap 上都写了 touch-action:none，不加这条触屏根本滚不了）。 */
+.ov { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      gap: 6px; background: rgba(8, 9, 20, .55); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.ov > *:first-child { margin-top: auto; }
+.ov > *:last-child { margin-bottom: auto; }
+/* ⚠️ column flex 的子元素默认 flex-shrink:1 —— 内容超过 270px 时它们会被**压扁**，
+      而不是把容器撑开。压扁后卡牌里的 .desc 会溢出自己的盒子、盖到下面的「重抽」按钮上，
+      于是点重抽实际选了一张卡（elementFromPoint 命中的是 .desc）。
+      关掉收缩，让内容撑开容器、由 .ov 自己滚。 */
+.ov > * { flex-shrink: 0; }
 .dim { color: #7a86a8; }
 .blink { animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
@@ -68,7 +88,10 @@ em { font-style: normal; }
 .cols { display: flex; gap: 14px; text-align: left; }
 .cols > div { width: 200px; }
 .cols p { margin: 0 0 5px; line-height: 13px; }
-#build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 420px; }
+/* 装配清单自己滚，别把暂停面板顶出 270px 的框。
+   满装配 55 枚芯片会排到 213px 高（占掉整块画布），这里压到 5 行左右。 */
+#build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 420px;
+         max-height: 104px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
 .chip { padding: 1px 4px 2px; background: #1a1c2c; box-shadow: inset 0 0 0 1px currentColor; }
 .chip.t-stat { color: #41a6f6; } .chip.t-weapon { color: #ef7d57; } .chip.t-ability { color: #c070f0; }
 .chip.t-syn { color: #ffcd75; }
@@ -151,16 +174,23 @@ em { font-style: normal; }
 
 /* 竖屏提示：粗指针 + 竖屏才出现。
    两条路都走 —— CSS 媒体查询（JS 还没跑起来时就生效）+ <html> 上的 JS class（可测），
-   两边都要求「粗指针 + 竖屏」，桌面端不可能命中。 */
-#rotate { display: none; position: fixed; inset: 0; z-index: 90; background: #05060d;
+   两边都要求「粗指针 + 竖屏」，桌面端不可能命中。
+   ⚠️ 整块可点（data-act="rotatedismiss"）：判定万一卡住，玩家必须还有办法绕开。 */
+#rotate { display: none; position: fixed; inset: 0; z-index: 90; background: #05060d; cursor: pointer;
   flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   font-family: FP, monospace; font-size: 12px; line-height: 12px; color: #73eff7; text-align: center; }
 #rotate .rt { font-size: 24px; line-height: 24px; }
 #rotate .rs { color: #566c86; }
+#rotate .rx { color: #7a86a8; margin-top: 6px; text-decoration: underline; }
 html.coarse.portrait #rotate { display: flex; }
+html.norotate #rotate { display: none !important; }
 @media (orientation: portrait) and (pointer: coarse) {
   #rotate { display: flex; }
 }
+
+/* 键盘焦点：既然补了「Tab 聚焦 + Enter 激活」，就必须看得见焦点在哪 */
+.btn:focus-visible, .tbtn:focus-visible, .card:focus-visible, .hull:focus-visible,
+input[type=range]:focus-visible { outline: 2px solid #73eff7; outline-offset: 2px; }
 
 /* 桌面 / 触屏两套提示文案：按指针精度切，不靠 UA 嗅探 */
 .touch-only { display: none; }

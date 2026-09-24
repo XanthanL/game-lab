@@ -57,74 +57,106 @@ function bakeRotation(src, n = 24) {
 }
 const dirIndex = (ang, n = 24) => ((Math.round(ang / (Math.PI * 2) * n) % n) + n) % n;
 
-// ============ 船体（朝右，16x11） ============
+/* ============ 船体（朝右，22x16） ============
+   形状直接对齐《奇点回响》的 hullPath 矢量轮廓，由 .workbuddy/gen_hull.py
+   把多边形栅格化后上色（阈值 0.30 保住剑尖/燕尾/W 翼尖这类薄结构；
+   轻剑太细另做 1 格膨胀，否则整片只剩描边）。
+   改轮廓的正确姿势：改脚本里的 POLY 再重跑，不要手改下面的字符画。 */
 const HULL_SRC = {
+  // 游隼：流线隼形 + 燕尾（echo: 18,0 → 9,5.5 → -3,8.5 → 燕尾叉）
   peregrine: [[
-    '.....kk.........',
-    '....kbbk...kkk..',
-    '...kbbbbk.kcck..',
-    '..kbbbbbbkcccck.',
-    '.kbwwbbbbbbbbccC',
-    'kbbwwbbbbbbbbbCC',
-    '.kbwwbbbbbbbbccC',
-    '..kbbbbbbkcccck.',
-    '...kbbbbk.kcck..',
-    '....kbbk...kkk..',
-    '.....kk.........',
+    '......................',
+    '......................',
+    '......................',
+    '.....kkkkk............',
+    '.....knCCCkkk.........',
+    '...kkCnCCCCCCkk.......',
+    '...kCCnbbbbbbbbkk.....',
+    '...kCCnbbbbbwwbbbkk...',
+    '...kCCnbbbbbwwbbbkk...',
+    '...kCCnbbbbbbbbkk.....',
+    '...kkCnbbbbbbkk.......',
+    '.....knbbbkkk.........',
+    '.....kkkkk............',
+    '......................',
+    '......................',
+    '......................',
   ]],
+  // 轻剑：纤细剑身 + 对称后掠双翼（剑尖 + 燕尾）
   rapier: [[
-    '....kk..........',
-    '...kook...kk....',
-    '..koookk.koyk...',
-    '.koookkkkoyyyk..',
-    'kooowwooooooyyyk',
-    'kooowwoooooooyyC',
-    'kooowwooooooyyyk',
-    '.koookkkkoyyyk..',
-    '..koookk.koyk...',
-    '...kook...kk....',
-    '....kk..........',
+    '......................',
+    '......................',
+    '.k....................',
+    'krk...................',
+    '.krkk.................',
+    '.kyyykkkkk............',
+    '.kyyyrroookkkkkkkkk...',
+    '.kyyyrroooooowwwoook..',
+    '.kyyyrroooooowwwoook..',
+    '.kyyyrroookkkkkkkkk...',
+    '.kyyykkkkk............',
+    '.krkk.................',
+    'krk...................',
+    '.k....................',
+    '......................',
+    '......................',
   ]],
+  // 堡垒：宽厚六边装甲
   bulwark: [[
-    '..kkk...........',
-    '.kggggk..kkkk...',
-    'kggggggkkggggk..',
-    'kgwwgggkkgggggk.',
-    'kgggggggggggggk.',
-    'kgwwggggggggggLk',
-    'kgggggggggggggk.',
-    'kgwwgggkkgggggk.',
-    'kggggggkkggggk..',
-    '.kggggk..kkkk...',
-    '..kkk...........',
+    '......................',
+    '......kkkkkkkk........',
+    '......kGGGGGGk........',
+    '.....kLLLLLLLk........',
+    '....kGlllllllk........',
+    '..kklGllllllllk.......',
+    '..kllGLLLLLLLLLk......',
+    '..kllGLLLLwwLLLlk.....',
+    '..kllGLLLLwwLLLlk.....',
+    '..kllGLLLLLLLLLk......',
+    '..kklGLLLLLLLLk.......',
+    '....kGLLLLLLLk........',
+    '.....kLLLLLLLk........',
+    '......kGGGGGGk........',
+    '......kkkkkkkk........',
+    '......................',
   ]],
-  // 玄鸦：前掠翼刺客，机身窄、翼尖后掠
+  // 玄鸦：W 形隐形战机
   raven: [[
-    '......kk........',
-    '.....kPPk..kk...',
-    '....kPPPPk.kqk..',
-    '...kPPPPPPkkqqk.',
-    '..kPPwwPPPPPPPqk',
-    '.kPPwwPPPPPPPPqC',
-    '..kPPwwPPPPPPPqk',
-    '...kPPPPPPkkqqk.',
-    '....kPPPPk.kqk..',
-    '.....kPPk..kk...',
-    '......kk........',
+    '.....k................',
+    '...kkpk...............',
+    '....kppk..............',
+    '....kpPPk.............',
+    '.....kqqqk............',
+    '....kpqqqqkk..........',
+    '..kkqpPPPPPPkkk.......',
+    '.kqqqpPPPPPwwwPkkk....',
+    '.kqqqpPPPPPwwwPkkk....',
+    '..kkqpPPPPPPkkk.......',
+    '....kpPPPPkk..........',
+    '.....kPPPk............',
+    '....kpPPk.............',
+    '....kppk..............',
+    '...kkpk...............',
+    '.....k................',
   ]],
-  // 蜂群：蜂窝机体，两侧挂满无人机巢
+  // 蜂群：圆头 + 双侧蜂翅 + 尾部蜇针
   swarm: [[
-    '....kkk.........',
-    '...klllk...kkk..',
-    '..klllllk.klllk.',
-    '.kllwwlllllllllk',
-    'kllwwllllllllllk',
-    'kllwwllllllllllL',
-    'kllwwllllllllllk',
-    '.kllwwlllllllllk',
-    '..klllllk.klllk.',
-    '...klllk...kkk..',
-    '....kkk.........',
+    '......................',
+    '......................',
+    '...kkk................',
+    '....kyk...............',
+    '....kYYkkk............',
+    '.....kYYYYkkkk........',
+    '..kkkyyyyyyyyykk......',
+    'kkYooyyyyywwyyyYk.....',
+    'kkYooyyyyywwyyyYk.....',
+    '..kkkyyyyyyyyykk......',
+    '.....kyyyykkkk........',
+    '....kyykkk............',
+    '....kyk...............',
+    '...kkk................',
+    '......................',
+    '......................',
   ]],
 };
 
@@ -519,6 +551,19 @@ function buildSprites() {
   nx.fillStyle = '#f4f4f4'; nx.fillRect(3, 1, 5, 1);
   BULLET_SET = bakeRotation(nb, 24);
 }
+// 玩家弹的配色变体：尾炮（橙）/ 满级尾炮（金）需要在屏幕上一眼分得出来。
+// 缓存 key 只有几个固定色字符串 —— 有界集合，符合精灵缓存纪律。
+// 注意：不能直接 tinted()，那会把弹芯的白色一起吃掉，弹丸就糊成一坨色块了。
+const _pvar = {};
+function bulletSetFor(color) {
+  if (!color) return BULLET_SET;
+  if (_pvar[color]) return _pvar[color];
+  const nb = newCanvas(9, 3), nx = nb.getContext('2d');
+  nx.fillStyle = '#0b2a3a'; nx.fillRect(0, 0, 9, 3);
+  nx.fillStyle = color;     nx.fillRect(1, 1, 7, 1);
+  nx.fillStyle = '#f4f4f4'; nx.fillRect(3, 1, 5, 1);
+  return (_pvar[color] = bakeRotation(nb, 24));
+}
 
 // ============ 敌弹 & 辉光（缓存纪律：key 只放有界集合，绝不放逐帧变化的 alpha） ============
 const _bcache = {}, _gcache = {};
@@ -560,8 +605,8 @@ function drawShip(ctx, hull, ang, x, y, white) {
   const img = S.imgs[dirIndex(ang, S.n)];
   ctx.drawImage(img, Math.round(x - S.half), Math.round(y - S.half));
 }
-function drawBulletSet(ctx, ang, x, y) {
-  const S = BULLET_SET;
+function drawBulletSet(ctx, ang, x, y, color) {
+  const S = bulletSetFor(color);
   ctx.drawImage(S.imgs[dirIndex(ang, S.n)], Math.round(x - S.half), Math.round(y - S.half));
 }
 
