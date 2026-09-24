@@ -9,11 +9,21 @@ const G = {
   deck: [], draw: [], hand: [], discard: [], exhaust: [],
   gold: 0, potions: [], map: null, node: null,
   run: null,              // 本局统计
-  selCard: -1, busy: false,
+  selCard: -1, busy: false, paused: false,
+  curEvent: null,         // 当前异象（取消选择时要原样退回，不能重抽）
 };
 const SAVE_KEY = 'forcing_cosmos_save';
 const MAP_ROWS = 6, MAP_COLS = 4;
 const MAP_X = 300, MAP_Y = 128;   // #map-grid 600x256 内的布局原点
+
+/* 暂停感知的定时器：战斗里所有延时都走这里，暂停时挂起、恢复后继续。
+   直接 setTimeout 的话「暂停」只是个盖在上面的壳，敌人照样打你。 */
+function after(ms, fn) {
+  setTimeout(function run() {
+    if (G.paused) { setTimeout(run, 120); return; }
+    fn();
+  }, ms);
+}
 
 /* ============================================================
  * 场景切换
@@ -21,12 +31,16 @@ const MAP_X = 300, MAP_Y = 128;   // #map-grid 600x256 内的布局原点
 const SCENES = ['title', 'story', 'help', 'charsel', 'map', 'over'];
 function setScene(s) {
   G.scene = s;
+  G.paused = false;
   for (const n of SCENES) $(n).classList.toggle('hidden', n !== s);
   $('hud').classList.toggle('hidden', s !== 'battle');
   $('hand').classList.toggle('hidden', s !== 'battle');
+  $('pause').classList.add('hidden');
   $('modal').classList.add('hidden');
+  modalClose = null;
   if (s !== 'battle') $('hand').innerHTML = '';
 }
+
 function log(msg) {
   G.log = G.log || [];
   G.log.push(msg); if (G.log.length > 3) G.log.shift();
@@ -47,32 +61,48 @@ function startStory(afterStory) {
   $('story-head').textContent = '// EDF 绝密量子广播 · 新纪元 142 年';
   const box = $('story-text'); box.innerHTML = '';
   Sound.sfx.warp();
-  let i = 0;
+  let i = 0, timer = null, done = false;
   const cursor = el('span', 'cur', '█');
   function next() {
+    if (done) return;
     if (i >= STORY_LINES.length) { finish(); return; }
     const L = STORY_LINES[i++];
-    if (!L.t) { box.appendChild(el('div', '', '&nbsp;')); setTimeout(next, L.d || 420); return; }
+    if (!L.t) { box.appendChild(el('div', '', '&nbsp;')); timer = setTimeout(next, L.d || 420); return; }
     const d = el('div', L.c || '');
     box.appendChild(d);
     let n = 0;
-    const tick = setInterval(() => {
+    timer = setInterval(() => {
+      if (done) { clearInterval(timer); return; }   // 跳过之后别再往里打字
       d.textContent = L.t.slice(0, ++n);
       if (!box.contains(cursor)) box.appendChild(cursor);
-      if (n >= L.t.length) { clearInterval(tick); setTimeout(next, 220); }
+      if (n >= L.t.length) { clearInterval(timer); timer = setTimeout(next, 220); }
     }, 26);
   }
   function finish() {
+    if (done) return;                               // 跳过键按两次 / 自然播完后再按，都不重复挂监听
+    done = true;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (cursor.parentNode) cursor.remove();
     const h = el('div', 'hi', '按任意键 / 点击屏幕　开始强渡');
     h.classList.add('blink');
     box.appendChild(h);
-    const go = () => { window.removeEventListener('keydown', go); box.removeEventListener('click', go); afterStory(); };
-    window.addEventListener('keydown', go); box.addEventListener('click', go);
+    // 「点击屏幕」就得是整块屏幕都能点 —— 之前只挂在 #story-text 上，
+    // 而提示条本身比正文高，点在空白处毫无反应。跳过键自己除外（它有自己的语义）。
+    const storyEl = $('story');
+    const go = () => {
+      window.removeEventListener('keydown', go);
+      storyEl.removeEventListener('click', onClick);
+      afterStory();
+    };
+    const onClick = ev => { if (ev.target.closest('#story-skip')) return; go(); };
+    window.addEventListener('keydown', go);
+    storyEl.addEventListener('click', onClick);
   }
   next();
-  $('story-skip').textContent = '点击文字可跳过';
+  $('story-skip').textContent = '点击这里跳过';
   $('story-skip').onclick = finish;
 }
+
 function showCharSel() {
   setScene('charsel');
   const wrap = $('char-cards'); wrap.innerHTML = '';
@@ -219,7 +249,7 @@ function startBattle(kind, row) {
   Sound.music(true);
   log('遭遇 ' + G.enemy.name);
   updateHud();
-  setTimeout(() => startPlayerTurn(true), 420);
+  after(420, () => startPlayerTurn(true));
 }
 function updateHud() {
   const A = ACTS[G.act];
@@ -254,7 +284,7 @@ function startPlayerTurn(first) {
   // 回合开始
   const dmg = p.tickStatus(p.relicBonus('statusCut'));
   if (dmg > 0) { addFloat(LAY.px, 150, '-' + dmg, '#ef7d57'); Sound.sfx.burn(); }
-  if (!p.alive) { setTimeout(() => gameOver(false), 400); return; }
+  if (!p.alive) { after(400, () => gameOver(false)); return; }
   const keep = p.pendingKeep; p.pendingKeep = false;
   p.resetTurn(keep);
   const ts = p.relicBonus('turnShield'); if (ts) p.gainShield(ts);
@@ -300,7 +330,7 @@ function renderHand() {
       d.onmouseleave = () => { d.style.top = y + 'px'; d.style.zIndex = 10 + i; };
       // 点击出牌；或拖到敌人身上出牌（杀戮尖塔手感）
       d.onpointerdown = ev => {
-        if (G.phase !== 'player' || G.busy) return;
+        if (G.paused || G.phase !== 'player' || G.busy) return;
         const sx = ev.clientX, sy = ev.clientY;
         let dragging = false;
         try { d.setPointerCapture(ev.pointerId); } catch (e) { }
@@ -328,7 +358,7 @@ function renderHand() {
   });
 }
 function playCard(i) {
-  if (G.phase !== 'player' || G.busy) return;
+  if (G.paused || G.phase !== 'player' || G.busy) return;
   const c = G.hand[i]; if (!c) return;
   if (c.unplayable) { addFloat(LAY.px, 170, '无法打出', '#8a3cc0'); Sound.sfx.deny(); return; }
   if (G.player.battery < c.cost) { addFloat(LAY.px, 170, '电量不足', '#566c86'); Sound.sfx.deny(); return; }
@@ -345,14 +375,13 @@ function playCard(i) {
   applyCard(c);
   updateHud();
   renderHand();
-  setTimeout(() => {
+  after(220, () => {
     G.busy = false;
     if (G.enemy && !G.enemy.alive) { winBattle(); return; }
     if (!G.player.alive) { gameOver(false); return; }
     renderHand();
-  }, 220);
-}
-function applyCard(c) {
+  });
+}function applyCard(c) {
   const p = G.player, e = G.enemy;
   const mult = p.relicBonus('potionDouble') ? 2 : 1;
   const boost = p.getStatus('strength') * p.strengthMult;
@@ -408,7 +437,7 @@ function applyCard(c) {
   }
   // 治疗 / 吸血 / 自伤
   if (c.heal) { const g = p.heal(c.heal * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); Sound.sfx.heal(); }
-  if (c.lifesteal && totalDealt > 0) setTimeout(() => { const g = p.heal(totalDealt * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); }, 200);
+  if (c.lifesteal && totalDealt > 0) after(200, () => { const g = p.heal(totalDealt * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); });
   if (c.selfDamage) { p.rawDamage(c.selfDamage); addFloat(LAY.px, 175, '-' + c.selfDamage, '#e04060'); Sound.sfx.hurt(); shake(4, 180); }
   if (c.gainBattery) { p.battery = Math.min(p.maxBattery, p.battery + c.gainBattery); addFloat(LAY.px, 130, '+' + c.gainBattery + ' 电量', '#41a6f6'); }
   if (c.damageTakenBonus) p.damageTakenBonus += c.damageTakenBonus;
@@ -443,7 +472,7 @@ function applyStatus(target, se, mult) {
   }
 }
 function usePotion(i) {
-  if (G.phase !== 'player' || G.busy) { Sound.sfx.deny(); return; }
+  if (G.paused || G.phase !== 'player' || G.busy) { Sound.sfx.deny(); return; }
   const p = G.potions[i]; if (!p) return;
   const pl = G.player, mult = pl.relicBonus('potionDouble') ? 2 : 1;
   const ef = p.effect;
@@ -457,7 +486,7 @@ function usePotion(i) {
   updateHud();
 }
 function endTurn() {
-  if (G.phase !== 'player' || G.busy) return;
+  if (G.paused || G.phase !== 'player' || G.busy) return;
   G.phase = 'enemy'; G.busy = true;
   // 诅咒：回合结束自伤
   let curseDmg = 0;
@@ -466,8 +495,8 @@ function endTurn() {
   if (curseDmg) { G.player.rawDamage(curseDmg); addFloat(LAY.px, 175, '-' + curseDmg, '#8a3cc0'); }
   G.discard.push(...G.hand); G.hand = [];
   renderHand(); updateHud();
-  if (!G.player.alive) { setTimeout(() => gameOver(false), 400); return; }
-  setTimeout(enemyTurn, 520);
+  if (!G.player.alive) { after(400, () => gameOver(false)); return; }
+  after(520, enemyTurn);
 }
 function enemyTurn() {
   if (G.scene !== 'battle') return;
@@ -476,10 +505,10 @@ function enemyTurn() {
   // 敌人状态结算
   const dmg = e.tickStatus(0);
   if (dmg > 0) { addFloat(LAY.ex, LAY.eyBase - 60, '-' + dmg, '#ef7d57'); Sound.sfx.burn(); }
-  if (!e.alive) { setTimeout(winBattle, 300); return; }
+  if (!e.alive) { after(300, winBattle); return; }
   const act = e.executeTurn();
   Sound.sfx.eturn();
-  setTimeout(() => {
+  after(260, () => {
     if (act.type === 'defend') {
       e.gainShield(act.value);
       addFloat(LAY.ex, LAY.eyBase - 55, '+' + act.value + ' 盾', '#41a6f6');
@@ -509,12 +538,12 @@ function enemyTurn() {
       beamFx(LAY.ex - 24, LAY.eyBase - 40, LAY.px + 30, LAY.pyBase - 40, '#e04060');
     }
     updateHud();
-    setTimeout(() => {
+    after(480, () => {
       if (!p.alive) return gameOver(false);
       if (!e.alive) return winBattle();
       startPlayerTurn(false);
-    }, 480);
-  }, 260);
+    });
+  });
 }
 function winBattle() {
   if (G.scene !== 'battle') return;
@@ -528,7 +557,7 @@ function winBattle() {
   if (e.elite) G.run.elites++;
   const gold = G.battleKind === 'boss' ? 60 : e.elite ? 35 : 15;
   G.gold += gold; G.run.gold += gold;
-  setTimeout(() => {
+  after(620, () => {
     Sound.sfx.coin();
     if (G.battleKind === 'boss') return actCleared();
     // 药水
@@ -536,13 +565,17 @@ function winBattle() {
       if (G.potions.length < 3) { const pt = rollPotion(); G.potions.push(pt); log('获得 ' + pt.name); }
     }
     rewardChoice();
-  }, 620);
+  });
 }
 function rewardChoice() {
   setScene('reward');
   const opts = [
-    { label: '纳入新卡（三选一）', fn: () => pickCards('选择一张卡', rollRewards(3), c => { if (c) { G.deck.push(c); log('获得 ' + c.name); } afterReward(); }) },
-    { label: '升级一张卡', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; log('升级 ' + u.name); } afterReward(); }) },
+    { label: '纳入新卡（三选一）', fn: () => pickCards('选择一张卡', rollRewards(3),
+        c => { if (c) { G.deck.push(c); log('获得 ' + c.name); } afterReward(); },
+        { onCancel: rewardChoice, cancelLabel: '返回' }) },
+    { label: '升级一张卡', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id],
+        c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; log('升级 ' + u.name); } afterReward(); },
+        { onCancel: rewardChoice, cancelLabel: '返回' }) },
     { label: '+25 金币', fn: () => { G.gold += 25; Sound.sfx.coin(); afterReward(); } },
   ];
   if (G.potions.length < 3) opts.push({ label: '获得一瓶药水', fn: () => { const pt = rollPotion(); G.potions.push(pt); log('获得 ' + pt.name); afterReward(); } });
@@ -564,7 +597,7 @@ function restSite() {
     b.innerHTML = '<div>气闸闭合，你把面罩摘下来三分钟。</div>';
     const opts = [
       { label: '休眠　恢复 ' + amt + ' 生命', fn: () => { const g = p.heal(amt); log('恢复了 ' + g + ' 生命'); Sound.sfx.heal(); afterNode(); } },
-      { label: '锻打　升级一张卡', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; log('升级 ' + u.name); } afterNode(); }) },
+      { label: '锻打　升级一张卡', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; log('升级 ' + u.name); } afterNode(); }, { onCancel: restSite, cancelLabel: '返回' }) },
     ];
     const g = el('div', 'grid');
     opts.forEach(o => { const d = el('div', 'opt', '<div class="on">' + o.label + '</div>'); d.onclick = () => { Sound.sfx.select(); o.fn(); }; g.appendChild(d); });
@@ -576,7 +609,10 @@ function afterNode() { hideModal(); backToMap(); }
 const EVENTS = [
   {
     id: 'supplier', name: '神秘商人', text: '一艘无标识的穿梭艇贴上你的舱门。对方不开舱，只伸出来一只手。',
-    opts: [{ t: '用 15 生命换一件遗物', fn: () => { G.player.rawDamage(15); const r = randomRelic(G.player.relics); if (r) { G.player.addRelic(r); log('获得遗物 ' + RELICS[r].name); } afterNode(); } }, { t: '不开门', fn: afterNode }],
+    opts: [
+      { t: '用 15 生命换一件遗物', fn: () => { const r = randomRelic(G.player.relics); if (!r) return Sound.sfx.deny(); G.player.rawDamage(15); G.player.addRelic(r); log('获得遗物 ' + RELICS[r].name); afterNode(); } },
+      { t: '不开门', fn: afterNode },
+    ],
   },
   {
     id: 'cache', name: '物资缓存', text: '一只被遗弃的补给舱卡在岩壁里，舱门变形但锁芯还亮着。',
@@ -597,27 +633,56 @@ const EVENTS = [
   {
     id: 'rift', name: '时空裂缝', text: '一道竖直的裂缝悬在真空里，边缘不断掉出不属于这个年代的碎片。',
     opts: [
-      { t: '丢弃一张卡，换一件遗物', fn: () => pickFromDeck('丢弃哪一张', G.deck, null, c => { if (c) { const i = G.deck.findIndex(x => x.uid === c.uid); if (i >= 0) G.deck.splice(i, 1); const r = randomRelic(G.player.relics); if (r) G.player.addRelic(r); } afterNode(); }) },
+      { t: '丢弃一张卡，换一件遗物', fn: () => { if (!randomRelic(G.player.relics)) return Sound.sfx.deny();
+        pickFromDeck('丢弃哪一张', G.deck, null, c => { if (!c) return showEvent(G.curEvent); const i = G.deck.findIndex(x => x.uid === c.uid); if (i >= 0) G.deck.splice(i, 1); const r = randomRelic(G.player.relics); if (r) G.player.addRelic(r); afterNode(); }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }); } },
       { t: '抽取能量（-12 生命，电量上限 +1）', fn: () => { G.player.rawDamage(12); G.player.baseBattery++; afterNode(); } },
       { t: '离开', fn: afterNode },
     ],
   },
   {
     id: 'terminal', name: '古老终端', text: '屏幕上滚动着一种早已被淘汰的编码。它认得你。',
-    opts: [{ t: '接入（升级一张卡，但获得诅咒）', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; } G.deck.push(createCurseCard()); G.run.curses++; afterNode(); }) }, { t: '拆掉贵金属（+25 金币）', fn: () => { G.gold += 25; afterNode(); } }, { t: '离开（光明 +1）', fn: () => { G.run.lightChoices++; afterNode(); } }],
+    opts: [
+      { t: '接入（升级一张卡，但获得诅咒）', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => {
+        if (!c) return showEvent(G.curEvent);           // 取消 = 没接入，不该白吃一张诅咒
+        const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid);
+        if (u && i >= 0) G.deck[i] = u;
+        G.deck.push(createCurseCard()); G.run.curses++;
+        log('升级 ' + (u ? u.name : c.name) + '，并带回一张诅咒');
+        afterNode();
+      }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }) },
+      { t: '拆掉贵金属（+25 金币）', fn: () => { G.gold += 25; afterNode(); } },
+      { t: '离开（光明 +1）', fn: () => { G.run.lightChoices++; afterNode(); } },
+    ],
   },
   {
     id: 'forge', name: '地下熔炉', text: '一座还在烧的炉子。没人添柴，它自己烧了很久了。',
     opts: [
-      { t: '花 15 金币升级一张卡', fn: () => { if (G.gold < 15) return Sound.sfx.deny(); G.gold -= 15; pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => { if (c) { const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid); if (u && i >= 0) G.deck[i] = u; } afterNode(); }); } },
-      { t: '烧毁一张诅咒', fn: () => { G.run.usedPurify = true; pickFromDeck('烧毁哪一张', G.deck, c => c.curse, c => { if (c) { const i = G.deck.indexOf(c); if (i >= 0) G.deck.splice(i, 1); G.run.curses--; } afterNode(); }); } },
-      { t: '熔掉一张卡（+20 金币）', fn: () => pickFromDeck('熔掉哪一张', G.deck, null, c => { if (c) { const i = G.deck.findIndex(x => x.uid === c.uid); if (i >= 0) G.deck.splice(i, 1); G.gold += 20; } afterNode(); }) },
+      { t: '花 15 金币升级一张卡', fn: () => { if (G.gold < 15) return Sound.sfx.deny();
+        pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id], c => {
+          if (!c) return showEvent(G.curEvent);         // 取消不该扣钱
+          G.gold -= 15; Sound.sfx.coin();
+          const u = upgradeCard(c); const i = G.deck.findIndex(x => x.uid === c.uid);
+          if (u && i >= 0) G.deck[i] = u;
+          log('升级 ' + (u ? u.name : c.name));
+          afterNode();
+        }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }); } },
+      { t: '烧毁一张诅咒', fn: () => { G.run.usedPurify = true; pickFromDeck('烧毁哪一张', G.deck, c => c.curse, c => { if (!c) return showEvent(G.curEvent); const i = G.deck.indexOf(c); if (i >= 0) G.deck.splice(i, 1); G.run.curses--; afterNode(); }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }); } },
+      { t: '熔掉一张卡（+20 金币）', fn: () => pickFromDeck('熔掉哪一张', G.deck, null, c => { if (!c) return showEvent(G.curEvent); const i = G.deck.findIndex(x => x.uid === c.uid); if (i >= 0) G.deck.splice(i, 1); G.gold += 20; afterNode(); }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }) },
     ],
   },
   {
     id: 'ghost', name: '游魂低语', text: '通讯频道里有一个人在报数。他报的每一个数字你都见过。',
     opts: [
-      { t: '回应（丢弃两张卡，换遗物）', fn: () => pickFromDeck('丢弃第一张', G.deck, null, c1 => { if (!c1) return afterNode(); const i1 = G.deck.findIndex(x => x.uid === c1.uid); if (i1 >= 0) G.deck.splice(i1, 1); pickFromDeck('丢弃第二张', G.deck, null, c2 => { if (c2) { const i2 = G.deck.findIndex(x => x.uid === c2.uid); if (i2 >= 0) G.deck.splice(i2, 1); } const r = randomRelic(G.player.relics); if (r) G.player.addRelic(r); else G.gold += 40; afterNode(); }); }) },
+      { t: '回应（丢弃两张卡，换遗物）', fn: () => pickFromDeck('丢弃第一张', G.deck, null, c1 => {
+        if (!c1) return showEvent(G.curEvent);
+        const i1 = G.deck.findIndex(x => x.uid === c1.uid); if (i1 >= 0) G.deck.splice(i1, 1);
+        pickFromDeck('丢弃第二张', G.deck, null, c2 => {
+          if (!c2) return showEvent(G.curEvent);        // 第二张反悔：两张都不丢
+          const i2 = G.deck.findIndex(x => x.uid === c2.uid); if (i2 >= 0) G.deck.splice(i2, 1);
+          const r = randomRelic(G.player.relics); if (r) G.player.addRelic(r); else G.gold += 40;
+          afterNode();
+        }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' });
+      }, { onCancel: () => showEvent(G.curEvent), cancelLabel: '返回' }) },
       { t: '关闭频道（+8 护盾，光明 +1）', fn: () => { G.player.gainShield(8); G.run.lightChoices++; afterNode(); } },
     ],
   },
@@ -628,7 +693,13 @@ const EVENTS = [
 ];
 function rollEvent() {
   setScene('event'); G.run.events++;
-  const ev = EVENTS[(Math.random() * EVENTS.length) | 0];
+  G.curEvent = EVENTS[(Math.random() * EVENTS.length) | 0];
+  showEvent(G.curEvent);
+}
+/** 单独抽出来：子选择器取消时要退回「同一个」异象，不能重抽一个。
+    这里同时回写 G.curEvent —— 让「当前异象」这个不变量自己成立，不依赖调用方。 */
+function showEvent(ev) {
+  G.curEvent = ev;
   showModal('? ' + ev.name, b => {
     b.innerHTML = '<div style="max-width:460px;text-align:center;line-height:16px">' + ev.text + '</div>';
     const g = el('div', 'grid');
@@ -640,27 +711,35 @@ function rollEvent() {
     b.appendChild(g);
   }, []);
 }
+
 function shopScreen() {
   setScene('shop'); G.run.shops++;
   const cards = rollRewards(3);
-  const relics = [randomRelic(G.player.relics), randomRelic(G.player.relics.concat([]))].filter(Boolean);
+  const relics = [];
+  for (let i = 0; i < 2; i++) { const r = randomRelic(G.player.relics.concat(relics)); if (r) relics.push(r); }
   const potion = rollPotion();
   const bought = {};
   const PRICE = { card: 50, relic: 120, potion: 40, remove: 75 };
   function render() {
     showModal('$ 补给站　◆ ' + G.gold + ' 金', b => {
-      function cell(inner, key, price, onBuy) {
+      // buy(commit)：commit() 才真正扣钱 + 标记售出 + 重绘。
+      // 这样「移除一张卡」这类要先弹选择器的服务，玩家取消时不会白扣钱。
+      function cell(inner, key, price, buy) {
         const w = el('div', 'shopcol' + (bought[key] ? ' sold' : ''));
         w.appendChild(inner);
-        const p = el('div', 'price', bought[key] ? '已售出' : '◆ ' + price);
-        w.appendChild(p);
-        if (!bought[key]) { w.onclick = () => { if (G.gold < price) return Sound.sfx.deny(); G.gold -= price; bought[key] = 1; Sound.sfx.coin(); onBuy(); }; w.style.cursor = 'pointer'; }
+        w.appendChild(el('div', 'price', bought[key] ? '已售出' : '◆ ' + price));
+        if (bought[key]) return w;
+        w.style.cursor = 'pointer';
+        w.onclick = () => {
+          if (G.gold < price) return Sound.sfx.deny();
+          buy(() => { G.gold -= price; bought[key] = 1; Sound.sfx.coin(); render(); });
+        };
         return w;
       }
       const r1 = el('div', 'shoprow');
       cards.forEach((c, i) => {
         const inner = el('div', 'opt sm', '<div class="on">' + c.name + '</div><div class="od">' + (c.desc || '').replace(/\n/g, ' ') + '</div>');
-        r1.appendChild(cell(inner, 'c' + i, PRICE.card, () => { G.deck.push(c); render(); }));
+        r1.appendChild(cell(inner, 'c' + i, PRICE.card, commit => { G.deck.push(c); log('购入 ' + c.name); commit(); }));
       });
       b.appendChild(el('div', 'lbl', '卡牌'));
       b.appendChild(r1);
@@ -668,18 +747,27 @@ function shopScreen() {
       relics.forEach((id, i) => {
         const r = RELICS[id];
         const inner = el('div', 'opt sm', '<div class="on">' + r.name + '</div><div class="od">' + r.desc + '</div>');
-        r2.appendChild(cell(inner, 'r' + i, PRICE.relic, () => { G.player.addRelic(id); render(); }));
+        r2.appendChild(cell(inner, 'r' + i, PRICE.relic, commit => { G.player.addRelic(id); log('购入 ' + r.name); commit(); }));
       });
       { const inner = el('div', 'opt sm', '<div class="on">' + potion.name + '</div><div class="od">' + potion.desc + '</div>');
-        r2.appendChild(cell(inner, 'p', PRICE.potion, () => { if (G.potions.length < 3) G.potions.push(potion); render(); })); }
+        r2.appendChild(cell(inner, 'p', PRICE.potion, commit => { if (G.potions.length >= 3) return Sound.sfx.deny(); G.potions.push(potion); log('购入 ' + potion.name); commit(); })); }
       { const inner = el('div', 'opt sm', '<div class="on">移除一张卡</div><div class="od">永久删除</div>');
-        r2.appendChild(cell(inner, 'rm', PRICE.remove, () => pickFromDeck('移除哪一张', G.deck, null, c => { if (c) { const i = G.deck.findIndex(x => x.uid === c.uid); if (i >= 0) G.deck.splice(i, 1); } render(); }))); }
+        r2.appendChild(cell(inner, 'rm', PRICE.remove, commit => {
+          pickFromDeck('移除哪一张', G.deck, null, c => {
+            if (!c) return render();                       // 反悔：不扣钱，回到货架
+            const i = G.deck.findIndex(x => x.uid === c.uid);
+            if (i >= 0) G.deck.splice(i, 1);
+            log('移除 ' + c.name);
+            commit();
+          }, { onCancel: render, cancelLabel: '不买了' });
+        })); }
       b.appendChild(el('div', 'lbl', '遗物 / 药水 / 服务'));
       b.appendChild(r2);
     }, [{ label: '离开补给站', primary: true, fn: afterNode }]);
   }
   render();
 }
+
 
 /* ============================================================
  * 幕推进 / 结局
@@ -756,6 +844,8 @@ window.addEventListener('keydown', e => {
   if (G.scene === 'story') return;
   const k = e.key.toLowerCase();
   if (k === 'm') { const m = Sound.toggleMute(); log(m ? '静音' : '声音开'); return; }
+  // ESC 先关弹窗；关不掉（强制选择）才继续往下走
+  if (k === 'escape' && !$('modal').classList.contains('hidden')) { if (closeModal()) return; }
   if (G.scene === 'title') {
     if (k === 'enter' || k === ' ') { Sound.init(); Sound.music(true); startStory(showCharSel); }
     return;
@@ -777,9 +867,9 @@ document.addEventListener('click', e => {
   else if (a === 'story') startStory(() => setScene('title'));
   else if (a === 'help') setScene('help');
   else if (a === 'title') showTitle();
-  else if (a === 'resume') { $('pause').classList.add('hidden'); }
+  else if (a === 'resume') { $('pause').classList.add('hidden'); G.paused = false; }
   else if (a === 'mute') { const m = Sound.toggleMute(); $('btn-mute').textContent = m ? '静音中' : '声音'; }
-  else if (a === 'restart') { $('pause').classList.add('hidden'); showCharSel(); }
+  else if (a === 'restart') { $('pause').classList.add('hidden'); G.paused = false; showCharSel(); }
   else if (a === 'pause') togglePause();
 });
 $('btn-end').onclick = () => endTurn();
@@ -788,15 +878,22 @@ $('btn-deck').onclick = () => {
     const g = el('div', 'grid');
     G.deck.forEach(c => g.appendChild(cardEl(c, {})));
     b.appendChild(g);
-  }, [{ label: '关闭', fn: hideModal }]);
+  }, [{ label: '关闭', fn: hideModal }], { onClose: hideModal });
 };
 function togglePause() {
-  const el2 = $('pause');
-  if (!el2.classList.contains('hidden')) { el2.classList.add('hidden'); return; }
+  const box = $('pause');
+  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); G.paused = false; return; }
+  if (G.scene !== 'battle' && G.scene !== 'map') return;   // 标题/选人/结局不给暂停
   $('pause-stats').textContent = ACTS[G.act].name + '　◆ ' + G.gold + ' 金　牌组 ' + G.deck.length + ' 张';
   $('build').innerHTML = G.player.relics.map(id => '<span class="chip" style="color:' + RELICS[id].col + '">' + RELICS[id].name + '</span>').join('');
-  el2.classList.remove('hidden');
+  G.paused = true;
+  box.classList.remove('hidden');
 }
+// 无键盘设备才显示触摸暂停键（桌面靠 ESC / P）
+function updatePointerMode() {
+  document.documentElement.classList.toggle('coarse', matchMedia('(pointer: coarse)').matches);
+}
+
 
 /* ============================================================
  * 主循环
@@ -831,7 +928,7 @@ function fit() {
   const wrap = $('wrap');
   wrap.style.transform = 'scale(' + s + ') translate(' + ((w / s - 640) / 2) + 'px,' + ((h / s - 360) / 2) + 'px)';
 }
-window.addEventListener('resize', fit);
+window.addEventListener('resize', () => { fit(); updatePointerMode(); });
 
 /* ============================================================
  * 启动
@@ -857,6 +954,7 @@ function debugJump() {
 function boot() {
   if (QS.get('noanim')) $('wrap').classList.add('noanim');
   buildSprites();
+  updatePointerMode();
   fit();
   $('loading').classList.add('hidden');
   if (debugJump()) { requestAnimationFrame(loop); return; }

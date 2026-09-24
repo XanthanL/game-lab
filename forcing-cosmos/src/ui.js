@@ -251,10 +251,14 @@ function cardEl(card, opts = {}) {
 /* ============================================================
  * DOM：通用弹窗
  * ============================================================ */
-function showModal(title, buildBody, actions) {
+// 当前弹窗的「关闭」动作；null = 强制选择（战后整理 / 休整 / 异象），不给关闭口子
+let modalClose = null;
+
+function showModal(title, buildBody, actions, opts = {}) {
   $('modal-title').textContent = title;
   const body = $('modal-body'); body.innerHTML = '';
   buildBody(body);
+  body.scrollTop = 0;
   const act = $('modal-actions'); act.innerHTML = '';
   (actions || []).forEach(a => {
     const b = el('button', 'btn' + (a.primary ? ' primary' : ''), a.label);
@@ -262,12 +266,31 @@ function showModal(title, buildBody, actions) {
     if (a.disabled) b.disabled = true;
     act.appendChild(b);
   });
+  modalClose = opts.onClose || null;
+  const x = $('modal-x');
+  x.classList.toggle('hidden', !modalClose);
+  x.onclick = () => closeModal();
   $('modal').classList.remove('hidden');
 }
-function hideModal() { $('modal').classList.add('hidden'); }
+function hideModal() { $('modal').classList.add('hidden'); modalClose = null; }
+/** 关掉当前弹窗（若有）；返回是否真的关掉了 —— 强制选择弹窗返回 false */
+function closeModal() {
+  if (!modalClose) return false;
+  const fn = modalClose;
+  hideModal();
+  Sound.sfx.select();
+  fn();
+  return true;
+}
+// 点弹窗外的暗色背景 = 关闭（只对可关的弹窗生效）
+$('modal').addEventListener('pointerdown', e => { if (e.target === $('modal')) closeModal(); });
 
 /* 三选一卡牌 */
 function pickCards(title, cards, onPick, opts = {}) {
+  const cancel = opts.onCancel || null;
+  const acts = [];
+  if (cancel) acts.push({ label: opts.cancelLabel || '返回', fn: () => { hideModal(); cancel(); } });
+  else if (opts.skippable) acts.push({ label: opts.skipLabel || '跳过', fn: () => { hideModal(); onPick(null); } });
   showModal(title, body => {
     const g = el('div', 'grid');
     cards.forEach(c => {
@@ -276,12 +299,14 @@ function pickCards(title, cards, onPick, opts = {}) {
       g.appendChild(ce);
     });
     body.appendChild(g);
-  }, opts.skippable ? [{ label: opts.skipLabel || '跳过', fn: () => { hideModal(); onPick(null); } }] : []);
+  }, acts, cancel ? { onClose: () => { hideModal(); cancel(); } } : {});
 }
-/* 从牌组里挑一张（升级 / 移除） */
+/* 从牌组里挑一张（升级 / 移除 / 丢弃）；取消默认回调 onPick(null)，
+   传 opts.onCancel 可以让「取消」退回上一层（而不是直接结束这个节点） */
 function pickFromDeck(title, deck, filter, onPick, opts = {}) {
   const list = deck.filter(filter || (() => true));
-  if (!list.length) { hideModal(); onPick(null); return; }
+  const cancel = opts.onCancel || (() => onPick(null));
+  if (!list.length) { hideModal(); cancel(); return; }
   showModal(title, body => {
     const g = el('div', 'grid');
     list.forEach(c => {
@@ -290,5 +315,7 @@ function pickFromDeck(title, deck, filter, onPick, opts = {}) {
       g.appendChild(ce);
     });
     body.appendChild(g);
-  }, [{ label: '取消', fn: () => { hideModal(); onPick(null); } }]);
+  }, [{ label: opts.cancelLabel || '取消', fn: () => { hideModal(); cancel(); } }],
+     { onClose: () => { hideModal(); cancel(); } });
 }
+

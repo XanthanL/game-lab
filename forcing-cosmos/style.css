@@ -5,7 +5,8 @@ html, body { margin: 0; height: 100%; background: #05060d; overflow: hidden; tou
 #wrap { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform-origin: 0 0; font-family: FP, monospace; font-size: 12px; line-height: 14px; color: #f4f4f4; -webkit-font-smoothing: none; font-smooth: never; overflow: hidden; letter-spacing: 0; }
 canvas { display: block; width: 640px; height: 360px; image-rendering: pixelated; image-rendering: crisp-edges; }
 .hidden { display: none !important; }
-.ov { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(5, 6, 13, .72); }
+/* 覆盖层统一压在 #hand(5) 之上 —— 弹窗打开时手牌绝不能再盖住它 */
+.ov { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(5, 6, 13, .72); }
 .dim { color: #7a86a8; }
 .blink { animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
@@ -54,7 +55,18 @@ em { font-style: normal; }
 .cols { display: flex; gap: 18px; text-align: left; }
 .cols > div { width: 264px; }
 .cols p { margin: 0 0 5px; }
-#modal-body { display: flex; flex-direction: column; align-items: center; gap: 5px; max-width: 596px; }
+/* 弹窗正文自己滚，标题与按钮行永远留在视野里 —— 牌组 20 张卡也不会把「关闭」顶出屏幕 */
+#modal-panel { position: relative; }
+#modal-body { display: flex; flex-direction: column; align-items: center; gap: 5px; max-width: 596px;
+  min-height: 0; flex: 0 1 auto; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; scrollbar-width: thin; scrollbar-color: #3b5dc9 #0a0d1c; }
+#modal-body::-webkit-scrollbar { width: 6px; }
+#modal-body::-webkit-scrollbar-track { background: #0a0d1c; }
+#modal-body::-webkit-scrollbar-thumb { background: #3b5dc9; }
+#modal-actions:empty { display: none; }
+.mx { position: absolute; right: 3px; top: 3px; z-index: 5; font: inherit; line-height: 1; color: #c0cbdc;
+  background: #1a1c2c; border: 0; padding: 2px 5px 3px; cursor: pointer; box-shadow: 0 0 0 1px #566c86; }
+.mx:hover { color: #05060d; background: #ff5577; box-shadow: 0 0 0 1px #f4f4f4; }
+
 #build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 560px; }
 .chip { padding: 1px 4px 2px; background: #1a1c2c; box-shadow: inset 0 0 0 1px currentColor; }
 
@@ -84,7 +96,11 @@ em { font-style: normal; }
 
 /* ---------- 手牌 ---------- */
 /* 全屏覆盖层，卡牌的 left/top 直接用游戏坐标 */
-#hand { position: absolute; inset: 0; pointer-events: none; }
+/* ⚠️ z-index 不能省：手牌卡在 JS 里被赋 z-index 10+i（悬停 60 / 拖拽 200）。
+   若 #hand 是 z-index:auto（不产生层叠上下文），这些值会**逃逸到 #wrap 的层叠上下文**，
+   把 z-index:auto(≈0) 的 .ov 弹窗整个盖住 —— 症状是开着牌组弹窗时，战斗手牌浮在弹窗上面，
+   连「关闭」按钮都被压住。给 #hand 一个 z-index 就把它变成独立层，内部序号不再外泄。 */
+#hand { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .card { --c: #41a6f6; --d: #29366f; position: absolute; width: 96px; height: 110px; background: #0d1024; pointer-events: auto; cursor: pointer;
   box-shadow: 0 0 0 1px var(--c), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; padding: 16px 3px 4px; }
 .card:hover { background: #171d3c; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px var(--c), 2px 5px 0 2px #05060d; }
@@ -145,9 +161,13 @@ em { font-style: normal; }
 #over-desc { color: #c0cbdc; max-width: 560px; text-align: center; }
 
 /* ---------- 触摸 ---------- */
+/* 无键盘设备（手机/平板）才显示暂停键 —— 桌面靠 ESC/P，不需要多一个按钮 */
 #touch { display: none; }
+html.coarse #touch { display: block; }
+@media (pointer: coarse) { #touch { display: block; } }
 .tbtn { position: absolute; font: inherit; color: #f4f4f4; background: rgba(41, 54, 111, .55); border: 0; box-shadow: 0 0 0 1px #73eff7aa; width: 30px; height: 30px; font-size: 12px; }
 .tb-pause { left: 4px; top: 18px; width: 22px; height: 16px; }
+
 .ctrl-hint { color: #73eff7; text-shadow: 1px 1px 0 #1a1c2c; }
 /* 无头探针用：?noanim=1 冻结 CSS 动画，避免虚拟时间下动画停在起始帧 */
 #wrap.noanim *, #wrap.noanim *::before, #wrap.noanim *::after { animation: none !important; }

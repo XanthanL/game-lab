@@ -35,7 +35,7 @@ const script = `(async () => {
     await sleep(200);
     const t0 = Date.now();
     let guard = 0;
-    let lastScene = '', lastAct = -1, lastEnemy = null;
+    let lastScene = '', lastAct = -1, lastEnemy = null, lastSig = '', sigN = 0;
     while (Date.now() - t0 < ${LIMIT} && guard++ < 20000) {
       if (G.act !== lastAct) { lastAct = G.act; R.acts.push(ACTS[G.act].name); }
       const sc = G.scene;
@@ -57,13 +57,27 @@ const script = `(async () => {
         R.err = 'unexpected scene ' + sc; break;
       } else {
         if (sc === 'reward') R.rewards++; else if (sc === 'event') R.events++; else if (sc === 'shop') R.shops++; else if (sc === 'rest') R.rests++;
+        // 同一个「场景 + 弹窗标题」反复出现 = 在空转，先数一下
+        const title = (document.querySelector('#modal-title') || {}).textContent || '';
+        const sig = sc + '|' + title;
+        if (sig === lastSig) sigN++; else { lastSig = sig; sigN = 1; }
+        if (sigN > 30) {
+          // 兜底：先试关闭键（可关弹窗），否则判定卡死
+          const x = document.querySelector('#modal-x');
+          if (x && !x.classList.contains('hidden')) { x.click(); }
+          else { R.err = 'loop in ' + sc + ' / ' + title; break; }
+        }
         let opt;
         if (sc === 'shop') {
           // 买两次就离开，否则会在货架上来回点
           R.shopBuys = (R.shopBuys || 0) + 1;
           opt = R.shopBuys <= 2 ? document.querySelector('#modal-body .opt') : document.querySelector('#modal-actions .btn');
         } else {
-          opt = document.querySelector('#modal-body .opt') || document.querySelector('#modal-actions .btn') || document.querySelector('#modal-body .card');
+          // ⚠️ .card 要排在 #modal-actions 之前 —— 否则「返回」这类回退按钮
+          // 会被一直点，在「上一层 ↔ 选择器」之间无限来回（曾空转 6351 次）。
+          opt = document.querySelector('#modal-body .card')
+             || document.querySelector('#modal-body .opt')
+             || document.querySelector('#modal-actions .btn');
         }
         if (opt) opt.click(); else { R.err = 'stuck in ' + sc; break; }
       }

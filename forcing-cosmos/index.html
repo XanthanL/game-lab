@@ -87,6 +87,9 @@
     <div class="up-title">选择乘员</div>
     <div id="char-cards"></div>
     <div id="char-desc" class="dim"></div>
+    <div class="menu row">
+      <button class="btn" data-act="title">返回标题</button>
+    </div>
   </div>
 
   <!-- ============ 战斗 HUD（覆盖在 canvas 上） ============ -->
@@ -112,6 +115,7 @@
   <!-- ============ 通用弹窗 ============ -->
   <div id="modal" class="ov hidden">
     <div class="panel" id="modal-panel">
+      <button id="modal-x" class="mx hidden" title="关闭" aria-label="关闭">X</button>
       <div class="ptitle" id="modal-title"></div>
       <div id="modal-body"></div>
       <div class="menu row" id="modal-actions"></div>

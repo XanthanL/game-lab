@@ -22,11 +22,46 @@
 - **精灵缓存**（`_gcache`/`_bcache`）的 key 只允许有界取值，**绝不把逐帧变化的 alpha/浮点半径放进 key**（会每帧新建 canvas 泄漏显存）。需要淡入淡出用 `drawGlow()` 走 globalAlpha。
 - **音频必须在用户手势里 `Sound.init()`**（已挂在 `[data-act]` 点击与 Enter 上）。
 
+## 交互出口约定（改 UI 前先读这条）
+
+**每个「进得去」的面板都必须有「出得来」的口子。** 这是被作者实际卡住过的地方，不是理论洁癖。
+
+- **弹窗分两类**：
+  - **可关弹窗**（牌组、升级/移除/丢弃选卡器、商店）→ `showModal(title, build, actions, { onClose })` 里**必须给 `onClose`**。给了它，右上角的 `#modal-x` 才会显示，ESC 和点暗背景也才会生效。
+  - **强制选择弹窗**（战后整理、休整营地、异象、幕终）→ **不给 `onClose`**，因为关掉会让玩家悬在半空。这类必须保证「选项本身可点」，且内容不能长到把选项挤出屏幕。
+- ⚠️ **`.panel` 是 `overflow:hidden`**。牌组 30+ 张时，选项行会被直接裁掉 —— 看不到也点不到。所以 **`#modal-body` 自己滚**（`overflow-y:auto`），标题与 `#modal-actions` 留在外面不动。`#modal-body` 还要 `touch-action:pan-y`，否则 `html{touch-action:none}` 会让手机上滚不动。
+- ⚠️ **子选择器的「取消」不能顺手把这一趟节点消费掉**。`pickFromDeck(..., { onCancel })` 的 `onCancel` 要退回上一层：
+  休整 → `restSite` · 战后整理 → `rewardChoice` · 异象 → `showEvent(G.curEvent)`（**同一个**异象，不能重抽）。
+- ⚠️ **先扣钱再弹选择器 = 取消就白扣**。商店的「移除一张卡」、熔炉的「花 15 金币升级」都用 `commit()` 回调模式：
+  真正选定了才扣钱 / 加诅咒 / 删卡。
+- ⚠️ **`showEvent(ev)` 会回写 `G.curEvent`**，让「当前异象」这个不变量自己成立 —— 别在别处再手动同步。
+- ⚠️ **暂停必须真的暂停**。战斗里所有延时走 **`after(ms, fn)`**（`game.js` 顶部），它在 `G.paused` 期间每 120ms 自我重排。
+  直接 `setTimeout` 的话，暂停只是个盖在上面的壳，敌人照样打你。
+  `playCard` / `endTurn` / `usePotion` / 手牌 `pointerdown` 也都带 `G.paused` 守卫。
+- ⚠️ **「点击屏幕」就必须整块屏幕能点**。剧情页的 `go` 监听挂在 `#story` 上（排除 `#story-skip`），
+  不是挂在 `#story-text` 上 —— 后者比提示条矮，点在空白处毫无反应。
+- ⚠️ **剧情打字机的 `setInterval` 必须在 `finish()` 里清掉**，并用 `done` 标志防重入。
+  否则跳过之后定时器还在跑，往下一次打开的剧情框里继续灌旧文本。
+- 无键盘设备（`(pointer: coarse)`）才显示 `#touch` 暂停键（CSS `html.coarse` + 媒体查询双路，见 `updatePointerMode()`）。
+- ⚠️⚠️ **层叠上下文：带 z-index 的子元素会「逃逸」到最近的祖先层叠上下文里。**
+  手牌卡在 `renderHand()` 里被赋 `d.style.zIndex = 10 + i`（悬停 60 / 拖拽 200），而 `#hand` 原本是 `z-index:auto`
+  → **它不产生层叠上下文**，这些 10+ 的序号直接落到 `#wrap`（`transform` 让它成为层叠上下文）里，
+  把 `z-index:auto`（≈0）的 `.ov` 弹窗整个盖住。
+  症状极具欺骗性：开着牌组弹窗时**战斗手牌浮在弹窗上面**，连「关闭」按钮都被压住看不见 ——
+  但 `getBoundingClientRect()` 和 `scrollHeight/clientHeight` 全部正常（它们量的是布局，不是绘制），
+  所以**纯 DOM 断言抓不到这个 bug，必须用 `elementFromPoint` 做真实命中测试**。
+  修法：`#hand { z-index: 5 }`（自己成为层叠上下文，内部序号不再外泄）+ `.ov { z-index: 20 }`（覆盖层统一压在手牌之上）。
+  **规矩：任何「子元素会动态设 z-index」的容器，自己必须有一个 z-index。**
+  排查手法：在页面上按 `getBoundingClientRect` 的坐标打一条 3px 标记线再截图，
+  标记线落在 DOM 说的位置、而画面内容却在别处 → 就是绘制层的问题，不是布局。
+
 ## 探针（验证用，改完必跑）
 
 ```bash
-python -m http.server 8126 --bind 127.0.0.1        # 必须常驻
+python -m http.server 8126 --bind 127.0.0.1        # 必须常驻（先 curl 确认 docroot 就是 forcing-cosmos/）
 bash .probe.sh                                     # 6 个场景截图 + 抓运行时错误 → .shots/
+node .probe-exit.cjs                               # 交互出口审计（47 条）：改 UI 必跑
+node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 ```
 
 自动通跑（真正驱动游戏逻辑，需要带调试端口的 Chrome）：
@@ -47,6 +82,11 @@ node .probe-boss.mjs 2 boss 60000 boost # 指定幕/BOSS；boost = 削弱敌人�
 ## 调试参数
 
 `?noanim=1` 冻结 CSS 动画 · `?auto=1` 直进战斗 · `&act=N` 指定幕 · `&boss=1`/`&elite=1` 指定节点 · `&row=N` 地图行 · `&char=xxx` 指定职业 · `&map=1` 直接看地图
+
+⚠️ **给 bot 开无敌要写 `G.player.baseMaxHp = 9999`，不是 `G.player.maxHp`。**
+`Entity`/`Player` 的 `maxHp` 是**只有 getter 没有 setter** 的访问器（`get maxHp(){ return this.baseMaxHp + this.relicBonus('maxHp'); }`），
+而脚本是非严格模式 —— `G.player.maxHp = 9999` **静默失败**，一点效果都没有，还很难发现
+（症状：bot 照样在第三幕阵亡，`hp=2/90`，maxHp 还是角色基础值 80 + 星核 10）。敌人同理，用 `G.enemy.baseMaxHp`。
 
 ## 与前作的关系
 
