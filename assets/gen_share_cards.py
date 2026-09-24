@@ -247,6 +247,51 @@ def scene_mars(size=SZ):
     return K.vignette(im, 0.30, radius=0.86)
 
 
+# ------------------------------------------------------------------ 5b. 强渡宇宙
+def scene_cosmos(size=SZ):
+    """深空紫 + 像素星野 + 一枚奇点。配色直接取自游戏 src/sprites.js 的 ACT_SKY[2]
+    与 Sweetie 16 调色板（青 #73eff7 / 紫 #c070f0），和强渡火星是同一血脉的两端。"""
+    im = K.vgrad((size, size), (26, 10, 44), (4, 3, 10))
+    im = K.specks(im, seed=77, n=4600,
+                  colors=((255, 255, 255), (192, 203, 220), (192, 112, 240)),
+                  alpha=160, rmax=2.0)
+    rnd = random.Random(77)
+
+    def cross(d):
+        for _ in range(12):
+            x = rnd.uniform(50, size - 50)
+            y = rnd.uniform(50, size * 0.64)
+            L = rnd.uniform(13, 28)
+            d.line([(x - L, y), (x + L, y)], fill=(255, 255, 255, 130), width=2)
+            d.line([(x, y - L), (x, y + L)], fill=(255, 255, 255, 130), width=2)
+
+    im = layer(im, cross)
+
+    cx, cy = size / 2, 950
+    # 共振梯度：三条向外辐射的线（也是三幕）
+    for ang in (-152, -90, -28):
+        rad = math.radians(ang)
+        im = hair(im, [(cx, cy), (cx + math.cos(rad) * 640, cy + math.sin(rad) * 640)],
+                  (138, 60, 192), 70, 2)
+    im = K.wash(im, cx, cy, 340, (138, 60, 192), 0.52)
+
+    def hole(d):
+        for r, col in ((158, (58, 20, 88)), (126, (28, 10, 46)),
+                       (96, (8, 4, 14)), (66, (0, 0, 0))):
+            d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
+        d.ellipse([cx - 32, cy - 32, cx + 32, cy + 32], fill=(115, 239, 247))
+        d.ellipse([cx - 15, cy - 15, cx + 15, cy + 15], fill=(255, 255, 255))
+
+    im = layer(im, hole)
+    im = hair(im, [(cx - 356, cy), (cx + 356, cy)], (115, 239, 247), 90, 3)
+    im = K.grain(im, 3.4, seed=9)
+
+    d = ImageDraw.Draw(im)
+    K.tracked(d, size / 2, 452, "强渡宇宙", K.sans(180, 800), (238, 238, 255), 20)
+    K.tracked(d, size / 2, 588, "像素卡牌构筑 · 火星到深空奇点", K.sans(34, 350), (192, 112, 240), 8)
+    return K.vignette(im, 0.34, radius=0.84)
+
+
 # ------------------------------------------------------------------ 6. 怨宅
 def scene_house(size=SZ):
     im = K.vgrad((size, size), (10, 6, 6), (0, 0, 0))
@@ -431,6 +476,7 @@ CARDS = [
     ("microsoft-vs-code/og.jpg",   scene_mvs),
     ("PVZ/og.jpg",                 scene_pvz),
     ("forcing-mars/og.jpg",        scene_mars),
+    ("forcing-cosmos/og.jpg",      scene_cosmos),
     ("cursed-house/og.jpg",        scene_house),
     ("europa/og.jpg",              scene_europa),
     ("Vampire-2D/og.jpg",          scene_vampire),

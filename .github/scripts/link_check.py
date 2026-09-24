@@ -31,10 +31,13 @@ SITE_PREFIX = "/game-lab/"  # Pages 把仓库挂在 /game-lab/ 下
 # 扫都不扫的目录：依赖、本地工程、agent 工作区、版本库自身
 # 注意：子项目（resonance-era 等）不在这里 —— 它们和仓库根目录一起发布到
 # <user>.github.io/game-lab/ 下面，断链一样会让线上 404，必须扫。
+# last-firewall 例外：它是第三方原型克隆（github.com/GordenSun/last-firewall），
+# 本地只作参照、不入库不上线，扫它只会报一堆「本机有但没进 git」的假阳性。
 SKIP_DIRS = {
     "node_modules", ".git", ".next", "local-only",
     ".workbuddy", ".workbuddy-ai", ".github",
     "run", "run2", "saves", "data", "logs",
+    "last-firewall",
 }
 
 # 已知豁免：(文件, 前缀) —— 只在理由充分时加，且必须写清为什么

@@ -5,6 +5,13 @@
 /local-only/
 /Minecraft/
 
+# ============ 第三方参考仓库（不是我的作品）============
+# last-firewall 是 GordenSun 的原型项目（github.com/GordenSun/last-firewall），
+# 本地只作为「画风 + 代码框架」的参照克隆存在 —— singularity-voyage 与
+# forcing-cosmos 都从它改写而来，但它本身不是本仓库的作品，不进仓库也不上线。
+# 同理 link_check.py 的 SKIP_DIRS 里也有它（否则它的内部引用会被误报成断链）。
+/last-firewall/
+
 # ============ 依赖与构建缓存 ============
 node_modules/
 **/.next/

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="description" content="强渡宇宙 FORCING COSMOS — 像素风卡牌构筑 Roguelike。从火星地核杀到深空奇点：三幕、18 种敌人、35 张卡、四种结局。">
+<meta name="theme-color" content="#05060d">
+<title>强渡宇宙 · FORCING COSMOS</title>
+<!-- 微信 / Open Graph 分享卡片 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GAME LAB">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="强渡宇宙 · FORCING COSMOS">
+<meta property="og:description" content="像素风卡牌构筑 Roguelike。从火星地核杀到深空奇点：三幕、18 种敌人、35 张卡、四种结局。">
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/forcing-cosmos/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/forcing-cosmos/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="强渡宇宙 · FORCING COSMOS">
+<meta name="twitter:description" content="像素风卡牌构筑 Roguelike。从火星地核杀到深空奇点：三幕、18 种敌人、35 张卡、四种结局。">
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/forcing-cosmos/og.jpg">
+<link rel="canonical" href="https://xanthanl.github.io/game-lab/forcing-cosmos/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%231a1c2c'/><rect x='1' y='1' width='6' height='6' fill='%2329366f'/><rect x='2' y='3' width='4' height='2' fill='%2373eff7'/><rect x='3' y='2' width='2' height='4' fill='%23ffcd75'/></svg>">
+<link rel="preload" href="assets/fusion-pixel-12.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="640" height="360"></canvas>
+
+  <div id="loading" class="ov"><div class="blink">LOADING...</div></div>
+  <div id="errlog" class="hidden"></div>
+
+  <!-- ============ 标题 ============ -->
+  <div id="title" class="ov hidden">
+    <div class="logo">
+      <div class="t1">强渡宇宙</div>
+      <div class="t2">F O R C I N G &nbsp; C O S M O S</div>
+    </div>
+    <div class="tagline">像素卡牌构筑 · 从火星地核杀到深空奇点</div>
+    <div class="menu">
+      <button class="btn primary" data-act="start">&gt; 开始强渡</button>
+      <button class="btn" data-act="story">背景简报</button>
+      <button class="btn" data-act="help">操作说明</button>
+    </div>
+    <div class="best" id="best"></div>
+    <div class="ctrl-hint">点击出牌 · 拖到敌人身上也可 · 空格结束回合</div>
+    <div class="hint blink">按 ENTER 开始</div>
+  </div>
+
+  <!-- ============ 剧情 ============ -->
+  <div id="story" class="ov hidden">
+    <div class="story-box">
+      <div class="story-head" id="story-head">// SYSTEM LOG</div>
+      <div id="story-text"></div>
+    </div>
+    <div id="story-skip" class="hint"></div>
+  </div>
+
+  <!-- ============ 帮助 ============ -->
+  <div id="help" class="ov hidden">
+    <div class="panel">
+      <div class="ptitle">操作说明</div>
+      <div class="cols">
+        <div>
+          <p><b>出牌</b> 点一下卡；或拖到敌人身上</p>
+          <p><b>结束回合</b> 空格 / 右下按钮</p>
+          <p><b>药水</b> 点击左下药水槽（仅我方回合）</p>
+          <p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>
+          <p class="dim">手机：点选卡牌后，再点敌人确认</p>
+        </div>
+        <div>
+          <p><em class="c-c">电量</em> 每回合回满，出牌要耗电</p>
+          <p><em class="c-b">护盾</em> 优先吸收伤害，<b>我方回合开始时清零</b></p>
+          <p><em class="c-y">力量</em> 每层让攻击 +1，永久</p>
+          <p><em class="c-r">易伤</em> 受伤 ×1.5　<em class="c-p">中毒</em> 层数即每回合伤害</p>
+          <p><em class="c-o">灼烧</em> 每回合扣层数血，然后 -1 层</p>
+        </div>
+      </div>
+      <button class="btn" data-act="title">返回</button>
+    </div>
+  </div>
+
+  <!-- ============ 角色选择 ============ -->
+  <div id="charsel" class="ov hidden">
+    <div class="up-title">选择乘员</div>
+    <div id="char-cards"></div>
+    <div id="char-desc" class="dim"></div>
+  </div>
+
+  <!-- ============ 战斗 HUD（覆盖在 canvas 上） ============ -->
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <span id="act-label"></span>
+      <span id="gold-label"></span>
+    </div>
+    <div id="logline"></div>
+    <div id="pileinfo">
+      <span id="draw-pile">抽 0</span>
+      <span id="turn-label"></span>
+      <span id="discard-pile">弃 0</span>
+    </div>
+    <div id="potions"></div>
+    <button id="btn-end" class="btn">结束回合</button>
+    <button id="btn-deck" class="btn small">牌组</button>
+  </div>
+
+  <div id="hand"></div>
+  <div id="cardtip" class="hidden"></div>
+
+  <!-- ============ 通用弹窗 ============ -->
+  <div id="modal" class="ov hidden">
+    <div class="panel" id="modal-panel">
+      <div class="ptitle" id="modal-title"></div>
+      <div id="modal-body"></div>
+      <div class="menu row" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <!-- ============ 地图 ============ -->
+  <div id="map" class="ov hidden">
+    <div class="panel wide">
+      <div class="ptitle" id="map-title">航行图</div>
+      <div id="map-grid"></div>
+      <div id="map-legend"></div>
+    </div>
+  </div>
+
+  <!-- ============ 暂停 ============ -->
+  <div id="pause" class="ov hidden">
+    <div class="panel">
+      <div class="ptitle">暂停</div>
+      <div id="pause-stats" class="dim"></div>
+      <div id="build"></div>
+      <div class="menu row">
+        <button class="btn primary" data-act="resume">继续</button>
+        <button class="btn" id="btn-mute" data-act="mute">声音</button>
+        <button class="btn" data-act="restart">重新开始</button>
+        <button class="btn" data-act="title">标题</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 结局 ============ -->
+  <div id="over" class="ov hidden">
+    <div class="over-title" id="over-title"></div>
+    <div class="dim" id="over-sub"></div>
+    <div id="over-stats"></div>
+    <div id="over-desc"></div>
+    <div class="menu row">
+      <button class="btn primary" data-act="restart">再战一次 [ENTER]</button>
+      <button class="btn" data-act="title">返回标题</button>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button class="tbtn tb-pause" data-act="pause">II</button>
+  </div>
+</div>
+<script src="src/audio.js"></script>
+<script src="src/sprites.js"></script>
+<script src="src/cards.js"></script>
+<script src="src/entities.js"></script>
+<script src="src/story.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>

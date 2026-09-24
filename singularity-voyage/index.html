@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="description" content="奇点旅途 SINGULARITY VOYAGE — 像素风太空弹幕射击。穿越十二段航程，抵达奇点。">
+<meta name="theme-color" content="#05060d">
+<title>奇点旅途 · SINGULARITY VOYAGE</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%231a1c2c'/><rect x='5' y='3' width='3' height='2' fill='%2373eff7'/><rect x='2' y='3' width='2' height='2' fill='%233b5dc9'/><rect x='0' y='3' width='2' height='2' fill='%23ffcd75'/></svg>">
+<link rel="preload" href="assets/fusion-pixel-12.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="480" height="270"></canvas>
+
+  <div id="loading" class="ov"><div class="blink">LOADING...</div></div>
+
+  <!-- ============ 标题 ============ -->
+  <div id="title" class="ov hidden">
+    <div class="logo">
+      <div class="t1">奇点旅途</div>
+      <div class="t2">S I N G U L A R I T Y &nbsp; V O Y A G E</div>
+    </div>
+    <div class="tagline">像素太空弹幕射击 · 穿越十二段航程</div>
+    <div class="menu">
+      <button class="btn primary" data-act="hangar">&gt; 开始航行</button>
+      <button class="btn" data-act="help">操作说明</button>
+    </div>
+    <div class="best" id="best"></div>
+    <div class="volbox" id="vol-title"></div>
+    <div class="ctrl-hint desk-only">WASD 推进 · 鼠标瞄准 · 左键开火 · 空格冲刺</div>
+    <div class="ctrl-hint touch-only">左半屏拖动推进 · 右半屏拖动瞄准并自动开火</div>
+    <div class="hint blink desk-only">按 ENTER 开始</div>
+    <div class="hint blink touch-only">轻触「开始航行」</div>
+  </div>
+
+  <!-- ============ 机库 / 船体选择 ============ -->
+  <div id="hangar" class="ov hidden">
+    <div class="up-title">选择船体</div>
+    <div id="hull-sub" class="dim">方向键左右切换 · ENTER 出击</div>
+    <div id="hulls"></div>
+    <div id="hull-detail" class="panel narrow"></div>
+    <div class="menu row">
+      <button class="btn primary" data-act="launch">出击 [ENTER]</button>
+      <button class="btn" data-act="title">返回</button>
+    </div>
+  </div>
+
+  <!-- ============ 操作说明 ============ -->
+  <div id="help" class="ov hidden">
+    <div class="panel">
+      <div class="ptitle">操作说明</div>
+      <div class="cols">
+        <div>
+          <p><b>WASD / 方向键</b> 推进器点火<br><span class="dim">飞船有惯性，松开后会继续漂移</span></p>
+          <p><b>鼠标</b> 瞄准，机头跟随光标</p>
+          <p><b>左键 / 空格</b> 主炮开火（可长按）</p>
+          <p><b>SHIFT / 右键</b> 助推冲刺（短暂无敌）</p>
+          <p><b>E</b> 超载爆发（能量满时）</p>
+          <p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>
+          <p class="dim">手机：左半屏拖动推进 · 右半屏自动开火<br>右下角按钮 冲刺 / 超载</p>
+        </div>
+        <div>
+          <p><em class="c-c">青白色细针</em> 是你的炮弹；<em class="c-r">红紫圆弹</em> 是敌弹，务必躲开</p>
+          <p><em class="c-y">星尘</em> 击坠掉落，拾取后累积经验</p>
+          <p>经验满 → 三选一<b>模块</b>，装配后永久生效</p>
+          <p><em class="c-o">能量</em> 击坠与擦弹积攒，满格释放<b>超载</b>：清屏冲击波 + 火力翻倍</p>
+          <p>每段航程清空全部敌人即可跃迁下一段</p>
+          <p>第 <em class="c-r">4 / 8 / 12</em> 段是<b>巨像</b>，血更厚、弹更密</p>
+          <p><em class="c-p">织网者</em>撒网减速 · <em class="c-y">牧者</em>给同伴回血 · <em class="c-y">新星</em>死亡炸弹 · <em class="c-c">铁壁</em>正面免伤<br><span class="dim">这四种不能硬碰，先点掉或绕后</span></p>
+          <p class="dim">击坠与航段进度会存档；<em class="c-p">玄鸦</em> 与 <em class="c-y">蜂群</em> 需要解锁</p>
+        </div>
+      </div>
+      <button class="btn" data-act="title">返回</button>
+    </div>
+  </div>
+
+  <!-- ============ 升级选卡 ============ -->
+  <div id="upgrade" class="ov hidden">
+    <div class="up-title">模块装配 · 选择一项</div>
+    <div id="up-sub" class="dim"></div>
+    <div id="cards"></div>
+    <button id="btn-reroll" class="btn small" data-act="reroll">重抽 [R]</button>
+  </div>
+
+  <!-- ============ 暂停 ============ -->
+  <div id="pause" class="ov hidden">
+    <div class="panel">
+      <div class="ptitle">暂停</div>
+      <div id="pause-stats" class="dim"></div>
+      <div id="build"></div>
+      <div class="volbox" id="vol-pause"></div>
+      <div class="menu row">
+        <button class="btn primary" data-act="resume">继续</button>
+        <button class="btn" id="btn-mute" data-act="mute">声音</button>
+        <button class="btn" data-act="restart">重新出击</button>
+        <button class="btn" data-act="title">机库</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 结算 ============ -->
+  <div id="over" class="ov hidden">
+    <div class="over-title" id="over-title">航程 · 中断</div>
+    <div class="dim" id="over-sub"></div>
+    <div id="over-stats"></div>
+    <div id="over-rank"></div>
+    <div id="over-log" class="logbox"></div>
+    <div class="menu row">
+      <button class="btn primary" data-act="restart">再来一次 [ENTER]</button>
+      <button class="btn" data-act="hangar">机库</button>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button class="tbtn tb-pause" data-act="pause">II</button>
+    <button class="tbtn tb-full" data-act="full">全</button>
+    <button class="tbtn tb-dash" data-act="dash">冲</button>
+    <button class="tbtn tb-od" data-act="od">燃</button>
+  </div>
+</div>
+
+<!-- 竖屏提示：只在「粗指针 + 竖屏」时出现，横过来自动消失 -->
+<div id="rotate">
+  <div class="rt">请把手机横过来</div>
+  <div class="rs">R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E</div>
+</div>
+<script src="src/audio.js"></script>
+<script src="src/sprites.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>
