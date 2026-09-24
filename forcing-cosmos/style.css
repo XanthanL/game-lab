@@ -1,7 +1,13 @@
 /* 强渡宇宙 — 像素 UI（画布 640x360，#wrap 整体缩放，所有尺寸写游戏像素） */
 @font-face { font-family: FP; src: url(assets/fusion-pixel-12.woff2) format('woff2'); font-display: block; }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #05060d; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+/* 安全区（刘海 / 圆角 / home indicator）先存成自定义属性，JS 里读回来做缩放留白。
+   横屏时刘海会压住左上角的关卡信息，光靠 CSS 顶不住。 */
+:root { --sat: env(safe-area-inset-top, 0px); --sar: env(safe-area-inset-right, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); }
+/* 触摸端手势策略：html/body 用 manipulation —— 既禁掉双击缩放，又保留「弹窗正文可以滚动」。
+   如果这里写 touch-action:none，会沿祖先链把 #modal-body 一起锁死（touch-action 是取交集的），
+   30 张牌的牌组 / 一长串货架就翻不动了。真正需要独占指针的只有 #hand（拖拽出牌），见下。 */
+html, body { margin: 0; height: 100%; background: #05060d; overflow: hidden; touch-action: manipulation; overscroll-behavior: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 #wrap { position: absolute; left: 0; top: 0; width: 640px; height: 360px; transform-origin: 0 0; font-family: FP, monospace; font-size: 12px; line-height: 14px; color: #f4f4f4; -webkit-font-smoothing: none; font-smooth: never; overflow: hidden; letter-spacing: 0; }
 canvas { display: block; width: 640px; height: 360px; image-rendering: pixelated; image-rendering: crisp-edges; }
 .hidden { display: none !important; }
@@ -100,7 +106,7 @@ em { font-style: normal; }
    若 #hand 是 z-index:auto（不产生层叠上下文），这些值会**逃逸到 #wrap 的层叠上下文**，
    把 z-index:auto(≈0) 的 .ov 弹窗整个盖住 —— 症状是开着牌组弹窗时，战斗手牌浮在弹窗上面，
    连「关闭」按钮都被压住。给 #hand 一个 z-index 就把它变成独立层，内部序号不再外泄。 */
-#hand { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+#hand { position: absolute; inset: 0; pointer-events: none; z-index: 5; touch-action: none; }
 .card { --c: #41a6f6; --d: #29366f; position: absolute; width: 96px; height: 110px; background: #0d1024; pointer-events: auto; cursor: pointer;
   box-shadow: 0 0 0 1px var(--c), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; padding: 16px 3px 4px; }
 .card:hover { background: #171d3c; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px var(--c), 2px 5px 0 2px #05060d; }
@@ -161,13 +167,34 @@ em { font-style: normal; }
 #over-desc { color: #c0cbdc; max-width: 560px; text-align: center; }
 
 /* ---------- 触摸 ---------- */
-/* 无键盘设备（手机/平板）才显示暂停键 —— 桌面靠 ESC/P，不需要多一个按钮 */
+/* 无键盘设备（手机/平板）且「暂停真的有用」的场景（战斗/地图）才显示暂停键。
+   桌面靠 ESC/P；标题、选人、结局按了也没反应，就不给这个假按钮。 */
 #touch { display: none; }
-html.coarse #touch { display: block; }
-@media (pointer: coarse) { #touch { display: block; } }
+html.coarse.canpause #touch { display: block; }
 .tbtn { position: absolute; font: inherit; color: #f4f4f4; background: rgba(41, 54, 111, .55); border: 0; box-shadow: 0 0 0 1px #73eff7aa; width: 30px; height: 30px; font-size: 12px; }
 .tb-pause { left: 4px; top: 18px; width: 22px; height: 16px; }
 
 .ctrl-hint { color: #73eff7; text-shadow: 1px 1px 0 #1a1c2c; }
+
+/* 竖屏提示：故意放在 #wrap 外面 —— 里面的东西整体转了 90°，提示文字不能跟着转。 */
+#rot { position: fixed; left: 0; right: 0; bottom: 8px; z-index: 100; text-align: center; color: #73eff7;
+  font: 12px/16px FP, monospace; text-shadow: 1px 1px 0 #05060d; pointer-events: none; opacity: 0; transition: opacity .45s; }
+#rot.show { opacity: 1; }
+
+/* ---------- 触摸端：把命中区放大到手指点得着 ---------- */
+/* 视觉尺寸一个都不改，只加透明命中区。手机竖屏时 640x360 会被缩到 0.6 倍，
+   地图节点 22px 变成 13px，几乎点不中 —— 这是「点了没反应」的常见来源之一。
+   ::before 是绝对定位，不参与 .mnode 的 flex 布局，所以那个字不会位移。 */
+html.coarse .mnode::before { content: ''; position: absolute; inset: -9px; }
+html.coarse .tbtn { width: 44px; height: 40px; }
+html.coarse .tb-pause { left: 2px; top: 14px; width: 44px; height: 40px; font-size: 14px; }
+html.coarse .btn { padding: 6px 12px 7px; }
+html.coarse #btn-end { padding: 6px 12px 7px; }
+html.coarse #btn-deck { padding: 5px 9px 6px; }
+html.coarse .potion { width: 32px; height: 32px; }
+html.coarse .mx { padding: 6px 10px 7px; }
+html.coarse .opt { padding: 9px 8px; }
+html.coarse .charcard { width: 152px; }
+
 /* 无头探针用：?noanim=1 冻结 CSS 动画，避免虚拟时间下动画停在起始帧 */
 #wrap.noanim *, #wrap.noanim *::before, #wrap.noanim *::after { animation: none !important; }

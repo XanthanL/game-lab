@@ -45,8 +45,8 @@
       <button class="btn" data-act="help">操作说明</button>
     </div>
     <div class="best" id="best"></div>
-    <div class="ctrl-hint">点击出牌 · 拖到敌人身上也可 · 空格结束回合</div>
-    <div class="hint blink">按 ENTER 开始</div>
+    <div class="ctrl-hint" id="ctrl-hint">点击出牌 · 拖到敌人身上也可 · 空格结束回合</div>
+    <div class="hint blink" id="enter-hint">按 ENTER 开始</div>
   </div>
 
   <!-- ============ 剧情 ============ -->
@@ -162,6 +162,8 @@
     <button class="tbtn tb-pause" data-act="pause">II</button>
   </div>
 </div>
+<!-- 竖屏提示：必须在 #wrap 外面，里面的东西整体转了 90° -->
+<div id="rot">建议横屏 · 把手机转一下（竖着也能玩，画面已转向）</div>
 <script src="src/audio.js"></script>
 <script src="src/sprites.js"></script>
 <script src="src/cards.js"></script>

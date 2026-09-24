@@ -39,6 +39,8 @@ function setScene(s) {
   $('modal').classList.add('hidden');
   modalClose = null;
   if (s !== 'battle') $('hand').innerHTML = '';
+  // 手机端那个暂停键只在「按了真的有用」的场景露出来（togglePause 只认 battle/map）
+  document.documentElement.classList.toggle('canpause', s === 'battle' || s === 'map');
 }
 
 function log(msg) {
@@ -180,6 +182,16 @@ function genMap() {
       const cand = nodes[r].filter(n => Math.abs(n.c - m.c) <= 1);
       if (cand.length) { cand.sort((x, y) => Math.abs(x.c - m.c) - Math.abs(y.c - m.c)); edges.push({ a: cand[0], b: m }); }
     }
+    // ⚠️ 反向也必须保证：本行每个节点都要有出边。
+    // 只保证入边是不够的 —— 末行 BOSS 固定只有 c=1 一个节点，而本行可能选出 c=3；
+    // 连边条件是 |列差| ≤ 1，|3-1| = 2 不成立，于是 c=3 那个节点没有任何出边。
+    // 玩家一旦踩上去，updateReach 算出的可达集合是空集，地图上**一个可点的节点都没有**，
+    // 表现为「打完这场就再也进不了下一关」，只能暂停→重新开始。（2026-09-24 修复）
+    for (const n of nodes[r]) {
+      if (edges.some(e => e.a === n)) continue;
+      const out = nodes[r + 1].slice().sort((x, y) => Math.abs(x.c - n.c) - Math.abs(y.c - n.c));
+      if (out.length) edges.push({ a: n, b: out[0] });
+    }
   }
   const map = { nodes, edges };
   updateReach(map);
@@ -190,6 +202,18 @@ function updateReach(map) {
   map.nodes.forEach(row => row.forEach(n => { if (n.visited) visited.push(n); n.reach = false; }));
   if (!visited.length) { map.nodes[0].forEach(n => n.reach = true); return; }
   for (const e of map.edges) if (e.a.visited) e.b.reach = true;
+  if (map.nodes.some(row => row.some(n => n.reach))) return;
+  // 兜底：地图数据本身有缺 —— 老存档里存着早期版本生成的死路（见 genMap 里的出边保证）。
+  // 做法是从「走得最深的那个已访问节点」补一条到下一行最近节点的边，把航路接上。
+  // 补边而不是硬把节点设成 reach：地图被真正修好，之后不会再触发，玩家看到的那条线也是真实存在的。
+  const deepest = visited.reduce((a, b) => (b.r > a.r ? b : a));
+  const nextRow = map.nodes[deepest.r + 1];
+  if (!nextRow) return;                                   // 已站在末行 = BOSS 已过，本幕本来就该结束了
+  const target = nextRow.slice().sort((x, y) => Math.abs(x.c - deepest.c) - Math.abs(y.c - deepest.c))[0];
+  if (!target) return;
+  map.edges.push({ a: deepest, b: target });
+  target.reach = true;
+  if (window.console) console.warn('[map] 航路缺边，已自动补边 r' + deepest.r + 'c' + deepest.c + ' -> r' + target.r + 'c' + target.c);
 }
 function showMap() {
   setScene('map');
@@ -890,8 +914,28 @@ function togglePause() {
   box.classList.remove('hidden');
 }
 // 无键盘设备才显示触摸暂停键（桌面靠 ESC / P）
+// 注意 coarse 不只看媒体查询：无头探针 / 部分安卓 WebView 的 (pointer: coarse) 不可靠，
+// 补一个 maxTouchPoints 兜底。
+function isCoarse() {
+  return matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints || 0) > 0;
+}
 function updatePointerMode() {
-  document.documentElement.classList.toggle('coarse', matchMedia('(pointer: coarse)').matches);
+  const coarse = isCoarse();
+  document.documentElement.classList.toggle('coarse', coarse);
+  // 标题页那两句提示是写给键盘党的，触摸端得换掉 —— 手机上没有空格键也没有 ENTER
+  const hint = $('ctrl-hint'), enter = $('enter-hint');
+  if (hint) hint.textContent = coarse ? '点选卡牌，再点敌人确认 · 右下角结束回合' : '点击出牌 · 拖到敌人身上也可 · 空格结束回合';
+  if (enter) enter.textContent = coarse ? '点「开始强渡」' : '按 ENTER 开始';
+}
+/* 竖屏提示：只在「手机 + 竖屏」时露一下，6 秒后自己淡出。
+   刻意不做成挡住画面的遮罩 —— 玩家想竖着玩也拦不住，提示归提示。 */
+let rotTimer = 0;
+function rotHint(on) {
+  const d = $('rot'); if (!d) return;
+  clearTimeout(rotTimer);
+  if (!on) { d.classList.remove('show'); return; }
+  d.classList.add('show');
+  rotTimer = setTimeout(() => d.classList.remove('show'), 6000);
 }
 
 
@@ -901,6 +945,7 @@ function updatePointerMode() {
 let lastT = performance.now(), acc = 0;
 function loop(t) {
   const dt = Math.min(60, t - lastT); lastT = t;
+  fitIfChanged();   // 视口尺寸变了就重排：不依赖 resize/orientationchange 是否按时触发
   stepFx(dt);
   if (G.scene === 'battle' || G.scene === 'map' || G.scene === 'event' || G.scene === 'shop' || G.scene === 'reward' || G.scene === 'rest' || G.scene === 'actclear') {
     drawBattle(G, t, G.scene === 'battle');
@@ -920,15 +965,71 @@ function loop(t) {
 }
 
 /* ============================================================
- * 缩放：把 640x360 的 #wrap 整体缩放到窗口
+ * 缩放：把 640x360 的 #wrap 整体缩放到窗口（含手机端适配）
  * ============================================================ */
-function fit() {
-  const w = window.innerWidth, h = window.innerHeight;
-  const s = Math.min(w / 640, h / 360);
-  const wrap = $('wrap');
-  wrap.style.transform = 'scale(' + s + ') translate(' + ((w / s - 640) / 2) + 'px,' + ((h / s - 360) / 2) + 'px)';
+/* 视口尺寸。优先 visualViewport 且与 innerWidth/Height 取小：
+   手机上地址栏收起/展开、软键盘弹出时 window.innerHeight 经常不更新（iOS 尤其明显），
+   只信它会让 #wrap 的「画在哪」和「能点到哪」错位 —— 症状正是「点了没反应」。
+   取小是保守选择：宁可四周留一点黑边，也不能让画面（和命中区）超出真正可见的区域。 */
+function viewportSize() {
+  const vv = window.visualViewport;
+  const w = vv ? Math.min(vv.width, window.innerWidth) : window.innerWidth;
+  const h = vv ? Math.min(vv.height, window.innerHeight) : window.innerHeight;
+  return { w: Math.max(1, Math.round(w)), h: Math.max(1, Math.round(h)) };
 }
-window.addEventListener('resize', () => { fit(); updatePointerMode(); });
+/* 安全区（刘海 / 圆角 / home indicator）。JS 读不到 env()，所以 CSS 里先把它存进自定义属性。 */
+function safeInsets() {
+  const cs = getComputedStyle(document.documentElement);
+  const px = k => { const v = parseFloat(cs.getPropertyValue(k)); return isNaN(v) ? 0 : v; };
+  return { top: px('--sat'), right: px('--sar'), bottom: px('--sab'), left: px('--sal') };
+}
+let lastFitKey = '';
+function fit() {
+  const wrap = $('wrap');
+  const { w: vw, h: vh } = viewportSize();
+  const sa = safeInsets();
+  const w = Math.max(1, vw - sa.left - sa.right);
+  const h = Math.max(1, vh - sa.top - sa.bottom);
+  // 竖屏 + 触摸设备：把 640x360 的横向画面整体转 90° 铺满屏幕。
+  // 不转的话 640 宽塞进 390 只剩 219 高（0.61 倍）：12px 字变 7px、地图节点只剩 13px，
+  // 基本没法玩。旋转纯用 CSS transform，浏览器命中测试会跟着转，所以游戏坐标一行都不用改。
+  const portrait = isCoarse() && h > w;
+  let s, tf;
+  if (portrait) {
+    s = Math.min(h / 640, w / 360);
+    // translate ∘ rotate(90deg) ∘ scale(s)：本地 (0,0) 落在 (tx,ty)，
+    // 转完占 x∈[tx-360s, tx]、y∈[ty, ty+640s]，把它摆到屏幕正中（再加安全区留白）。
+    tf = 'translate(' + ((w + 360 * s) / 2 + sa.left) + 'px,' + ((h - 640 * s) / 2 + sa.top) + 'px) rotate(90deg) scale(' + s + ')';
+  } else {
+    s = Math.min(w / 640, h / 360);
+    tf = 'translate(' + ((w - 640 * s) / 2 + sa.left) + 'px,' + ((h - 360 * s) / 2 + sa.top) + 'px) scale(' + s + ')';
+  }
+  wrap.style.transform = tf;
+  lastFitKey = vw + 'x' + vh;
+  const was = document.documentElement.classList.contains('portrait');
+  document.documentElement.classList.toggle('portrait', portrait);
+  if (portrait !== was) rotHint(portrait);
+}
+/* 尺寸变了就重排。主循环每帧调一次 —— 这是刻意的「不信任事件」设计：
+   旋转时 orientationchange 会先于 innerWidth/Height 更新触发，resize 也可能只来一次旧值，
+   靠事件驱动必然有漏网的时候。每帧比一下字符串，比赌浏览器事件时序可靠得多。 */
+function fitIfChanged() {
+  const { w, h } = viewportSize();
+  if (w + 'x' + h !== lastFitKey) fit();
+}
+// 地址栏收起是个动画，visualViewport.resize 会连着触发十几次；
+// 每次 scheduleFit 都排两个定时器的话会堆一堆，所以先清掉上一轮的。
+let fitT1 = 0, fitT2 = 0;
+function scheduleFit() {
+  fit();
+  clearTimeout(fitT1); clearTimeout(fitT2);
+  // 旋转/地址栏收起后布局要过一两帧才稳定，补两次
+  fitT1 = setTimeout(fitIfChanged, 60);
+  fitT2 = setTimeout(fitIfChanged, 260);
+}
+window.addEventListener('resize', () => { scheduleFit(); updatePointerMode(); });
+window.addEventListener('orientationchange', scheduleFit);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleFit);
 
 /* ============================================================
  * 启动

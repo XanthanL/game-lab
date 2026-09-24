@@ -6,6 +6,7 @@
 ## 架构
 
 - 画布 **640×360**；`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放（`fit()`），所以 UI 一律按游戏像素写坐标。像素字体只有 **12px**（正文）与 **24/36/48px**（标题）可用，不要写其它字号。
+  手机竖屏时 `fit()` 会整体 `rotate(90deg)` 铺满屏幕 —— 见「手机端适配」。
 - **混合渲染**：canvas 只画战场（星空背景、实体、血条、意图、粒子、飘字）；**卡牌、按钮、弹窗、地图全部是 DOM**。DOM 用像素风 CSS（`style.css`），与 canvas 同一套 Sweetie 16 配色。
 - `src/sprites.js`：`PAL` 调色板 + `spriteFrom`（palette-string → canvas）。**单帧简写 `['row','row']` 会被 `makeSet` 自动包一层**。敌人精灵按包围盒做**整数缩放**归一到统一体量（普通 68px、BOSS 102px）——不要改成非整数缩放，会糊。
 - `src/cards.js`：卡牌数据（35 张 + 3 张诅咒）、升级表、药水、奖励池。**效果字段的结算逻辑在 `game.js` 的 `applyCard()` 里**，加新字段要同时改那里。
@@ -29,7 +30,12 @@
 - **弹窗分两类**：
   - **可关弹窗**（牌组、升级/移除/丢弃选卡器、商店）→ `showModal(title, build, actions, { onClose })` 里**必须给 `onClose`**。给了它，右上角的 `#modal-x` 才会显示，ESC 和点暗背景也才会生效。
   - **强制选择弹窗**（战后整理、休整营地、异象、幕终）→ **不给 `onClose`**，因为关掉会让玩家悬在半空。这类必须保证「选项本身可点」，且内容不能长到把选项挤出屏幕。
-- ⚠️ **`.panel` 是 `overflow:hidden`**。牌组 30+ 张时，选项行会被直接裁掉 —— 看不到也点不到。所以 **`#modal-body` 自己滚**（`overflow-y:auto`），标题与 `#modal-actions` 留在外面不动。`#modal-body` 还要 `touch-action:pan-y`，否则 `html{touch-action:none}` 会让手机上滚不动。
+- ⚠️ **`.panel` 是 `overflow:hidden`**。牌组 30+ 张时，选项行会被直接裁掉 —— 看不到也点不到。所以 **`#modal-body` 自己滚**（`overflow-y:auto`），标题与 `#modal-actions` 留在外面不动。
+- ⚠️ **`touch-action` 是沿祖先链取交集的，写 `none` 会连子孙一起锁死。**
+  `html,body` 现在写 **`manipulation`**（禁双击缩放、保留滚动），只有 `#hand` 写 `none`（拖拽出牌必须独占指针，
+  否则浏览器把它当滚动手势、`pointercancel` 一来拖拽就断）。
+  曾经 `html,body{touch-action:none}` + `#modal-body{touch-action:pan-y}` —— 后者**完全无效**，
+  30 张牌的牌组在手机上根本翻不动。顺带补了 `overscroll-behavior:none` 防下拉刷新。
 - ⚠️ **子选择器的「取消」不能顺手把这一趟节点消费掉**。`pickFromDeck(..., { onCancel })` 的 `onCancel` 要退回上一层：
   休整 → `restSite` · 战后整理 → `rewardChoice` · 异象 → `showEvent(G.curEvent)`（**同一个**异象，不能重抽）。
 - ⚠️ **先扣钱再弹选择器 = 取消就白扣**。商店的「移除一张卡」、熔炉的「花 15 金币升级」都用 `commit()` 回调模式：
@@ -42,7 +48,9 @@
   不是挂在 `#story-text` 上 —— 后者比提示条矮，点在空白处毫无反应。
 - ⚠️ **剧情打字机的 `setInterval` 必须在 `finish()` 里清掉**，并用 `done` 标志防重入。
   否则跳过之后定时器还在跑，往下一次打开的剧情框里继续灌旧文本。
-- 无键盘设备（`(pointer: coarse)`）才显示 `#touch` 暂停键（CSS `html.coarse` + 媒体查询双路，见 `updatePointerMode()`）。
+- 无键盘设备才显示 `#touch` 暂停键。判定走 `isCoarse()`（`(pointer: coarse)` **或** `navigator.maxTouchPoints > 0` —— 后者是兜底，无头探针和部分安卓 WebView 的媒体查询不可靠），
+  置在 `html.coarse` 上；再叠一个 `html.canpause`（由 `setScene()` 维护，只在 `battle`/`map` 为真），
+  因为标题/选人/结局按了也没反应，不该给假按钮。
 - ⚠️⚠️ **层叠上下文：带 z-index 的子元素会「逃逸」到最近的祖先层叠上下文里。**
   手牌卡在 `renderHand()` 里被赋 `d.style.zIndex = 10 + i`（悬停 60 / 拖拽 200），而 `#hand` 原本是 `z-index:auto`
   → **它不产生层叠上下文**，这些 10+ 的序号直接落到 `#wrap`（`transform` 让它成为层叠上下文）里，
@@ -55,14 +63,68 @@
   排查手法：在页面上按 `getBoundingClientRect` 的坐标打一条 3px 标记线再截图，
   标记线落在 DOM 说的位置、而画面内容却在别处 → 就是绘制层的问题，不是布局。
 
+## 地图连通性（改 `genMap` 前必读）
+
+**「只保证入边」是不够的，必须同时保证出边。** 这是作者实际卡住的 bug：*打完一场战斗，地图上再也没有可点的节点，只能重新开始。*
+
+- `genMap()` 里两趟补边，**两趟都必要**：
+  1. **入边**：下一行每个节点至少有一条入边（原本就有）。
+  2. **出边**：本行每个节点至少有一条出边（2026-09-24 补的）。
+- 漏掉第 2 趟为什么必炸：**末行 BOSS 固定只有 `c=1` 一个节点**，而倒数第二行是从 `{0,1,2,3}` 里挑 3 个 —— 有 3/4 的概率含 `c=3`。
+  连边条件是 `|列差| ≤ 1`，`|3-1| = 2` 不成立 → **那个节点没有任何出边**。
+  玩家踩上去后 `updateReach()` 算出的可达集合是**空集**，`showMap()` 于是不给任何节点挂 `onclick` ——
+  整张图变成死的，连「回到底图选择界面」都是回了个寂寞。
+  实测：600 张图里 453 个无出边节点，随机走图 30 次踩中死路。
+- `updateReach()` 里还有一层**兜底修复**：可达集合为空且 BOSS 未打过时，从「走得最深的已访问节点」**补一条边**到下一行最近节点。
+  补边而不是硬把节点设成 `reach` —— 这样地图数据被真正修好，之后不会再触发，画面上那条线也是真实存在的。
+  这层是给**老存档**用的（`saveGame` 会把 `map.nodes` 的 `visited` 和 `edges` 一起存进 `localStorage`，
+  已经卡死的玩家光靠修生成器救不回来）。
+- **回归探针：`.probe-mapfuzz.cjs`**（模糊测试 + 结构体检 + 老存档救援）。动 `genMap` / `updateReach` 必跑。
+
+## 手机端适配
+
+- **竖屏自动转 90°**：`fit()` 在 `isCoarse() && h > w` 时把 `#wrap` 整体 `rotate(90deg)`。
+  不转的话 640×360 塞进 390 宽只剩 **219 高**（0.61 倍）：12px 字变 7px、地图节点只剩 13px，根本没法玩。
+  转完 390×844 的屏幕能出到 **1.083 倍**，比桌面默认还大。旋转纯用 CSS transform，**浏览器命中测试会跟着转，所有游戏坐标一行都不用改**。
+- `translate(tx,ty) rotate(90deg) scale(s)` 的几何（`transform-origin:0 0`，变换从右往左生效）：
+  本地 `(0,0)` 落在 `(tx,ty)`，转完占 `x∈[tx-360s, tx]`、`y∈[ty, ty+640s]` → 居中就是 `tx=(w+360s)/2`、`ty=(h-640s)/2`。
+- **视口尺寸信 `visualViewport`**：手机上地址栏收起/展开时 `window.innerHeight` 经常不更新（iOS 尤其明显），
+  只信它会让 `#wrap` 的「画在哪」和「能点到哪」错位 —— 症状正是「点了没反应」。取 `min(visualViewport, innerWidth/Height)`：
+  宁可四周留点黑边，也不能让画面和命中区超出真正可见的范围。
+- ⚠️⚠️ **`fit()` 不靠事件驱动，靠主循环每帧自愈**：`loop()` 里调 `fitIfChanged()`，尺寸字符串变了就重排。
+  旋转时 `orientationchange` 会**先于** `innerWidth/Height` 更新触发，`resize` 也可能只来一次旧值 ——
+  赌浏览器事件时序必然有漏网的时候。另外还挂了 `resize` / `orientationchange` / `visualViewport.resize` 各补两次（60ms / 260ms）。
+- **安全区**：JS 读不到 `env()`，所以 CSS 里先存成 `--sat/--sar/--sab/--sal` 自定义属性，`safeInsets()` 再读回来做缩放留白。
+  横屏时刘海会压住左上角的关卡信息。
+- **触摸命中区放大**（`html.coarse` 下，视觉尺寸一点不改）：
+  `.mnode::before { content:''; position:absolute; inset:-9px }` 把 22px 的节点撑到有效 66px。
+  `::before` 是绝对定位，**不参与 `.mnode` 的 flex 布局**，所以那个字形不会位移。
+  实测竖屏 390 宽下节点有效命中区从 13px → **66×66**。
+- 标题页的两句提示（`#ctrl-hint` / `#enter-hint`）在 `updatePointerMode()` 里按输入方式换文案 —— 手机上没有空格键也没有 ENTER。
+- **竖屏提示 `#rot` 必须放在 `#wrap` 外面**（里面的东西整体转了 90°，提示文字不能跟着转），且 `pointer-events:none`
+  （`elementFromPoint` 会跳过它，不会挡命中测试）。只在「手机 + 竖屏」时露 6 秒自己淡出，**不做成挡住画面的遮罩**。
+
 ## 探针（验证用，改完必跑）
 
 ```bash
 python -m http.server 8126 --bind 127.0.0.1        # 必须常驻（先 curl 确认 docroot 就是 forcing-cosmos/）
 bash .probe.sh                                     # 6 个场景截图 + 抓运行时错误 → .shots/
+bash .probe-ui.sh                                  # 6 个弹窗截图 + 抓运行时错误 → .shots/
 node .probe-exit.cjs                               # 交互出口审计（47 条）：改 UI 必跑
+node .probe-mapfuzz.cjs                            # 地图连通性：模糊走图 + 出边体检 + 老存档救援：改 genMap/updateReach 必跑
+node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 ```
+
+⚠️ **`.probe-*.cjs` / `.probe-*.mjs` 需要 `playwright-core`**，它不在仓库里。装一次然后带上 `NODE_PATH`：
+
+```bash
+node <npm-cli> install playwright-core --prefix "C:/Users/<你>/.workbuddy-ai/binaries/node/workspace"
+NODE_PATH="C:/Users/<你>/.workbuddy-ai/binaries/node/workspace/node_modules" node .probe-mobile.cjs
+```
+
+浏览器用 `ms-playwright/chromium-1228`（`executablePath` 已在脚本里写死）。
+`.probe.sh` / `.probe-ui.sh` 用的是完整版 Chrome + `--virtual-time-budget`，**不需要** playwright。
 
 自动通跑（真正驱动游戏逻辑，需要带调试端口的 Chrome）：
 
