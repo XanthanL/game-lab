@@ -11,6 +11,8 @@ const G = {
   run: null,              // 本局统计
   selCard: -1, busy: false, paused: false,
   curEvent: null,         // 当前异象（取消选择时要原样退回，不能重抽）
+  asc: 0,                 // 梯度等级（难度阶梯）—— 局外选、局内只读
+  runStart: 0,            // 本局开始时刻，航行日志记用时用
 };
 const SAVE_KEY = 'forcing_cosmos_save';
 const MAP_ROWS = 6, MAP_COLS = 4;
@@ -54,9 +56,74 @@ function log(msg) {
  * ============================================================ */
 function showTitle() {
   setScene('title');
-  const b = localStorage.getItem('fc_best');
-  $('best').textContent = b ? '最佳：' + b : '';
+  const old = localStorage.getItem('fc_best');
+  const s = META.stats;
+  // 局外统计才是「这游戏我玩过多少」的证据 —— 只有一条最佳记录太容易忘记自己走过多少路
+  $('best').textContent = (old ? '最佳：' + old + '　' : '')
+    + (s.runs ? '已强渡 ' + s.runs + ' 次 · 通关 ' + s.wins + ' 次 · 梯度 Lv.' + META.bestAsc : '');
   Sound.setTrack(0);
+}
+
+/* ---------- 航行日志（战绩沉淀） ---------- */
+function fmtDur(ms) {
+  const t = Math.max(0, Math.round((ms || 0) / 1000));
+  return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+}
+let logResetArmed = false;
+function showLog() {
+  const st = META.stats;
+  showModal('航行日志', b => {
+    b.appendChild(el('div', 'lbl', '累计 ' + st.runs + ' 次强渡　通关 ' + st.wins + ' 次　击坠 ' + st.kills
+      + '　走过 ' + st.floors + ' 节点　最高梯度 Lv.' + META.bestAsc));
+    if (!META.log.length) { b.appendChild(el('div', 'dim', '还没有记录 —— 先走一趟。')); return; }
+    const list = el('div', 'loglist');
+    for (const r of META.log.slice(0, 12)) {
+      const row = el('div', 'logrow');
+      const top = el('div', 'lr-top');
+      top.append(el('span', 'lr-res' + (r.win ? ' win' : ''), r.win ? '通关' : '阵亡'),
+        el('span', 'lr-ch', CHARACTERS[r.charId] ? CHARACTERS[r.charId].name : '?'),
+        el('span', 'lr-asc', 'Lv.' + r.asc),
+        el('span', 'lr-end', r.end || ''));
+      const bot = el('div', 'lr-bot');
+      bot.append(el('span', '', r.floors + ' 节点'), el('span', '', r.wins + ' 胜'),
+        el('span', '', (r.deck || 0) + ' 张'), el('span', '', fmtDur(r.dur)));
+      row.append(top, bot);
+      list.appendChild(row);
+    }
+    b.appendChild(list);
+  }, logActions(), { onClose: () => { logResetArmed = false; hideModal(); } });
+}
+/* 局外进度必须能一键抹掉（换设备、借人玩、或者单纯想从头来）。
+   用「点两次确认」而不是 confirm() —— 无头探针 / 部分 WebView 里 confirm 会被静默驳回。 */
+function logActions() {
+  const acts = [];
+  if (META.stats.runs || META.log.length) acts.push({
+    label: logResetArmed ? '再点一次 · 确认清空' : '清空局外进度',
+    fn: () => {
+      if (!logResetArmed) { logResetArmed = true; showLog(); return; }
+      logResetArmed = false; metaReset(); showLog();
+    },
+  });
+  acts.push({ label: '关闭', fn: hideModal });
+  return acts;
+}
+
+/* ---------- 主菜单「继续」进度卡片 ---------- */
+/* 光秃秃一个「继续上次的强渡」按钮，玩家点之前不知道自己续的是哪一局。
+   把职业 / 幕 / 节点 / 牌数拍在脸上 —— STS2 也做了同样的改动。 */
+function renderResume() {
+  const slot = $('resume-slot'); if (!slot) return;
+  slot.innerHTML = '';
+  if (!loadGame()) return;
+  const r = G.run;
+  if (!r || !CHARACTERS[r.charId]) return;
+  const d = el('div', 'resume-card');
+  d.appendChild(el('div', 'rc-head', '▸ 继续上次的强渡'));
+  d.appendChild(el('div', 'rc-line', CHARACTERS[r.charId].name + '　' + ACTS[G.act].name + '　第 ' + (r.floors + 1) + ' 节点'));
+  d.appendChild(el('div', 'rc-line dim', '牌组 ' + G.deck.length + ' 张　◆ ' + G.gold + ' 金　' + G.player.hp + '/' + G.player.maxHp + ' 生命'
+    + (G.asc ? '　梯度 Lv.' + G.asc : '')));
+  d.onclick = () => { Sound.init(); Sound.music(true); showMap(); };
+  slot.appendChild(d);
 }
 function startStory(afterStory) {
   setScene('story');
@@ -121,6 +188,27 @@ function showCharSel() {
   }
   const first = CHARACTERS[Object.keys(CHARACTERS)[0]];
   $('char-desc').innerHTML = '<b>' + first.name + '</b>　' + first.maxHp + ' 生命　' + first.battery + ' 电量<br>' + first.passiveText;
+  G.asc = ascClamp(G.asc);
+  renderAscRow();
+}
+
+/* 梯度等级选择器：只能选到 META.unlockedAsc，没解锁的等级不给点。 */
+function renderAscRow() {
+  const box = $('asc-row'); if (!box) return;
+  box.innerHTML = '';
+  const max = META.unlockedAsc, lv = ascClamp(G.asc);
+  G.asc = lv;
+  const line = el('div', 'asc-line');
+  const minus = el('button', 'btn small', '−'), plus = el('button', 'btn small', '+');
+  minus.disabled = lv <= 0; plus.disabled = lv >= max || lv >= ASC_MAX;
+  minus.onclick = () => { G.asc = ascClamp(lv - 1); Sound.sfx.select(); renderAscRow(); };
+  plus.onclick = () => { G.asc = ascClamp(lv + 1); Sound.sfx.select(); renderAscRow(); };
+  line.append(minus, el('span', 'asc-lv', '梯度 Lv.' + lv), plus);
+  box.appendChild(line);
+  const ls = ascLines(lv);
+  box.appendChild(el('div', 'asc-desc', ls.length ? ls.join('　·　') : '标准梯度：无额外修正'));
+  box.appendChild(el('div', 'asc-lock' + (max >= ASC_MAX ? ' dim' : ''),
+    max >= ASC_MAX ? '已解锁全部 ' + ASC_MAX + ' 级梯度' : '通关 Lv.' + max + ' 解锁 Lv.' + (max + 1)));
 }
 
 /* ============================================================
@@ -131,9 +219,12 @@ function newRun(charId) {
     charId, act: 0, floors: 0, wins: 0, elites: 0, events: 0, shops: 0, potionsUsed: 0,
     gold: 0, curses: 0, usedVoid: false, usedPurify: false, voidChoices: 0, lightChoices: 0,
   };
-  G.act = 0; G.gold = 40; G.potions = [];
+  const m = ascMods(G.asc);
+  G.act = 0; G.gold = Math.max(0, 40 + m.startGold); G.potions = [];
   G.player = new Player(charId);
   G.deck = buildStarterDeck(charId);
+  for (let i = 0; i < m.startCurse; i++) G.deck.push(createCurseCard());
+  G.runStart = Date.now();
   G.log = [];
   enterAct(0);
 }
@@ -261,7 +352,7 @@ function backToMap() { showMap(); saveGame(); }
 function startBattle(kind, row) {
   setScene('battle');
   G.battleKind = kind;
-  G.enemy = makeEnemy(G.act, kind, row);
+  G.enemy = makeEnemy(G.act, kind, row, G.asc);
   G.enemy.hitFlash = 0;
   G.player.hitFlash = 0;
   G.player.shield = 0; G.player.keepShield = false;
@@ -269,6 +360,10 @@ function startBattle(kind, row) {
   G.hand = []; G.discard = []; G.exhaust = [];
   G.turn = 1; G.busy = false; G.selCard = -1;
   FX.parts.length = 0; FX.floats.length = 0;
+  // 梯度等级「每场战斗开局 -N 生命」：放在 FX 清空之后，飘字才不会被一起清掉。
+  // 真被打死也不用在这里处理 —— 420ms 后的 startPlayerTurn 会走 !p.alive → gameOver。
+  const am = ascMods(G.asc);
+  if (am.battleHp > 0) { G.player.rawDamage(am.battleHp); addFloat(LAY.px, 150, '-' + am.battleHp, '#ef7d57'); }
   Sound.setTrack(kind === 'boss' ? 2 : 1);
   Sound.music(true);
   log('遭遇 ' + G.enemy.name);
@@ -616,7 +711,8 @@ function afterReward() { updateHud(); backToMap(); }
  * ============================================================ */
 function restSite() {
   setScene('rest');
-  const p = G.player, amt = Math.floor(p.maxHp * 0.3);
+  // 梯度等级「休整恢复 -30%」在这里生效；下限夹到 1，别让高梯度下休眠变成纯浪费一步
+  const p = G.player, amt = Math.max(1, Math.floor(p.maxHp * 0.3 * (1 + ascMods(G.asc).rest)));
   showModal('♨ 休整营地', b => {
     b.innerHTML = '<div>气闸闭合，你把面罩摘下来三分钟。</div>';
     const opts = [
@@ -743,7 +839,8 @@ function shopScreen() {
   for (let i = 0; i < 2; i++) { const r = randomRelic(G.player.relics.concat(relics)); if (r) relics.push(r); }
   const potion = rollPotion();
   const bought = {};
-  const PRICE = { card: 50, relic: 120, potion: 40, remove: 75 };
+  const pm = 1 + ascMods(G.asc).price;                   // 梯度等级「商店涨价」
+  const PRICE = { card: Math.round(50 * pm), relic: Math.round(120 * pm), potion: Math.round(40 * pm), remove: Math.round(75 * pm) };
   function render() {
     showModal('$ 补给站　◆ ' + G.gold + ' 金', b => {
       // buy(commit)：commit() 才真正扣钱 + 标记售出 + 重绘。
@@ -829,7 +926,29 @@ function gameOver(win) {
     ['异象', r.events + ' 次'], ['补给', r.shops + ' 次'], ['金币', r.gold + ''],
   ].map(x => '<div><span>' + x[0] + '</span><b>' + x[1] + '</b></div>').join('');
   $('over-desc').textContent = win ? end.desc : '倒计时没有为你停下。温床还在坠，而这次没有人能替你走完剩下的路。';
+  recordRunAndShowUnlock(win, end);
   localStorage.removeItem(SAVE_KEY);
+}
+/* 一局结束要把东西沉淀到局外：写航行日志、攒累计统计、结算梯度解锁。
+   ⚠️ metaPrevRun() 必须在 metaRecordRun() **之前**读 —— 后者会把本局 unshift 到 log[0]。 */
+function recordRunAndShowUnlock(win, end) {
+  const r = G.run, prev = metaPrevRun();
+  const newly = metaRecordRun({
+    win: !!win, asc: G.asc, charId: r.charId, floors: r.floors, wins: r.wins,
+    kills: r.wins, gold: r.gold, deck: G.deck.length,
+    dur: G.runStart ? Date.now() - G.runStart : 0,
+    end: win && end ? end.name : '',
+  });
+  const u = $('over-unlock'); if (!u) return;
+  if (newly >= 0) {
+    u.classList.remove('hidden');
+    u.textContent = '▲ 解锁梯度 Lv.' + newly + (ASC_STEPS[newly] ? '　' + ASC_STEPS[newly].t : '');
+  } else if (prev) {
+    const d = (r.floors | 0) - (prev.floors | 0);
+    u.classList.remove('hidden');
+    u.textContent = '上一局 ' + (prev.win ? '通关' : '阵亡') + '　' + prev.floors + ' 节点 Lv.' + prev.asc
+      + '　本次' + (d > 0 ? '多走 ' + d + ' 节点' : d < 0 ? '少走 ' + (-d) + ' 节点' : '同样 ' + r.floors + ' 节点');
+  } else u.classList.add('hidden');
 }
 
 /* ============================================================
@@ -852,6 +971,7 @@ function loadGame() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (!s) return false;
     G.run = s.run; G.act = s.act; G.gold = s.gold; G.potions = (s.potions || []).map(id => POTION_DEFS[id]).filter(Boolean);
+    G.runStart = Date.now();   // 续上的局：用时只从这一刻算，别拿 0 当起点算出个天文数字
     G.player = new Player(s.charId); G.player.hp = s.hp; G.player.relics = s.relics || [];
     G.deck = s.deck.map(d => { const c = createCardInstance(CARD_DEFS[d.id]); return d.up ? (upgradeCard(c) || c) : c; });
     G.map = { nodes: s.map.map(row => row.map(n => ({ ...n, reach: false }))), edges: s.edges.map(e => ({ a: null, b: null })) };
@@ -890,6 +1010,7 @@ document.addEventListener('click', e => {
   if (a === 'start') { Sound.music(true); startStory(showCharSel); }
   else if (a === 'story') startStory(() => setScene('title'));
   else if (a === 'help') setScene('help');
+  else if (a === 'log') showLog();
   else if (a === 'title') showTitle();
   else if (a === 'resume') { $('pause').classList.add('hidden'); G.paused = false; }
   else if (a === 'mute') { const m = Sound.toggleMute(); $('btn-mute').textContent = m ? '静音中' : '声音'; }
@@ -1046,7 +1167,7 @@ function debugJump() {
   if (QS.get('shop')) { shopScreen(); return true; }
   if (QS.get('event')) { rollEvent(); return true; }
   if (QS.get('rest')) { restSite(); return true; }
-  if (QS.get('reward')) { G.battleKind = 'normal'; G.enemy = makeEnemy(G.act, 'normal', 0); setScene('reward'); rewardChoice(); return true; }
+  if (QS.get('reward')) { G.battleKind = 'normal'; G.enemy = makeEnemy(G.act, 'normal', 0, G.asc); setScene('reward'); rewardChoice(); return true; }
   if (QS.get('act')) { G.act = Math.min(2, +QS.get('act')); G.run.act = G.act; G.map = genMap(); }
   if (QS.get('map')) { showMap(); return true; }
   startBattle(QS.get('boss') ? 'boss' : QS.get('elite') ? 'elite' : 'normal', +QS.get('row') || 0);
@@ -1060,11 +1181,7 @@ function boot() {
   $('loading').classList.add('hidden');
   if (debugJump()) { requestAnimationFrame(loop); return; }
   showTitle();
-  if (loadGame()) {
-    const b = el('button', 'btn primary', '继续上次的强渡');
-    b.onclick = () => { Sound.init(); Sound.music(true); showMap(); };
-    $('title').querySelector('.menu').prepend(b);
-  }
+  renderResume();   // 有存档就渲染「继续」进度卡片（含职业/幕/节点/牌数/梯度），没存档就空着
   requestAnimationFrame(loop);
 }
 boot();

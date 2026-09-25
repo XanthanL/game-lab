@@ -118,9 +118,13 @@ const CURSE_CARDS = {
 
 let CARD_UID = 0;
 function createCardInstance(def) { return { ...def, uid: CARD_UID++ }; }
+/* ⚠️ CURSE_CARDS 是**对象**不是数组 —— 拿数字下标去索引只会得到 undefined，
+   于是生成出来的「诅咒」是一张没有 id / 没有 curse 标记的空壳卡：
+   不占手牌位、不受伤、也不算进 r.curses，整条诅咒玩法等于不存在。
+   必须先取键名再用键名索引。 */
 function createCurseCard() {
   const keys = Object.keys(CURSE_CARDS);
-  return createCardInstance(CURSE_CARDS[(Math.random() * keys.length) | 0]);
+  return createCardInstance(CURSE_CARDS[keys[(Math.random() * keys.length) | 0]]);
 }
 function upgradeCard(card) {
   if (card.upgraded || !UPGRADES[card.id]) return null;

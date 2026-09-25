@@ -107,6 +107,29 @@
 - **竖屏提示 `#rot` 必须放在 `#wrap` 外面**（里面的东西整体转了 90°，提示文字不能跟着转），且 `pointer-events:none`
   （`elementFromPoint` 会跳过它，不会挡命中测试）。只在「手机 + 竖屏」时露 6 秒自己淡出，**不做成挡住画面的遮罩**。
 
+## 局外进度（`src/meta.js`，改梯度/解锁前必读）
+
+- 存 `localStorage['fc_meta_v1']`，**和局内存档 `forcing_cosmos_save` 是两个 key**。
+  `gameOver()` 会 `removeItem` 局内存档 —— 局外进度要是塞在同一个 key 里会被一起清掉，
+  玩家通了关才发现阶梯白爬了。
+- `META_DEFAULT.v` 是**版本闸**：改结构就 +1，`loadMeta()` 会丢弃旧数据回默认。
+  宁可让玩家丢一次进度，也不要让半新半旧的对象污染后面所有读点。
+- **`ASC_STEPS` 只许往尾部追加**（老玩家的 `unlockedAsc` 是按序号存的），
+  且**条目数必须 ≥ `ASC_MAX`** —— 否则最高一级是空的（已踩过：9 条修正配 `ASC_MAX=10`）。
+- `ascMods(level)` = **累加前 N 条**，返回 9 键对象；`ascLines(level)` 给 UI 列文字。
+- **梯度只由调用方显式传进 `entities.js`**（`makeEnemy(act, kind, row, asc)`）：
+  entities.js 里不要直接读 `G` —— 顶层 `const` 有 TDZ，`typeof` 也救不了。
+- 所有伤害出口统一走 `e.dmg(v)`（内部乘 `dmgMul`），保证「意图上显示的」和「实际打的」一致。
+- **`metaPrevRun()` 必须在 `metaRecordRun()` 之前读**：后者会 `unshift` 本局到 `log[0]`。
+- `gameOver()` → `recordRunAndShowUnlock()`：写日志 + 攒统计 + 推解锁 + 填 `#over-unlock`。
+  通关 Lv.N 才解锁 Lv.N+1；阵亡只记日志不解锁。
+- 清空口子在航行日志弹窗里（**点两次确认**，不用 `confirm()` —— 无头探针里它会被静默驳回）。
+
+⚠️ **`CURSE_CARDS` 是对象不是数组。** `createCurseCard()` 曾写成 `CURSE_CARDS[(Math.random()*n)|0]`
+（数字下标索引对象）→ 返回 `undefined` → 生成 `{uid}` 空壳卡：没有 `id`/`curse`/`unplayable`，
+不占手牌位、不扣血、`r.curses` 恒为 0。连带后果：「烧毁一张诅咒」永远是死选项、
+**虚空结局永远走不到**。**先 `Object.keys()` 再索引。**
+
 ## 探针（验证用，改完必跑）
 
 ```bash
@@ -116,6 +139,8 @@ bash .probe-ui.sh                                  # 6 个弹窗截图 + 抓运�
 node .probe-exit.cjs                               # 交互出口审计（47 条）：改 UI 必跑
 node .probe-mapfuzz.cjs                            # 地图连通性：模糊走图 + 出边体检 + 老存档救援：改 genMap/updateReach 必跑
 node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
+node .probe-meta.cjs                               # 局外进度（66 条）：梯度数值/解锁/日志/继续卡片/清空/诅咒卡回归
+node .probe-inv.cjs                                # 打印内容量（改卡/遗物/事件后更新 ROADMAP 用）
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 ```
 
@@ -146,7 +171,11 @@ node .probe-boss.mjs 2 boss 60000 boost # 指定幕/BOSS；boost = 削弱敌人�
 
 ## 调试参数
 
-`?noanim=1` 冻结 CSS 动画 · `?auto=1` 直进战斗 · `&act=N` 指定幕 · `&boss=1`/`&elite=1` 指定节点 · `&row=N` 地图行 · `&char=xxx` 指定职业 · `&map=1` 直接看地图
+`?noanim=1` 冻结 CSS 动画 · `?auto=1` 直进战斗 · `&act=N` 指定幕 · `&boss=1`/`&elite=1` 指定节点 · `&row=N` 地图行 · `&char=xxx` 指定职业 · `&map=1` 直接看地图 ·
+`?charsel=1` 直进选人页 · `?over=win` / `?over=lose` 直进结局面板（**用于测局外进度**）
+
+⚠️ **开关型参数必须带值**（`?charsel=1` 不能写 `?charsel`）：`debugJump()` 用 `QS.get(k)` 做真值判断，
+不带值时返回空字符串（falsy），整个调试入口会被跳过、静默回到标题页。
 
 ⚠️ **给 bot 开无敌要写 `G.player.baseMaxHp = 9999`，不是 `G.player.maxHp`。**
 `Entity`/`Player` 的 `maxHp` 是**只有 getter 没有 setter** 的访问器（`get maxHp(){ return this.baseMaxHp + this.relicBonus('maxHp'); }`），

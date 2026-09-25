@@ -126,27 +126,31 @@ class Enemy extends Entity {
       chargeTurns: d.chargeTurns || 0, chargeDamage: d.chargeDamage || 0,
       elite: !!d.elite, boss: !!d.boss, phase2: d.phase2 || null, enraged: false,
       turnCount: 0, currentCharge: 0,
+      dmgMul: 1,                      // 梯度等级「敌人伤害 +N%」挂在这里
     });
     if (d.boss) this.chargeDamageNow = this.chargeDamage;
   }
+  /** 伤害统一走这里缩放 —— getIntent 与 executeTurn 都必须过一遍，
+      否则「显示的意图」和「实际打出来的数字」会不一样，那是最伤信任的一类 bug。 */
+  dmg(v) { return Math.round((v || 0) * this.dmgMul); }
   /** 结构化意图：{type:'attack'|'defend'|'charge'|'charged', value, statuses} */
   getIntent() {
     const d = ENEMIES[this.key];
     switch (this.pattern) {
       case 'FIXED':
-        return { type: 'attack', value: this.baseDamage };
+        return { type: 'attack', value: this.dmg(this.baseDamage) };
       case 'ALTERNATING': {
         const a = this.actions[this.turnCount % this.actions.length];
-        return a.shield ? { type: 'defend', value: a.shield } : { type: 'attack', value: a.dmg, statuses: a.status };
+        return a.shield ? { type: 'defend', value: a.shield } : { type: 'attack', value: this.dmg(a.dmg), statuses: a.status };
       }
       case 'RAMPING':
-        return { type: 'attack', value: this.baseDamage + this.turnCount * this.damageIncrement, statuses: d.status };
+        return { type: 'attack', value: this.dmg(this.baseDamage + this.turnCount * this.damageIncrement), statuses: d.status };
       case 'BOSS_CHARGE':
         if (this.currentCharge < this.chargeTurns)
           return { type: 'charge', value: 0, left: this.chargeTurns - this.currentCharge };
-        return { type: 'charged', value: this.chargeDamageNow || this.chargeDamage, statuses: this.bossStatus() };
+        return { type: 'charged', value: this.dmg(this.chargeDamageNow || this.chargeDamage), statuses: this.bossStatus() };
       default:
-        return { type: 'attack', value: this.baseDamage };
+        return { type: 'attack', value: this.dmg(this.baseDamage) };
     }
   }
   bossStatus() {
@@ -175,20 +179,20 @@ class Enemy extends Entity {
     this.turnCount++;
     switch (this.pattern) {
       case 'FIXED':
-        return { type: 'attack', value: this.baseDamage };
+        return { type: 'attack', value: this.dmg(this.baseDamage) };
       case 'ALTERNATING': {
         const a = this.actions[(this.turnCount - 1) % this.actions.length];
         if (a.shield) return { type: 'defend', value: a.shield };
-        return { type: 'attack', value: a.dmg, statuses: a.status };
+        return { type: 'attack', value: this.dmg(a.dmg), statuses: a.status };
       }
       case 'RAMPING':
-        return { type: 'attack', value: this.baseDamage + (this.turnCount - 1) * this.damageIncrement, statuses: this.bossStatus() };
+        return { type: 'attack', value: this.dmg(this.baseDamage + (this.turnCount - 1) * this.damageIncrement), statuses: this.bossStatus() };
       case 'BOSS_CHARGE':
         if (this.currentCharge < this.chargeTurns) { this.currentCharge++; return { type: 'charge', value: this.currentCharge }; }
         this.currentCharge = 0;
-        return { type: 'charged', value: this.chargeDamageNow || this.chargeDamage, statuses: this.bossStatus() };
+        return { type: 'charged', value: this.dmg(this.chargeDamageNow || this.chargeDamage), statuses: this.bossStatus() };
       default:
-        return { type: 'attack', value: this.baseDamage };
+        return { type: 'attack', value: this.dmg(this.baseDamage) };
     }
   }
 }
@@ -284,12 +288,20 @@ const ENEMIES = {
 };
 
 /** 按幕生成敌人；scale 让同幕内靠后的战斗略强 */
-function makeEnemy(act, kind, row) {
+function makeEnemy(act, kind, row, asc) {
   const a = ACT_FOES[Math.min(act, 2)];
   let key;
   if (kind === 'elite') key = ELITE_KEYS[(Math.random() * ELITE_KEYS.length) | 0];
   else if (kind === 'boss') key = a.boss;
   else key = a.pool[(Math.random() * a.pool.length) | 0];
-  const scale = 1 + Math.min(row, 5) * 0.06 + act * 0.05;
-  return new Enemy(key, kind === 'boss' ? 1 : scale);
+  // 梯度等级：敌血 / 敌伤按等级放大。
+  // BOSS 本来就不吃 row 缩放（体量单独定过），所以只叠加它自己的 bossHp 那一条。
+  // ⚠️ asc **必须由调用方传进来**，不要在 entities.js 里直接读 G ——
+  //    顶层 const 有 TDZ，typeof 也救不了；显式传参顺带去掉跨文件的隐式依赖。
+  const m = ascMods(asc || 0);
+  const extra = m.hp + (kind === 'boss' ? m.bossHp : 0) + (kind === 'elite' ? m.elite : 0);
+  const scale = kind === 'boss' ? 1 + extra : 1 + Math.min(row, 5) * 0.06 + act * 0.05 + extra;
+  const e = new Enemy(key, scale);
+  e.dmgMul = 1 + m.dmg;
+  return e;
 }

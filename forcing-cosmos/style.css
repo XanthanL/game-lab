@@ -157,6 +157,33 @@ em { font-style: normal; }
 .price { color: #ffcd75; }
 .sold { opacity: .35; pointer-events: none; }
 
+/* ---------- 继续卡片（主菜单） ---------- */
+#resume-slot:empty { display: none; }
+.resume-card { width: 300px; padding: 5px 8px 6px; text-align: center; cursor: pointer;
+  background: #0e1022; box-shadow: 0 0 0 1px #3b5dc9, 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; }
+.resume-card:hover { background: #171d3c; box-shadow: 0 0 0 1px #ffcd75, 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; }
+.resume-card:active { transform: translateY(1px); }
+.rc-head { color: #ffcd75; margin-bottom: 2px; }
+
+/* ---------- 梯度等级（难度阶梯） ---------- */
+#asc-row { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 2px; max-width: 560px; }
+.asc-line { display: flex; gap: 8px; align-items: center; }
+.asc-lv { color: #73eff7; min-width: 62px; text-align: center; }
+.asc-desc { color: #a8b4d0; text-align: center; line-height: 13px; max-width: 540px; }
+.asc-lock { color: #ffcd75; }
+/* 未解锁时不显示 + 号能点，靠 .btn:disabled 的 .4 透明度表达 */
+
+/* ---------- 航行日志 ---------- */
+.loglist { display: flex; flex-direction: column; gap: 2px; width: 520px; }
+.logrow { display: flex; flex-direction: column; gap: 1px; padding: 2px 5px 3px; background: #0d1024; box-shadow: inset 0 0 0 1px #29366f; }
+.lr-top { display: flex; gap: 6px; align-items: baseline; }
+.lr-res { color: #ff5577; }
+.lr-res.win { color: #38b764; }
+.lr-ch { color: #f4f4f4; }
+.lr-asc { color: #73eff7; }
+.lr-bot { display: flex; gap: 6px; color: #7a86a8; }
+#over-unlock { color: #ffcd75; text-align: center; text-shadow: 1px 1px 0 #5d275d; }
+
 /* ---------- 结局 ---------- */
 #over { background: rgba(20, 5, 12, .8); gap: 5px; }
 .over-title { font-size: 36px; line-height: 38px; color: #ff5577; text-shadow: 2px 2px 0 #5d275d, 4px 4px 0 #1a1c2c; animation: drop .4s steps(5) both; }

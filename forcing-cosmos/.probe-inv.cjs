@@ -32,7 +32,8 @@ global.matchMedia = () => ({ matches: false });
 global.URLSearchParams = function () { return { get: () => null }; };
 global.getComputedStyle = () => ({ getPropertyValue: () => '' });
 
-const files = ['src/audio.js', 'src/entities.js', 'src/cards.js', 'src/sprites.js', 'src/ui.js', 'src/game.js', 'src/story.js'];
+// ⚠️ meta.js 必须排在 game.js 之前（game.js 里 showTitle() 一启动就读 META.stats）
+const files = ['src/audio.js', 'src/meta.js', 'src/entities.js', 'src/cards.js', 'src/sprites.js', 'src/ui.js', 'src/game.js', 'src/story.js'];
 const src = files.map(f => fs.readFileSync(__dirname + '/' + f, 'utf8')).join('\n');
 const fn = new Function(src + `
 ; return {
@@ -46,5 +47,7 @@ const fn = new Function(src + `
   UPGRADES: Object.keys(UPGRADES).length,
   POTION_DEFS: Object.keys(POTION_DEFS).length,
   EVENTS: EVENTS.length,
+  ASC_STEPS: ASC_STEPS.length - 1,   // 减去 Lv.0 那个 null
+  ASC_MAX: ASC_MAX,
 };`);
 console.log(JSON.stringify(fn(), null, 1));

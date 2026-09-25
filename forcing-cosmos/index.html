@@ -43,7 +43,9 @@
       <button class="btn primary" data-act="start">&gt; 开始强渡</button>
       <button class="btn" data-act="story">背景简报</button>
       <button class="btn" data-act="help">操作说明</button>
+      <button class="btn" data-act="log">航行日志</button>
     </div>
+    <div id="resume-slot"></div>
     <div class="best" id="best"></div>
     <div class="ctrl-hint" id="ctrl-hint">点击出牌 · 拖到敌人身上也可 · 空格结束回合</div>
     <div class="hint blink" id="enter-hint">按 ENTER 开始</div>
@@ -87,6 +89,7 @@
     <div class="up-title">选择乘员</div>
     <div id="char-cards"></div>
     <div id="char-desc" class="dim"></div>
+    <div id="asc-row"></div>
     <div class="menu row">
       <button class="btn" data-act="title">返回标题</button>
     </div>
@@ -152,6 +155,7 @@
     <div class="dim" id="over-sub"></div>
     <div id="over-stats"></div>
     <div id="over-desc"></div>
+    <div id="over-unlock" class="hidden"></div>
     <div class="menu row">
       <button class="btn primary" data-act="restart">再战一次 [ENTER]</button>
       <button class="btn" data-act="title">返回标题</button>
@@ -169,6 +173,7 @@
 <script src="src/cards.js"></script>
 <script src="src/entities.js"></script>
 <script src="src/story.js"></script>
+<script src="src/meta.js"></script>
 <script src="src/ui.js"></script>
 <script src="src/game.js"></script>
 </body>
