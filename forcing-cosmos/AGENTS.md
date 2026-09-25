@@ -3,6 +3,9 @@
 像素卡牌构筑 Roguelike（杀戮尖塔式玩法）。纯静态站点（无构建）：`index.html`、`style.css`、`src/{audio,sprites,cards,entities,story,ui,game}.js`、`assets/`（Fusion Pixel 12px 字体，OFL）。
 **零外部美术/音频资源**：所有精灵是 `sprites.js` 里的调色板字符串，所有声音是 `audio.js` 里的振荡器合成。
 
+⚠️ **`ROADMAP.md` 是与《杀戮尖塔 2》的差距清单 + 待办（P0/P1/P2/P3）。开工前先看它，做完一条回来打勾。**
+当前内容量（`node .probe-inv.cjs` 打印）：3 幕 / 4 职业 / 36 卡 +3 诅咒 / 18 敌 / 8 遗物 / 10 事件 / 6 状态 / 6 药水。
+
 ## 架构
 
 - 画布 **640×360**；`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放（`fit()`），所以 UI 一律按游戏像素写坐标。像素字体只有 **12px**（正文）与 **24/36/48px**（标题）可用，不要写其它字号。
