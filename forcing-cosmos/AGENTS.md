@@ -140,6 +140,7 @@ node .probe-exit.cjs                               # 交互出口审计（47 条
 node .probe-mapfuzz.cjs                            # 地图连通性：模糊走图 + 出边体检 + 老存档救援：改 genMap/updateReach 必跑
 node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
 node .probe-meta.cjs                               # 局外进度（66 条）：梯度数值/解锁/日志/继续卡片/清空/诅咒卡回归
+node .probe-shots-meta.cjs                         # 局外进度 UI 视觉确认截图 → .shots/meta-*.png
 node .probe-inv.cjs                                # 打印内容量（改卡/遗物/事件后更新 ROADMAP 用）
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 ```
