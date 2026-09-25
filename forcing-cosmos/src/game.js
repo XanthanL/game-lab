@@ -40,7 +40,8 @@ function setScene(s) {
   $('pause').classList.add('hidden');
   $('modal').classList.add('hidden');
   modalClose = null;
-  if (s !== 'battle') $('hand').innerHTML = '';
+  if (s !== 'battle') { $('hand').innerHTML = ''; clearFlyCards(); }
+  hideDmgPreview();
   // 手机端那个暂停键只在「按了真的有用」的场景露出来（togglePause 只认 battle/map）
   document.documentElement.classList.toggle('canpause', s === 'battle' || s === 'map');
 }
@@ -377,6 +378,8 @@ function updateHud() {
   $('turn-label').textContent = '回合 ' + G.turn;
   $('draw-pile').textContent = '抽 ' + G.draw.length;
   $('discard-pile').textContent = '弃 ' + G.discard.length;
+  $('exhaust-pile').textContent = '耗 ' + G.exhaust.length;
+  $('hand-count').textContent = '手 ' + G.hand.length + '/' + HAND_MAX;
   // 药水
   const pw = $('potions'); pw.innerHTML = '';
   for (let i = 0; i < 3; i++) {
@@ -417,16 +420,61 @@ function startPlayerTurn(first) {
   Sound.sfx.turn();
   $('turn-label').textContent = '回合 ' + G.turn;
 }
+/* 手牌上限。没有上限的话「抽 N 张」类卡和遗物会互相滚雪球，一回合抽空整个牌库
+   （STS2 也保留了 10 张这条线）。 */
+const HAND_MAX = 10;
 function drawCards(n) {
+  let overflow = 0;
   for (let i = 0; i < n; i++) {
     if (!G.draw.length) {
       if (!G.discard.length) break;
       G.draw = shuffleArray(G.discard); G.discard = [];
     }
-    G.hand.push(G.draw.pop());
+    const c = G.draw.pop();
+    // ⚠️ 手牌满时抽到的牌要**真的抽出来再丢进弃牌堆**，不能留在抽牌堆里 ——
+    //    留在原地的话下一张「抽牌」会反复抽到同一张，等于把抽牌卡变成永动机。
+    if (G.hand.length >= HAND_MAX) { G.discard.push(c); overflow++; }
+    else G.hand.push(c);
   }
+  if (overflow) addFloat(LAY.px, 205, '手牌已满 ×' + overflow, '#566c86');
   Sound.sfx.draw();
 }
+/* #11 牌堆可查看。⚠️ 抽牌堆必须用**副本**洗乱后展示：
+   真实顺序就是"下一张要抽什么"，原样列出来等于把抽牌堆变成明牌堆；
+   也不能就地洗 G.draw（那会真的改变抽牌顺序）。 */
+function showPile(which) {
+  if (G.scene !== 'battle') return;
+  const meta = {
+    draw: { name: '抽牌堆', list: G.draw, shuffled: true },
+    discard: { name: '弃牌堆', list: G.discard, shuffled: false },
+    exhaust: { name: '消耗堆', list: G.exhaust, shuffled: false },
+  }[which];
+  if (!meta) return;
+  const list = meta.shuffled ? shuffleArray(meta.list.slice()) : meta.list;
+  showModal(meta.name + ' · ' + meta.list.length + ' 张', b => {
+    if (!list.length) { b.appendChild(el('div', 'dim', '空的。')); return; }
+    if (meta.shuffled) b.appendChild(el('div', 'dim', '顺序已打乱 —— 抽牌堆不公开真实顺序'));
+    const g = el('div', 'grid');
+    list.forEach(c => g.appendChild(cardEl(c, {})));
+    b.appendChild(g);
+  }, [{ label: '关闭', fn: hideModal }], { onClose: hideModal });
+}
+/* ---------------- #15 伤害预测 ----------------
+   hover 一张攻击牌时，在敌人血条下方拍出「这张打出去 = X 伤」。
+   ⚠️ 数值只能来自 cardPreview()（与 applyCard 共用 cardHitDamage）——
+      在 UI 里另写一份算式就是"预测 12、实际打 9"的来源。 */
+function showDmgPreview(c) {
+  const box = $('dmg-preview'); if (!box) return;
+  const pv = cardPreview(c, G.enemy);
+  if (!pv) { hideDmgPreview(); return; }
+  box.innerHTML = (pv.hits > 1 ? pv.per + '×' + pv.hits + ' = ' : '') + '<b>' + pv.total + '</b> 伤'
+    + (pv.shield ? ' <span class="dp-shield">盾吃 ' + Math.min(pv.shield, pv.total) + '</span>' : '');
+  box.style.left = LAY.eBarX + 'px';
+  box.style.top = (LAY.barY + LAY.barH + 6) + 'px';
+  box.classList.remove('hidden');
+}
+function hideDmgPreview() { const b = $('dmg-preview'); if (b) b.classList.add('hidden'); }
+
 function renderHand() {
   const box = $('hand'); box.innerHTML = '';
   const n = G.hand.length; if (!n) return;
@@ -445,8 +493,8 @@ function renderHand() {
     if (c.unplayable) {
       d.onclick = () => { addFloat(LAY.px, 170, '无法打出', '#8a3cc0'); Sound.sfx.deny(); };
     } else {
-      d.onmouseenter = () => { d.style.top = (y - 14) + 'px'; d.style.zIndex = 60; Sound.sfx.hover(); };
-      d.onmouseleave = () => { d.style.top = y + 'px'; d.style.zIndex = 10 + i; };
+      d.onmouseenter = () => { d.style.top = (y - 14) + 'px'; d.style.zIndex = 60; Sound.sfx.hover(); showDmgPreview(c); };
+      d.onmouseleave = () => { d.style.top = y + 'px'; d.style.zIndex = 10 + i; hideDmgPreview(); };
       // 点击出牌；或拖到敌人身上出牌（杀戮尖塔手感）
       d.onpointerdown = ev => {
         if (G.paused || G.phase !== 'player' || G.busy) return;
@@ -456,16 +504,24 @@ function renderHand() {
         const move = e2 => {
           const dx = e2.clientX - sx, dy = e2.clientY - sy;
           if (!dragging && Math.hypot(dx, dy) > 10) { dragging = true; d.style.zIndex = 200; d.style.opacity = '0.92'; }
-          if (dragging) d.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.08)';
+          if (dragging) {
+            d.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.08)';
+            // 拖到敌人头上就顺便报一下伤害，不用等松手
+            const r2 = cv.getBoundingClientRect(), s2 = r2.width / 640;
+            if ((e2.clientX - r2.left) / s2 > 330 && (e2.clientY - r2.top) / s2 < 250) showDmgPreview(c);
+            else hideDmgPreview();
+          }
         };
         const up = e2 => {
           d.removeEventListener('pointermove', move);
           d.removeEventListener('pointerup', up);
           d.style.transform = ''; d.style.opacity = '';
+          hideDmgPreview();
           if (dragging) {
             const r = cv.getBoundingClientRect(), sc = r.width / 640;
             const gx = (e2.clientX - r.left) / sc, gy = (e2.clientY - r.top) / sc;
-            if (gx > 330 && gy < 250) playCard(i);      // 丢到敌人身上
+            // 从「手指松开的位置」起飞，而不是先弹回手牌位再飞出去 —— 否则会看到一次回跳
+            if (gx > 330 && gy < 250) playCard(i, { dx: (e2.clientX - sx) / sc, dy: (e2.clientY - sy) / sc });
             else { d.style.top = y + 'px'; d.style.zIndex = 10 + i; }
           } else playCard(i);
         };
@@ -476,7 +532,38 @@ function renderHand() {
     box.appendChild(d);
   });
 }
-function playCard(i) {
+/** 这张牌该飞向哪边：伤害牌飞敌人，其余飞自己。
+    ⚠️ 「打自己脸的伤害牌」也算飞敌人 —— 它的主体效果仍然是打人，自伤是附带的。 */
+function cardTargetSide(c) {
+  if (c.type === 'damage' && c.value + (c.percentDamage ? 1 : 0) > 0) return 'enemy';
+  if (c.statusEffect && !c.selfTarget) return 'enemy';
+  if (c.statusEffectAction === 'doubleBurn') return 'enemy';
+  return 'self';
+}
+/* 出牌伤害的**唯一**计算入口 —— applyCard 与 UI 预测共用它，两者永远不会漂移。
+   返回的是「传给 Entity.takeDamage 的值」，易伤由 takeDamage 内部结算。
+   ⚠️ 虚弱必须在**来源侧**乘 0.75：以前只给敌人的攻击算了虚弱，玩家中了虚弱照样满伤打出去
+      （HUD 上挂着「虚弱」却毫无效果），这条是补上的 bug。 */
+function cardHitDamage(c, e) {
+  const p = G.player;
+  let per = c.percentDamage ? Math.floor(e.maxHp * c.percentDamage) : c.value;
+  per += p.getStatus('strength') * p.strengthMult;
+  if (p.getStatus('weak') > 0) per = Math.floor(per * 0.75);
+  return Math.max(0, per);
+}
+/** 显示用：单次命中实际造成的伤害（含目标易伤）。穿盾牌不吃易伤，和 takeDamage 的绕过路径保持一致。 */
+function cardHitTotal(c, e) {
+  const per = cardHitDamage(c, e);
+  return (c.pierce || !(e.getStatus('vulnerable') > 0)) ? per : Math.floor(per * 1.5);
+}
+/** 出牌预测（#15）：返回 { per, hits, total, shield }，total 会与实战扣血完全一致。 */
+function cardPreview(c, e) {
+  if (c.type !== 'damage' || !(c.value + (c.percentDamage ? 1 : 0) > 0)) return null;
+  const hits = c.hits || 1, per = cardHitTotal(c, e);
+  return { per, hits, total: per * hits, shield: e.shield || 0 };
+}
+
+function playCard(i, from) {
   if (G.paused || G.phase !== 'player' || G.busy) return;
   const c = G.hand[i]; if (!c) return;
   if (c.unplayable) { addFloat(LAY.px, 170, '无法打出', '#8a3cc0'); Sound.sfx.deny(); return; }
@@ -489,43 +576,62 @@ function playCard(i) {
     G.player.battery = Math.min(G.player.maxBattery, G.player.battery + 1);
     addFloat(LAY.px, 150, '+1 电量', '#73eff7');
   }
+  hideDmgPreview();
+  // ⚠️ 顺序不能反：先把这张卡的 DOM 从 #hand 摘下来，再 splice + renderHand()。
+  //    反过来的话 renderHand() 里的 innerHTML='' 会把还在飞的卡一起销毁 —— 卡就"没飞到就没了"。
+  const node = $('hand').children[i] || null;
+  if (node) node.remove();
   G.hand.splice(i, 1);
   Sound.sfx.play();
-  applyCard(c);
   updateHud();
-  renderHand();
-  after(220, () => {
-    G.busy = false;
-    if (G.enemy && !G.enemy.alive) { winBattle(); return; }
-    if (!G.player.alive) { gameOver(false); return; }
-    renderHand();
-  });
-}function applyCard(c) {
+  renderHand();                 // 其余手牌立刻收拢（不等演出结束）
+  const side = cardTargetSide(c);
+  // 演出：飞向目标 → 落地炸开 → 这时才结算效果
+  flyCard(node, side, () => {
+    cardImpact(c, side);
+    const tail = applyCard(c) || 0;      // 多重打击的逐击演出还要 tail 毫秒
+    after(200 + tail, () => {
+      G.busy = false;
+      if (G.enemy && !G.enemy.alive) { winBattle(); return; }
+      if (!G.player.alive) { gameOver(false); return; }
+      // ⚠️ updateHud 必须在这儿补一次：抽牌类卡在 applyCard 里改的是 G.hand / G.draw，
+      //    而 updateHud 只在 playCard 开头调过 —— 不补的话「手 N/10」「抽 N」会停在出牌前的数。
+      updateHud();
+      renderHand();
+    });
+  }, from);
+}
+/* 结算一张牌。返回「演出还需要多久（ms）」—— 多重打击牌逐击放，调用方要用它排 G.busy 的释放时机，
+   否则会在最后一击落地之前就放开，导致连击打到一半就被判定成"打完了"。 */
+function applyCard(c) {
   const p = G.player, e = G.enemy;
   const mult = p.relicBonus('potionDouble') ? 2 : 1;
-  const boost = p.getStatus('strength') * p.strengthMult;
-  let totalDealt = 0;
+  let totalDealt = 0, tail = 0;
 
-  // 伤害
+  // 伤害：多重打击逐击演出 —— 一次性结算的话 N 下飘字会全叠在同一个点上，玩家看不出"打了几下"
   if (c.type === 'damage' && c.value + (c.percentDamage ? 1 : 0) > 0) {
-    let per = c.value;
-    if (c.shieldFromStrength) { /* 护盾分支处理 */ }
-    if (c.percentDamage) per = Math.floor(e.maxHp * c.percentDamage);
-    per += boost;
-    const hits = c.hits || 1;
+    const per = cardHitDamage(c, e);
+    const hits = c.hits || 1, STEP = 95;
     for (let h = 0; h < hits; h++) {
-      let dmg = per;
-      if (c.pierce) { const before = e.hp; e.hp = Math.max(0, e.hp - dmg); totalDealt += before - e.hp; }
-      else { const r = e.takeDamage(dmg); totalDealt += r.toHp; }
-      addParts(LAY.ex, LAY.eyBase - 40, 10, c.pierce ? '#e04060' : '#ffcd75', { speed: 170 });
-      addFloat(LAY.ex + (Math.random() - 0.5) * 30, LAY.eyBase - 50, '-' + dmg, '#ffcd75');
-      if (c.statusEffect && !c.selfTarget) applyStatus(e, c.statusEffect, p.passive === 'mutantStatus' ? 2 : 1);
-      Sound.sfx.hit();
-      shake(3, 140);
+      const go = () => {
+        if (!e.alive) return;
+        let shown = per;
+        if (c.pierce) { const before = e.hp; e.hp = Math.max(0, e.hp - per); totalDealt += before - e.hp; }
+        // ⚠️ 飘字要显示**结算后**的伤害（r.total 含易伤），不是传入值 —— 以前打易伤目标
+        //    实际掉 18 却飘 "-12"，玩家会觉得伤害算错了。
+        else { const r = e.takeDamage(per); totalDealt += r.toHp; shown = r.total; }
+        addParts(LAY.ex, LAY.eyBase - 40, 10, c.pierce ? '#e04060' : '#ffcd75', { speed: 170 });
+        addFloat(LAY.ex + (Math.random() - 0.5) * 30, LAY.eyBase - 50 - h * 9, '-' + shown, '#ffcd75');
+        if (c.statusEffect && !c.selfTarget) applyStatus(e, c.statusEffect, p.passive === 'mutantStatus' ? 2 : 1);
+        Sound.sfx.hit();
+        shake(3, 140);
+        if (c.pierce) Sound.sfx.beam(); else Sound.sfx.slash();
+        beamFx(LAY.px + 30, LAY.pyBase - 40, LAY.ex - 24, LAY.eyBase - 40, c.pierce ? '#e04060' : '#ffcd75');
+        e.hitFlash = 160;
+      };
+      if (h === 0) go(); else after(h * STEP, go);
     }
-    if (c.pierce) Sound.sfx.beam(); else Sound.sfx.slash();
-    beamFx(LAY.px + 30, LAY.pyBase - 40, LAY.ex - 24, LAY.eyBase - 40, c.pierce ? '#e04060' : '#ffcd75');
-    e.hitFlash = 160;
+    tail = Math.max(tail, (hits - 1) * STEP);
   }
   // 护盾
   if (c.type === 'shield' || c.shieldFromStrength) {
@@ -556,7 +662,8 @@ function playCard(i) {
   }
   // 治疗 / 吸血 / 自伤
   if (c.heal) { const g = p.heal(c.heal * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); Sound.sfx.heal(); }
-  if (c.lifesteal && totalDealt > 0) after(200, () => { const g = p.heal(totalDealt * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); });
+  // 吸血要等最后一击落地再算：totalDealt 是闭包变量，多重打击下只有等 tail 之后才是全额
+  if (c.lifesteal) after(220 + tail, () => { if (totalDealt > 0) { const g = p.heal(totalDealt * mult); addFloat(LAY.px, 140, '+' + g, '#38b764'); } });
   if (c.selfDamage) { p.rawDamage(c.selfDamage); addFloat(LAY.px, 175, '-' + c.selfDamage, '#e04060'); Sound.sfx.hurt(); shake(4, 180); }
   if (c.gainBattery) { p.battery = Math.min(p.maxBattery, p.battery + c.gainBattery); addFloat(LAY.px, 130, '+' + c.gainBattery + ' 电量', '#41a6f6'); }
   if (c.damageTakenBonus) p.damageTakenBonus += c.damageTakenBonus;
@@ -566,13 +673,17 @@ function playCard(i) {
   // 入堆
   if (c.exhaust) { G.exhaust.push(c); addFloat(LAY.px, 190, '消耗', '#8a3cc0'); }
   else G.discard.push(c);
-  // Boss 二阶段
-  if (e.alive && e.checkPhase()) {
-    addFloat(LAY.ex, LAY.eyBase - 70, e.name, '#ff5577', true);
-    addRing(LAY.ex, LAY.eyBase - 45, '#e04060', 8, 80, 480);
-    flash('#e04060', 0.34); shake(7, 420); Sound.sfx.nova();
-    log(e.name + ' 进入狂暴');
-  }
+  // Boss 二阶段：多重打击要等打完了再判定，不然会在半路插进狂暴演出
+  const phaseCheck = () => {
+    if (e.alive && e.checkPhase()) {
+      addFloat(LAY.ex, LAY.eyBase - 70, e.name, '#ff5577', true);
+      addRing(LAY.ex, LAY.eyBase - 45, '#e04060', 8, 80, 480);
+      flash('#e04060', 0.34); shake(7, 420); Sound.sfx.nova();
+      log(e.name + ' 进入狂暴');
+    }
+  };
+  if (tail > 0) after(tail, phaseCheck); else phaseCheck();
+  return tail;
 }
 // 兼容两种写法：{type:'burn',stacks:2} 与简写 {burn:2}
 function applyStatus(target, se, mult) {
@@ -1004,6 +1115,8 @@ window.addEventListener('keydown', e => {
   if (k === 'escape') { if (G.scene === 'map') togglePause(); }
 });
 document.addEventListener('click', e => {
+  const pile = e.target.closest('[data-pile]');
+  if (pile) { Sound.init(); Sound.sfx.select(); showPile(pile.dataset.pile); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
   Sound.init(); Sound.sfx.select();

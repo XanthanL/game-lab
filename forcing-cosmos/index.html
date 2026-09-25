@@ -103,9 +103,11 @@
     </div>
     <div id="logline"></div>
     <div id="pileinfo">
-      <span id="draw-pile">抽 0</span>
+      <button class="pile" id="draw-pile" data-pile="draw" title="查看抽牌堆">抽 0</button>
       <span id="turn-label"></span>
-      <span id="discard-pile">弃 0</span>
+      <button class="pile" id="discard-pile" data-pile="discard" title="查看弃牌堆">弃 0</button>
+      <button class="pile" id="exhaust-pile" data-pile="exhaust" title="查看消耗堆">耗 0</button>
+      <span id="hand-count">手 0/10</span>
     </div>
     <div id="potions"></div>
     <button id="btn-end" class="btn">结束回合</button>
@@ -113,6 +115,10 @@
   </div>
 
   <div id="hand"></div>
+  <!-- 出牌演出层：飞行的卡牌活在这里。⚠️ 不能塞进 #hand —— renderHand() 会 innerHTML=''，
+       正在飞的卡会被一起清掉，于是「还没飞到就消失」。 -->
+  <div id="fxcards"></div>
+  <div id="dmg-preview" class="hidden"></div>
   <div id="cardtip" class="hidden"></div>
 
   <!-- ============ 通用弹窗 ============ -->

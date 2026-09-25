@@ -23,7 +23,7 @@ const LAY = {
 };
 
 /* ---------------- 特效池 ---------------- */
-const FX = { parts: [], floats: [], rings: [], shake: 0, shakeT: 0, flash: 0, flashCol: '#e04060', beam: null };
+const FX = { parts: [], floats: [], rings: [], cards: [], shake: 0, shakeT: 0, flash: 0, flashCol: '#e04060', beam: null };
 
 function addParts(x, y, n, col, opt = {}) {
   const sp = opt.speed || 150, life = opt.life || 460;
@@ -40,6 +40,71 @@ function shake(amp, ms) { FX.shake = amp; FX.shakeT = ms || 260; FX.shakeMax = m
 function flash(col, a) { FX.flash = a == null ? 0.28 : a; FX.flashCol = col; }
 function beamFx(x0, y0, x1, y1, col) { FX.beam = { x0, y0, x1, y1, col, life: 220, max: 220 }; }
 
+/* ---------------- 出牌演出：卡牌本体飞向目标 ----------------
+   为什么要飞：以前 playCard() 直接 splice + renderHand()，卡牌是"啪一下就没了"，
+   玩家看不出这张牌打向了谁。现在把被打出的那张卡从 #hand 摘出来、送进 #fxcards，
+   沿弧线飞向目标，到达的瞬间才结算效果（applyCard）并炸开。
+   返回飞行时长（ms），调用方拿它排后续节拍。
+   ⚠️ 元素必须先 append 到 #fxcards 再改 left/top：两层的坐标系都是 #wrap 的游戏像素，
+      所以 left/top 可以直接沿用，不需要换算屏幕坐标（#wrap 的整体缩放会一起带上）。 */
+const FLY_MS = 150, FLY_BURST = 130;
+function flyCard(node, side, onArrive, from) {
+  if (!node) { if (onArrive) onArrive(); return 0; }
+  const x0 = (parseFloat(node.style.left) || 0) + (from ? from.dx : 0);
+  const y0 = (parseFloat(node.style.top) || 0) + (from ? from.dy : 0);
+  const tx = (side === 'enemy' ? LAY.ex : LAY.px) - 48;
+  const ty = (side === 'enemy' ? LAY.eyBase - 40 : LAY.pyBase - 40) - 55;
+  const layer = $('fxcards');
+  if (layer) layer.appendChild(node);
+  node.classList.remove('sel');
+  node.style.left = x0.toFixed(1) + 'px';
+  node.style.top = y0.toFixed(1) + 'px';
+  FX.cards.push({ node, x0, y0, tx, ty, t: 0, burst: 0, arrived: false, onArrive });
+  return FLY_MS;
+}
+/** 清空飞行中的卡。切场景时必须调 —— #fxcards 不归 renderHand() 管，
+    不清的话上一场战斗最后一张卡会一直悬在屏幕上。 */
+function clearFlyCards() {
+  const layer = $('fxcards');
+  if (layer) layer.innerHTML = '';
+  FX.cards.length = 0;
+}
+function stepFlyCards(dt) {
+  for (let i = FX.cards.length - 1; i >= 0; i--) {
+    const f = FX.cards[i];
+    if (!f.arrived) {
+      f.t += dt;
+      const k = Math.min(1, f.t / FLY_MS);
+      const e = 1 - Math.pow(1 - k, 3);              // easeOutCubic：起步快、落点稳
+      const arc = Math.sin(k * Math.PI) * -30;       // 上抛弧线，不是直线滑过去
+      f.node.style.left = (f.x0 + (f.tx - f.x0) * e).toFixed(1) + 'px';
+      f.node.style.top = (f.y0 + (f.ty - f.y0) * e + arc).toFixed(1) + 'px';
+      f.node.style.transform = 'scale(' + (1 + k * 0.15).toFixed(3) + ') rotate(' + (arc * 0.16).toFixed(2) + 'deg)';
+      // 后半程开始淡出：整张卡一路盖着敌人看不清战况，得让它"化进"攻击里
+      f.node.style.opacity = (k < 0.5 ? 1 : 1 - (k - 0.5) * 1.4).toFixed(2);
+      if (k >= 1) { f.arrived = true; f.burst = FLY_BURST; if (f.onArrive) f.onArrive(); }
+    } else {
+      f.burst -= dt;
+      const k = 1 - Math.max(0, f.burst) / FLY_BURST;
+      f.node.style.transform = 'scale(' + (1.15 + k * 0.5).toFixed(3) + ')';
+      f.node.style.opacity = String(Math.max(0, 0.3 * (1 - k)));
+      if (f.burst <= 0) { if (f.node.parentNode) f.node.parentNode.removeChild(f.node); FX.cards.splice(i, 1); }
+    }
+  }
+}
+/** 出牌落地瞬间按牌类炸开（伤害→斩击线，护盾→蓝色环，状态/战术→紫色环）。 */
+function cardImpact(c, side) {
+  const toEnemy = side === 'enemy';
+  const x = toEnemy ? LAY.ex : LAY.px;
+  const y = toEnemy ? LAY.eyBase - 40 : LAY.pyBase - 40;
+  const col = c.type === 'damage' ? '#ffcd75' : c.type === 'shield' ? '#41a6f6' : c.type === 'curse' ? '#8a3cc0' : '#c070f0';
+  addRing(x, y, col, 4, toEnemy ? 56 : 42, 300);
+  addParts(x, y, 10, col, {
+    speed: toEnemy ? 210 : 110,
+    dir: toEnemy ? 0 : -Math.PI / 2, spread: 1.7, g: toEnemy ? 60 : -50, life: 380,
+  });
+}
+
 function stepFx(dt) {
   for (let i = FX.parts.length - 1; i >= 0; i--) {
     const p = FX.parts[i];
@@ -53,6 +118,7 @@ function stepFx(dt) {
   if (FX.shakeT > 0) FX.shakeT -= dt;
   if (FX.flash > 0) FX.flash = Math.max(0, FX.flash - dt / 260);
   if (FX.beam) { FX.beam.life -= dt; if (FX.beam.life <= 0) FX.beam = null; }
+  stepFlyCards(dt);
 }
 
 /* ---------------- 基础绘制工具 ---------------- */

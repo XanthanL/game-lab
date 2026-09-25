@@ -107,6 +107,37 @@
 - **竖屏提示 `#rot` 必须放在 `#wrap` 外面**（里面的东西整体转了 90°，提示文字不能跟着转），且 `pointer-events:none`
   （`elementFromPoint` 会跳过它，不会挡命中测试）。只在「手机 + 竖屏」时露 6 秒自己淡出，**不做成挡住画面的遮罩**。
 
+## 出牌演出（改 `playCard` / `applyCard` 前必读）
+
+- **卡牌本体是 DOM，不是 canvas**。`#hand` 是 `inset:0` 覆盖层，所以卡牌的 `left/top` **就是游戏像素**，
+  跟着 `#wrap` 的整体缩放一起走 —— 想让卡"飞向敌人"只是把 `left/top` 插值到 `(LAY.ex-48, LAY.eyBase-95)`，
+  **不需要换算屏幕坐标**。
+- 演出元素必须放进 **`#fxcards`**（`#wrap` 内，`z-index:15`），**不能留在 `#hand` 里**：
+  `renderHand()` 开头是 `innerHTML=''`，留在里面会被立刻销毁 → 症状正是「卡还没飞到就没了」。
+- ⚠️ **`playCard` 里的顺序不能反**：先 `node.remove()` 把这张卡的 DOM 从 `#hand` 摘下来，
+  **再** `G.hand.splice` + `renderHand()`。反过来就白摘了。
+- 演出时长由 `FLY_MS`(150) + `FLY_BURST`(130) 决定；`applyCard` **返回 `tail`**
+  （多重打击逐击还要多久），`playCard` 用 `after(200 + tail)` 才放开 `G.busy`。
+  不返回 tail 就会在最后一击落地前放行 → 连击打到一半被当成"打完了"。
+- `applyCard` 的**所有**伤害出口必须走 `cardHitDamage()`：它是 `applyCard` 与 UI 预测共用的唯一入口。
+  在 UI 里另写一份算式就是"预测 12、实际打 9"的来源。
+- **虚弱在来源侧乘 0.75**（`cardHitDamage` 里）。以前只有敌人的攻击算了虚弱，玩家中了虚弱照样满伤 ——
+  HUD 挂着「虚弱」却毫无效果，不抛异常、探针全绿。
+- 飘字要显示 `r.total`（结算后、含易伤），不是传入的 `per`。
+- `setScene` 里必须 `clearFlyCards()` + `hideDmgPreview()`：`#fxcards` 不归 `renderHand()` 管，
+  不清的话上一场战斗最后一张卡会一直悬在屏幕上。
+- 抽牌类卡会改 `G.hand`/`G.draw`，而 `updateHud()` 只在 `playCard` 开头调过 ——
+  演出收尾的 `after()` 里要**补一次 `updateHud()`**，否则「手 N/10」「抽 N」停在出牌前的数。
+
+## 手牌上限与牌堆查看
+
+- `HAND_MAX = 10`。⚠️ 手牌满时抽到的牌要**真的从抽牌堆抽出来再丢进弃牌堆**，不能留在原地 ——
+  留在原地的话下一张「抽牌」会反复抽到同一张，等于把抽牌卡变成永动机。
+- 三个牌堆（抽/弃/耗）挂在 `#pileinfo` 的 `[data-pile]` 按钮上，走**独立于 `[data-act]`** 的委托分支。
+- ⚠️ **抽牌堆必须用副本洗乱后展示**（`shuffleArray(G.draw.slice())`）：
+  真实顺序就是"下一张抽什么"，原样列出来等于把抽牌堆变成明牌堆；
+  也不能就地洗 `G.draw` —— 那会真的改变抽牌顺序。
+
 ## 局外进度（`src/meta.js`，改梯度/解锁前必读）
 
 - 存 `localStorage['fc_meta_v1']`，**和局内存档 `forcing_cosmos_save` 是两个 key**。
@@ -139,8 +170,10 @@ bash .probe-ui.sh                                  # 6 个弹窗截图 + 抓运�
 node .probe-exit.cjs                               # 交互出口审计（47 条）：改 UI 必跑
 node .probe-mapfuzz.cjs                            # 地图连通性：模糊走图 + 出边体检 + 老存档救援：改 genMap/updateReach 必跑
 node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
+node .probe-play.cjs                               # 出牌演出 + 伤害预测 + 手牌上限 + 牌堆查看（64 条）
 node .probe-meta.cjs                               # 局外进度（66 条）：梯度数值/解锁/日志/继续卡片/清空/诅咒卡回归
 node .probe-shots-meta.cjs                         # 局外进度 UI 视觉确认截图 → .shots/meta-*.png
+node .probe-shots-play.cjs                         # 出牌演出/伤害预测/牌堆 UI 截图 → .shots/play-*.png
 node .probe-inv.cjs                                # 打印内容量（改卡/遗物/事件后更新 ROADMAP 用）
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 ```
@@ -164,6 +197,15 @@ node .probe-run.mjs 170000 engineer     # 从地图开始自动打到结束
 node .probe-boss.mjs 2 boss 60000 boost # 指定幕/BOSS；boost = 削弱敌人验证胜利与结局路径
 ```
 
+- ⚠️ **CDP 探针（`.probe-run.mjs` / `.probe-boss.mjs` / `.probe-click.mjs`）必须用全新 `--user-data-dir` 启动 Chrome**，
+  否则会命中上一轮的 HTTP 缓存：页面加载的是**旧的 `ui.js`**，症状是
+  `ReferenceError: clearFlyCards is not defined` 这种"磁盘上明明有这个函数"的假崩溃。
+  启动加 `--disable-http-cache`，或每次换一个 profile 目录。
+- ⚠️ `.probe-click.mjs` 的每个用例都要**先把战场钉成确定状态**再动手（手牌内容 / 电量 / 敌人血量）。
+  旧版是"跑一步 sleep 400ms 读结果"，靠 220ms 的旧出牌时序侥幸通过；演出把时序拉长后
+  基线立刻被自动回合污染 —— 读到的是敌人回合清空手牌的结果，不是拖拽的结果。
+- ⚠️ 合成的 `pointerdown` + `pointerup` **不会**派生出 `click`。要测 `onclick` 的路径
+  （如不可打出的诅咒牌）必须直接 `dispatchEvent(new MouseEvent('click', ...))`。
 - 探针用 **Chrome DevTools Protocol**：Node 22 自带全局 `WebSocket`，无需 puppeteer。
 - **Chrome 必须用 `run_in_background` 启动**，否则命令结束后被回收，CDP 端口连不上（`ECONNREFUSED`）。
 - 页面错误写在 `#errlog`（`window.onerror` 捕获），`--dump-dom` 可读；这是判断"有没有崩"的唯一可靠信号。
