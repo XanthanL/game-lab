@@ -268,6 +268,27 @@
   修法：`.ov` 改 `justify-content:flex-start` + `overflow-y:auto` + 首尾 `margin:auto` + `.ov > * { flex-shrink:0 }`，
   让高面板内部滚动；`#build` 再 `max-height:104px; overflow-y:auto` 夹住长列表。
   探针 `.workbuddy/sv-fit.py` 用真实 `elementFromPoint`（等 CSS 动画 `getAnimations` 静默后再量）验每个面板按钮可达。
+- ⚠️⚠️ **同一组选择器里出现 `scrollbar-width` / `scrollbar-color`，Chromium 就会整组丢弃 `::-webkit-scrollbar`。**
+  默认滚动条 ~10px，在 480×270 的信箱里又粗又显眼（用户报的就是这个）。要画细滚动条，两条路必须**分开**：
+  webkit 伪元素给 Chromium，标准属性给 Firefox，且标准属性包在
+  `@supports not selector(::-webkit-scrollbar) { ... }` 里。曾经把两组写在同一个选择器里 →
+  Chromium 改用「标准」渲染 → 实测宽度从 5px **弹回 10px**，`width:5px` 被整组静默丢弃。
+  现在 `.ov` / `#build` / `.cdgrid` 三处都是 5px 蓝底滑块的像素风滚动条。
+  ⚠️ 顺手**别给这些容器加 `overflow:hidden`** —— 那会重新触发上面那条「按钮被切在 #wrap 外」的坑。
+- ⚠️⚠️ **12px 像素字形的「内容盒」比 `line-height:12px` 的「行盒」高约 3px（上下各 ~1.5px）。**
+  两个后果都在 `#wrap{overflow:hidden}` 下**静默**发生：
+  ① 贴边的一行会被切掉 3px（标题页「按 ENTER 开始」曾被切底）；
+  ② 相邻两行的**内容盒**天然重叠 ~6px —— 所以「量文字矩形算重叠」的探针用
+  `Range.getBoundingClientRect()`（多行时返回并集盒）会报满屏假重叠。
+  正确做法：`Range.getClientRects()` **逐行**取矩形，再按 computed `lineHeight` 把矩形收缩回行盒
+  （`cy ± lh/2`）再比。`sv-text.py` 的 `txLineBox()` 就是这么干的。
+  同理，探针里**布局 px 与缩放 px 不能混**：`offsetWidth/clientWidth/scrollHeight` 不受 `transform:scale()`
+  影响，`getBoundingClientRect()` 受影响（本机 `scale ≈ 2.1`）—— 几何比较一律走 `getBoundingClientRect` 族，
+  阈值（现在 `TX_TOL = 2` 缩放 px）才可比。
+- ⚠️ **`.ov > *:last-child { margin-bottom: auto }` 会落在 `display:none` 的那个孩子身上。**
+  桌面端 `#title` 的最后一个孩子是 `.hint.touch-only`（隐藏），于是只剩 `margin-top:auto` 生效
+  → 内容被顶到底边 → 叠加上面那条字形溢出，末行被切。
+  修法是给容器补 `padding-bottom`（`#title` 现为 10px），探针加一条 `bottom-slack ≥ 6` 守着（现在标题页 21）。
 - ⚠️⚠️ **`spawnEnemy()` 建敌人对象时必须把 `cfg` 里要用的字段显式抄进去。**
   `e.cfg = c` 只是挂了个引用，`e.xp` **不会**自动存在。曾经漏了 `xp: c.xp`，而 `killEnemy` 里
   有三处读它 —— 加分 `(e.xp * 10 + 5) * combo`、掉落分档 `e.xp >= 3 / >= 2`、每颗星尘的面值。
@@ -387,6 +408,14 @@
   「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 29 条最容易被切）/
   标题与暂停往返无死路 / `spawn → markSeen` / 保存并退出 → 继续航程 → 段数·船体恢复 / `gameOver` 清档。
   改了 `codexEntries` / `drawCodex` / `markSeen` / `snapshotRun` / `resumeRun` / `SAVE_DEF` 就跑一次。
+- 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **71 断言**，遍历每个覆盖层
+  （标题 / 标题带存档 / 帮助 / 机库 / 对局 / 满构筑暂停 / 图鉴三页 / 升级 / 结算），逐层验：
+  **滚动条够不够细**（`sbW/sbH ≤ 8`）· **文字有没有溢出容器**（`txBoxSpill`）·
+  **文字之间有没有重叠**（`txOverlap`）· 覆盖层是否存在 · **底部留白 ≥ 6**（`bottom-slack`）；
+  另验 `#build` / `.cdgrid` 真的可滚。
+  `--shots` 按 `?ui=<state>` 逐个隔离截图（**不加** `--hide-scrollbars`，否则测不到滚动条）。
+  改了 `style.css` 的覆盖层 / 字号 / 间距就跑一次。
+  ⚠️ 它任何一条 FAIL 都可能是**探针自己的度量假象**（见上面「字形内容盒 vs 行盒」那条）—— 先确认量法，再改 CSS。
 - 调试 URL 参数：`?bot=1`（自动游玩）、`&god=1`（无敌）、`&fast=N`（N 倍速）、`&loop=1`。
   `window.__dbg` 暴露 `G`、`state`、`spawnBoss`、`giveXp`、`nextWave`、`aim(x,y)`、`aimOff()`、`nearest()`、`die()`，
   探针用的 `spawn/clearEnemies/killAll/hit/setMods/clearMods/save/writeSave/hullUnlocked/checkUnlocks/lockAll/reload/webSlowAt/soundVol`，

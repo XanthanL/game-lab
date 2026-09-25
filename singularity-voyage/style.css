@@ -12,6 +12,33 @@ body { position: fixed; inset: 0; }
 #wrap.playing { cursor: none; }
 canvas { display: block; width: 480px; height: 270px; image-rendering: pixelated; image-rendering: crisp-edges; }
 .hidden { display: none !important; }
+
+/* ============ 细滚动条 ============
+   Windows / Chrome 的原生滚动条是 17px 的灰色方块，而 #wrap 只有 480px 宽 ——
+   换算到玩家屏幕上（缩放 2~3 倍）就是横在游戏右边缘一条 40px 宽的白条，
+   把像素画整个破功。这里统一压到 5px 并染成调色板里的颜色。
+   Firefox 走 scrollbar-width/scrollbar-color（它的 ::-webkit-* 不生效）；
+   Chrome/Edge/Safari 走 ::-webkit-scrollbar。
+
+   ⚠️ 这两套**不能写在同一个选择器组里**。Chromium 一旦看到 scrollbar-width /
+      scrollbar-color，就会切换到「标准滚动条」渲染，把 ::-webkit-scrollbar{width:5px}
+      整段忽略掉 —— 实测占位宽从 5px 弹回 10px（比原生 17px 好，但仍然是条粗灰边）。
+      所以 Firefox 那两条用 @supports 隔离：Chrome 认识 ::-webkit-scrollbar 选择器，
+      条件取反后为假、整块跳过；Firefox 不认识、取反后为真、正常生效。
+
+   ⚠️ 只改「滚动条长什么样」，**绝不能**顺手把 overflow 改成 hidden：
+      #wrap 是 480x270 + overflow:hidden，满装配时暂停面板高 682px，
+      改成 hidden 会把底部 5 个按钮裁到框外 —— rect 正常但 elementFromPoint 命不中
+      =「看得见、点不着」（2026-09-25 踩过，见上方注释）。滚动条必须留着。 */
+.ov::-webkit-scrollbar, #build::-webkit-scrollbar, .cdgrid::-webkit-scrollbar { width: 5px; height: 5px; }
+.ov::-webkit-scrollbar-track, #build::-webkit-scrollbar-track, .cdgrid::-webkit-scrollbar-track { background: #1a1c2c; }
+.ov::-webkit-scrollbar-thumb, #build::-webkit-scrollbar-thumb, .cdgrid::-webkit-scrollbar-thumb {
+  background: #3b5dc9; box-shadow: inset 0 0 0 1px #1a1c2c; }
+.ov::-webkit-scrollbar-thumb:hover, #build::-webkit-scrollbar-thumb:hover, .cdgrid::-webkit-scrollbar-thumb:hover { background: #5a78e0; }
+.ov::-webkit-scrollbar-corner, #build::-webkit-scrollbar-corner, .cdgrid::-webkit-scrollbar-corner { background: #1a1c2c; }
+@supports not selector(::-webkit-scrollbar) {
+  .ov, #build, .cdgrid { scrollbar-width: thin; scrollbar-color: #3b5dc9 #1a1c2c; }
+}
 /* ⚠️ #wrap 只有 480x270 且 overflow:hidden，遮罩里内容一旦超过 270px 就被**裁掉**：
       按钮的 getBoundingClientRect 依然正常（所以任何「按矩形判断可见性」的检查都会误判为可见），
       但它已经在 #wrap 的框外 → elementFromPoint 命不中 → **看得见、点不着**。
@@ -52,7 +79,14 @@ em { font-style: normal; }
 .menu.row { flex-direction: row; gap: 5px; }
 
 /* title */
-#title { background: transparent; justify-content: flex-start; padding-top: 26px; }
+/* ⚠️ 底部必须留 padding-bottom。
+   .ov 靠「首个子元素 margin-top:auto + 末个子元素 margin-bottom:auto」实现垂直居中，
+   但 #title 的**最后一个子元素**是触屏专用的那条提示（桌面端 display:none），
+   于是桌面端只有 margin-top:auto 生效 —— 内容被顶到**紧贴 270px 底边**。
+   而 12px 像素字的字形框比行框高约 3px，最后一行「按 ENTER 开始」的下缘就正好被
+   #wrap 的 overflow:hidden 削掉（2026-09-25 截图确认：字被切了一半）。
+   留 6px 底边距，让字形框有落处。 */
+#title { background: transparent; justify-content: flex-start; padding-top: 16px; padding-bottom: 10px; gap: 5px; }
 .logo { text-align: center; animation: drop .5s steps(6) both; }
 .t1 { font-size: 36px; line-height: 38px; color: #73eff7; letter-spacing: 3px;
   text-shadow: 2px 0 0 #3b5dc9, -2px 0 0 #3b5dc9, 0 2px 0 #3b5dc9, 0 -2px 0 #3b5dc9, 3px 3px 0 #29366f, 4px 4px 0 #1a1c2c; animation: glitch 4s steps(1) infinite; }
@@ -62,7 +96,11 @@ em { font-style: normal; }
 .tagline { color: #c0cbdc; text-shadow: 1px 1px 0 #1a1c2c; margin-top: 2px; }
 .best { color: #ffcd75; min-height: 12px; text-shadow: 1px 1px 0 #1a1c2c; }
 .hint { color: #7a86a8; text-shadow: 1px 1px 0 #1a1c2c; }
-#title .hint { position: absolute; bottom: 6px; }
+/* ⚠️ 这里曾经是 position:absolute; bottom:6px。绝对定位的元素**不参与流式布局**，
+   于是流式内容（音量条 / 操控提示）长到 270px 底边时，就正好被这条提示压住 ——
+   实测「按 ENTER 开始」盖在「音乐/音效」滑条和「A/D 转向…」整行上。
+   改成普通流式（它本来就是最后一个子元素，视觉位置不变），压字直接消失。 */
+#title .hint { margin-top: 2px; }
 
 /* volume sliders（标题页与暂停页共用） */
 .volbox { display: flex; gap: 12px; }
@@ -98,13 +136,18 @@ em { font-style: normal; }
 .chip.maxed { background: #2a2418; }
 
 /* hangar */
-#hangar { background: rgba(8, 9, 20, .9); gap: 5px; }
-#hulls { display: flex; gap: 8px; margin: 4px 0 2px; }
-.hull { --c: #41a6f6; --d: #29366f; position: relative; width: 86px; height: 140px; padding: 14px 4px 4px; background: #0e1022; cursor: pointer;
+/* ⚠️ .hdesc 是 flex:1，卡面高度就是它的上限。原 140px 高 + 48px 立绘只够 2 行，
+   而船体描述最长 23 字（78px 宽、中文避头尾规则下约 5.5 字/行 → 5 行 = 65px），
+   于是 5 台船体的描述**全部**溢出卡面、压到底下的 #hull-detail 统计条上。
+   修法：立绘 48→44（省 4px，仍是 22x16 源图的 2 倍），卡面 140→168（+28），
+   再把机库的外围间距各收 1~2px。机库里本来有 ~31px 的 auto-margin 余量，装得下。 */
+#hangar { background: rgba(8, 9, 20, .9); gap: 4px; }
+#hulls { display: flex; gap: 8px; margin: 2px 0 0; }
+.hull { --c: #41a6f6; --d: #29366f; position: relative; width: 86px; height: 168px; padding: 14px 4px 4px; background: #0e1022; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: 0 0 0 1px var(--c), 0 0 0 2px #1a1c2c, 3px 3px 0 2px #05060d; }
 .hull.sel { background: #1d2246; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px var(--c), 0 0 0 3px #1a1c2c, 3px 6px 0 2px #05060d; transform: translateY(-4px); }
 .hull .tag { position: absolute; top: 0; left: 0; right: 0; height: 13px; background: var(--c); color: #1a1c2c; text-align: center; line-height: 13px; }
-.hull canvas { width: 48px; height: 48px; image-rendering: pixelated; margin-top: 2px; background: #05060d; box-shadow: inset 0 0 0 1px var(--d); }
+.hull canvas { width: 44px; height: 44px; image-rendering: pixelated; margin-top: 2px; background: #05060d; box-shadow: inset 0 0 0 1px var(--d); }
 .hull .hname { color: #f4f4f4; }
 .hull .hen { color: var(--c); }
 .hull .hstat { color: #c0cbdc; text-align: left; width: 100%; line-height: 13px; }
@@ -117,7 +160,7 @@ em { font-style: normal; }
 .hull.lock .hen { color: #566c86; }
 .hull.lock .hdesc { color: #566c86; }
 .hull.lock.sel { filter: none; }
-#hull-detail { flex-direction: row; gap: 12px; max-width: none; padding: 4px 10px; }
+#hull-detail { flex-direction: row; gap: 12px; max-width: none; padding: 2px 10px; }
 #hull-detail .hstat { width: auto; }
 #hull-detail .hstat u { float: none; margin-left: 3px; color: #f4f4f4; }
 
