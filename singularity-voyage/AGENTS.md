@@ -77,6 +77,58 @@
   banner「航程 · 抵达奇点 / 通关 —— 无尽航程开启」，并切 `waveState='warp'` —— **不结束这一局**。
 - 探针：`.workbuddy/sv-endless.py`（61 断言：档位序列 / 乘数 / hpScale / 段标签 / 轮换不重复 / 巨像调度 / 12→无尽过渡）。
 
+## 图鉴 & 续档（搬《奇点回响》的 logbook / save 那套 UI）
+
+回响那边是 `#logbook`（上半图鉴：20 敌型 + 6 巨像 + 3 词缀 + 7 船体，全部复用现有数据）
+和 `js/save.js`（**5 个存档槽位** + 30 秒自动保存 + 槽位网格 UI）。
+本作搬了「图鉴 + 续档」这两件事，但**没搬 5 个槽位** —— 理由见下面第一条。
+
+### 续档：`SAVE.run` 只留一份
+
+- 结构 `{hull, wave, score, level, xp, xpNext, dust, kills, mods:{}, hp, won, t, at}`，`null` = 没有。
+- **每段 `startWave()` 开头快照一次**。⚠️ 选「段首」而不是定时存，是因为段首场上还是干净的，
+  恢复出来的语义清楚；中途定时存会把「半段敌人 + 满屏弹幕」一起存下来，恢复成什么全靠猜。
+- 暂停里 `saveAndQuit()`（act `savequit`）：先 `snapshotRun()` 再 `toTitle()`。
+- ⚠️ **恢复必须按等级一级一级重放模块**（`replayMods`）：`apply()` 是就地改数值的，
+  而且有些卡的逻辑挂在等级上（「冲角装甲」的首级射速惩罚只在 `n === 1` 时结算一次）。
+  只把 `G.mods` 抄回去的话 `S` 里一个模块效果都没有 —— 和 `choose()` 里那条注释是同一件事。
+  `replayMods` 里另外做了三件保险：等级夹到 `m.max`、存档里有已删掉的卡就跳过（别炸掉整个恢复流程）、
+  血量最后 `Math.min(S.hp, S.maxHp)` 夹一次（「过载超频」会扣最大船体）。
+- `gameOver()` 里 `clearRun()`：船毁了就不能再「继续」那一局。
+- 老档没有 `run` / `seen` → `loadSave()` 给默认值；`run` 还会校验 `hull` 和 `wave` 都在，
+  残缺的直接当没有 —— 一个残缺快照会让「继续航程」在恢复时炸掉，而玩家根本看不懂发生了什么。
+- **为什么不做多槽位**：`#wrap` 只有 480×270，满装配的暂停面板就已经把按钮顶出框外过一次
+  （见「其它已踩过的坑」里那条）；roguelike 一局本来就是一次性的，一个「继续」位够用。
+  真要多槽位，得先解决槽位网格占掉的那一整块高度。
+
+### 图鉴：纯数据驱动，不另建文案表
+
+- 四个页签：敌型 16 / 巨像 3 / 船体 5 / 模块 29。条目**全部从现有数据表派生**：
+  `ETYPES` / `BOSSES` / `HULLS` 各带一个 `trait`（一行「怎么对付它」），模块复用 `desc`。
+  **新敌型只要带上 `trait` 就自动进图鉴。**
+- 收录状态在 `SAVE.seen`（id → 1），跨局累计。`markSeen()` **只在首次发现时写盘** ——
+  `spawnEnemy` 每生成一个敌人都会被调用，一局几千次，次次 `writeSave()` 纯浪费
+  （首次发现整局最多 ~53 次：16 + 3 + 5 + 29）。所以存的是「见过没有」而不是「见过几次」。
+- 没遭遇过的显示「？？？」+ 暗剪影 +「尚未遭遇」；遭遇过才显示名字和 trait。
+- 精灵预览：敌型 / 巨像走 `SPR[spr].r[0]`，船体走 `SHIPSET[id].imgs[0]`（`imageSmoothingEnabled = false` 放大）。
+
+### 两个命名陷阱
+
+- ⚠️ **续档的 act 叫 `continue`，不能叫 `resume`** —— 暂停面板的「继续」已经把 `resume` 占了
+  （`= togglePause`）。同名会让点暂停「继续」直接变成去读档。
+- ⚠️ **图鉴页签是四个独立 act（`cdx-enemy` / `cdx-boss` / `cdx-hull` / `cdx-mod`），不是读 `data-tab`。**
+  按钮委托里 `handleAct(b.dataset.act)` **只拿得到 act 字符串**，拿不到元素上的其它 dataset。
+  要带参数就得拆成多个 act（拆 act 还能顺带白拿「Tab 聚焦 + Enter 激活」那条补丁）。
+- ⚠️ 图鉴从暂停打开时返回要**回暂停**（`codexFrom`，和 `helpFrom` 一个套路），
+  不能把人踢回标题 —— 那等于「翻个图鉴就把这一局丢了」。
+
+### 探针
+
+`.workbuddy/sv-codex.py` —— 28 断言：四个页签条数（16 / 3 / 5 / 29）、收录计数、
+「？？？」→ 遭遇后解锁、**每一页「返回」的真实 `elementFromPoint` 命中**（模块页 29 条最容易被
+`#wrap` 的 270px 切掉，另外还断言按钮 rect 完整落在 `#wrap` 内）、
+标题 / 暂停往返不产生死路、`spawn → markSeen`、保存并退出 → 继续航程 → 段数 / 船体恢复、`gameOver` 清档。
+
 ## 从《奇点回响》搬运的机制（搬运机制，不照抄模型）
 
 原则：**搬「玩法行为」，不搬数值表和上限。** echo 的卡是 6 级制，本作一局只升到 8 级左右，
@@ -331,6 +383,10 @@
 - 操控探针（改版）：`python .workbuddy/sv-keys.py` —— 用**游戏时间 G.t** 计时（不再用墙钟 ms；
   无头 Chrome 的 rAF 被代理成 16ms 定时器，游戏时间滞后真实时间），`?god=1` 下验 A/D 转向 · W 推进 · S 制动。
   改了 `updatePlayer` / `aimMode` 就跑一次。
+- 图鉴 + 续档探针：`python .workbuddy/sv-codex.py` —— 28 断言：四个页签条数 / 收录计数 /
+  「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 29 条最容易被切）/
+  标题与暂停往返无死路 / `spawn → markSeen` / 保存并退出 → 继续航程 → 段数·船体恢复 / `gameOver` 清档。
+  改了 `codexEntries` / `drawCodex` / `markSeen` / `snapshotRun` / `resumeRun` / `SAVE_DEF` 就跑一次。
 - 调试 URL 参数：`?bot=1`（自动游玩）、`&god=1`（无敌）、`&fast=N`（N 倍速）、`&loop=1`。
   `window.__dbg` 暴露 `G`、`state`、`spawnBoss`、`giveXp`、`nextWave`、`aim(x,y)`、`aimOff()`、`nearest()`、`die()`，
   探针用的 `spawn/clearEnemies/killAll/hit/setMods/clearMods/save/writeSave/hullUnlocked/checkUnlocks/lockAll/reload/webSlowAt/soundVol`，

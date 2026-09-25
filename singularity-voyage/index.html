@@ -24,8 +24,16 @@
     </div>
     <div class="tagline">像素太空弹幕射击 · 穿越十二段航程 · 无尽深渊</div>
     <div class="menu">
-      <button class="btn primary" data-act="hangar">&gt; 开始航行</button>
-      <button class="btn" data-act="help">操作说明</button>
+      <!-- 只在有续档快照时出现（toTitle 里控制显隐） -->
+      <!-- ⚠️ 这个 act 不能叫 resume —— 暂停面板的「继续」已经占了 resume（= togglePause）。
+           同名会让点暂停「继续」变成去读档。 -->
+      <button class="btn primary hidden" id="btn-continue" data-act="continue">继续航程</button>
+      <button class="btn primary" id="btn-start" data-act="hangar">&gt; 开始航行</button>
+      <div class="menu row">
+        <button class="btn" data-act="codex">图鉴</button>
+        <button class="btn" data-act="help">操作说明</button>
+      </div>
+      <button class="btn small hidden" id="btn-clrrun" data-act="clrrun">放弃这段航程</button>
     </div>
     <div class="best" id="best"></div>
     <div class="volbox" id="vol-title"></div>
@@ -80,6 +88,17 @@
     </div>
   </div>
 
+  <!-- ============ 图鉴 ============ -->
+  <div id="codex" class="ov hidden">
+    <div class="up-title">图鉴</div>
+    <div id="codex-tabs" class="menu row"></div>
+    <div id="codex-count" class="dim"></div>
+    <!-- ⚠️ 29 张模块卡会排到 800px 以上，这块必须自己滚：
+         .ov 虽然也能滚，但让页签和「返回」跟着一起滚走就很难用了。 -->
+    <div id="codex-grid" class="cdgrid"></div>
+    <button class="btn primary" data-act="codexback">返回</button>
+  </div>
+
   <!-- ============ 升级选卡 ============ -->
   <div id="upgrade" class="ov hidden">
     <div class="up-title">模块装配 · 选择一项</div>
@@ -98,7 +117,11 @@
       <div class="menu row">
         <button class="btn primary" data-act="resume">继续</button>
         <button class="btn" id="btn-mute" data-act="mute">声音</button>
+        <button class="btn" data-act="codex">图鉴</button>
         <button class="btn" data-act="help">操作说明</button>
+      </div>
+      <div class="menu row">
+        <button class="btn" data-act="savequit">保存并退出</button>
         <button class="btn" data-act="restart">重新出击</button>
         <button class="btn" data-act="title">机库</button>
       </div>
@@ -115,6 +138,7 @@
     <div class="menu row">
       <button class="btn primary" data-act="restart">再来一次 [ENTER]</button>
       <button class="btn" data-act="hangar">机库</button>
+      <button class="btn" data-act="codex">图鉴</button>
     </div>
   </div>
 

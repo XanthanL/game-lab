@@ -85,24 +85,28 @@ const HULLS = [
   {
     id: 'peregrine', name: '游隼', en: 'PEREGRINE', tag: '均衡', color: '#73eff7',
     desc: '没有短板的侦查机。\n适合第一次启程。',
+    trait: '三项都是 100% —— 没有短板，也没有长板',
     hp: 100, spd: 1.00, dmg: 1.00, rate: 1.00, turn: 1.00,
     stats: '船体 100\n速度 100%\n火力 100%',
   },
   {
     id: 'rapier', name: '轻剑', en: 'RAPIER', tag: '玻璃炮', color: '#ef7d57',
     desc: '推重比拉满，装甲削到最低。\n快，但挨不了几下。',
+    trait: '速度 120% / 火力 114%，代价是船体只有 78',
     hp: 78, spd: 1.20, dmg: 1.14, rate: 1.16, turn: 1.15,
     stats: '船体 78\n速度 120%\n火力 114%',
   },
   {
     id: 'bulwark', name: '堡垒', en: 'BULWARK', tag: '重装', color: '#a7f070',
     desc: '厚壳、慢、稳。\n用血量换容错。',
+    trait: '船体 150 全场最高，代价是转得慢、火力 90%',
     hp: 150, spd: 0.86, dmg: 0.90, rate: 0.86, turn: 0.82,
     stats: '船体 150\n速度 86%\n火力 90%',
   },
   {
     id: 'raven', name: '玄鸦', en: 'RAVEN', tag: '刺客', color: '#c070f0',
     desc: '装甲薄到能看穿。\n换来的是一击必杀的暴击率。',
+    trait: '10% 暴击、暴击 3 倍，但船体只有 62',
     hp: 62, spd: 1.28, dmg: 1.10, rate: 1.20, turn: 1.30,
     stats: '船体 62\n速度 128%\n火力 110%',
     crit: 0.10, critMul: 3.0,
@@ -111,6 +115,7 @@ const HULLS = [
   {
     id: 'swarm', name: '蜂群', en: 'SWARM', tag: '编队', color: '#ffcd75',
     desc: '出击就带两架僚机。\n自己不开火也能打。',
+    trait: '开局自带 2 架僚机，拾取范围 +30%',
     hp: 92, spd: 1.06, dmg: 0.86, rate: 0.94, turn: 1.05,
     stats: '船体 92\n速度 106%\n火力 86%',
     drones: 2, magnetMul: 1.3,
@@ -120,27 +125,29 @@ const HULLS = [
 
 // ============ 敌型（12） ============
 const ETYPES = {
-  seeker:   { name: '追猎者', spr: 'seeker',   hp: 14, spd: 54, r: 5, dmg: 8,  xp: 1, ai: 'chase' },
-  tadpole:  { name: '蝌蚪',   spr: 'tadpole',  hp: 18, spd: 46, r: 6, dmg: 8,  xp: 1, ai: 'wander' },
-  dart:     { name: '飞镖',   spr: 'dart',     hp: 16, spd: 62, r: 5, dmg: 12, xp: 1, ai: 'dash' },
-  gunner:   { name: '炮手',   spr: 'gunner',   hp: 24, spd: 30, r: 6, dmg: 10, xp: 2, ai: 'shoot', range: 160, cd: 1.5 },
-  splitter: { name: '分裂体', spr: 'splitter', hp: 28, spd: 38, r: 7, dmg: 10, xp: 2, ai: 'chase', split: 3 },
-  reaver:   { name: '掠夺者', spr: 'reaver',   hp: 10, spd: 80, r: 4, dmg: 7,  xp: 1, ai: 'swarm' },
-  bastion:  { name: '重甲炮台', spr: 'bastion', hp: 78, spd: 22, r: 9, dmg: 14, xp: 4, ai: 'turret', range: 180, cd: 2.2 },
-  shifter:  { name: '相位闪现者', spr: 'shifter', hp: 22, spd: 42, r: 6, dmg: 12, xp: 2, ai: 'blink' },
-  stalker:  { name: '潜行者', spr: 'stalker',  hp: 32, spd: 48, r: 7, dmg: 16, xp: 3, ai: 'stalk' },
-  mine:     { name: '浮游雷', spr: 'mine',     hp: 12, spd: 0,  r: 6, dmg: 18, xp: 1, ai: 'mine' },
-  orbiter:  { name: '环轨炮', spr: 'orbiter',  hp: 28, spd: 54, r: 6, dmg: 10, xp: 3, ai: 'orbit', range: 150, cd: 1.8 },
-  leech:    { name: '吸附虫', spr: 'leech',    hp: 24, spd: 64, r: 5, dmg: 6,  xp: 2, ai: 'leech' },
+  // trait = 图鉴里那一行「怎么对付它」。图鉴是纯数据驱动的、不另建文案表，
+  //   所以新敌型只要带上 trait 就会自动进图鉴（和 EN_LIST 一样是派生出来的）。
+  seeker:   { name: '追猎者', spr: 'seeker',   hp: 14, spd: 54, r: 5, dmg: 8,  xp: 1, ai: 'chase',   trait: '直冲你当前的位置，转向偏慢 —— 侧滑一下就能甩开' },
+  tadpole:  { name: '蝌蚪',   spr: 'tadpole',  hp: 18, spd: 46, r: 6, dmg: 8,  xp: 1, ai: 'wander',  trait: '不追人，四处游走；比杂兵厚一点，别让它堆着' },
+  dart:     { name: '飞镖',   spr: 'dart',     hp: 16, spd: 62, r: 5, dmg: 12, xp: 1, ai: 'dash',    trait: '蓄力后高速突进，突进前有明显停顿 —— 那一下要躲' },
+  gunner:   { name: '炮手',   spr: 'gunner',   hp: 24, spd: 30, r: 6, dmg: 10, xp: 2, ai: 'shoot', range: 160, cd: 1.5, trait: '保持距离持续开火，贴上去能压住它的输出' },
+  splitter: { name: '分裂体', spr: 'splitter', hp: 28, spd: 38, r: 7, dmg: 10, xp: 2, ai: 'chase', split: 3, trait: '死亡裂成三只小的 —— 别在弹幕缝里杀它' },
+  reaver:   { name: '掠夺者', spr: 'reaver',   hp: 10, spd: 80, r: 4, dmg: 7,  xp: 1, ai: 'swarm',   trait: '成群高速掠过，数量多但极脆，扫射清场最快' },
+  bastion:  { name: '重甲炮台', spr: 'bastion', hp: 78, spd: 22, r: 9, dmg: 14, xp: 4, ai: 'turret', range: 180, cd: 2.2, trait: '几乎不动、火力极密，绕到它背后再打' },
+  shifter:  { name: '相位闪现者', spr: 'shifter', hp: 22, spd: 42, r: 6, dmg: 12, xp: 2, ai: 'blink', trait: '短距瞬移贴近，很难预瞄 —— 靠声音判断它去哪了' },
+  stalker:  { name: '潜行者', spr: 'stalker',  hp: 32, spd: 48, r: 7, dmg: 16, xp: 3, ai: 'stalk',   trait: '潜行接近再爆发，保持距离别让它贴上' },
+  mine:     { name: '浮游雷', spr: 'mine',     hp: 12, spd: 0,  r: 6, dmg: 18, xp: 1, ai: 'mine',    trait: '完全静止，靠太近才自爆 —— 绕开就行' },
+  orbiter:  { name: '环轨炮', spr: 'orbiter',  hp: 28, spd: 54, r: 6, dmg: 10, xp: 3, ai: 'orbit', range: 150, cd: 1.8, trait: '绕着你做圆周并射击，专门打乱你的走位节奏' },
+  leech:    { name: '吸附虫', spr: 'leech',    hp: 24, spd: 64, r: 5, dmg: 6,  xp: 2, ai: 'leech',   trait: '贴上就持续放血，得靠冲刺或制动甩掉' },
   // ---- 第二批：每个都改变你的决策，而不是只改血量 ----
   // 织网者：在场上撒减速网，压缩你的活动空间
-  weaver:   { name: '织网者', spr: 'weaver',   hp: 34, spd: 44, r: 6, dmg: 9,  xp: 3, ai: 'weave', range: 118, cd: 3.2 },
+  weaver:   { name: '织网者', spr: 'weaver',   hp: 34, spd: 44, r: 6, dmg: 9,  xp: 3, ai: 'weave', range: 118, cd: 3.2, trait: '往你前方撒减速蛛网 —— 走位要读图，不能直线冲' },
   // 牧者：给周围敌人持续回血 + 加速，必须优先点掉
-  shepherd: { name: '牧者',   spr: 'shepherd', hp: 46, spd: 40, r: 6, dmg: 8,  xp: 4, ai: 'shepherd', range: 148, aura: 84, cd: 2.0 },
+  shepherd: { name: '牧者',   spr: 'shepherd', hp: 46, spd: 40, r: 6, dmg: 8,  xp: 4, ai: 'shepherd', range: 148, aura: 84, cd: 2.0, trait: '给周围敌人回血 + 加速，不优先点掉这一波清不完' },
   // 新星：死亡时炸出一圈弹幕，别在弹幕缝里杀它
-  nova:     { name: '新星',   spr: 'nova',     hp: 26, spd: 50, r: 6, dmg: 12, xp: 3, ai: 'chase', deathRing: 12 },
-  // 铁壁：正面装甲吸收 70% 伤害，机头转得慢 —— 所以侧后方真的绕得过去
-  bulwark:  { name: '铁壁',   spr: 'bulwark',  hp: 78, spd: 28, r: 8, dmg: 16, xp: 5, ai: 'guard', guard: 0.30, turn: 1.5, range: 190, cd: 3.2 },
+  nova:     { name: '新星',   spr: 'nova',     hp: 26, spd: 50, r: 6, dmg: 12, xp: 3, ai: 'chase', deathRing: 12, trait: '死亡炸出一圈弹幕（留一条缝）—— 杀它的位置很重要' },
+  // 铁壁：正面装甲吸收大部分伤害，机头转得慢 —— 所以侧后方真的绕得过去
+  bulwark:  { name: '铁壁',   spr: 'bulwark',  hp: 78, spd: 28, r: 8, dmg: 16, xp: 5, ai: 'guard', guard: 0.30, turn: 1.5, range: 190, cd: 3.2, trait: '正面装甲吃掉大部分伤害，机头转得慢 —— 绕到侧后方打' },
 };
 // 编队主题：决定每段的敌型配比
 const SQUADS = {
@@ -164,9 +171,12 @@ const zoneOf = w => ZONES.find(z => w >= z.from && w <= z.to) || ZONES[2];
 const WAVES = 12;                 // 主线航段数：打完这 12 段 = 通关，但**不停机**，转入无尽
 const BOSS_WAVES = { 4: 'motherrock', 8: 'warden', 12: 'gate' };
 const BOSSES = {
-  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 900, r: 21, pats: ['charge', 'spread'], color: '#c070f0' },
-  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 2000, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577' },
-  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 3600, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7' },
+  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 900, r: 21, pats: ['charge', 'spread'], color: '#c070f0',
+                trait: '冲撞 + 扇形弹幕，冲撞前有蓄力 —— 绕侧后方输出' },
+  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 2000, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577',
+                trait: '环形 / 螺旋 / 扇形三套弹幕轮转，找缝穿过去' },
+  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 3600, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7',
+                trait: '四套弹幕含一道激光，血最厚 —— 拼的是续航' },
 };
 
 /* ============ 无尽航程 & 深渊强度（搬运自《奇点回响》的 ETIER_* 档位） ============
@@ -440,6 +450,12 @@ const SAVE_DEF = {
   hulls: ['peregrine', 'rapier', 'bulwark'],
   log: [],            // 最近 LOG_MAX 局：{hull, wave, kills, score, t, won, at}
   bgm: 0.8, sfx: 1,   // 0..1
+  // 图鉴收录：id -> 遭遇次数。只增不减、跨局累计。
+  seen: {},
+  // 续档快照（标题页「继续航程」用）。**只留一份**：
+  //   roguelike 一局本来就是一次性的，而 #wrap 只有 480x270 ——
+  //   多个槽位会把面板顶出框外（见 style.css 里 .ov 那条注释，满装配面板已经踩过一次）。
+  run: null,          // {hull,wave,score,level,xp,xpNext,dust,kills,mods:{},hp,won,t,at}
 };
 let SAVE = loadSave();
 function loadSave() {
@@ -452,6 +468,12 @@ function loadSave() {
   const s = Object.assign({}, SAVE_DEF, o);
   s.hulls = Array.isArray(o.hulls) ? o.hulls.slice() : SAVE_DEF.hulls.slice();
   s.log = Array.isArray(o.log) ? o.log.slice(-LOG_MAX) : [];
+  // 老档没有这两个键 → 给默认值。⚠️ seen 必须保证是**对象**（不是数组 / null），
+  //   run 必须保证是「对象且带 hull + wave」，否则宁可当没有存档 —— 一个残缺的
+  //   快照会让「继续航程」在恢复时炸掉，而玩家根本看不懂发生了什么。
+  s.seen = (o.seen && typeof o.seen === 'object' && !Array.isArray(o.seen))
+    ? Object.assign({}, o.seen) : {};
+  s.run = (o.run && typeof o.run === 'object' && o.run.hull && o.run.wave) ? o.run : null;
   // 老版本只写了 sv_best，顺手迁过来
   try {
     const legacy = +(localStorage.getItem('sv_best') || 0);
@@ -460,6 +482,17 @@ function loadSave() {
   return s;
 }
 function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {} }
+
+// ============ 图鉴收录 ============
+// ⚠️ 只在「第一次见到」时才写盘：spawnEnemy 每生成一个敌人就会被调用，
+//    一局下来几千次，次次 JSON.stringify + localStorage.setItem 是纯浪费。
+//    首次发现才写 —— 整局最多 ~53 次（16 敌型 + 3 巨像 + 5 船体 + 29 模块）。
+//    所以这里存的是「见过没有」而不是「见过几次」（次数不写盘，重开就归零，没必要）。
+function markSeen(id) {
+  if (!id || SAVE.seen[id]) return;
+  SAVE.seen[id] = 1;
+  writeSave();
+}
 // 解锁条件：kills = 累计击坠阈值，wave = 最远航段阈值；两个条件都写就是「或」
 function hullUnlocked(h) { return !h.unlock || SAVE.hulls.indexOf(h.id) >= 0; }
 function checkUnlocks(quiet) {
@@ -1099,10 +1132,12 @@ function spawnEnemy(type, x, y, opt = {}) {
   };
   if (e.elite) { e.hp *= 1.8; e.maxHp *= 1.8; e.r += 1; }
   G.enemies.push(e);
+  markSeen(type);        // 图鉴：这只算「遭遇过」
   return e;
 }
 function spawnBoss(id) {
   const b = BOSSES[id]; if (!b) return;
+  markSeen(id);          // 图鉴：巨像名录
   // 巨像血量：主线的线性成长同样在 WAVES 封顶，之后交给深渊档位的指数曲线。
   // 无尽里巨像会重复出场（轮换袋），所以它必须真的跟着档位变硬，否则第 3 轮就是纸糊的。
   const hp = b.hp * (1 + (Math.min(G.wave, WAVES) - 4) * 0.05) * eTierHp(G.wave);
@@ -2052,6 +2087,8 @@ function startWave(w) {
     banner('第 ' + w + ' 段 · ' + zone.name,
       tier > 0 ? '深渊 ' + tier + ' 档 · ' + sq.name : '编队主题：' + sq.name, '#73eff7', 2.2);
   }
+  // 每段开场落一次续档快照（这时状态是干净的 —— 理由见 snapshotRun 的注释）
+  snapshotRun();
 }
 
 const WARP_TIME = 1.8;
@@ -2633,6 +2670,20 @@ function toTitle() {
   if (SAVE.kills) bits.push('累计击坠 ' + SAVE.kills);
   if (locked.length) bits.push('还有 ' + locked.length + ' 台待解锁');
   $('best').textContent = bits.join(' · ');
+  // 「继续航程」只在真的有续档快照时出现。有存档时把「开始航行」降级成普通按钮，
+  // 免得屏幕上并排两个高亮主按钮，让人不敢点。
+  const cb = $('btn-continue'), sb = $('btn-start'), xb = $('btn-clrrun');
+  if (SAVE.run) {
+    const hh = HULLS.find(h => h.id === SAVE.run.hull);
+    cb.textContent = '继续航程 · 第 ' + SAVE.run.wave + ' 段（' + (hh ? hh.name : '未知') + '）';
+    cb.classList.remove('hidden');
+    sb.classList.remove('primary');
+    xb.classList.remove('hidden');
+  } else {
+    cb.classList.add('hidden');
+    sb.classList.add('primary');
+    xb.classList.add('hidden');
+  }
 }
 function openHangar() {
   state = 'hangar';
@@ -2651,6 +2702,90 @@ function closeHelp() {
   if (helpFrom === 'pause') { state = 'play'; togglePause(); }
   else if (helpFrom === 'hangar') openHangar();
   else toTitle();
+}
+
+// ============ 图鉴（搬《奇点回响》logbook 的上半部分） ============
+// 回响那边是「航行日志」里塞图鉴（20 敌型 / 6 巨像 / 3 词缀 / 7 船体）+ 成就星图。
+// 本作先把图鉴做出来：**四个分类全部从现有数据表派生**（ETYPES / BOSSES / HULLS / MODULES），
+// 新增敌型只要带上 trait 就自动进图鉴 —— 不另建一张文案表，也就永远不会和主数据脱节。
+const CODEX_TABS = [
+  { id: 'enemy', name: '敌型' },
+  { id: 'boss',  name: '巨像' },
+  { id: 'hull',  name: '船体' },
+  { id: 'mod',   name: '模块' },
+];
+let codexTab = 'enemy';
+let codexFrom = 'title';     // 从哪打开的，返回就回哪（和 helpFrom 一个套路）
+
+function codexEntries(kind) {
+  if (kind === 'boss') return Object.keys(BOSSES).map(k => {
+    const b = BOSSES[k];
+    return { id: k, name: b.name, trait: b.trait || '', seen: !!SAVE.seen[k], spr: b.spr };
+  });
+  if (kind === 'hull') return HULLS.map(h => ({
+    id: h.id, name: h.name, trait: h.trait || '', seen: !!SAVE.seen[h.id], hull: h.id,
+  }));
+  if (kind === 'mod') return MODULES.map(m => ({
+    id: m.id, name: m.name, trait: m.desc || '', seen: !!SAVE.seen[m.id], glyph: m.glyph, type: m.type,
+  }));
+  return Object.keys(ETYPES).map(k => {
+    const c = ETYPES[k];
+    return { id: k, name: c.name, trait: c.trait || '', seen: !!SAVE.seen[k], spr: c.spr };
+  });
+}
+function openCodex() {
+  codexFrom = (state === 'pause' || state === 'hangar' || state === 'over' || state === 'title') ? state : 'title';
+  state = 'codex';
+  showOverlay('codex');
+  drawCodex();
+}
+function closeCodex() {
+  if (codexFrom === 'pause') { state = 'play'; togglePause(); }
+  else if (codexFrom === 'hangar') openHangar();
+  else if (codexFrom === 'over') { state = 'over'; showOverlay('over'); }
+  else toTitle();
+}
+// 图鉴小图：敌型 / 巨像走 SPR[spr].r[0]，船体走 SHIPSET[id].imgs[0]。
+// ⚠️ 放大要取整（保住像素锐利），缩小才按比例 —— 巨像精灵是 2x 烘焙的，比 40px 画布大。
+function drawCodexArt(x, e) {
+  const cv = x.canvas;
+  let img = null;
+  if (e.hull) { const s = SHIPSET[e.hull]; if (s && s.imgs) img = s.imgs[0]; }
+  else if (e.spr) { const st = SPR[e.spr]; if (st && st.r && st.r.length) img = st.r[0]; }
+  if (!img || !img.width) return;
+  let k = Math.min(cv.width / img.width, cv.height / img.height);
+  if (k >= 1) k = Math.floor(k);
+  const w = img.width * k, h = img.height * k;
+  if (!e.seen) x.globalAlpha = 0.22;      // 没遭遇过：只留个剪影
+  x.drawImage(img, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), w, h);
+  x.globalAlpha = 1;
+}
+function drawCodex() {
+  const list = codexEntries(codexTab);
+  const got = list.filter(e => e.seen).length;
+  $('codex-count').textContent = '已收录 ' + got + ' / ' + list.length;
+  $('codex-tabs').innerHTML = CODEX_TABS.map(t =>
+    '<button class="btn small' + (t.id === codexTab ? ' primary' : '') +
+    '" data-act="cdx-' + t.id + '">' + t.name + '</button>').join('');
+  const box = $('codex-grid');
+  box.innerHTML = '';
+  for (const e of list) {
+    const el = document.createElement('div');
+    el.className = 'cde' + (e.seen ? ' seen' : '');
+    el.innerHTML = (e.glyph
+        ? '<div class="cdg">' + (e.seen ? e.glyph : '?') + '</div>'
+        : '<canvas width="40" height="40"></canvas>')
+      + '<div class="cdn">' + (e.seen ? e.name : '？？？') + '</div>'
+      + '<div class="cdt">' + (e.seen ? e.trait : '尚未遭遇') + '</div>';
+    box.appendChild(el);
+    const cv = el.querySelector('canvas');
+    if (cv) {
+      const x = cv.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      drawCodexArt(x, e);
+    }
+  }
+  box.scrollTop = 0;
 }
 // 竖屏提示的逃生口：万一 coarse/portrait 判定卡住，玩家还能点掉它继续玩。
 // 没有这个，一张全屏遮罩就能让游戏永久不可玩。
@@ -2730,10 +2865,75 @@ function pickHull(i) {
   hangarSel = i; Sound.sfx.select(); renderHangar();
 }
 
+// ============ 续档：标题页「继续航程」 ============
+// 《奇点回响》是 5 个存档槽位 + 30 秒自动保存。本作只留**一份**快照，两个理由：
+//   ① roguelike 一局本来就是一次性的，玩家真正想要的是「别把我打到第 9 段的局弄丢」；
+//   ② #wrap 只有 480x270 —— 槽位网格会把面板顶出框外（满装配的暂停面板已经踩过一次，
+//      见 style.css 里 .ov 那条注释）。真要做槽位，得先腾出一整块面板出来。
+// 落快照的时机是**每段开场**：这时整局状态是干净的（没有残敌、没有待生成的队列），
+// 恢复时直接 startWave(w) 重开这一段就行 —— 比中途快照（要还原敌人坐标 / 血量 / 场上弹幕）
+// 稳得多。代价是「从本段开头继续」而不是「从你退出的那一秒继续」，可以接受。
+function snapshotRun() {
+  if (!G || G.dead) return;
+  SAVE.run = {
+    hull: G.S.hull, wave: G.wave, score: G.score, level: G.level,
+    xp: G.xp, xpNext: G.xpNext, dust: G.dust, kills: G.kills,
+    mods: Object.assign({}, G.mods), hp: Math.round(G.S.hp),
+    won: G.won ? 1 : 0, t: Math.round(G.t * 10) / 10, at: Date.now(),
+  };
+  writeSave();
+}
+function clearRun() { if (SAVE.run) { SAVE.run = null; writeSave(); } }
+// ⚠️ 模块必须**按等级一级一级重放**：apply() 是就地改数值的，而且有些卡的逻辑挂在等级上
+//   （「冲角装甲」的首级射速惩罚只在 n === 1 时结算一次）。把最终属性直接写回去会丢掉这些，
+//   续档重放还会把惩罚叠好几遍 —— 和 choose() 里那条注释是同一件事。
+function replayMods(mods) {
+  for (const id in mods) {
+    const m = MODULES.find(v => v.id === id);
+    if (!m) continue;                     // 存档里有已被删掉的卡：跳过，别炸掉整个恢复流程
+    const n = Math.min(mods[id] | 0, m.max);
+    for (let lv = 1; lv <= n; lv++) {
+      m.apply(G.S, lv);
+      if (lv >= m.max && m.bloom) m.bloom(G.S);
+    }
+    G.mods[id] = n;
+  }
+  G.S.hp = Math.min(G.S.hp, G.S.maxHp);
+  recalcSynergies();
+}
+function resumeRun() {
+  const r = SAVE.run;
+  if (!r) return false;
+  const hull = HULLS.find(h => h.id === r.hull);
+  if (!hull || !hullUnlocked(hull)) { clearRun(); return false; }
+  hangarSel = HULLS.indexOf(hull);
+  G = newGame(hull.id);
+  G.wave = r.wave | 0 || 1;
+  G.score = r.score | 0;
+  G.level = r.level | 0 || 1;
+  G.xp = r.xp | 0; G.xpNext = r.xpNext | 0 || 8;
+  G.dust = r.dust | 0; G.kills = r.kills | 0;
+  G.won = !!r.won; G.t = r.t || 0;
+  replayMods(r.mods || {});
+  G.S.hp = Math.min(Math.max(1, r.hp || G.S.maxHp), G.S.maxHp);
+  state = 'play';
+  Sound.init(); Sound.music(true); Sound.setMode('cruise');
+  showOverlay(null);
+  startWave(G.wave);
+  return true;
+}
+// 暂停里「保存并退出」：先落快照再回标题，那一局就还在（标题页会出现「继续航程」）。
+function saveAndQuit() {
+  if (!G) return;
+  snapshotRun();
+  G = null;
+  toTitle();
+}
 function startGame() {
   const h = HULLS[hangarSel];
   if (!hullUnlocked(h)) { Sound.sfx.lock(); denyDetail(); return; }
   G = newGame(h.id);
+  markSeen(h.id);        // 图鉴：船体名录
   state = 'play';
   // 手机上开局顺手进全屏：横屏游戏被地址栏吃掉 60~80px 高度差别很大。
   // 只在「粗指针 + 已横屏」时尝试，桌面端完全不碰。
@@ -2786,6 +2986,8 @@ function gameOver() {
   });
   if (SAVE.log.length > LOG_MAX) SAVE.log = SAVE.log.slice(-LOG_MAX);
   writeSave();
+  // 这一局已经结束了 —— 续档快照作废，标题页不该再挂着「继续航程」
+  clearRun();
   const fresh = checkUnlocks();
   $('over-title').textContent = G.won ? '航程 · 抵达奇点' : '航程 · 中断';
   $('over-title').className = 'over-title' + (G.won ? ' win' : '');
@@ -2932,6 +3134,7 @@ function choose(i, viaPointer) {
   if (viaPointer && performance.now() - G.upOpen < UP_ARM) return;
   const m = choices[i]; if (!m) return;
   const lv = G.mods[m.id] = (G.mods[m.id] || 0) + 1;
+  markSeen(m.id);        // 图鉴：模块名录
   // ⚠️ 第二个参数是本卡当前等级。绝大多数卡用不到，但「冲角装甲」的首级惩罚
   //    （射速 -30%）必须只在 n === 1 时结算一次 —— 少了它续档重放会把惩罚叠三次。
   m.apply(G.S, lv);
@@ -3019,6 +3222,17 @@ function handleAct(a) {
   else if (a === 'title') toTitle();
   else if (a === 'help') openHelp();
   else if (a === 'helpback') closeHelp();
+  else if (a === 'codex') openCodex();
+  else if (a === 'codexback') closeCodex();
+  // 图鉴页签。分成四个 act 而不是读 data-tab：委托里 handleAct 只拿到 act 字符串
+  else if (a === 'cdx-enemy') { codexTab = 'enemy'; drawCodex(); }
+  else if (a === 'cdx-boss') { codexTab = 'boss'; drawCodex(); }
+  else if (a === 'cdx-hull') { codexTab = 'hull'; drawCodex(); }
+  else if (a === 'cdx-mod') { codexTab = 'mod'; drawCodex(); }
+  // ⚠️ 叫 continue 不叫 resume：暂停面板的「继续」已经把 resume 占了（= togglePause）
+  else if (a === 'continue') resumeRun();
+  else if (a === 'savequit') saveAndQuit();
+  else if (a === 'clrrun') { clearRun(); toTitle(); }
   else if (a === 'start') openHangar();
   else if (a === 'resume') togglePause();
   else if (a === 'restart') { G = null; startGame(); }

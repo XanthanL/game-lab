@@ -160,6 +160,27 @@ em { font-style: normal; }
 #over-rank { color: #c0cbdc; }
 #over-rank b { color: #ffcd75; }
 
+/* codex（图鉴） */
+#codex { background: rgba(8, 9, 20, .93); gap: 4px; }
+/* ⚠️ 29 张模块卡会排到 800px 以上。这块必须自己滚，不能靠 .ov 整体滚 ——
+      否则页签和「返回」会被一起滚出 270px 的画面，翻两页就找不到出口了（死路）。
+      touch-action: pan-y 不能省：html/body/#wrap 上都是 touch-action:none，
+      不加这条触屏根本拖不动。 */
+.cdgrid { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+          width: 452px; max-height: 148px; overflow-y: auto; overscroll-behavior: contain;
+          touch-action: pan-y; background: #0e1022; padding: 5px; box-shadow: inset 0 0 0 1px #29366f; }
+.cde { width: 104px; padding: 3px 4px 4px; background: #151933; display: flex; flex-direction: column;
+       align-items: center; gap: 2px; box-shadow: inset 0 0 0 1px #29366f; filter: saturate(.25); }
+.cde.seen { filter: none; box-shadow: inset 0 0 0 1px #3b5dc9; }
+.cde canvas { width: 40px; height: 40px; image-rendering: pixelated; background: #05060d; }
+/* 模块没有精灵，用卡面上那个汉字 glyph */
+.cde .cdg { width: 40px; height: 40px; font-size: 30px; line-height: 40px; text-align: center;
+            color: #41a6f6; background: #05060d; box-shadow: inset 0 0 0 1px #29366f; }
+.cde .cdn { color: #566c86; }
+.cde.seen .cdn { color: #f4f4f4; }
+.cde .cdt { color: #566c86; text-align: center; line-height: 12px; }
+.cde.seen .cdt { color: #c0cbdc; }
+
 /* touch */
 #touch { display: none; }
 #wrap.touch.playing #touch { display: block; }
