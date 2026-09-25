@@ -14,6 +14,9 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const pick = a => a[(Math.random() * a.length) | 0];
 const QS = new URLSearchParams(location.search);
 const BOT = QS.has('bot'), GOD = QS.has('god'), FAST = +QS.get('fast') || 1;
+// ?kit=N 开局装满 N 级模块 / ?kit=all 装满满级 —— 只为了一眼看满装配的飞船长什么样。
+// ⚠️ 必须带值（QS.get 不带值时返回空串，falsy，整个入口会被静默跳过）。
+const KIT = QS.get('kit') || '';
 const fmtTime = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 let state = 'loading', G = null, scale = 1, offX = 0, offY = 0;
@@ -390,6 +393,9 @@ const MODULES = [
     bloom: S => { S.mine = 3; S.mineCd = 2.6; S.mineMax = 5; S.mineGold = 1; } },
 ];
 const TYPE_NAME = { stat: '数值', weapon: '弹体', ability: '装置' };
+// id -> 模块定义。配件绘制（drawShipKit）每帧都要按 id 取 max 判满级，别再线性 find。
+const MOD_BY_ID = {};
+for (const m of MODULES) MOD_BY_ID[m.id] = m;
 
 // ============ 模块协同（成对装配即生效） ============
 // 只记 flag，数值在运行时读 —— 这样任何时候重算都不会重复叠加。
@@ -2272,13 +2278,83 @@ function drawEnemies() {
   }
 }
 
+// 数一张 canvas 上有多少个非透明像素（探针用：验「真的画出来了」而不是「字段有值」）
+function _opaque(x, w, h) {
+  const d = x.getImageData(0, 0, w, h).data;
+  let n = 0;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+  return n;
+}
+// 探针用的离屏画布 / 绘制包装：把「当前船体 + 指定配件」画成一张图，供逐像素对比
+function _scratchKit() {
+  const c = document.createElement('canvas');
+  c.width = 120; c.height = 100;
+  return c;
+}
+function _drawKit(cv, mods, white) {
+  const x = cv.getContext('2d');
+  x.imageSmoothingEnabled = false;
+  x.clearRect(0, 0, cv.width, cv.height);
+  drawShipKit(x, G.S.hull, cv.width / 2, cv.height / 2, 0, mods, white, 1);
+}
+
+/* 「船体 + 全部配件」的唯一绘制入口 —— 战斗画面、暂停页预览、探针都用它。
+   配件是随等级长出来的实体件（ATTACH_ART），不是数值特效：
+   选了装甲板就真在舷侧长出装甲片，选了尾炮船尾就真伸出炮管。
+   k = 放大倍数（预览页用 2，战斗里用 1）。整数倍 + imageSmoothing 关掉 = 像素不糊。 */
+function drawShipKit(c, hull, x, y, ang, mods, white, k) {
+  k = k || 1;
+  const S = SHIPSET[hull];
+  if (!S) return;
+  const src = white ? S.white : S;
+  const img = src.imgs[dirIndex(ang, src.n)];
+  if (k === 1) c.drawImage(img, Math.round(x - S.half), Math.round(y - S.half));
+  else c.drawImage(img, Math.round(x - S.half * k), Math.round(y - S.half * k), img.width * k, img.height * k);
+  const cos = Math.cos(ang), sin = Math.sin(ang);
+  for (const id in mods) {
+    const a = attachSprite(id, mods[id], white);
+    if (!a) continue;                       // 没有美术的 id 直接跳过，不能拖垮整帧
+    const wx = x + (cos * a.ox - sin * a.oy) * k;
+    const wy = y + (sin * a.ox + cos * a.oy) * k;
+    const ai = a.set.imgs[dirIndex(ang, a.set.n)];
+    if (k === 1) c.drawImage(ai, Math.round(wx - a.set.half), Math.round(wy - a.set.half));
+    else c.drawImage(ai, Math.round(wx - a.set.half * k), Math.round(wy - a.set.half * k), ai.width * k, ai.height * k);
+  }
+}
+
+// 暂停页的「当前舰体」预览：把这一局的装配结果整船画出来 —— 玩家能回头看自己 DIY 成了什么。
+// 固定机首朝右（ang = 0），2 倍整数放大。
+function drawShipView() {
+  const cv = $('shipview');
+  if (!cv || !G) return;
+  const x = cv.getContext('2d');
+  x.imageSmoothingEnabled = false;
+  x.clearRect(0, 0, cv.width, cv.height);
+  drawShipKit(x, G.S.hull, cv.width / 2, cv.height / 2, 0, G.mods, false, 2);
+  // 配件是画在船体**上面**的，满装配（29 件）时整条船会被盖住，看着像一团杂物。
+  // 再淡淡叠一层船体，让「这是哪条船」一眼还能认出来 —— 只影响预览，不影响战斗画面。
+  const hs = SHIPSET[G.S.hull];
+  if (hs) {
+    const himg = hs.imgs[0];
+    x.globalAlpha = 0.34;
+    x.drawImage(himg, Math.round(cv.width / 2 - hs.half * 2), Math.round(cv.height / 2 - hs.half * 2),
+                himg.width * 2, himg.height * 2);
+    x.globalAlpha = 1;
+  }
+  const cap = $('shipview-cap');
+  if (cap) {
+    const n = Object.keys(G.mods).length;
+    cap.textContent = n ? '当前舰体 · 配件 ' + n + ' 件' : '当前舰体 · 尚未装配';
+  }
+}
+
 function drawPlayer() {
   const S = G.S;
   // 冲刺残影
   if (G.dashT > 0) {
     for (let i = 1; i <= 3; i++) {
       ctx.globalAlpha = 0.18 * (4 - i);
-      drawShip(ctx, S.hull, G.ang, G.px - Math.cos(G.ang) * i * 7, G.py - Math.sin(G.ang) * i * 7, true);
+      drawShipKit(ctx, S.hull, G.px - Math.cos(G.ang) * i * 7, G.py - Math.sin(G.ang) * i * 7, G.ang, G.mods, true, 1);
       ctx.globalAlpha = 1;
     }
   }
@@ -2286,7 +2362,7 @@ function drawPlayer() {
   const blink = G.inv > 0 && ((G.t * 20) | 0) % 2 === 0;
   if (blink) ctx.globalAlpha = 0.45;
   if (G.odT > 0) drawGlow(ctx, '#73eff7', 22, 0.4, G.px, G.py);
-  drawShip(ctx, S.hull, G.ang, G.px, G.py, G.hurtFlash > 0);
+  drawShipKit(ctx, S.hull, G.px, G.py, G.ang, G.mods, G.hurtFlash > 0, 1);
   ctx.globalAlpha = 1;
   // 引擎焰
   if (G.thrust) {
@@ -2726,7 +2802,8 @@ function codexEntries(kind) {
     id: h.id, name: h.name, trait: h.trait || '', seen: !!SAVE.seen[h.id], hull: h.id,
   }));
   if (kind === 'mod') return MODULES.map(m => ({
-    id: m.id, name: m.name, trait: m.desc || '', seen: !!SAVE.seen[m.id], glyph: m.glyph, type: m.type,
+    id: m.id, name: m.name, trait: m.desc || '', seen: !!SAVE.seen[m.id],
+    mod: m.id, modLv: m.max, type: m.type,
   }));
   return Object.keys(ETYPES).map(k => {
     const c = ETYPES[k];
@@ -2745,14 +2822,22 @@ function closeCodex() {
   else if (codexFrom === 'over') { state = 'over'; showOverlay('over'); }
   else toTitle();
 }
-// 图鉴小图：敌型 / 巨像走 SPR[spr].r[0]，船体走 SHIPSET[id].imgs[0]。
+// 图鉴小图：敌型 / 巨像走 SPR[spr].r[0]，船体走 SHIPSET[id].imgs[0]，
+// 模块走 attachIcon（配件美术，满级形态）。
 // ⚠️ 放大要取整（保住像素锐利），缩小才按比例 —— 巨像精灵是 2x 烘焙的，比 40px 画布大。
 function drawCodexArt(x, e) {
   const cv = x.canvas;
   let img = null;
-  if (e.hull) { const s = SHIPSET[e.hull]; if (s && s.imgs) img = s.imgs[0]; }
+  if (e.mod) img = attachIcon(e.mod, e.modLv || 1, cv.width);
+  else if (e.hull) { const s = SHIPSET[e.hull]; if (s && s.imgs) img = s.imgs[0]; }
   else if (e.spr) { const st = SPR[e.spr]; if (st && st.r && st.r.length) img = st.r[0]; }
   if (!img || !img.width) return;
+  if (e.mod) {                             // 图标已经是目标尺寸，直接 1:1 贴
+    if (!e.seen) x.globalAlpha = 0.22;
+    x.drawImage(img, 0, 0);
+    x.globalAlpha = 1;
+    return;
+  }
   let k = Math.min(cv.width / img.width, cv.height / img.height);
   if (k >= 1) k = Math.floor(k);
   const w = img.width * k, h = img.height * k;
@@ -2772,9 +2857,7 @@ function drawCodex() {
   for (const e of list) {
     const el = document.createElement('div');
     el.className = 'cde' + (e.seen ? ' seen' : '');
-    el.innerHTML = (e.glyph
-        ? '<div class="cdg">' + (e.seen ? e.glyph : '?') + '</div>'
-        : '<canvas width="40" height="40"></canvas>')
+    el.innerHTML = '<canvas width="40" height="40"></canvas>'
       + '<div class="cdn">' + (e.seen ? e.name : '？？？') + '</div>'
       + '<div class="cdt">' + (e.seen ? e.trait : '尚未遭遇') + '</div>';
     box.appendChild(el);
@@ -2934,6 +3017,13 @@ function startGame() {
   if (!hullUnlocked(h)) { Sound.sfx.lock(); denyDetail(); return; }
   G = newGame(h.id);
   markSeen(h.id);        // 图鉴：船体名录
+  // 调试用：?kit=3 开局直接装满 3 级，?kit=all 装满每张卡的满级。
+  // 用途只有一个 —— 一眼看满装配的飞船长什么样（配件全挂满的样子），不用打一局。
+  if (KIT) {
+    const m = {};
+    for (const md of MODULES) m[md.id] = KIT === 'all' ? md.max : Math.min(KIT, md.max);
+    replayMods(m);
+  }
   state = 'play';
   // 手机上开局顺手进全屏：横屏游戏被地址栏吃掉 60~80px 高度差别很大。
   // 只在「粗指针 + 已横屏」时尝试，桌面端完全不碰。
@@ -2962,6 +3052,7 @@ function togglePause() {
     $('build').innerHTML = modChips
       ? modChips + synChips
       : '<span class="dim">尚未装配模块</span>';
+    drawShipView();
     renderVolume();
     showOverlay('pause');
   } else if (state === 'pause') {
@@ -3117,7 +3208,7 @@ function renderCards() {
       <div class="tag">${TYPE_NAME[m.type]}</div>
       ${lv === 0 ? '<div class="new">NEW</div>' : ''}
       ${isMax ? '<div class="mx">MAX</div>' : ''}
-      <div class="glyph">${m.glyph}</div>
+      <div class="glyph"><canvas width="40" height="40" data-gic="${i}"></canvas></div>
       <div class="name">${m.name}</div>
       <div class="pips">${pips}</div>
       <div class="desc">${m.desc.replace(/\n/g, '<br>')}</div>
@@ -3125,6 +3216,15 @@ function renderCards() {
       <div class="key">[${i + 1}]</div>
     </div>`;
   }).join('');
+  // 卡面图标 = 这一级装上船之后**会长出来的那块配件**（同一套美术，转成机首朝上）。
+  // 所以卡面看到的就是舰体上要长出来的东西，不是另画一套图标。
+  for (const cv of box.querySelectorAll('canvas[data-gic]')) {
+    const m = choices[+cv.dataset.gic];
+    if (!m) continue;
+    const nextLv = Math.min((G.mods[m.id] || 0) + 1, m.max);
+    const ic = attachIcon(m.id, nextLv, 40);
+    if (ic) cv.getContext('2d').drawImage(ic, 0, 0);
+  }
   const synCount = Object.keys(G.syn).length;
   $('up-sub').textContent = 'LV ' + G.level + ' · 已装配 ' + Object.keys(G.mods).length + ' 种模块'
     + (synCount ? ' · 协同 ' + synCount : '');
@@ -3613,6 +3713,63 @@ function boot() {
     get ebulletCount() { return G.ebullets.length; },
     moduleIds: () => MODULES.map(m => m.id),
     moduleInfo: () => MODULES.map(m => ({ id: m.id, name: m.name, type: m.type, max: m.max })),
+    // ---- 配件 / 图标探针 ----
+    // 把「船体 + 配件」画进给定 canvas 并返回非透明像素数。
+    renderKit: (cv, mods, white) => {
+      _drawKit(cv, mods || {}, !!white);
+      return _opaque(cv.getContext('2d'), cv.width, cv.height);
+    },
+    // 更硬的指标：装上这些配件之后，**画面有多少像素变了**。
+    // ⚠️ 不能只数「非透明像素」—— 贴在船体上的件（如暴击电容）是画在船体**上面**的，
+    //    那些像素本来就是不透明的，计数完全不变，会误判成「配件没画上去」。
+    kitDiff: (modsA, modsB) => {
+      const a = _scratchKit(), b = _scratchKit();
+      _drawKit(a, modsA || {}, false);
+      _drawKit(b, modsB || {}, false);
+      const da = a.getContext('2d').getImageData(0, 0, a.width, a.height).data;
+      const db = b.getContext('2d').getImageData(0, 0, b.width, b.height).data;
+      let n = 0;
+      for (let i = 0; i < da.length; i += 4) {
+        if (da[i] !== db[i] || da[i + 1] !== db[i + 1] || da[i + 2] !== db[i + 2] || da[i + 3] !== db[i + 3]) n++;
+      }
+      return n;
+    },
+    renderIcon: (cv, id, lv) => {
+      const ic = attachIcon(id, lv, cv.width);
+      const x = cv.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.clearRect(0, 0, cv.width, cv.height);
+      if (!ic) return 0;
+      x.drawImage(ic, 0, 0);
+      return _opaque(x, cv.width, cv.height);
+    },
+    // 配件的几何与用色（探针据此验「每个模块每一级都有真东西」）
+    attachInfo: (id, lv) => {
+      const fl = attachFlat(id, lv), ps = attachParts(id, lv);
+      if (!fl || !ps) return null;
+      const colors = {};
+      for (const p of ps) for (const r of p.rows) for (let i = 0; i < r.length; i++) {
+        const ch = r[i];
+        if (ch === '.' || !PAL[ch]) continue;
+        colors[ch] = (colors[ch] || 0) + 1;
+      }
+      return { w: fl.w, h: fl.h, cx: fl.cx, cy: fl.cy, parts: ps.length, colors: colors };
+    },
+    // 升级卡 / 图鉴上真的渲染出 canvas 图标了吗（不是只有空壳）
+    cardIcons: () => {
+      const out = [];
+      for (const cv of document.querySelectorAll('#cards canvas[data-gic]')) {
+        out.push({ i: +cv.dataset.gic, w: cv.width, h: cv.height, px: _opaque(cv.getContext('2d'), cv.width, cv.height) });
+      }
+      return out;
+    },
+    codexIcons: () => {
+      const out = [];
+      for (const cv of document.querySelectorAll('#codex-grid canvas')) {
+        out.push({ px: _opaque(cv.getContext('2d'), cv.width, cv.height) });
+      }
+      return out;
+    },
     save: () => SAVE,
     writeSave,
     hullUnlocked: id => hullUnlocked(HULLS.find(h => h.id === id)),

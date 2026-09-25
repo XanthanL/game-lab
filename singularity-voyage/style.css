@@ -126,6 +126,13 @@ em { font-style: normal; }
 .cols { display: flex; gap: 14px; text-align: left; }
 .cols > div { width: 200px; }
 .cols p { margin: 0 0 5px; line-height: 13px; }
+/* 当前舰体预览（暂停页）：2 倍整数放大，128x96 画布正好装得下船体 + 最外沿的配件
+   （配件最远到 ±30 游戏像素，×2 = ±60，居中后落在 4..124 里）。
+   image-rendering: pixelated 不能省 —— 它是 2 倍烘焙的位图，交给浏览器平滑就糊了。 */
+#shipview-box { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 1px 0; }
+#shipview { width: 128px; height: 96px; image-rendering: pixelated; background: #05060d;
+            box-shadow: inset 0 0 0 1px #29366f; }
+#shipview-cap { color: #7a86a8; }
 /* 装配清单自己滚，别把暂停面板顶出 270px 的框。
    满装配 55 枚芯片会排到 213px 高（占掉整块画布），这里压到 5 行左右。 */
 #build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 420px;
@@ -176,7 +183,19 @@ em { font-style: normal; }
 @keyframes cardIn { from { transform: translateY(40px); opacity: 0; } }
 .card .tag { position: absolute; top: 0; left: 0; right: 0; height: 13px; background: var(--c); color: #1a1c2c; text-align: center; line-height: 13px; }
 .card .new { position: absolute; top: 16px; right: 3px; color: #ffcd75; animation: blink .6s steps(2) infinite; }
-.card .glyph { width: 44px; height: 44px; font-size: 36px; line-height: 44px; text-align: center; color: var(--c); background: #1a1c2c; box-shadow: inset 0 0 0 1px var(--d), 0 0 0 1px var(--c); text-shadow: 2px 2px 0 var(--d); margin-top: 2px; }
+/* 图标框：卡面那块 44x44 的暗格，装的是「这一级会长到船上的配件」的像素图
+   （attachIcon 出的 40x40 canvas）。padding 2px + border-box 让内阴影留出画框。
+   卡池抽空那张（「满」）没有 canvas、还是汉字，所以字号/行高得留着。
+   line-height 收到 1：36px 的字在 40px 内容盒里靠 flex 居中，行高再给 44px 会溢出。
+   ⚠️ 底色必须是「太空黑」#05060d，**不能**用 #1a1c2c —— 后者正好等于调色板里的 `k`，
+      而绝大多数配件都用 `k` 画深色描边，底色撞上就等于描边凭空消失，
+      卡面上只剩中间一小块亮色（尾炮/多联机炮曾因此长得一模一样）。
+      图鉴的 .cde canvas 和暂停页的 #shipview 用的都是 #05060d，这里对齐。 */
+.card .glyph { width: 44px; height: 44px; padding: 2px; box-sizing: border-box; display: flex;
+  align-items: center; justify-content: center; font-size: 32px; line-height: 1; text-align: center;
+  color: var(--c); background: #05060d; box-shadow: inset 0 0 0 1px var(--d), 0 0 0 1px var(--c);
+  text-shadow: 2px 2px 0 var(--d); margin-top: 2px; }
+.card .glyph canvas { width: 40px; height: 40px; display: block; image-rendering: pixelated; }
 .card .name { color: #f4f4f4; }
 .card .pips { display: flex; gap: 2px; height: 4px; }
 .card .pips i { width: 6px; height: 4px; background: #262b44; }
@@ -216,9 +235,6 @@ em { font-style: normal; }
        align-items: center; gap: 2px; box-shadow: inset 0 0 0 1px #29366f; filter: saturate(.25); }
 .cde.seen { filter: none; box-shadow: inset 0 0 0 1px #3b5dc9; }
 .cde canvas { width: 40px; height: 40px; image-rendering: pixelated; background: #05060d; }
-/* 模块没有精灵，用卡面上那个汉字 glyph */
-.cde .cdg { width: 40px; height: 40px; font-size: 30px; line-height: 40px; text-align: center;
-            color: #41a6f6; background: #05060d; box-shadow: inset 0 0 0 1px #29366f; }
 .cde .cdn { color: #566c86; }
 .cde.seen .cdn { color: #f4f4f4; }
 .cde .cdt { color: #566c86; text-align: center; line-height: 12px; }

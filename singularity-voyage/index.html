@@ -112,6 +112,11 @@
     <div class="panel">
       <div class="ptitle">暂停</div>
       <div id="pause-stats" class="dim"></div>
+      <!-- 当前舰体：把这一局的配件整船画出来，装配结果肉眼可见（drawShipView） -->
+      <div id="shipview-box">
+        <canvas id="shipview" width="128" height="96"></canvas>
+        <div id="shipview-cap" class="dim"></div>
+      </div>
       <div id="build"></div>
       <div class="volbox" id="vol-pause"></div>
       <div class="menu row">

@@ -4,6 +4,7 @@
 
 **血统**：画风与代码框架照搬 `last-firewall`（终焉防火墙），内容（船体 / 敌型 / 模块 / 波次）来自 `singularity-echo`（奇点回响）的重设计版。
 本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 3 Boss / 29 模块卡（含 MAX 质变 + 26 组协同），完整可通关，**打通后转入无尽深渊**。
+29 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
 
 - 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。像素字号必须是 12/24/36。
 - `src/sprites.js`：调色板字符串精灵 + 烘焙；`src/audio.js`：WebAudio 合成 BGM/SFX；`src/game.js`：其余全部（船体在 `HULLS`，敌型在 `ETYPES`，编队在 `SQUADS`，Boss 在 `BOSSES`，模块在 `MODULES`，协同在 `SYNERGIES`，波次导演在 `startWave`/`updateWave`）。
@@ -195,6 +196,115 @@
 
 ⚠️ **`mineStasis` 协同往 `G.webs` 里塞元素时必须带 `grow` 字段**：
 `webSlowAt()` 算的是 `w.r * w.grow`，漏了就是 `NaN` 半径 → 减速判定全废且不报错。
+
+## 舰体配件（DIY 视觉升级）
+
+用户要的：**每次升级除了加数值，还往飞船上挂一件看得见的配件** —— 选不同能力就长出不同外形，
+「不只是能力强了，视觉上也能感知到」，而且**配件要和能力语义相符**（护盾长盾、长枪长矛、磁雷挂雷舱）。
+
+### 数据：`sprites.js` 的 `ATTACH_ART`
+
+`ATTACH_ART[id][lv]` → `[part, ...]`，`part = { x, y, rows }`，`rows` 是字符画（`PAL` 调色板字符，`.` 透明）。
+29 张卡每一级都有图（`max` 是 3 或 4）。缺图/空图时 `attachParts()` 返回 `null`，绘制自动跳过 —— 加了新卡忘了画图不会炸，只是没配件。
+
+**坐标是「本地格」**，就是 `HULL_SRC` 那张 22×16 字符画的网格：
+
+- 原点在格 `(11, 8)` = 船心；**`+x` 指向机头，`+y` 指向右舷**（机头朝右时就是屏幕下方）。
+- 船体大约占 `x∈[-8, 8]`、`y∈[-5, 4]`，机头尖在 `(8, 0)`。
+- **1 格 = 2 游戏像素**（和船体 2× 烘焙同一比例）。所有坐标/半径都用整数，
+  这样任意 90° 旋转后每个像素都还落在游戏像素上。
+
+四个定位助手（都在 `ATTACH_ART` 的 IIFE 顶部）：
+
+| 助手 | 作用 |
+|---|---|
+| `A(x, y, rows)` | 直接按左上角定位 |
+| `C(x, rows)` | 按垂直居中定位（`y = -⌊len/2⌋`），侧挂件常用 |
+| `MV(p)` | 沿中线镜像（`rows` 反向 → 行步进变 −1） |
+| `BOTH(p)` | `[p, MV(p)]`，上下两侧对称件一次给两件 |
+| `OUT(x, body, col)` | **外环件**：舱体在外，底下补一行「挂架柱」`col` 固定落在 `y = -5`（船体边缘） |
+
+⚠️ **`OUT()` 是「配件别飘到船外」的唯一解法。** 侧挂件直接放 `y = -8` 之类会悬空 ——
+挂架柱把舱体钉在船壳上，升级只是往上/往外长，视觉上永远连着船。**加侧挂件一律走 `OUT` 或 `y = -6` 内环。**
+
+⚠️ **硬约束（探针断言）：等级升高不得缩小。** 升级却让配件变小 = 玩家以为退级。每级的部件数/像素数只增不减。
+⚠️ **单件至少 2 种调色板字符**（`ricochet` 1 级曾是个纯 `k` 实心块，被探针逮到），不然和背景糊在一起。
+
+### 绘制链路
+
+- `attachFlat(id, lv, solo)` → **1px/格**的平面画布，`cx/cy` 是中心（格坐标）。
+  `solo` 见下面「图标」那条，缓存 key 带 `|s` 区分。
+- `attachSprite(id, lv, white)` = `scaled(flat, 2)` + `bakeRotation`（**24 向预烘焙**，和船体同一套）。
+  每件按**自己的中心**旋转，缓存 key 带 `white` 标志（受击白闪变体）。
+- **挂载公式**（在 `drawShipKit` 里）：
+  `wx = x + (cos*ox − sin*oy) * k`，`wy = y + (sin*ox + cos*oy) * k`，
+  其中 `ox/oy = flat.cx/cy * 2`（格 → 游戏像素）。
+- ⚠️ **`drawShipKit(c, hull, x, y, ang, mods, white, k)` 是唯一入口** —— 战斗、暂停预览、探针全走它。
+  别再另写一份「船体 + 配件」的绘制，不然三处会漂移。
+- ⚠️ **配件不能按动画时间 `t` 改半径/位置**（那种件会每帧抖动）。要动就在烘焙阶段定死。
+
+### 图标：`attachIcon(id, lv, size)`
+
+把平面图转 **−90°（机头朝上）** 再整数倍放大到 `size×size`。
+
+⚠️⚠️ **旋转的 `translate` 量必须是「源宽」`fl.w`，不是源高。** 输出画布是 `(h, w)`，
+像素 `(i, j)` 映射到 `(j, W−i)` —— 不补 `W` 整块会掉到画布下面。
+踩过：13/29 张图标**全空**，`fillRect` 计数为 0 但不报任何错。正确写法：
+
+```js
+const rot = newCanvas(fl.h, fl.w), rx = rot.getContext('2d');
+rx.imageSmoothingEnabled = false;
+rx.translate(0, fl.w); rx.rotate(-Math.PI / 2);
+rx.drawImage(fl.cv, 0, 0);
+```
+
+⚠️⚠️ **`BOTH` 件在图标里必须只取一半。** 一对镜像件在船上是上下两排（相隔 ~10 格），
+照原样缩进 40px 图标 → bbox 被撑到 40 格宽 → 缩放系数塌成 1 → 变成**两个遥遥相望的点**。
+`_iconParts(ps)` 检测精确的 MV 配对（同 `x`、`b.y === -a.y - a.rows.length`、`b.rows === a.rows.reverse()`），
+命中就只返回 `ps[0]`，并让 `attachFlat` 走 `solo` 缓存键。
+踩过：`armor/magnet/phasehull/multigun/drone/shield/stasis/ricochet/deathtrail/spray/leech/blink/mine` 共 13 张全废。
+
+⚠️⚠️ **放大倍率要按「填满卡面」算，别用 `min(size/w, size/h)` 再卡个小上限。**
+一级配件常常只有 3×2 格，旧写法（`min` + 上限 8）只剩 16×24 px，在 40px 卡面上糊成一个小点 ——
+实测「尾炮」和「多联机炮」**长得一模一样**。现在是
+`k = floor(size * 0.82 / max(w, h))`，上限 16，整数倍放大（像素风不能非整数缩放）。
+
+⚠️⚠️ **图标底色必须和 `k` 拉开**：`.card .glyph` 曾是 `#1a1c2c` —— 那正好等于调色板里的 `k`，
+而绝大多数配件都用 `k` 画深色描边 → **描边凭空消失**，卡面上只剩中间一小块亮色。
+现在统一成太空黑 `#05060d`（和 `.cde canvas` / `#shipview` 一致，也和星区背景 `#070a18` 同族）。
+**给配件换用色前先确认它在卡面底色上还看得见。**
+
+### 接线点
+
+- **升级三选一**：`renderCards()` 里每张卡是 `<canvas width="40" height="40" data-gic="i">`，
+  循环结束后画 `attachIcon(m.id, 下一级, 40)`。⚠️ 画的是**下一级**的图 —— 玩家要看到「选了之后长什么样」。
+- **图鉴模块页**：`codexEntries('mod')` 带 `mod` / `modLv: m.max`，`drawCodexArt` 走 `attachIcon`。
+  `.cdg` 那条「汉字 glyph」分支已删掉，现在**图鉴模块页全是 canvas 图标**。
+- **暂停页舰体预览**：`#shipview`（128×96，2×），`drawShipView()` 画当前船体 + 全部配件，
+  再以 `globalAlpha = 0.34` **重描一遍船体** —— 29 件配件会盖满船壳，不补这一层剪影就完全读不出来。
+
+### 度量：不要数「非透明像素」
+
+⚠️⚠️ **贴在船体上的配件（如暴击电容）是画在船体「上面」的，那些像素本来就是不透明的** ——
+`_opaque()` 计数**完全不变**，会误判成「配件没画上去」。
+正确指标是 `__dbg.kitDiff(modsA, modsB)`：把两个配装各渲染一遍，**逐像素比 RGBA**，返回变了多少像素。
+
+### 调试参数与探针
+
+- `?kit=N`（第 N 个模块拉满）/ `?kit=all`（全 29 张拉满）—— 在 `startGame()` 里经 `replayMods` 应用。
+  ⚠️ **`QS.get('kit')` 不带值会返回空串（falsy）→ 整个入口被静默跳过**（和 forcing-cosmos 的 `?charsel` 同一个坑）。
+  所以顶部常量写的是 `QS.get('kit') || ''`，探针一律带值传参。
+- `__dbg` 新增：`renderKit(cv, mods, white)`、`kitDiff(a, b)`、`renderIcon(cv, id, lv)`、
+  `attachInfo(id, lv)`（返回 `{w,h,cx,cy,parts,colors}`）、`cardIcons()`、`codexIcons()`。
+- `.workbuddy/sv-attach.py` —— **18 断言**：模块表 ≥29 · 每张卡每一级都有非空部件 · `attachInfo` 几何有效 ·
+  每件 ≥2 种颜色 · **像素数随等级单调不减** · 29 张图标都渲染出 >0 像素 ·
+  **逐卡 `kitDiff({}, {id:max}) > 0`**（真画上船了）· 满装 > 2× 空装 · 白闪变体可用 ·
+  升级卡 canvas 非空 · 暂停预览像素随装配增长且 caption 含「配件」· 图鉴模块页 29 条无空白 · 返回可达。
+- `.workbuddy/sv-kit-shot.py` —— **眼睛迭代工具**（不是断言）：把 8 种典型装配
+  （空 / 侧挂 / 鼻部武器 / 尾部 / 外环舱 / 背脊 / 中期 8 件 / 满 29 件）画进一张图，
+  POST base64 存到 `.workbuddy/out/sv-kit.png`。
+  ⚠️ **「好不好看」没法断言**，改完 `ATTACH_ART` 就靠它看一眼再定稿。
+  ⚠️ 它需要 `?bot=1` 才会进 play 态，且超时分支必须**也 POST 一次**（否则探针侧只看到 NO RESULT）。
 
 ## 操控模型：`aimMode`（对齐《奇点回响》）
 
@@ -408,7 +518,12 @@
   「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 29 条最容易被切）/
   标题与暂停往返无死路 / `spawn → markSeen` / 保存并退出 → 继续航程 → 段数·船体恢复 / `gameOver` 清档。
   改了 `codexEntries` / `drawCodex` / `markSeen` / `snapshotRun` / `resumeRun` / `SAVE_DEF` 就跑一次。
-- 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **71 断言**，遍历每个覆盖层
+- 舰体配件探针：`python .workbuddy/sv-attach.py` —— **18 断言**，验 29 张卡的配件图
+  （每级非空 / ≥2 色 / **像素随等级单调不减** / 逐卡 `kitDiff` 真的画上船 / 图标非空 /
+  升级卡与图鉴的 canvas 真有内容 / 暂停页舰体预览随装配增长）。改了 `ATTACH_ART` / `attachSprite` /
+  `attachIcon` / `drawShipKit` / `renderCards` / `drawCodex` / `drawShipView` 就跑一次。
+  另配一个**眼睛工具**：`python .workbuddy/sv-kit-shot.py` 出 8 种装配的对比图（`.workbuddy/out/sv-kit.png`）。
+- 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **70 断言**，遍历每个覆盖层
   （标题 / 标题带存档 / 帮助 / 机库 / 对局 / 满构筑暂停 / 图鉴三页 / 升级 / 结算），逐层验：
   **滚动条够不够细**（`sbW/sbH ≤ 8`）· **文字有没有溢出容器**（`txBoxSpill`）·
   **文字之间有没有重叠**（`txOverlap`）· 覆盖层是否存在 · **底部留白 ≥ 6**（`bottom-slack`）；
@@ -435,5 +550,6 @@
   见「从《奇点回响》搬运的机制」三批表格。后续若要继续搬 echo 的其余卡，先查 `MODULES` 是否已有同 id。
 - **画面上还看不出 `overclock` / `leech` 的满级质变。** 这两张的 `ovGold` / `leechGold`
   目前只影响浮字颜色，还没像其它卡那样给一个「一眼看得出」的视觉（口径是弹丸变粗、
-  散射是弹幕变宽、裂变是弹片变金 —— 那三张自带）。要补就在 `drawPlayer()` 里加。
+  散射是弹幕变宽、裂变是弹片变金 —— 那三张自带）。
+  （配件层已补上外形差异，见「舰体配件」；这里说的是**弹幕/特效**层面的质变，仍未做。）
 
