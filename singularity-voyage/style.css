@@ -186,13 +186,16 @@ em { font-style: normal; }
 /* 图标框：卡面那块 44x44 的暗格，装的是「这一级会长到船上的配件」的像素图
    （attachIcon 出的 40x40 canvas）。padding 2px + border-box 让内阴影留出画框。
    卡池抽空那张（「满」）没有 canvas、还是汉字，所以字号/行高得留着。
-   line-height 收到 1：36px 的字在 40px 内容盒里靠 flex 居中，行高再给 44px 会溢出。
+   ⚠️ 字号只能是 **12 的整数倍**（12/24/36）—— 字体是 12px 的 Fusion Pixel，
+      给 32px 就是 2.67 倍缩放，像素网格对不齐、笔画糊边。这里 36px = 3 倍。
+   ⚠️ line-height 收到 1：内容盒只有 40px（44 - 2×2 padding），行高给 44px 会顶出框外。
+      36px 的字 + 行高 1 在 40px 内容盒里靠 flex 居中，上下各留 2px。
    ⚠️ 底色必须是「太空黑」#05060d，**不能**用 #1a1c2c —— 后者正好等于调色板里的 `k`，
       而绝大多数配件都用 `k` 画深色描边，底色撞上就等于描边凭空消失，
       卡面上只剩中间一小块亮色（尾炮/多联机炮曾因此长得一模一样）。
       图鉴的 .cde canvas 和暂停页的 #shipview 用的都是 #05060d，这里对齐。 */
 .card .glyph { width: 44px; height: 44px; padding: 2px; box-sizing: border-box; display: flex;
-  align-items: center; justify-content: center; font-size: 32px; line-height: 1; text-align: center;
+  align-items: center; justify-content: center; font-size: 36px; line-height: 1; text-align: center;
   color: var(--c); background: #05060d; box-shadow: inset 0 0 0 1px var(--d), 0 0 0 1px var(--c);
   text-shadow: 2px 2px 0 var(--d); margin-top: 2px; }
 .card .glyph canvas { width: 40px; height: 40px; display: block; image-rendering: pixelated; }

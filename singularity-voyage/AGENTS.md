@@ -6,7 +6,11 @@
 本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 3 Boss / 29 模块卡（含 MAX 质变 + 26 组协同），完整可通关，**打通后转入无尽深渊**。
 29 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
 
-- 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。像素字号必须是 12/24/36。
+- 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。
+  ⚠️ **像素字号必须是 12 的整数倍**（12/24/36/48）。字体只有 12px 一档（Fusion Pixel），
+  给 32px 就是 2.67 倍缩放 —— 像素网格对不齐、笔画糊边，而且**不抛异常、rect 也正常**，只有盯图才看得出。
+  `sv-text.py` 有一条静态断言守着（纯读 `style.css`，在开浏览器之前跑）。
+  ⚠️ 唯一的历史遗留是 `.tbtn`（触屏按钮）的 14px，探针会打印 NOTE 但放行 —— 想清掉就改成 12px。
 - `src/sprites.js`：调色板字符串精灵 + 烘焙；`src/audio.js`：WebAudio 合成 BGM/SFX；`src/game.js`：其余全部（船体在 `HULLS`，敌型在 `ETYPES`，编队在 `SQUADS`，Boss 在 `BOSSES`，模块在 `MODULES`，协同在 `SYNERGIES`，波次导演在 `startWave`/`updateWave`）。
 - 操作（**已向《奇点回响》看齐**，见下面「输入」一节的 `aimMode`）：**A/D 转向 · W 推进 · S 制动**；
   鼠标只负责画准星和「机头朝光标缓慢转」；**自动不开火**——按住左键或空格才射击。Shift/右键冲刺，E 超载。
@@ -296,10 +300,11 @@ rx.drawImage(fl.cv, 0, 0);
   所以顶部常量写的是 `QS.get('kit') || ''`，探针一律带值传参。
 - `__dbg` 新增：`renderKit(cv, mods, white)`、`kitDiff(a, b)`、`renderIcon(cv, id, lv)`、
   `attachInfo(id, lv)`（返回 `{w,h,cx,cy,parts,colors}`）、`cardIcons()`、`codexIcons()`。
-- `.workbuddy/sv-attach.py` —— **18 断言**：模块表 ≥29 · 每张卡每一级都有非空部件 · `attachInfo` 几何有效 ·
+- `.workbuddy/sv-attach.py` —— **20 断言**：模块表 ≥29 · 每张卡每一级都有非空部件 · `attachInfo` 几何有效 ·
   每件 ≥2 种颜色 · **像素数随等级单调不减** · 29 张图标都渲染出 >0 像素 ·
   **逐卡 `kitDiff({}, {id:max}) > 0`**（真画上船了）· 满装 > 2× 空装 · 白闪变体可用 ·
-  升级卡 canvas 非空 · 暂停预览像素随装配增长且 caption 含「配件」· 图鉴模块页 29 条无空白 · 返回可达。
+  升级卡 canvas 非空 · 暂停预览像素随装配增长且 caption 含「配件」· 图鉴模块页 29 条无空白 · 返回可达 ·
+  **卡池抽空那张「满」卡（唯一还用汉字字形的卡面）字号没顶出图标框**。
 - `.workbuddy/sv-kit-shot.py` —— **眼睛迭代工具**（不是断言）：把 8 种典型装配
   （空 / 侧挂 / 鼻部武器 / 尾部 / 外环舱 / 背脊 / 中期 8 件 / 满 29 件）画进一张图，
   POST base64 存到 `.workbuddy/out/sv-kit.png`。
@@ -518,12 +523,13 @@ rx.drawImage(fl.cv, 0, 0);
   「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 29 条最容易被切）/
   标题与暂停往返无死路 / `spawn → markSeen` / 保存并退出 → 继续航程 → 段数·船体恢复 / `gameOver` 清档。
   改了 `codexEntries` / `drawCodex` / `markSeen` / `snapshotRun` / `resumeRun` / `SAVE_DEF` 就跑一次。
-- 舰体配件探针：`python .workbuddy/sv-attach.py` —— **18 断言**，验 29 张卡的配件图
+- 舰体配件探针：`python .workbuddy/sv-attach.py` —— **20 断言**，验 29 张卡的配件图
   （每级非空 / ≥2 色 / **像素随等级单调不减** / 逐卡 `kitDiff` 真的画上船 / 图标非空 /
-  升级卡与图鉴的 canvas 真有内容 / 暂停页舰体预览随装配增长）。改了 `ATTACH_ART` / `attachSprite` /
-  `attachIcon` / `drawShipKit` / `renderCards` / `drawCodex` / `drawShipView` 就跑一次。
+  升级卡与图鉴的 canvas 真有内容 / 暂停页舰体预览随装配增长 / **「满」卡汉字没顶出图标框**）。
+  改了 `ATTACH_ART` / `attachSprite` / `attachIcon` / `drawShipKit` / `renderCards` / `drawCodex` /
+  `drawShipView` / `.card .glyph` 就跑一次。
   另配一个**眼睛工具**：`python .workbuddy/sv-kit-shot.py` 出 8 种装配的对比图（`.workbuddy/out/sv-kit.png`）。
-- 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **70 断言**，遍历每个覆盖层
+- 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **71 断言**，遍历每个覆盖层
   （标题 / 标题带存档 / 帮助 / 机库 / 对局 / 满构筑暂停 / 图鉴三页 / 升级 / 结算），逐层验：
   **滚动条够不够细**（`sbW/sbH ≤ 8`）· **文字有没有溢出容器**（`txBoxSpill`）·
   **文字之间有没有重叠**（`txOverlap`）· 覆盖层是否存在 · **底部留白 ≥ 6**（`bottom-slack`）；
