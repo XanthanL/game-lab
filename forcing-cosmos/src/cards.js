@@ -21,6 +21,9 @@
  *   consumeStrength  消耗力量
  *   retainBlock      护盾下回合不清零
  *   exhaust          打出后消耗（进消耗堆，本局战斗不再回抽）
+ *   shieldDamage     伤害 = 当前护盾 x 该系数（工程兵「盾击」）
+ *   comboDamage      本回合每打出过一张牌 +N 伤害（突击兵「连击终结」）
+ *   char             所属职业（职业专属卡）。没有则是通用卡。
  * ============================================================ */
 const CARD_DEFS = {
   /* ---------- 初始卡 ---------- */
@@ -68,6 +71,36 @@ const CARD_DEFS = {
   entropyField:     { id: 'entropyField', name: '熵增力场', cost: 2, desc: '最大生命 10%\n+2 中毒', type: 'damage', value: 0, icon: 'special', rarity: 'rare', percentDamage: 0.10, statusEffect: { type: 'poison', stacks: 2 } },
   quantumLock:      { id: 'quantumLock', name: '量子锁定', cost: 0, desc: '+3 易伤\n+2 虚弱', type: 'special', value: 0, icon: 'vulnerable', rarity: 'uncommon', statusEffect: [{ type: 'vulnerable', stacks: 3 }, { type: 'weak', stacks: 2 }] },
   phaseShift:       { id: 'phaseShift', name: '相位跃迁', cost: 1, desc: '9 点护盾\n抽 1 张', type: 'shield', value: 9, icon: 'shield', rarity: 'uncommon', drawCards: 1 },
+
+  /* ============================================================
+   * 职业专属卡（STS2 式：每个乘员一套自己的基础牌，卡面带职业色）
+   * ⚠️ rarity 一律 'starter'：这样它们不会进通用奖励池；
+   *    rollRewards() 会按当前职业把本职业的 starter 卡单独加回池子。
+   * ============================================================ */
+
+  /* ---------- 宇航员 · 平衡的探索者（蓝） ---------- */
+  aeroShot:      { id: 'aeroShot', name: '气动射击', cost: 1, desc: '造成 7 点伤害', type: 'damage', value: 7, icon: 'damage', rarity: 'starter', char: 'astronaut' },
+  aeroGuard:     { id: 'aeroGuard', name: '气动护壁', cost: 1, desc: '获得 6 点护盾', type: 'shield', value: 6, icon: 'shield', rarity: 'starter', char: 'astronaut' },
+  driftThrust:   { id: 'driftThrust', name: '漂移推进', cost: 0, desc: '3 点护盾\n抽 1 张', type: 'shield', value: 3, icon: 'draw', rarity: 'starter', char: 'astronaut', drawCards: 1 },
+  orbitalScan:   { id: 'orbitalScan', name: '轨道扫描', cost: 1, desc: '5 点伤害\n抽 1 张', type: 'damage', value: 5, icon: 'draw', rarity: 'starter', char: 'astronaut', drawCards: 1 },
+
+  /* ---------- 工程兵 · 护盾大师（绿） ---------- */
+  rivetShot:     { id: 'rivetShot', name: '铆钉射流', cost: 1, desc: '造成 5 点伤害', type: 'damage', value: 5, icon: 'pierce', rarity: 'starter', char: 'engineer' },
+  bulkhead:      { id: 'bulkhead', name: '隔舱壁', cost: 1, desc: '获得 7 点护盾', type: 'shield', value: 7, icon: 'shield', rarity: 'starter', char: 'engineer' },
+  thornPlating:  { id: 'thornPlating', name: '尖刺镀层', cost: 1, desc: '5 点护盾\n+3 反伤', type: 'shield', value: 5, icon: 'thorns', rarity: 'starter', char: 'engineer', gainThorns: 3 },
+  shieldBash:    { id: 'shieldBash', name: '盾击', cost: 1, desc: '伤害 = 当前护盾\n的 60%', type: 'damage', value: 0, icon: 'damage', rarity: 'starter', char: 'engineer', shieldDamage: 0.6 },
+
+  /* ---------- 异变者 · 状态操控者（紫） ---------- */
+  sporeBolt:     { id: 'sporeBolt', name: '孢子箭', cost: 1, desc: '4 点伤害\n+2 中毒', type: 'damage', value: 4, icon: 'poison', rarity: 'starter', char: 'mutant', statusEffect: { type: 'poison', stacks: 2 } },
+  chitin:        { id: 'chitin', name: '几丁质层', cost: 1, desc: '获得 5 点护盾', type: 'shield', value: 5, icon: 'shield', rarity: 'starter', char: 'mutant' },
+  mutagen:       { id: 'mutagen', name: '诱变剂', cost: 0, desc: '+2 中毒\n抽 1 张', type: 'special', value: 0, icon: 'poison', rarity: 'starter', char: 'mutant', statusEffect: { type: 'poison', stacks: 2 }, drawCards: 1 },
+  mutagenicCloud:{ id: 'mutagenicCloud', name: '诱变云', cost: 1, desc: '敌人 +2 中毒\n+2 灼烧 +2 虚弱', type: 'special', value: 0, icon: 'special', rarity: 'starter', char: 'mutant', statusEffect: [{ type: 'poison', stacks: 2 }, { type: 'burn', stacks: 2 }, { type: 'weak', stacks: 2 }] },
+
+  /* ---------- 突击兵 · 连击杀手（红） ---------- */
+  burstFire:     { id: 'burstFire', name: '点射', cost: 1, desc: '2 次 5 点伤害', type: 'damage', value: 5, hits: 2, icon: 'multi', rarity: 'starter', char: 'assault' },
+  quickGuard:    { id: 'quickGuard', name: '速防', cost: 1, desc: '获得 4 点护盾', type: 'shield', value: 4, icon: 'shield', rarity: 'starter', char: 'assault' },
+  fragGrenade:   { id: 'fragGrenade', name: '破片手雷', cost: 2, desc: '3 次 5 点伤害', type: 'damage', value: 5, hits: 3, icon: 'multi', rarity: 'starter', char: 'assault' },
+  comboFinisher: { id: 'comboFinisher', name: '连击终结', cost: 2, desc: '10 点伤害\n本回合每打出过\n一张牌 +3', type: 'damage', value: 10, icon: 'damage', rarity: 'starter', char: 'assault', comboDamage: 3 },
 };
 
 /* 升级表：覆盖字段 + 新描述 */
@@ -108,6 +141,27 @@ const UPGRADES = {
   entropyField:     { percentDamage: 0.16, statusEffect: { type: 'poison', stacks: 3 }, desc: '最大生命 16%\n+3 中毒' },
   quantumLock:      { statusEffect: [{ type: 'vulnerable', stacks: 4 }, { type: 'weak', stacks: 3 }], desc: '+4 易伤\n+3 虚弱' },
   phaseShift:       { value: 13, drawCards: 1, desc: '13 点护盾\n抽 1 张' },
+
+  /* ---------- 职业专属卡的升级 ---------- */
+  aeroShot:         { value: 10, desc: '造成 10 点伤害' },
+  aeroGuard:        { value: 9, desc: '获得 9 点护盾' },
+  driftThrust:      { value: 5, desc: '5 点护盾\n抽 1 张' },
+  orbitalScan:      { value: 7, desc: '7 点伤害\n抽 1 张' },
+
+  rivetShot:        { value: 7, desc: '造成 7 点伤害' },
+  bulkhead:         { value: 10, desc: '获得 10 点护盾' },
+  thornPlating:     { value: 7, gainThorns: 4, desc: '7 点护盾\n+4 反伤' },
+  shieldBash:       { shieldDamage: 0.85, desc: '伤害 = 当前护盾\n的 85%' },
+
+  sporeBolt:        { value: 6, statusEffect: { type: 'poison', stacks: 3 }, desc: '6 点伤害\n+3 中毒' },
+  chitin:           { value: 8, desc: '获得 8 点护盾' },
+  mutagen:          { statusEffect: { type: 'poison', stacks: 3 }, desc: '+3 中毒\n抽 1 张' },
+  mutagenicCloud:   { statusEffect: [{ type: 'poison', stacks: 3 }, { type: 'burn', stacks: 3 }, { type: 'weak', stacks: 3 }], desc: '敌人 +3 中毒\n+3 灼烧 +3 虚弱' },
+
+  burstFire:        { value: 7, desc: '2 次 7 点伤害' },
+  quickGuard:       { value: 7, desc: '获得 7 点护盾' },
+  fragGrenade:      { value: 7, desc: '3 次 7 点伤害' },
+  comboFinisher:    { value: 14, comboDamage: 4, desc: '14 点伤害\n每张已出牌 +4' },
 };
 
 const CURSE_CARDS = {
@@ -131,10 +185,18 @@ function upgradeCard(card) {
   return { ...card, ...UPGRADES[card.id], name: card.name + '+', upgraded: true, uid: card.uid };
 }
 
-/* 战后奖励池 = 全部非初始卡 */
-const REWARD_POOL = Object.keys(CARD_DEFS).filter(k => CARD_DEFS[k].rarity !== 'starter');
-function rollRewards(count = 3) {
-  const pool = REWARD_POOL.slice(), out = [];
+/* 战后奖励池 = 通用卡（非 starter） + **本职业的** starter 卡。
+   ⚠️ 其它职业的专属卡绝不能出现：那是别人的职业特色，混进来就稀释了四个乘员的差异。 */
+function rewardPool(charId) {
+  return Object.keys(CARD_DEFS).filter(k => {
+    const d = CARD_DEFS[k];
+    if (d.rarity === 'curse') return false;
+    if (d.rarity !== 'starter') return true;
+    return !!charId && d.char === charId;
+  });
+}
+function rollRewards(count = 3, charId) {
+  const pool = rewardPool(charId), out = [];
   while (out.length < count && pool.length) out.push(createCardInstance(CARD_DEFS[pool.splice((Math.random() * pool.length) | 0, 1)[0]]));
   return out;
 }

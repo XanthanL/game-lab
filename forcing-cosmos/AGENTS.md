@@ -138,6 +138,49 @@
   真实顺序就是"下一张抽什么"，原样列出来等于把抽牌堆变成明牌堆；
   也不能就地洗 `G.draw` —— 那会真的改变抽牌顺序。
 
+## 职业专属卡与卡面职业色
+
+- 每个乘员有自己的一套**基础牌**（`CHARACTERS[id].deck`），卡本身在 `CARD_DEFS` 里带 `char: '<id>'`、
+  `rarity: 'starter'`。**`starter` 不进通用奖励池** —— `rewardPool(charId)` 只放「非 starter 的通用卡 + 本职业 starter」。
+  漏传 `charId` 就会把别人的职业卡塞进奖励（`rollRewards(3, G.run.charId)`，两个调用点都要传）。
+- 卡面职业色走 `cardEl()` 里的 `ch-<char>` 类，CSS 用 `--ch` **覆盖外框色**；
+  底部类型条仍用 `--c`（类型色）。所以「工程兵的护盾牌」= 绿外框 + 蓝类型条。
+- 新机制：`shieldDamage`（伤害 = 当前护盾 × 系数，没盾就是 0）、`comboDamage`（本回合每张**已出**牌 +N）。
+  ⚠️ 两者都会让 `value` 是 0，所以**判断"这张牌打不打出伤害"必须走 `cardDealsDamage(c)`**，
+  不能只看 `c.value > 0`（那样盾击/连击终结会被当成非伤害牌，飞向自己）。
+- ⚠️ `G.playedThisTurn` / `G.attacksThisTurn` 的 `++` **必须在 `applyCard` 之后**：
+  连击卡算的是"之前打出过几张"，写在前面会把这张牌自己算进去。
+
+## 遗物（`RELICS`，24 件）
+
+- `effect` 里的键分两类：**数值加成**（`relicBonus(key)` 把同键求和）和**布尔开关**（值 1）。
+- ⚠️⚠️ **新增 effect 键必须同时在 `game.js` 里接 hook**。没接的遗物是"拿到了但什么都不做"，
+  不报错、不抛异常、`.probe-inv.cjs` 照样打印 24 —— 只有逐个试才看得出来。
+  `.probe-relic.cjs` 的 A07/A08 就是这条的守卫（`HANDLED` 白名单 ↔ `RELICS` 实际用到的键，两边互相包含）。
+  ⚠️ 所以 hook 一律写**完整形式** `G.player.relicBonus('xxx')`，不要用 `const rb = k => ...` 这种局部别名 ——
+  别名会让 `grep -o "relicBonus('...')"` 查不到新键，守卫直接失效。
+- 六类 hook 的落点：
+  | 类别 | 键 | 落点 |
+  |---|---|---|
+  | 战斗开始 | `startStrength` `startThorns` `startVuln` | `startBattle()`（这三项不会被 `resetTurn` 清） |
+  | 战斗开始 | `startShield` `firstTurnEnergy` | **`startPlayerTurn()` 的 `first` 分支** ⚠️ 见下 |
+  | 战斗结算 | `battleGold` `healOnKill` | `winBattle()` |
+  | 出牌时 | `shieldCardBonus` `attackShield` | `playCard()`（职业被动旁边） |
+  | 出牌伤害 | `firstAttackBonus` `enrageBonus` `enrageBelow` `curseDamage` | `cardHitDamage()` |
+  | 受击 | `noShieldCut` | `enemyTurn()`，在易伤/虚弱之后、`takeDamage` 之前 |
+  | 资源 | `exhaustHeal` | `applyCard()` 的消耗分支 |
+  | 局外 | `priceCut` `restBonus` | `shopScreen()` / `restSite()` |
+- ⚠️⚠️ **「战斗开始护盾」不能写在 `startBattle` 里**：`startBattle` 之后 420ms 会跑
+  `startPlayerTurn(true)`，里面的 `resetTurn(false)` 把 `shield` 直接清零 —— 8 点盾一秒后就没了。
+  凡是"改 `shield` / `battery`"的遗物，都要排在 `resetTurn` **之后**。
+- ⚠️ `firstTurnEnergy` 允许 `battery > maxBattery`（HUD 的电池格按 `Math.max(maxBattery, battery)` 画）。
+  只加不溢出的话，`maxBattery` 已满时这条遗物等于没有。
+- 图标：`RELIC_SRC`（`src/sprites.js`），`buildSprites()` 自动注册成 `SPR['r_' + icon]`，**新图标一律 8×8**
+  （HUD 里遗物按 13px 间距平铺，尺寸不齐会一行高低错落；旧 8 件里的 10×9 / 6×8 是历史遗留）。
+- HUD 遗物行**每 12 个换行**（`ui.js`）—— 24 件一行放不下（44 + 24×13 = 356，会顶到右侧敌人区）。
+- `#build` 面板（暂停里的构筑一览）加了 `max-height:108px; overflow-y:auto`，24 个 chip 不会撑爆面板。
+- 主动遗物（战斗中可点一次）**还没做**，方案见 `ROADMAP.md` 的「#7 收尾」。
+
 ## 局外进度（`src/meta.js`，改梯度/解锁前必读）
 
 - 存 `localStorage['fc_meta_v1']`，**和局内存档 `forcing_cosmos_save` 是两个 key**。
@@ -172,10 +215,14 @@ node .probe-mapfuzz.cjs                            # 地图连通性：模糊走
 node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
 node .probe-play.cjs                               # 出牌演出 + 伤害预测 + 手牌上限 + 牌堆查看（64 条）
 node .probe-meta.cjs                               # 局外进度（66 条）：梯度数值/解锁/日志/继续卡片/清空/诅咒卡回归
+node .probe-char.cjs                               # 职业专属卡（53 条）：牌组互不重叠/职业色/奖励池过滤/盾击/连击终结/四职业可玩
+node .probe-relic.cjs                              # 遗物（50 条）：表完整性/图标互不相同/effect 键全有 hook/六类 hook 实测/满遗物 HUD
 node .probe-shots-meta.cjs                         # 局外进度 UI 视觉确认截图 → .shots/meta-*.png
 node .probe-shots-play.cjs                         # 出牌演出/伤害预测/牌堆 UI 截图 → .shots/play-*.png
 node .probe-inv.cjs                                # 打印内容量（改卡/遗物/事件后更新 ROADMAP 用）
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
+node .probe-shots-char.cjs                         # 职业卡视觉确认截图 → .shots/char-*.png
+node .probe-shots-relic.cjs                        # 遗物图标对照表 + 8/24 件 HUD 排布 → .shots/relic-*.png
 ```
 
 ⚠️ **`.probe-*.cjs` / `.probe-*.mjs` 需要 `playwright-core`**，它不在仓库里。装一次然后带上 `NODE_PATH`：

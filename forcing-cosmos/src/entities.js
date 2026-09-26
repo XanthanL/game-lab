@@ -204,22 +204,22 @@ const CHARACTERS = {
   astronaut: {
     id: 'astronaut', name: '宇航员', title: '平衡的探索者', maxHp: 80, battery: 3, col: '#41a6f6',
     passive: 'astronautShield', passiveText: '回合开始 10% 得 1 护盾',
-    deck: [['laserShot', 4], ['overchargeBlast', 1], ['plasmaShield', 4], ['shieldMatrix', 1]],
+    deck: [['aeroShot', 4], ['aeroGuard', 4], ['driftThrust', 1], ['orbitalScan', 1]],
   },
   engineer: {
     id: 'engineer', name: '工程兵', title: '护盾大师', maxHp: 70, battery: 4, col: '#38b764',
     passive: 'engineerShield', passiveText: '护盾牌额外 +2 护盾',
-    deck: [['laserShot', 2], ['plasmaShield', 5], ['shieldMatrix', 2], ['nanoArmor', 1]],
+    deck: [['rivetShot', 3], ['bulkhead', 5], ['thornPlating', 1], ['shieldBash', 1]],
   },
   mutant: {
     id: 'mutant', name: '异变者', title: '状态操控者', maxHp: 75, battery: 3, col: '#c070f0',
     passive: 'mutantStatus', passiveText: '状态牌层数翻倍',
-    deck: [['laserShot', 3], ['plasmaBurn', 2], ['corrosiveFog', 2], ['plasmaShield', 2], ['sporeRelease', 1]],
+    deck: [['sporeBolt', 3], ['chitin', 4], ['mutagen', 2], ['mutagenicCloud', 1]],
   },
   assault: {
     id: 'assault', name: '突击兵', title: '连击杀手', maxHp: 65, battery: 3, col: '#e04060',
     passive: 'assaultCombo', passiveText: '攻击牌 15% 得 1 电量',
-    deck: [['laserShot', 5], ['overchargeBlast', 2], ['empCannon', 1], ['plasmaShield', 2]],
+    deck: [['burstFire', 4], ['quickGuard', 3], ['fragGrenade', 2], ['comboFinisher', 1]],
   },
 };
 function buildStarterDeck(charId) {
@@ -231,7 +231,17 @@ function buildStarterDeck(charId) {
 /* ============================================================
  * 遗物
  * ============================================================ */
+/* 遗物表。effect 里的键分三类：
+   ① 纯数值加成（relicBonus(key) 直接求和）—— maxHp / maxBattery / turnShield / extraDraw /
+      turnHeal / statusCut / battleGold / healOnKill / shieldCardBonus / attackShield /
+      firstAttackBonus / firstTurnEnergy / startShield / startStrength / startVuln / startThorns /
+      enrageBonus / enrageBelow / noShieldCut / exhaustHeal / curseDamage / priceCut / restBonus
+   ② 布尔开关（值 1）—— strengthDouble / potionDouble
+   ③ 特殊 —— 无
+   ⚠️ 新增 effect 键必须同时在 game.js 里接上 hook，否则遗物"拿到了但什么也不做"
+      （不报错、不抛异常，只有逐个试才看得出来）。 */
 const RELICS = {
+  /* --- 基础 8 件（回合/被动类） --- */
   starCore:      { id: 'starCore', name: '星核动力核心', icon: 'core', desc: '最大生命 +10', effect: { maxHp: 10 }, col: '#ef7d57' },
   thuliumCell:   { id: 'thuliumCell', name: '铥元素电池', icon: 'battery', desc: '每回合电量 +1', effect: { maxBattery: 1 }, col: '#41a6f6' },
   hematite:      { id: 'hematite', name: '赤铁护符', icon: 'amulet', desc: '回合开始 +3 护盾', effect: { turnShield: 3 }, col: '#b13e53' },
@@ -240,6 +250,34 @@ const RELICS = {
   nanoSwarm:     { id: 'nanoSwarm', name: '纳米修复蜂群', icon: 'swarm', desc: '每回合恢复 2 生命', effect: { turnHeal: 2 }, col: '#38b764' },
   antimatter:    { id: 'antimatter', name: '反物质核心', icon: 'antimatter', desc: '力量效果翻倍', effect: { strengthDouble: 1 }, col: '#ffcd75' },
   ancientRune:   { id: 'ancientRune', name: '太古符文', icon: 'rune', desc: '药水与治疗效果翻倍', effect: { potionDouble: 1 }, col: '#ffcd75' },
+
+  /* --- 战斗开始类 --- */
+  aegisPlate:    { id: 'aegisPlate', name: '神盾装甲板', icon: 'aegis', desc: '战斗开始获得 8 护盾', effect: { startShield: 8 }, col: '#3b5dc9' },
+  warBanner:     { id: 'warBanner', name: '战旗', icon: 'banner', desc: '战斗开始获得 2 力量', effect: { startStrength: 2 }, col: '#e04060' },
+  scoutBeacon:   { id: 'scoutBeacon', name: '侦察信标', icon: 'beacon', desc: '战斗开始敌人获得 2 易伤', effect: { startVuln: 2 }, col: '#73eff7' },
+  thornCrown:    { id: 'thornCrown', name: '荆棘王冠', icon: 'crown', desc: '战斗开始获得 3 反伤', effect: { startThorns: 3 }, col: '#38b764' },
+  firstStrike:   { id: 'firstStrike', name: '先手协议', icon: 'bolt', desc: '每场战斗首回合电量 +1', effect: { firstTurnEnergy: 1 }, col: '#ffcd75' },
+
+  /* --- 战斗结算类 --- */
+  salvageRig:    { id: 'salvageRig', name: '打捞索具', icon: 'rig', desc: '每场战斗胜利额外 +20 金', effect: { battleGold: 20 }, col: '#e8a35a' },
+  recycler:      { id: 'recycler', name: '再生装置', icon: 'recycler', desc: '每场战斗胜利恢复 5 生命', effect: { healOnKill: 5 }, col: '#38b764' },
+
+  /* --- 出牌时类 --- */
+  reinforcer:    { id: 'reinforcer', name: '加固骨架', icon: 'plate', desc: '每张护盾牌额外 +1 护盾', effect: { shieldCardBonus: 1 }, col: '#c0cbdc' },
+  kineticCoil:   { id: 'kineticCoil', name: '动能线圈', icon: 'coil', desc: '每打出一张攻击牌 +1 护盾', effect: { attackShield: 1 }, col: '#c070f0' },
+  overclock:     { id: 'overclock', name: '超频芯片', icon: 'chip', desc: '每回合第一张攻击牌 +3 伤害', effect: { firstAttackBonus: 3 }, col: '#73eff7' },
+
+  /* --- 条件加伤类 --- */
+  lastStand:     { id: 'lastStand', name: '背水一战', icon: 'fist', desc: '生命低于 30% 时伤害 +5', effect: { enrageBelow: 0.3, enrageBonus: 5 }, col: '#e04060' },
+  hexNail:       { id: 'hexNail', name: '咒钉', icon: 'nail', desc: '牌组里每张诅咒 +1 伤害', effect: { curseDamage: 1 }, col: '#8a3cc0' },
+
+  /* --- 防御/资源类 --- */
+  guardianCore:  { id: 'guardianCore', name: '守护者核心', icon: 'guardian', desc: '没有护盾时受到伤害 -3', effect: { noShieldCut: 3 }, col: '#41a6f6' },
+  ashVault:      { id: 'ashVault', name: '灰烬保险库', icon: 'urn', desc: '每消耗一张牌恢复 2 生命', effect: { exhaustHeal: 2 }, col: '#a7f070' },
+
+  /* --- 局外/经济类 --- */
+  creditChip:    { id: 'creditChip', name: '信用芯片', icon: 'credit', desc: '商店价格 -20%', effect: { priceCut: 0.2 }, col: '#ffcd75' },
+  rationPack:    { id: 'rationPack', name: '口粮包', icon: 'ration', desc: '休整恢复量 +50%', effect: { restBonus: 0.5 }, col: '#38b764' },
 };
 const RELIC_IDS = Object.keys(RELICS);
 function randomRelic(owned) {

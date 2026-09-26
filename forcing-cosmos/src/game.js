@@ -13,6 +13,8 @@ const G = {
   curEvent: null,         // 当前异象（取消选择时要原样退回，不能重抽）
   asc: 0,                 // 梯度等级（难度阶梯）—— 局外选、局内只读
   runStart: 0,            // 本局开始时刻，航行日志记用时用
+  playedThisTurn: 0,      // 本回合已打出几张牌（突击兵「连击终结」按这个加伤）
+  attacksThisTurn: 0,     // 本回合已打出几张攻击牌（「超频芯片」只看是不是本回合第一张）
 };
 const SAVE_KEY = 'forcing_cosmos_save';
 const MAP_ROWS = 6, MAP_COLS = 4;
@@ -224,6 +226,10 @@ function newRun(charId) {
   G.act = 0; G.gold = Math.max(0, 40 + m.startGold); G.potions = [];
   G.player = new Player(charId);
   G.deck = buildStarterDeck(charId);
+  // ⚠️ 换局就是全新开始：不清的话上一局的手牌/抽牌堆会残留到下一局
+  //    （startBattle 也会清一次，但那之前读 G.hand 会看到上一局的牌）
+  G.hand = []; G.draw = []; G.discard = []; G.exhaust = [];
+  G.playedThisTurn = 0; G.attacksThisTurn = 0;
   for (let i = 0; i < m.startCurse; i++) G.deck.push(createCurseCard());
   G.runStart = Date.now();
   G.log = [];
@@ -359,12 +365,26 @@ function startBattle(kind, row) {
   G.player.shield = 0; G.player.keepShield = false;
   G.draw = shuffleArray(G.deck.map(c => ({ ...c })));
   G.hand = []; G.discard = []; G.exhaust = [];
-  G.turn = 1; G.busy = false; G.selCard = -1;
+  G.turn = 1; G.busy = false; G.selCard = -1; G.playedThisTurn = 0; G.attacksThisTurn = 0;
   FX.parts.length = 0; FX.floats.length = 0;
   // 梯度等级「每场战斗开局 -N 生命」：放在 FX 清空之后，飘字才不会被一起清掉。
   // 真被打死也不用在这里处理 —— 420ms 后的 startPlayerTurn 会走 !p.alive → gameOver。
   const am = ascMods(G.asc);
   if (am.battleHp > 0) { G.player.rawDamage(am.battleHp); addFloat(LAY.px, 150, '-' + am.battleHp, '#ef7d57'); }
+  // 遗物「战斗开始」类。顺序有意为之：先给自己挂增益，最后再给敌人上易伤 ——
+  // 这样 addFloat 的纵向错位是"从下往上"堆的，不会互相压字。
+  // ⚠️ 一律写成 G.player.relicBonus('xxx') 的完整形式，不要用局部别名 ——
+  //    `grep -o "relicBonus('...')"` 是「遗物 effect 键是否真有 hook」的静态守卫，
+  //    别名会让新加的键在守卫里"查不到"，守卫就形同虚设。
+  const sStr = G.player.relicBonus('startStrength');
+  if (sStr) { G.player.addStatus('strength', sStr); addFloat(LAY.px, 130, '+' + sStr + ' 力量', '#c070f0'); }
+  const sTh = G.player.relicBonus('startThorns');
+  if (sTh) { G.player.addStatus('thorns', sTh); addFloat(LAY.px, 160, '+' + sTh + ' 反伤', '#38b764'); }
+  const sVu = G.player.relicBonus('startVuln');
+  if (sVu) { G.enemy.addStatus('vulnerable', sVu); addFloat(LAY.ex, LAY.eyBase - 60, '+' + sVu + ' 易伤', '#ffcd75'); }
+  // ⚠️ 「战斗开始护盾」**不能**写在这里 —— startBattle 之后 420ms 会跑 startPlayerTurn(true)，
+  //    里面 resetTurn(false) 会把 shield 直接清零，8 点盾一秒后就没了（不报错、不抛异常）。
+  //    这条在 startPlayerTurn 的 first 分支里发。
   Sound.setTrack(kind === 'boss' ? 2 : 1);
   Sound.music(true);
   log('遭遇 ' + G.enemy.name);
@@ -409,8 +429,21 @@ function startPlayerTurn(first) {
   if (!p.alive) { after(400, () => gameOver(false)); return; }
   const keep = p.pendingKeep; p.pendingKeep = false;
   p.resetTurn(keep);
+  G.playedThisTurn = 0;
+  G.attacksThisTurn = 0;
   const ts = p.relicBonus('turnShield'); if (ts) p.gainShield(ts);
   const th = p.relicBonus('turnHeal'); if (th) p.heal(th * (p.relicBonus('potionDouble') ? 2 : 1));
+  // 遗物「先手协议」：只在每场战斗的**第一回合**加电量。
+  // ⚠️ 必须放在 resetTurn 之后 —— resetTurn 会把 battery 重置成 maxBattery，写在前面会被当场抹掉。
+  // ⚠️ 允许超过 maxBattery（HUD 的电池格按 Math.max(maxBattery, battery) 画），
+  //    不然 maxBattery 已满时这条遗物等于没有。
+  if (first) {
+    const fe = p.relicBonus('firstTurnEnergy');
+    if (fe) { p.battery += fe; addFloat(LAY.px, 118, '+' + fe + ' 电量', '#41a6f6'); }
+    // 同上：「战斗开始护盾」也必须在 resetTurn 之后发，否则被清零。
+    const sSh = p.relicBonus('startShield');
+    if (sSh) { p.gainShield(sSh); addFloat(LAY.px, 145, '+' + sSh + ' 盾', '#41a6f6'); }
+  }
   // 被动
   if (p.passive === 'astronautShield' && Math.random() < 0.1) p.gainShield(1);
   const n = 4 + p.relicBonus('extraDraw');
@@ -532,10 +565,17 @@ function renderHand() {
     box.appendChild(d);
   });
 }
+/** 这张牌到底打不打人。⚠️ 不能只看 value —— 「盾击」value 是 0（伤害靠当前护盾算），
+    「引力碾压」value 也是 0（伤害靠敌人最大生命算）。漏掉这两个分支的话这些牌会被当成非攻击牌，
+    不出伤害、飞错方向、也不给伤害预测。 */
+function cardDealsDamage(c) {
+  return c.type === 'damage'
+    && (c.value + (c.percentDamage ? 1 : 0) + (c.shieldDamage ? 1 : 0)) > 0;
+}
 /** 这张牌该飞向哪边：伤害牌飞敌人，其余飞自己。
     ⚠️ 「打自己脸的伤害牌」也算飞敌人 —— 它的主体效果仍然是打人，自伤是附带的。 */
 function cardTargetSide(c) {
-  if (c.type === 'damage' && c.value + (c.percentDamage ? 1 : 0) > 0) return 'enemy';
+  if (cardDealsDamage(c)) return 'enemy';
   if (c.statusEffect && !c.selfTarget) return 'enemy';
   if (c.statusEffectAction === 'doubleBurn') return 'enemy';
   return 'self';
@@ -543,11 +583,26 @@ function cardTargetSide(c) {
 /* 出牌伤害的**唯一**计算入口 —— applyCard 与 UI 预测共用它，两者永远不会漂移。
    返回的是「传给 Entity.takeDamage 的值」，易伤由 takeDamage 内部结算。
    ⚠️ 虚弱必须在**来源侧**乘 0.75：以前只给敌人的攻击算了虚弱，玩家中了虚弱照样满伤打出去
-      （HUD 上挂着「虚弱」却毫无效果），这条是补上的 bug。 */
+      （HUD 上挂着「虚弱」却毫无效果），这条是补上的 bug。
+   ⚠️ 顺序：基础值 → 连击加成 → 力量 → 虚弱。预测走的也是这条，所以永远和实战一致。 */
 function cardHitDamage(c, e) {
   const p = G.player;
-  let per = c.percentDamage ? Math.floor(e.maxHp * c.percentDamage) : c.value;
+  let per;
+  if (c.shieldDamage) per = Math.floor((p.shield || 0) * c.shieldDamage);
+  else if (c.percentDamage) per = Math.floor(e.maxHp * c.percentDamage);
+  else per = c.value;
+  if (c.comboDamage) per += c.comboDamage * (G.playedThisTurn || 0);
   per += p.getStatus('strength') * p.strengthMult;
+  // 遗物「超频芯片」：本回合还没打出过攻击牌 → 每段 +N。
+  // ⚠️ 用 G.attacksThisTurn 而不是「本牌是不是攻击牌」—— 判定必须在**出牌之前**成立，
+  //    所以 G.attacksThisTurn++ 只能放在 applyCard 之后（和 playedThisTurn 同一条纪律）。
+  if (!(G.attacksThisTurn > 0)) { const fa = p.relicBonus('firstAttackBonus'); if (fa) per += fa; }
+  // 遗物「背水一战」：低血加伤。enrageBelow 是比例，relicBonus 求和后当阈值用。
+  const en = p.relicBonus('enrageBonus');
+  if (en && p.hp <= p.maxHp * (p.relicBonus('enrageBelow') || 0.3)) per += en;
+  // 遗物「咒钉」：牌组里每张诅咒 +N 伤害 —— 和「诅咒是纯负担」的设计对着来，给一条诅咒流出口。
+  const cd = p.relicBonus('curseDamage');
+  if (cd) { let n = 0; for (const x of G.deck) if (x.curse) n++; if (n) per += cd * n; }
   if (p.getStatus('weak') > 0) per = Math.floor(per * 0.75);
   return Math.max(0, per);
 }
@@ -558,7 +613,7 @@ function cardHitTotal(c, e) {
 }
 /** 出牌预测（#15）：返回 { per, hits, total, shield }，total 会与实战扣血完全一致。 */
 function cardPreview(c, e) {
-  if (c.type !== 'damage' || !(c.value + (c.percentDamage ? 1 : 0) > 0)) return null;
+  if (!cardDealsDamage(c)) return null;
   const hits = c.hits || 1, per = cardHitTotal(c, e);
   return { per, hits, total: per * hits, shield: e.shield || 0 };
 }
@@ -576,6 +631,9 @@ function playCard(i, from) {
     G.player.battery = Math.min(G.player.maxBattery, G.player.battery + 1);
     addFloat(LAY.px, 150, '+1 电量', '#73eff7');
   }
+  // 遗物（出牌时）
+  if (c.type === 'shield') { const sb = G.player.relicBonus('shieldCardBonus'); if (sb) { G.player.gainShield(sb); addFloat(LAY.px, 162, '+' + sb + ' 盾', '#41a6f6'); } }
+  if (c.type === 'damage') { const as = G.player.relicBonus('attackShield'); if (as) { G.player.gainShield(as); addFloat(LAY.px, 162, '+' + as + ' 盾', '#41a6f6'); } }
   hideDmgPreview();
   // ⚠️ 顺序不能反：先把这张卡的 DOM 从 #hand 摘下来，再 splice + renderHand()。
   //    反过来的话 renderHand() 里的 innerHTML='' 会把还在飞的卡一起销毁 —— 卡就"没飞到就没了"。
@@ -590,6 +648,8 @@ function playCard(i, from) {
   flyCard(node, side, () => {
     cardImpact(c, side);
     const tail = applyCard(c) || 0;      // 多重打击的逐击演出还要 tail 毫秒
+    G.playedThisTurn++;                  // 必须在 applyCard 之后：连击卡算的是「之前打出过几张」
+    if (c.type === 'damage') G.attacksThisTurn++;   // 同上，「超频芯片」算的是「之前打过几张攻击牌」
     after(200 + tail, () => {
       G.busy = false;
       if (G.enemy && !G.enemy.alive) { winBattle(); return; }
@@ -609,7 +669,7 @@ function applyCard(c) {
   let totalDealt = 0, tail = 0;
 
   // 伤害：多重打击逐击演出 —— 一次性结算的话 N 下飘字会全叠在同一个点上，玩家看不出"打了几下"
-  if (c.type === 'damage' && c.value + (c.percentDamage ? 1 : 0) > 0) {
+  if (cardDealsDamage(c)) {
     const per = cardHitDamage(c, e);
     const hits = c.hits || 1, STEP = 95;
     for (let h = 0; h < hits; h++) {
@@ -620,14 +680,20 @@ function applyCard(c) {
         // ⚠️ 飘字要显示**结算后**的伤害（r.total 含易伤），不是传入值 —— 以前打易伤目标
         //    实际掉 18 却飘 "-12"，玩家会觉得伤害算错了。
         else { const r = e.takeDamage(per); totalDealt += r.toHp; shown = r.total; }
-        addParts(LAY.ex, LAY.eyBase - 40, 10, c.pierce ? '#e04060' : '#ffcd75', { speed: 170 });
-        addFloat(LAY.ex + (Math.random() - 0.5) * 30, LAY.eyBase - 50 - h * 9, '-' + shown, '#ffcd75');
+        // ⚠️ 「盾击」在没护盾时是 0 伤：别飘 "-0"、也别放命中音，那看着像个 bug
+        if (shown > 0) {
+          addParts(LAY.ex, LAY.eyBase - 40, 10, c.pierce ? '#e04060' : '#ffcd75', { speed: 170 });
+          addFloat(LAY.ex + (Math.random() - 0.5) * 30, LAY.eyBase - 50 - h * 9, '-' + shown, '#ffcd75');
+          Sound.sfx.hit();
+          shake(3, 140);
+          if (c.pierce) Sound.sfx.beam(); else Sound.sfx.slash();
+          beamFx(LAY.px + 30, LAY.pyBase - 40, LAY.ex - 24, LAY.eyBase - 40, c.pierce ? '#e04060' : '#ffcd75');
+          e.hitFlash = 160;
+        } else if (c.shieldDamage) {
+          addFloat(LAY.ex, LAY.eyBase - 50, '没有护盾', '#566c86');
+          Sound.sfx.deny();
+        }
         if (c.statusEffect && !c.selfTarget) applyStatus(e, c.statusEffect, p.passive === 'mutantStatus' ? 2 : 1);
-        Sound.sfx.hit();
-        shake(3, 140);
-        if (c.pierce) Sound.sfx.beam(); else Sound.sfx.slash();
-        beamFx(LAY.px + 30, LAY.pyBase - 40, LAY.ex - 24, LAY.eyBase - 40, c.pierce ? '#e04060' : '#ffcd75');
-        e.hitFlash = 160;
       };
       if (h === 0) go(); else after(h * STEP, go);
     }
@@ -671,7 +737,12 @@ function applyCard(c) {
   if (c.drawCards) drawCards(c.drawCards);
   if (c.conditionalDraw) { drawCards(1); if (G.hand.length <= 3) drawCards(1); }
   // 入堆
-  if (c.exhaust) { G.exhaust.push(c); addFloat(LAY.px, 190, '消耗', '#8a3cc0'); }
+  if (c.exhaust) {
+    G.exhaust.push(c); addFloat(LAY.px, 190, '消耗', '#8a3cc0');
+    // 遗物「灰烬保险库」：消耗牌回血。这是唯一让「消耗」从纯损失变成收益的钩子。
+    const eh = p.relicBonus('exhaustHeal');
+    if (eh) { const g = p.heal(eh * mult); if (g) addFloat(LAY.px, 205, '+' + g, '#38b764'); }
+  }
   else G.discard.push(c);
   // Boss 二阶段：多重打击要等打完了再判定，不然会在半路插进狂暴演出
   const phaseCheck = () => {
@@ -754,6 +825,9 @@ function enemyTurn() {
       if (e.getStatus('weak') > 0) d = Math.floor(d * 0.75);
       // 诅咒增伤（回合结束时手牌里带诅咒则记录）
       if (G.curseAmp) d += 1;
+      // 遗物「守护者核心」：无护盾时减伤。放在易伤/虚弱之后、takeDamage 之前 ——
+      // 它是"兜底"而不是"乘区"，顺序错了数值会飘。
+      if (p.shield <= 0) { const cut = p.relicBonus('noShieldCut'); if (cut) d = Math.max(0, d - cut); }
       const r = p.takeDamage(d);
       p.hitFlash = 160;
       addFloat(LAY.px, 150, '-' + r.total, '#e04060', true);
@@ -785,10 +859,13 @@ function winBattle() {
   Sound.sfx.kill();
   G.run.wins++;
   if (e.elite) G.run.elites++;
-  const gold = G.battleKind === 'boss' ? 60 : e.elite ? 35 : 15;
+  const gold = (G.battleKind === 'boss' ? 60 : e.elite ? 35 : 15) + G.player.relicBonus('battleGold');
   G.gold += gold; G.run.gold += gold;
   after(620, () => {
     Sound.sfx.coin();
+    // 遗物「再生装置」：战斗胜利回血。和治疗类一样吃「药水与治疗效果翻倍」。
+    const hk = G.player.relicBonus('healOnKill');
+    if (hk) { const g = G.player.heal(hk * (G.player.relicBonus('potionDouble') ? 2 : 1)); if (g) { addFloat(LAY.px, 150, '+' + g, '#38b764'); Sound.sfx.heal(); } }
     if (G.battleKind === 'boss') return actCleared();
     // 药水
     if (e.elite || Math.random() < 0.5) {
@@ -800,7 +877,7 @@ function winBattle() {
 function rewardChoice() {
   setScene('reward');
   const opts = [
-    { label: '纳入新卡（三选一）', fn: () => pickCards('选择一张卡', rollRewards(3),
+    { label: '纳入新卡（三选一）', fn: () => pickCards('选择一张卡', rollRewards(3, G.run && G.run.charId),
         c => { if (c) { G.deck.push(c); log('获得 ' + c.name); } afterReward(); },
         { onCancel: rewardChoice, cancelLabel: '返回' }) },
     { label: '升级一张卡', fn: () => pickFromDeck('升级哪一张', G.deck, c => !c.upgraded && UPGRADES[c.id],
@@ -823,7 +900,8 @@ function afterReward() { updateHud(); backToMap(); }
 function restSite() {
   setScene('rest');
   // 梯度等级「休整恢复 -30%」在这里生效；下限夹到 1，别让高梯度下休眠变成纯浪费一步
-  const p = G.player, amt = Math.max(1, Math.floor(p.maxHp * 0.3 * (1 + ascMods(G.asc).rest)));
+  // 遗物「口粮包」再乘一次（乘算，不是加算 —— 和梯度是互相削的关系）。
+  const p = G.player, amt = Math.max(1, Math.floor(p.maxHp * 0.3 * (1 + ascMods(G.asc).rest) * (1 + p.relicBonus('restBonus'))));
   showModal('♨ 休整营地', b => {
     b.innerHTML = '<div>气闸闭合，你把面罩摘下来三分钟。</div>';
     const opts = [
@@ -945,13 +1023,17 @@ function showEvent(ev) {
 
 function shopScreen() {
   setScene('shop'); G.run.shops++;
-  const cards = rollRewards(3);
+  const cards = rollRewards(3, G.run && G.run.charId);
   const relics = [];
   for (let i = 0; i < 2; i++) { const r = randomRelic(G.player.relics.concat(relics)); if (r) relics.push(r); }
   const potion = rollPotion();
   const bought = {};
-  const pm = 1 + ascMods(G.asc).price;                   // 梯度等级「商店涨价」
-  const PRICE = { card: Math.round(50 * pm), relic: Math.round(120 * pm), potion: Math.round(40 * pm), remove: Math.round(75 * pm) };
+  // 梯度等级「商店涨价」× 遗物「信用芯片」打折。上限压到 60% 折扣，免得叠出 0 元货架。
+  const pm = (1 + ascMods(G.asc).price) * (1 - Math.min(0.6, G.player.relicBonus('priceCut')));
+  const PRICE = {
+    card: Math.max(1, Math.round(50 * pm)), relic: Math.max(1, Math.round(120 * pm)),
+    potion: Math.max(1, Math.round(40 * pm)), remove: Math.max(1, Math.round(75 * pm)),
+  };
   function render() {
     showModal('$ 补给站　◆ ' + G.gold + ' 金', b => {
       // buy(commit)：commit() 才真正扣钱 + 标记售出 + 重绘。

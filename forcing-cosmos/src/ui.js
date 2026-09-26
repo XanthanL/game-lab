@@ -240,19 +240,24 @@ function drawBattle(G, t, hud = true) {
     bar(LAY.pBarX, LAY.barY, LAY.barW, LAY.barH, p.hp, p.maxHp, p.hp > p.maxHp * 0.5 ? '#38b764' : p.hp > p.maxHp * 0.25 ? '#ef7d57' : '#e04060', p.shield, p.maxHp);
     text(p.name, LAY.pBarX + LAY.barW / 2, LAY.nameY, '#73eff7', 'center');
     statusRow(p, LAY.pBarX, LAY.barY + 14);
-    // 电量
-    for (let i = 0; i < p.maxBattery; i++) {
+    // 电量。⚠️ 上限取 Math.max(maxBattery, battery) —— 「先手协议」遗物会让电量**超过上限**
+    //    （回合一 resetTurn 就把 battery 顶到 maxBattery，只加不溢出的话那条遗物等于没有），
+    //    用 maxBattery 画就会把多出来的那格藏起来，玩家以为遗物没生效。
+    const battN = Math.max(p.maxBattery, p.battery);
+    for (let i = 0; i < battN; i++) {
       const bx = LAY.pBarX + i * 14, by = LAY.barY + 32;
       px(bx, by, 11, 11, i < p.battery ? '#41a6f6' : '#1a1c2c');
       frame(bx, by, 11, 11, i < p.battery ? '#73eff7' : '#333c57');
     }
-    text('电量', LAY.pBarX + p.maxBattery * 14 + 4, LAY.barY + 33, '#566c86');
-    // 遗物
-    let rx = LAY.pBarX;
+    text('电量', LAY.pBarX + battN * 14 + 4, LAY.barY + 33, '#566c86');
+    // 遗物。⚠️ 扩容到 24 件后一行放不下（44 + 24×13 = 356，会顶到右侧敌人区）——
+    //    每行 12 个换行。别指望玩家只有 3-4 件。
+    let rx = LAY.pBarX, ry = LAY.barY + 48, perRow = 0;
     for (const id of p.relics) {
       const r = RELICS[id]; if (!r) continue;
-      icon(r.icon, rx, LAY.barY + 48, 'r_' + r.icon);
+      icon(r.icon, rx, ry, 'r_' + r.icon);
       rx += 13;
+      if (++perRow >= 12) { perRow = 0; rx = LAY.pBarX; ry += 13; }
     }
     // 护盾数字
     if (p.shield > 0) text('◆' + p.shield, LAY.pBarX + LAY.barW + 6, LAY.barY, '#73eff7');
@@ -297,7 +302,9 @@ function drawFx() {
 const TYPE_NAME = { damage: '攻击', shield: '防护', special: '战术', curse: '诅咒' };
 function cardEl(card, opts = {}) {
   const d = document.createElement('div');
-  d.className = 'card t-' + card.type + (card.upgraded ? ' up' : '') + (opts.playable === false ? ' no' : '');
+  // ch-<职业> 决定卡面主色（--ch）；没有 char 的通用卡退回类型色
+  d.className = 'card t-' + card.type + (card.upgraded ? ' up' : '') + (opts.playable === false ? ' no' : '')
+    + (card.char ? ' ch-' + card.char : '');
   d.dataset.uid = card.uid;
   const tag = el('div', 'tag', TYPE_NAME[card.type] || '');   // 顶条显示类型，卡名在下方
   const cost = el('div', 'cost', card.cost);

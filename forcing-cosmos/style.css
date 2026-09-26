@@ -73,7 +73,7 @@ em { font-style: normal; }
   background: #1a1c2c; border: 0; padding: 2px 5px 3px; cursor: pointer; box-shadow: 0 0 0 1px #566c86; }
 .mx:hover { color: #05060d; background: #ff5577; box-shadow: 0 0 0 1px #f4f4f4; }
 
-#build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 560px; }
+#build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 560px; max-height: 108px; overflow-y: auto; }
 .chip { padding: 1px 4px 2px; background: #1a1c2c; box-shadow: inset 0 0 0 1px currentColor; }
 
 /* ---------- 角色选择 ---------- */
@@ -119,15 +119,26 @@ html.coarse .pile { padding: 3px 2px; }   /* 手指点得着 */
 #dmg-preview { position: absolute; z-index: 12; pointer-events: none; color: #a8b4d0; font-size: 11px; line-height: 13px;
   text-shadow: 1px 1px 0 #05060d, -1px 1px 0 #05060d, 1px -1px 0 #05060d, -1px -1px 0 #05060d; }
 #dmg-preview .dp-shield { color: #41a6f6; font-size: 11px; }
-.card { --c: #41a6f6; --d: #29366f; position: absolute; width: 96px; height: 110px; background: #0d1024; pointer-events: auto; cursor: pointer;
-  box-shadow: 0 0 0 1px var(--c), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; padding: 16px 3px 4px; }
-.card:hover { background: #171d3c; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px var(--c), 2px 5px 0 2px #05060d; }
+/* --c = 类型色（底部类型条 + hover 描边）；--ch = 卡面主色（外框）。
+   职业专属卡把 --ch 覆盖成职业色 —— 一眼能看出"这是谁家的牌"。 */
+.card { --c: #41a6f6; --d: #29366f; --ch: var(--c); position: absolute; width: 96px; height: 110px; background: #0d1024; pointer-events: auto; cursor: pointer;
+  box-shadow: 0 0 0 1px var(--ch), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; padding: 16px 3px 4px; }
+.card:hover { background: #171d3c; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px var(--ch), 2px 5px 0 2px #05060d; }
+.card.ch-astronaut { --ch: #41a6f6; }
+.card.ch-engineer  { --ch: #38b764; }
+.card.ch-mutant    { --ch: #c070f0; }
+.card.ch-assault   { --ch: #e04060; }
+/* 职业卡角标：左下角一个小色块，和类型条区分开 */
+.card.ch-astronaut::after, .card.ch-engineer::after, .card.ch-mutant::after, .card.ch-assault::after {
+  content: ''; position: absolute; left: -3px; bottom: -3px; width: 10px; height: 10px;
+  background: var(--ch); box-shadow: 0 0 0 1px #05060d; pointer-events: none;
+}
 .card.t-damage { --c: #e04060; --d: #7a2030; }
 .card.t-shield { --c: #41a6f6; --d: #20305e; }
 .card.t-special { --c: #c070f0; --d: #5d275d; }
 .card.t-curse { --c: #8a3cc0; --d: #3d1a52; }
 .card.no { filter: brightness(.45) saturate(.35); cursor: default; }
-.card.no:hover { background: #0d1024; box-shadow: 0 0 0 1px var(--c), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; }
+.card.no:hover { background: #0d1024; box-shadow: 0 0 0 1px var(--ch), 0 0 0 2px #1a1c2c, 2px 3px 0 2px #05060d; }
 .card.sel { background: #1d2246; box-shadow: 0 0 0 1px #f4f4f4, 0 0 0 2px #ffcd75, 0 0 0 3px #1a1c2c, 2px 6px 0 2px #05060d; }
 .card.up { background: #12172e; }
 .card .tag { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--c); color: #05060d; text-align: center; line-height: 12px; overflow: hidden; white-space: nowrap; }

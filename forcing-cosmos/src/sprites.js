@@ -951,6 +951,25 @@ const RELIC_SRC = {
   swarm:     ['.k.k.k.', 'kLkLkLk', '.kLkLk.', 'kLkLkLk', '.k.k.k.'],
   antimatter:['..kkkk..', '.kqqqqk.', 'kqqwwqqk', 'kqwCCwqk', 'kqwCCwqk', 'kqqwwqqk', '.kqqqqk.', '..kkkk..'],
   rune:      ['..kkkk..', '.kyyyyk.', 'kywwwwyk', 'kywCCwyk', 'kywCCwyk', 'kywwwwyk', '.kyyyyk.', '..kkkk..'],
+  /* --- 扩容 16 件（P1 #7）---
+     ⚠️ 新图标一律 8x8。HUD 里遗物是按 13px 间距平铺的，尺寸不齐会一行高低错落；
+        旧 8 件里有 10x9 / 6x8 是历史遗留，新加的不要再扩散这种不齐。 */
+  aegis:     ['..kkkk..', '.kbbbbk.', 'kbCwwCbk', 'kbCwwCbk', 'kbCCCCbk', '.kbCCbk.', '..kbbk..', '...kk...'],
+  banner:    ['.kkkkk..', '.kRRRk..', '.kRwRk..', '.kRRRk..', '.kkkk...', '.kk.....', '.kk.....', '.kk.....'],
+  beacon:    ['...kk...', '..kyyk..', '.kkCCkk.', '..kwwk..', '..kwwk..', '.kwwwwk.', 'kwwwwwwk', 'kkkkkkkk'],
+  crown:     ['k.k..k.k', 'kkkkkkkk', 'kRkRRkRk', 'kRRRRRRk', 'kRyyyyRk', 'kRRRRRRk', 'kkkkkkkk', '.kkkkkk.'],
+  bolt:      ['...kk...', '..kyyk..', '.kyyk...', 'kyyykk..', 'kkkyyk..', '..kyk...', '.kyk....', '.kk.....'],
+  rig:       ['..kkkk..', '..kWWk..', '..kWWk..', '..kkkk..', '....k...', '....k...', '..kkk...', '..kWk...'],
+  recycler:  ['...kk...', '..kLLk..', '.kLkkLk.', 'kLk..kLk', 'kL....Lk', 'kLL..LLk', '.kLLLLk.', '..kkkk..'],
+  plate:     ['kkkkkkkk', 'kWWWWWWk', 'kWkWWkWk', 'kWWWWWWk', 'kWWWWWWk', 'kWkWWkWk', 'kWWWWWWk', 'kkkkkkkk'],
+  coil:      ['..kkkk..', '.kqqqqk.', 'kqk..kqk', 'kq.kk.qk', 'kq.kk.qk', 'kqk..kqk', '.kqqqqk.', '..kkkk..'],
+  chip:      ['k.k..k.k', 'kkkkkkkk', 'kCCCCCCk', 'kCwwwwCk', 'kCwwwwCk', 'kCCCCCCk', 'kkkkkkkk', 'k.k..k.k'],
+  fist:      ['..kkkk..', '.kRRRRk.', 'kkRRRRkk', 'kRwwwwRk', 'kRRRRRRk', 'kRkkkkRk', '.kRRRRk.', '..kkkk..'],
+  nail:      ['..kkkk..', '.kPPPPk.', 'kPwwwwPk', 'kPPPPPPk', '.kPPPPk.', '..kPPk..', '..kPPk..', '...kk...'],
+  guardian:  ['...kk...', '..kcck..', '.kcwwck.', 'kcwCCwck', 'kcwCCwck', '.kcwwck.', '..kcck..', '...kk...'],
+  urn:       ['..kkkk..', '.kkkkkk.', 'kWWWWWWk', 'kWyyyyWk', 'kWyyyyWk', 'kWWWWWWk', '.kWWWWk.', '..kkkk..'],
+  credit:    ['kkkkkkkk', 'kyyyyyyk', 'kykkkkyk', 'kyywwyyk', 'kyywwyyk', 'kykkkkyk', 'kyyyyyyk', 'kkkkkkkk'],
+  ration:    ['.kkkkkk.', 'kggggggk', 'kgwwwwgk', 'kgwLLwgk', 'kgwLLwgk', 'kgwwwwgk', 'kggggggk', '.kkkkkk.'],
 };
 const POTION_SRC = {
   heal:   ['..kk..', '.kRk..', 'kRRRk.', 'kRRRRk', 'kRRRRk', '.kkkk.'],
