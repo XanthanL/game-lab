@@ -265,29 +265,51 @@ em { font-style: normal; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .tbtn:active { background: rgba(115, 239, 247, .35); }
 
-/* 开火开关：最大的一颗，贴右下角（拇指弧的支点）。开/关两态靠 #wrap.fire-on 一眼区分 */
-.tb-fire { right: 10px; bottom: 10px; width: 60px; height: 60px; border-radius: 50%; }
+/* 开火开关：最大的一颗，贴右下角（拇指弧的支点）。开/关两态靠 #wrap.fire-on 一眼区分。
+   ⚠️ 「开」态是**透明淡蓝**（作者 2026-09-26 明确「不要红色」）。
+      本作里红色只留给「受击 / 危险」这类真报警；开火是常态动作，用蓝色系。
+      两态共用同一个青蓝色相，只靠「透明度 + 描边亮度 + 文字色」区分，不做成两种颜色。 */
+.tb-fire { right: 10px; bottom: 10px; width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(115, 239, 247, .16); box-shadow: 0 0 0 1px #73eff7aa; }
+.tb-fire .firetext { color: #c3cfe0; }
 .tb-fire .firestate { color: #7a86a8; }
-#wrap.fire-on .tb-fire { background: rgba(177, 62, 83, .82);
-  box-shadow: 0 0 0 2px #ffcd75, inset 0 0 0 1px #ff8aa0; }
-#wrap.fire-on .tb-fire .firestate { color: #ffcd75; }
-#wrap.fire-on .tb-fire:active { background: rgba(224, 64, 96, .92); }
+#wrap.fire-on .tb-fire { background: rgba(140, 244, 255, .42);
+  box-shadow: 0 0 0 2px #9df3fa, inset 0 0 0 1px #e6ffff; }
+#wrap.fire-on .tb-fire .firetext { color: #eafdff; }
+#wrap.fire-on .tb-fire .firestate { color: #73eff7; }
+#wrap.fire-on .tb-fire:active { background: rgba(115, 239, 247, .52); }
 
 /* 冲刺：稍小，放开火左边 */
 .tb-dash { right: 80px; bottom: 14px; width: 46px; height: 46px; border-radius: 50%; }
 
-/* 超载容器：能量攒满才「按得动」。
-   .odfill 是水位 —— JS 每帧把它的 height 写成 0~100%，overflow:hidden 裁进圆里。
-   没满 = 冷蓝暗色，按下只抖一下（.deny）；满了 = 金框 + 亮水位 + 可触发。 */
-.tb-od { right: 78px; bottom: 68px; width: 44px; height: 44px; border-radius: 50%;
-  overflow: hidden; background: rgba(20, 24, 48, .62); box-shadow: 0 0 0 1px #3b5dc9; }
-.tb-od .odfill { position: absolute; left: 0; right: 0; bottom: 0; height: 0;
-  background: linear-gradient(180deg, #73eff7, #3b5dc9); opacity: .5; }
-.tb-od .odtext { position: relative; color: #7a86a8; text-shadow: 0 1px 0 #05060d; }
-.tb-od.ready { background: rgba(41, 54, 111, .72); box-shadow: 0 0 0 2px #ffcd75; }
-.tb-od.ready .odfill { opacity: .95; background: linear-gradient(180deg, #ffe9a8, #ffcd75); }
+/* 超载容器：**手机电量**样式的横向电池（外壳 + 右侧极柱），放在**开火按钮正上方**
+   （右边缘与开火对齐，作者 2026-09-26 要求）。
+   .odfill 是水位 —— JS 每帧把它的 width 写成 0~100%，从左往右灌满，裁在外壳里。
+   没满 = 冷蓝暗色，按下只抖一下（.deny）；满了 = 金框 + 亮水位 + 可触发。
+   ⚠️ 水位方向是**横向**（width），别照抄老版本 —— 老版本是个圆形竖灌容器（height）。 */
+.tb-od { right: 10px; bottom: 78px; width: 60px; height: 28px;
+  background: none; box-shadow: none; }
+/* 外壳：右侧留 6px 给极柱 */
+.tb-od .odbatt { position: absolute; left: 0; right: 6px; top: 0; bottom: 0;
+  border: 2px solid #3b5dc9; border-radius: 4px; background: rgba(20, 24, 48, .62);
+  overflow: hidden; }
+/* 右侧极柱（电池的 + 极） */
+.tb-od .odnub { position: absolute; right: 0; top: 9px; width: 6px; height: 10px;
+  border-radius: 0 2px 2px 0; background: #3b5dc9; }
+.tb-od .odfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: linear-gradient(90deg, #3b5dc9, #73eff7); opacity: .55; }
+.tb-od .odtext { position: absolute; left: 0; right: 6px; top: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #7a86a8; text-shadow: 0 1px 0 #05060d; }
+.tb-od.ready .odbatt { border-color: #ffcd75; box-shadow: 0 0 0 1px rgba(255, 205, 117, .35); }
+.tb-od.ready .odnub { background: #ffcd75; }
+.tb-od.ready .odfill { opacity: .95; background: linear-gradient(90deg, #ffe9a8, #ffcd75); }
 .tb-od.ready .odtext { color: #1a1c2c; text-shadow: 0 1px 0 #ffe9a8; }
-.tb-od.ready:active { background: rgba(255, 205, 117, .45); }
+/* ⚠️ 电池的按下反馈只加在**外壳**上，并把 .tbtn:active 的整块底色按掉 ——
+   否则按下时按钮那 60x28 的整块矩形（含极柱旁那条透明缝）会一起变蓝，就不像电池了。 */
+.tb-od:active { background: none; }
+.tb-od:active .odbatt { background: rgba(115, 239, 247, .18); }
+.tb-od.ready:active .odbatt { background: rgba(255, 205, 117, .28); }
 .tb-od.deny { animation: deny .28s steps(3); }
 
 /* 工具键（暂停 / 全屏）：**顶栏正中那条空档**，y=36。

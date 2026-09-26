@@ -3644,7 +3644,8 @@ function tryOverdrive() {
   if (b) { b.classList.remove('deny'); void b.offsetWidth; b.classList.add('deny'); }
 }
 // 把能量水位写进容器。
-// ⚠️ 只在**值真的变了**才写 DOM：每帧无条件写 style.height 会让浏览器每帧重排一次，
+// ⚠️ 写的是 **width**（横向电池从左往右灌满），不是 height —— 老版本是圆形竖灌容器。
+// ⚠️ 只在**值真的变了**才写 DOM：每帧无条件写 style.width 会让浏览器每帧重排一次，
 //    触屏上就是白掉几帧。1% 以下的抖动直接忽略。
 let odShown = -1, odReadyShown = null;
 function syncOdBtn() {
@@ -3654,7 +3655,7 @@ function syncOdBtn() {
   if (Math.abs(e - odShown) < 1 && ready === odReadyShown) return;
   odShown = e; odReadyShown = ready;
   const f = b.querySelector('.odfill');
-  if (f) f.style.height = e.toFixed(1) + '%';
+  if (f) f.style.width = e.toFixed(1) + '%';
   b.classList.toggle('ready', ready);
 }
 
@@ -4220,13 +4221,15 @@ function boot() {
       syncFireBtn();
       return autoFire;
     },
-    // 超载容器：水位高度（%）+ 是否「按得动」+ 按一次的结果
+    // 超载电池：水位（%）+ 是否「按得动」+ 按一次的结果
     odState: () => {
       const b = $('btn-od'), f = b && b.querySelector('.odfill');
       return {
         exists: !!b,
         ready: !!(b && b.classList.contains('ready')),
-        fillPct: f ? parseFloat(f.style.height) || 0 : null,
+        // ⚠️ 横向电池的水位是 **width**（从左往右灌满），不是 height
+        fillPct: f ? parseFloat(f.style.width) || 0 : null,
+        fillW: f ? Math.round(f.getBoundingClientRect().width / (scale || 1)) : null,
         fillH: f ? Math.round(f.getBoundingClientRect().height / (scale || 1)) : null,
         energy: G ? Math.round(G.energy) : null,
       };
