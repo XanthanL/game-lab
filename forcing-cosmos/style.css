@@ -115,10 +115,12 @@ html.coarse .pile { padding: 3px 2px; }   /* 手指点得着 */
    飞行的卡必须 pointer-events:none —— 否则它飞到敌人身上会挡住下一次点击。 */
 #fxcards { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
 #fxcards .card { pointer-events: none; will-change: transform, opacity; }
-/* 伤害预测：只读，绝不参与命中测试 */
-#dmg-preview { position: absolute; z-index: 12; pointer-events: none; color: #a8b4d0; font-size: 11px; line-height: 13px;
+/* 伤害预测：只读，绝不参与命中测试。
+   ⚠️ 字号必须是 12 的整数倍 —— 11px 是 0.9167 倍缩放，像素字的横竖笔画会被
+      子像素余数劈成不等宽（实测「伤」字笔画断开）。12px / line-height 14px 与 #wrap 一致。 */
+#dmg-preview { position: absolute; z-index: 12; pointer-events: none; color: #a8b4d0; font-size: 12px; line-height: 14px;
   text-shadow: 1px 1px 0 #05060d, -1px 1px 0 #05060d, 1px -1px 0 #05060d, -1px -1px 0 #05060d; }
-#dmg-preview .dp-shield { color: #41a6f6; font-size: 11px; }
+#dmg-preview .dp-shield { color: #41a6f6; font-size: 12px; }
 /* --c = 类型色（底部类型条 + hover 描边）；--ch = 卡面主色（外框）。
    职业专属卡把 --ch 覆盖成职业色 —— 一眼能看出"这是谁家的牌"。 */
 .card { --c: #41a6f6; --d: #29366f; --ch: var(--c); position: absolute; width: 96px; height: 110px; background: #0d1024; pointer-events: auto; cursor: pointer;
@@ -237,7 +239,10 @@ html.coarse.canpause #touch { display: block; }
    ::before 是绝对定位，不参与 .mnode 的 flex 布局，所以那个字不会位移。 */
 html.coarse .mnode::before { content: ''; position: absolute; inset: -9px; }
 html.coarse .tbtn { width: 44px; height: 40px; }
-html.coarse .tb-pause { left: 2px; top: 14px; width: 44px; height: 40px; font-size: 14px; }
+/* 触屏暂停键：44×40 是基础尺寸 22×16 的 2 倍，字号也跟着 2 倍（24px）。
+   ⚠️ 曾写 14px（1.1667 倍）—— 像素扫描实测「II」两条竖笔画变成 30/29 不等宽。
+      12 的整数倍是硬约束，别再随手写 13/14/18。 */
+html.coarse .tb-pause { left: 2px; top: 14px; width: 44px; height: 40px; font-size: 24px; }
 html.coarse .btn { padding: 6px 12px 7px; }
 html.coarse #btn-end { padding: 6px 12px 7px; }
 html.coarse #btn-deck { padding: 5px 9px 6px; }

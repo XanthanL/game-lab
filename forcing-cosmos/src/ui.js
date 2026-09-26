@@ -153,37 +153,66 @@ function icon(name, x, y, set, alpha) {
 }
 
 /* ---------------- 状态图标行 ---------------- */
+/* ⚠️⚠️ 旧版是固定 14x14 的框 + `text(n, cx+13, y+10, 'right')`：
+   ① 数字右对齐到 cx+13、框只有 14 宽 → 3 位数（"999" = 18px）从左边戳出框外 5px 并盖住图标；
+   ② 数字的 y 是 +10，而 12px 像素字的墨迹落在 [y-1, y+9] → 墨迹整体挂在框底**下面** 5px。
+   现在：框宽按数字真实宽度算（`nw + 12`），图标垂直居中，数字右对齐到框内 2px 处、y 用 +2 让墨迹居中。
+   探针：`.probe-overflow.cjs` B 组。 */
 function statusRow(e, x, y) {
   let cx = x;
+  ctx.font = '12px FP, monospace';
   for (const k in STATUS_INFO) {
     const n = e.getStatus(k); if (!n) continue;
     const info = STATUS_INFO[k];
-    px(cx, y, 14, 14, '#0e1022'); frame(cx, y, 14, 14, info.col);
-    icon(info.icon, cx + 1, y + 1, 's_' + info.icon);
-    text(n, cx + 13, y + 10, '#ffffff', 'right', 12);
-    cx += 16;
+    const ns = String(n);
+    const nw = Math.ceil(ctx.measureText(ns).width);
+    const w = nw + 12;                       // 2(左留白) + 6(图标) + 2(间隙) + nw + 2(右留白)
+    px(cx, y, w, 14, '#0e1022'); frame(cx, y, w, 14, info.col);
+    icon(info.icon, cx + 2, y + 4, 's_' + info.icon);
+    text(ns, cx + w - 2, y + 2, '#ffffff', 'right', 12);
+    cx += w + 2;
   }
 }
 /* ---------------- 意图 ---------------- */
 const INTENT_COL = { attack: '#e04060', defend: '#41a6f6', charge: '#c070f0', charged: '#ffcd75' };
-const INTENT_GLYPH = { attack: '▲', defend: '■', charge: '◇', charged: '★' };
-function intentBox(e, x, y) {
-  const it = e.getIntent(); if (!it) return;
-  const col = INTENT_COL[it.type] || '#566c86';
-  const label = it.type === 'defend' ? '防御 ' + it.value
+/* 意图框的文字。抽出来是因为「量宽度」和「画文字」必须是同一个字符串。 */
+function intentLabel(e, it) {
+  return it.type === 'defend' ? '防御 ' + it.value
     : it.type === 'charge' ? '蓄能 ' + it.left + '/' + e.chargeTurns
       : it.type === 'charged' ? '致命 ' + it.value
         : it.value + ' 伤害';
-  const w = 12 + label.length * 6;
-  px(x - w / 2 - 2, y - 2, w + 4, 16, '#05060dcc');
-  frame(x - w / 2 - 2, y - 2, w + 4, 16, col);
+}
+/* ⚠️⚠️ 框宽必须用 measureText 量出来，**不能**按 label.length * 6 估。
+   这个字体里 CJK / ★▲ 是 12px 宽、ASCII 是 6px，按 length*6 估的话
+   「3 伤害」实际 36px 只算 24px —— 六种意图形态（攻击/防御/蓄能/致命，含个位到四位）
+   全部短 11px，文字戳出右边框。2026-09-26 作者截图报的 bug。
+   探针：`.probe-overflow.cjs` A 组（劫持 fillText/fillRect 量真实绘制）。 */
+const INTENT_PAD_L = 12;   // 左侧图标区（图标画在 +4，宽约 5）
+const INTENT_PAD_R = 4;    // 右侧留白
+function intentLayout(e, x, y) {
+  const it = e.getIntent(); if (!it) return null;
+  const label = intentLabel(e, it);
+  ctx.font = '12px FP, monospace';
+  const tw = Math.ceil(ctx.measureText(label).width);
+  const w = INTENT_PAD_L + tw + INTENT_PAD_R;
+  return {
+    it, label, tw, w,
+    boxX: x - w / 2 - 2, boxY: y - 2, boxW: w + 4, boxH: 16,
+    textX: x - w / 2 + INTENT_PAD_L, textY: y + 1,
+  };
+}
+function intentBox(e, x, y) {
+  const L = intentLayout(e, x, y); if (!L) return;
+  const col = INTENT_COL[L.it.type] || '#566c86';
+  px(L.boxX, L.boxY, L.boxW, L.boxH, '#05060dcc');
+  frame(L.boxX, L.boxY, L.boxW, L.boxH, col);
   // 图标：三角/方块/菱/星（用像素直接画）
   ctx.fillStyle = col;
-  const gx = x - w / 2 + 4, gy = y + 2;
-  if (it.type === 'attack' || it.type === 'charged') { for (let i = 0; i < 5; i++) ctx.fillRect(gx + 2 - i * 0.5 | 0, gy + i, i + 1, 1); }
-  else if (it.type === 'defend') { ctx.fillRect(gx, gy, 5, 5); }
+  const gx = x - L.w / 2 + 4, gy = y + 2;
+  if (L.it.type === 'attack' || L.it.type === 'charged') { for (let i = 0; i < 5; i++) ctx.fillRect(gx + 2 - i * 0.5 | 0, gy + i, i + 1, 1); }
+  else if (L.it.type === 'defend') { ctx.fillRect(gx, gy, 5, 5); }
   else { for (let i = 0; i < 5; i++) ctx.fillRect(gx + Math.abs(i - 2), gy + i, 5 - Math.abs(i - 2) * 2, 1); }
-  text(label, x - w / 2 + 12, y + 1, col);
+  text(L.label, L.textX, L.textY, col);
 }
 
 /* ---------------- 实体绘制 ---------------- */

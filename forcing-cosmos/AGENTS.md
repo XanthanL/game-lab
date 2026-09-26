@@ -66,6 +66,73 @@
   排查手法：在页面上按 `getBoundingClientRect` 的坐标打一条 3px 标记线再截图，
   标记线落在 DOM 说的位置、而画面内容却在别处 → 就是绘制层的问题，不是布局。
 
+## 文字必须装进框 + 像素字号铁律（改 UI 前必读）
+
+**两条都是被作者看着截图报出来的 bug，纯 DOM 断言全绿、只有盯图才看得见。**
+
+### ① 自绘框的宽度只能用 `measureText` 量，不能按字符数估
+
+字体是 `FP`（Fusion Pixel 12）。它的**字宽不是等宽的**：**CJK / ★▲ = 12px，ASCII = 6px**。
+所以 `label.length * 6` 这种估法对中文是**系统性偏短**。
+
+- 敌人意图框曾是 `const w = 12 + label.length * 6;` —— 「3 伤害」实际 36px 只算了 24px，
+  **六种意图形态（3 伤害 / 128 伤害 / 1500 伤害 / 防御 12 / 蓄能 3/3 / 致命 1200）全部短 11px**，
+  文字戳出右边框（作者报的就是这一处）。
+  修法：`intentLabel()` 抽出来给「量宽」和「绘制」共用，`intentLayout()` 用 `ctx.measureText()` 算 `w`。
+  ⚠️ 量宽与绘制**必须共用同一份 label 串**，否则改了文案两边就对不上了。
+- 状态图标行同源：`text(n, cx+13, y+10, 'right')` 里 `y+10` 超出了框（12px 字的墨迹在 `[y-1, y+9]`，
+  框高 14）→ 数字从框底挂出去 5px；且 **3 位数「999」= 18px** 会从 14px 宽的框左边戳出去并盖住图标。
+  修法：框宽 `nw + 12`（`2 + 图标6 + 2 + 数字 + 2`），图标 `y+4` 居中，数字右对齐到 `cx + w - 2`、`y + 2`。
+
+**自检工具：`.probe-overflow.cjs`**（A 组意图框 / B 组状态行 / C 组血条 / D 组全场景 DOM 字墨扫描）。
+手法是**劫持 `CanvasRenderingContext2D.prototype.fillText/fillRect` 录一帧真实绘制再对账** ——
+量的是"真画出来的东西"，不是另写一份估算（另写一份就会跟实现一起错）。
+⚠️ 两个坑：① 文字是**双描边**（先 `#05060d` 阴影再彩色主体），同一串会录到 2 条，**必须按 `fill` 去重**；
+② `scrollHeight > clientHeight` **不能**当"被裁"判据（见下）。
+
+### ② 像素字号必须是 12 的整数倍（12 / 24 / 36 / 48）
+
+字体只有 **12px 一档**。给非整数倍（11 / 13 / 14 / 18）等于让浏览器把位图字重新采样，
+笔画会被子像素余数劈成**不等宽**。
+
+像素扫描实测：
+
+| 位置 | 字号 | 字形笔画 | 结论 |
+|---|---|---|---|
+| `.tb-pause`（触屏暂停键「II」） | 14px | 两条竖笔画 **30 / 29** | 不等宽 ❌ |
+| 同上 | 12px | **25 / 25** | 等宽 ✅ |
+| 同上 | 24px | **50 / 50** | 等宽（正好 2×）✅ |
+| `#dmg-preview`「伤」 | 11px | 笔画断开 | ❌ |
+
+现在 `style.css` 里所有字号都是 12 的倍数：`#wrap` 12 / `.ptitle` 24 / `.over-title` 36 / `.t1` 48 /
+`.tb-pause`(coarse) 24 / 其余 12。**新增字号先想清楚是不是 12 的倍数。**
+`line-height` 同理（用 12 / 14，与 `#wrap` 一致）。
+
+守卫：`.probe-overflow.cjs` E 组 —— ① **静态读 `style.css`**（正则抓 `font-size` / `font:` 简写，
+覆盖那些在当前场景永不激活的规则）② 运行时读 `computedStyle`，默认档 + `html.coarse` 触屏档各扫一遍
+③ 录一帧 canvas 绘制、检查用过的 `font` 串。
+⚠️ 运行时扫描**必须过滤 `computedStyle.fontFamily` 含 `FP` 的元素** —— `html`/`body`/`head`/`meta`/`script`
+继承的是浏览器默认 16px，跟像素 UI 无关，不滤掉就是 7 条假 FAIL。
+
+### ③ 判「字墨被裁」不能拿内容盒当判据
+
+12px 像素字的**内容盒**是 18px（`fontBoundingBoxAscent 14 + Descent 4`），比 `line-height:12px`
+的**行盒**高 6px —— 多出来的是**空的降部**，字墨其实落在行盒 `[1, 12]` 里、一点没切。
+`.card .tag` 就长这样，曾经被误报成"被裁 3px"。必须按**字墨**算：
+
+```
+half   = (lineHeight - (fAsc + fDesc)) / 2
+inkTop = half + fAsc - actualBoundingBoxAscent
+inkBot = half + fAsc + actualBoundingBoxDescent
+```
+
+⚠️ **行数必须用 `Range.getClientRects().length`**，不能拿 `scrollHeight / lineHeight` 猜：
+`.ds { flex:1 }` 这类**弹性盒子**的 `scrollHeight` 至少等于 `clientHeight`，单行描述会被算成 3 行 → 假 FAIL。
+⚠️ 容器型 `overflow:hidden`（`.panel` / `#wrap` / `html`）是**包含性裁剪**（防溢出），
+真正的滚动交给内部的 `#modal-body` —— 扫描器只查「**自己直接装文字节点**」的元素且 `hasScroller()` 跳过，
+否则满屏误报（收紧后全场景被裁容器数从 100 → 0）。
+D 组自带一个「故意裁切」的自检用例（D00），证明这套判定不是空转。
+
 ## 地图连通性（改 `genMap` 前必读）
 
 **「只保证入边」是不够的，必须同时保证出边。** 这是作者实际卡住的 bug：*打完一场战斗，地图上再也没有可点的节点，只能重新开始。*
@@ -211,6 +278,7 @@ python -m http.server 8126 --bind 127.0.0.1        # 必须常驻（先 curl 确
 bash .probe.sh                                     # 6 个场景截图 + 抓运行时错误 → .shots/
 bash .probe-ui.sh                                  # 6 个弹窗截图 + 抓运行时错误 → .shots/
 node .probe-exit.cjs                               # 交互出口审计（47 条）：改 UI 必跑
+node .probe-overflow.cjs                           # 「文字装进框」+ 像素字号必须是 12 的倍数（50 条）：改任何 UI 文字/字号必跑
 node .probe-mapfuzz.cjs                            # 地图连通性：模糊走图 + 出边体检 + 老存档救援：改 genMap/updateReach 必跑
 node .probe-mobile.cjs                             # 手机端端到端：竖屏转 90°/命中区 ≥40px/真触摸走完一整幕
 node .probe-play.cjs                               # 出牌演出 + 伤害预测 + 手牌上限 + 牌堆查看（64 条）
@@ -223,6 +291,7 @@ node .probe-inv.cjs                                # 打印内容量（改卡/�
 node .probe-shots-exit.cjs                         # 交互修复的视觉确认截图 → .shots/exit-*.png
 node .probe-shots-char.cjs                         # 职业卡视觉确认截图 → .shots/char-*.png
 node .probe-shots-relic.cjs                        # 遗物图标对照表 + 8/24 件 HUD 排布 → .shots/relic-*.png
+node .probe-shots-overflow.cjs                     # 「文字装进框」视觉确认 → .shots/overflow-*.png（含 4× 特写）
 ```
 
 ⚠️ **`.probe-*.cjs` / `.probe-*.mjs` 需要 `playwright-core`**，它不在仓库里。装一次然后带上 `NODE_PATH`：
