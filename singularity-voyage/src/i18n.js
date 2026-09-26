@@ -172,6 +172,9 @@ const UI = {
     // ---- HUD ----
     'hud.hull': '船体',
     'hud.shield': '盾',
+    // 过热膛线（熔炉专属）：HUD 热量槽的标签与「锁膛」提示
+    'hud.heat': '膛温',
+    'hud.heatLock': '锁膛',
     'hud.score': '分数',
     'hud.dash': '冲刺',
     'hud.energy': '能量',
@@ -362,6 +365,9 @@ const UI = {
     // ---- HUD ----
     'hud.hull': 'HULL',
     'hud.shield': 'SHD',
+    // overheat rifling (forge only): heat gauge label + jam warning
+    'hud.heat': 'HEAT',
+    'hud.heatLock': 'JAMMED',
     'hud.score': 'SCORE',
     'hud.dash': 'DASH',
     'hud.energy': 'ENERGY',

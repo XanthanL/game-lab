@@ -54,7 +54,12 @@
   <div id="hangar" class="ov hidden">
     <div class="up-title" data-i18n="hangar.title">选择船体</div>
     <div id="hull-sub" class="dim" data-i18n="hangar.sub">方向键左右切换 · ENTER 出击</div>
-    <div id="hulls"></div>
+    <!-- 7 台船体在 480px 里排不下（7*86 + 6*8 = 650px）→ 单行滑轨 + 左右翻页。
+         箭头钉在右上角：那里是标题旁边的空白，不会盖住卡面（否则 elementFromPoint
+         命中的是箭头而不是卡）。 -->
+    <button class="hpage" data-act="hpage-prev" data-dir="-1" aria-label="&#19978;&#19968;&#39029;">&#8249;</button>
+    <button class="hpage" data-act="hpage-next" data-dir="1" aria-label="&#19979;&#19968;&#39029;">&#8250;</button>
+    <div id="hull-view"><div id="hulls"></div></div>
     <div id="hull-detail" class="panel narrow"></div>
     <div class="menu row">
       <button class="btn primary" data-act="launch" data-i18n="hangar.launch">出击 [ENTER]</button>

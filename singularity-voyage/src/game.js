@@ -169,6 +169,28 @@ const HULLS = [
     drones: 2, magnetMul: 1.3,
     unlock: { wave: 10, text: '航程抵达第 10 段', textEn: 'Reach wave 10' },
   },
+  // 下面两台是从《奇点回响》搬过来的（2026-09-26）：回响 = 终局全能船，熔炉 = 过热膛线。
+  // 数值口径照 echo 的 apply() 换算成 voyage 的「相对 1.0 倍率」写法。
+  {
+    id: 'nemesis', name: '回响', en: 'NEMESIS', tag: '终焉', tagEn: 'ENDGAME', color: '#e8e2d4',
+    desc: '终焉的残骸。\n每一项都比别人高一截。',
+    descEn: 'The wreck at the end.\nBetter at everything.',
+    trait: '全属性小幅提升：船体 110 / 火力 108% / 射速 112% / 暴击 +4% / 拾取 +30%',
+    traitEn: 'Small buff to all: 110 hull, 108% power, 112% rate, +4% crit, +30% pickup',
+    hp: 110, spd: 1.04, dmg: 1.08, rate: 1.12, turn: 1.00,
+    crit: 0.04, magnetMul: 1.3,
+    unlock: { wave: 12, text: '航程抵达第 12 段', textEn: 'Reach wave 12' },
+  },
+  {
+    id: 'forge', name: '熔炉', en: 'FORGE', tag: '过热', tagEn: 'OVERHEAT', color: '#f0a468',
+    desc: '持续开火会积热。\n越烫打得越狠，见顶炸膛。',
+    descEn: 'Holding fire builds heat.\nHotter hits harder.',
+    trait: '过热膛线：伤害随热量在 85%↔145% 浮动，见顶锁膛 1.7 秒；射速 110% / 弹速 112%，船体 92',
+    traitEn: 'Overheat rifling: 85%-145% damage by heat, 1.7s jam at max; 110% rate, 112% bullet speed, 92 hull',
+    hp: 92, spd: 1.00, dmg: 1.00, rate: 1.10, turn: 1.00,
+    heat: true, bspdMul: 1.12,
+    unlock: { kills: 1500, text: '累计击坠 1500', textEn: '1500 total kills' },
+  },
 ];
 
 // ============ 敌型（12） ============
@@ -766,6 +788,7 @@ function newGame(hullId) {
   if (hull.critMul) S.critMul = hull.critMul;
   if (hull.crit) S.crit += hull.crit;
   if (hull.magnetMul) S.magnet *= hull.magnetMul;
+  if (hull.bspdMul) S.bspd *= hull.bspdMul;
   return {
     S, hull,
     t: 0, wave: 1, waveState: 'spawn', waveT: 0, zone: 0,
@@ -773,6 +796,9 @@ function newGame(hullId) {
     px: WORLD.w / 2, py: WORLD.h / 2, vx: 0, vy: 0, ang: 0, aim: 0,
     fireT: 0, inv: 0, dashT: 0, dashCd: 0, hurtFlash: 0,
     energy: 0, odT: 0, grazeT: 0,
+    // 过热膛线（熔炉专属，2026-09-26 从《奇点回响》搬过来）。
+    // ⚠️ 非熔炉船体 heatOn=false、heatMul 恒 1 —— 逐船断言「零溢出」靠的就是这两个默认值。
+    heat: 0, heatMul: 1, heatLock: 0, heatOn: !!hull.heat,
     xp: 0, xpNext: 8, level: 1, kills: 0, score: 0, combo: 1, comboT: 0,
     dust: 0,
     enemies: [], ebullets: [], bullets: [], pickups: [], parts: [], fx: [], drones: [],
@@ -933,11 +959,29 @@ function fireLance(ang) {
   if (hitN) freeze(0.09);
 }
 
+/* ============ 过热膛线（熔炉专属，2026-09-26 从《奇点回响》完整搬） ============
+   口径（与 echo 一字不差）：开火时按**速率**蓄热（与射速解耦 —— 若按「每发累加」，
+   高射速构筑 1 秒就烧穿，「节奏取舍」会退化成「不许点射」）；停火散热；
+   见顶锁死炮膛 HEAT_LOCK 秒并强制排空。伤害在冷膛 HEAT_COLD 与满膛 HEAT_HOT 之间**线性**浮动。
+   ⚠️ HEAT_VENT 必须与 HEAT_MAX/HEAT_LOCK 对齐（锁膛结束时正好排空）——
+      改任一个都要重算，不对齐会出现「锁膛结束了热量还留着一截」。
+   ⚠️ 非熔炉船体 heatOn=false：不蓄热、heatMul 恒 1，所以主炮伤害与改动前**完全一致**
+      （平衡探针的基线因此不会被带跑）。 */
+const HEAT_MAX = 100;                   // 热量上限
+const HEAT_UP = 30;                     // 开火时每秒累积 —— 满膛 3.3s，与射速无关
+const HEAT_COOL = 34;                   // 停火时每秒散热 —— 满膛排空约 2.9s
+const HEAT_LOCK = 1.7;                  // 锁膛时长
+const HEAT_VENT = HEAT_MAX / HEAT_LOCK; // 锁膛期间每秒强制散热（≈58.8，刚好排空）
+const HEAT_COLD = 0.85;                 // 冷膛伤害倍率
+const HEAT_HOT = 1.45;                  // 满膛伤害倍率
+
 function fireMain(ang, dmgMul = 1) {
   const S = G.S, n = S.barrels;
   // 长枪就绪 → 这一发整个换成光矛（不叠主炮，避免「既开炮又开矛」变成双倍 DPS）
   if (S.lance > 0 && S.lanceT <= 0) { fireLance(ang); return; }
-  const base = 10 * S.dmg * dmgMul;
+  // 过热膛线：heatMul 直接乘进 base —— 尾炮 / 扇形弹 / 跳弹全从 base 派生，自动继承。
+  // 非熔炉船体 heatMul 恒 1，这一项等于没乘。
+  const base = 10 * S.dmg * dmgMul * G.heatMul;
   const muzzle = 11;
   const spd = 320 * S.bspd;      // 口径校准：弹速是全局弹丸参数，尾炮 / 扇形弹一起吃
   for (let i = 0; i < n; i++) {
@@ -1699,7 +1743,35 @@ function updatePlayer(dt) {
   // ---- 开火 ----
   G.fireT -= dt;
   const wantFire = (mouse.down || keys['Space'] || G.autoFire) && !G.dead;
-  if (wantFire && G.fireT <= 0) {
+  // ---- 过热膛线（熔炉专属）：开火蓄热 / 停火散热 / 见顶锁膛 ----
+  // ⚠️ 蓄热只看 wantFire（按速率），**不看这一帧是否真的打出一发** —— 与射速解耦是 echo 的原设计。
+  // ⚠️ 锁膛期间 canFire=false，但 fireT 照常走，所以解锁后立刻就能开火，不会多等一个间隔。
+  let canFire = wantFire;
+  if (G.heatOn) {
+    if (G.heatLock > 0) {
+      canFire = false;
+      G.heatLock = Math.max(0, G.heatLock - dt);
+      G.heat = Math.max(0, G.heat - HEAT_VENT * dt);
+      if (G.heatLock <= 0) {
+        G.heat = 0;
+        ring(G.px, G.py, 26, '#ecd08a', 0.4, 2);
+        Sound.sfx.ready();
+      }
+    } else if (wantFire) {
+      G.heat = Math.min(HEAT_MAX, G.heat + HEAT_UP * dt);
+      if (G.heat >= HEAT_MAX) {
+        G.heatLock = HEAT_LOCK;
+        ring(G.px, G.py, 32, '#ffbe5a', 0.5, 3);
+        burst(G.px, G.py, 10, ['#ffbe5a', '#f4f4f4', '#ef7d57'], 150, 0.4, 1.8);
+        addShake(3);
+        Sound.sfx.zap();
+      }
+    } else {
+      G.heat = Math.max(0, G.heat - HEAT_COOL * dt);
+    }
+    G.heatMul = HEAT_COLD + (HEAT_HOT - HEAT_COLD) * (G.heat / HEAT_MAX);
+  }
+  if (canFire && G.fireT <= 0) {
     const iv = 0.17 / S.rate / (G.odT > 0 ? 2 : 1);
     G.fireT = iv;
     fireMain(G.ang, G.odT > 0 ? 1.35 : 1);
@@ -2684,8 +2756,22 @@ function drawHUD() {
   text('LV ' + G.level, 8, yxp + 5, '#ffcd75');
   text(G.xp + '/' + G.xpNext, 124, yxp + 5, '#7a86a8', 'r');
 
+  // 过热膛线：**只有熔炉显示**（非熔炉船体 heat 恒 0，这一整块跳过，HUD 与改动前完全一致）。
+  // 满膛转警示橙、锁膛时整条转朱砂 —— 玩家必须一眼看出「现在打不动」，而不是以为卡了。
+  let ymod = yxp + 18;
+  if (G.heatOn) {
+    const hf = clamp(G.heat / HEAT_MAX, 0, 1);
+    const lock = G.heatLock > 0;
+    const hcol = lock ? '#ff3355' : hf > 0.85 ? '#ff8a3d' : '#ffcd75';
+    bar(8, yxp + 10, 116, 5, hf, hcol, '#1a1c2c', lock ? null : '#ffe9a8');
+    text(T('hud.heat'), 8, yxp + 16, lock ? '#ff3355' : '#7a86a8');
+    text(lock ? T('hud.heatLock') : Math.round(hf * 100) + '%', 124, yxp + 16,
+      lock ? '#ff3355' : '#7a86a8', 'r');
+    ymod = yxp + 32;
+  }
+
   // 已装配模块
-  let mx = 8, my = yxp + 18;
+  let mx = 8, my = ymod;
   for (const id in G.mods) {
     const m = MODULES.find(v => v.id === id); if (!m) continue;
     ctx.fillStyle = '#1a1c2c'; ctx.fillRect(mx, my, 15, 13);
@@ -3025,6 +3111,7 @@ function openHangar() {
   state = 'hangar';
   showOverlay('hangar');
   renderHangar();
+  hullScrollTo(hullSelOff(), true);   // 开面板时直接把选中那台摆到眼前，别播滑动动画
 }
 // 操作说明的「从哪来回哪去」。之前 返回 写死回标题页 ——
 // 从暂停面板翻说明书再返回，会直接把你踢出这一局。
@@ -3143,6 +3230,40 @@ function dismissRotateHint() {
 function updateRotateHint() {
   document.documentElement.classList.toggle('norotate', rotateDismissed);
 }
+// ---- 机库滑轨（7 台船体 · 单行 650px 装不进 480px）----
+// #hull-view 是裁切视口，#hulls 靠 transform 位移（CSS 见 style.css）。
+// ⚠️ 翻页是两个独立 act（hpage-prev / hpage-next），**不是**读 data-dir：
+//    委托里的 handleAct 只拿到 act 字符串，拿不到触发元素 —— 和图鉴四个页签同一条理由。
+const HULL_CARD_W = 86, HULL_GAP = 8, HULL_PAD = 9;
+let hullOff = 0;
+function hullRowW() { return HULL_PAD * 2 + HULLS.length * HULL_CARD_W + Math.max(0, HULLS.length - 1) * HULL_GAP; }
+function hullMaxOff() { return Math.max(0, hullRowW() - W); }
+function hullPerPage() { return Math.max(1, Math.floor((W - HULL_PAD * 2 + HULL_GAP) / (HULL_CARD_W + HULL_GAP))); }
+function hullScrollTo(off, instant) {
+  hullOff = Math.max(0, Math.min(hullMaxOff(), Math.round(off)));
+  const row = $('hulls');
+  if (row) {
+    row.style.transition = instant ? 'none' : '';
+    row.style.transform = 'translateX(' + (-hullOff) + 'px)';
+  }
+  // 到头了就把箭头按灰：按下去没反应、又没有任何提示，玩家会以为按钮坏了
+  const p = document.querySelector('.hpage[data-dir="-1"]'), n = document.querySelector('.hpage[data-dir="1"]');
+  if (p) p.disabled = hullOff <= 0;
+  if (n) n.disabled = hullOff >= hullMaxOff();
+}
+// 让选中那张整张露出来：已经在窗口里就不动，否则贴左/贴右对齐（留 HULL_PAD 呼吸位）
+function hullSelOff() {
+  const left = HULL_PAD + hangarSel * (HULL_CARD_W + HULL_GAP);
+  const right = left + HULL_CARD_W;
+  if (left < hullOff + HULL_PAD) return left - HULL_PAD;
+  if (right > hullOff + W - HULL_PAD) return right - W + HULL_PAD;
+  return hullOff;
+}
+function hullPage(dir) {
+  hullScrollTo(hullOff + dir * hullPerPage() * (HULL_CARD_W + HULL_GAP));
+  Sound.sfx.select();
+}
+
 function renderHangar() {
   // 每次进机库都重算一次解锁：上一局可能刚好达标
   checkUnlocks(true);
@@ -3190,6 +3311,8 @@ function renderHangar() {
        <div class="hstat">${T('hangar.spd')} <u>${Math.round(h.spd * 100)}%</u></div>
        <div class="hstat">${T('hangar.dmg')} <u>${Math.round(h.dmg * 100)}%</u></div>
        <div class="hstat">${T('hangar.rate')} <u>${Math.round(h.rate * 100)}%</u></div>`;
+  // 选中那台可能是第 6、7 台（默认在窗口外）→ 滑轨跟上
+  hullScrollTo(hullSelOff(), false);
 }
 
 function moveHangar(dir) {
@@ -3683,6 +3806,8 @@ function handleAct(a) {
   else if (a === 'mute') { Sound.toggleMute(); syncMuteBtn(); }
   else if (a === 'lang') toggleLang();
   else if (a === 'reroll') reroll(true);
+  else if (a === 'hpage-prev') hullPage(-1);
+  else if (a === 'hpage-next') hullPage(1);
   else if (a === 'skipup') closeUpgrade();
   else if (a === 'pause') togglePause();
   else if (a === 'dash') tryDash();
@@ -4181,6 +4306,15 @@ function boot() {
     },
     save: () => SAVE,
     writeSave,
+    // ---- 探针专用：机库滑轨（7 台船体单行 650px 装不进 480px）----
+    // 探针要断言「翻页真的位移了」「卡片没被 flex 压窄」「选中那张整张露出来」，
+    // 光靠截图看不出来（位移 100px 和 188px 在图上几乎一样）。
+    hullRow: () => ({
+      off: hullOff, max: hullMaxOff(), rowW: hullRowW(), per: hullPerPage(),
+      sel: hangarSel, cardW: HULL_CARD_W, gap: HULL_GAP, pad: HULL_PAD,
+    }),
+    // ---- 探针专用：过热膛线（熔炉专属）----
+    get heat() { return { on: G.heatOn, v: G.heat, mul: G.heatMul, lock: G.heatLock }; },
     hullUnlocked: id => hullUnlocked(HULLS.find(h => h.id === id)),
     checkUnlocks: quiet => checkUnlocks(quiet !== false),
     lockAll: () => { SAVE.hulls = ['peregrine', 'rapier', 'bulwark']; writeSave(); },
