@@ -135,11 +135,26 @@
     </div>
   </div>
 
+  <!-- 触屏操作。右侧是「一大一小两颗按钮 + 一个容器」：
+         · 开火开关（最大，贴右下角 —— 拇指支点，最常按）
+         · 冲刺（稍小，在它左边）
+         · 超载（容器式：能量灌满才按得动，水位由 syncOdBtn 每帧刷进 .odfill）
+       ⚠️ 每个按钮的文案都挂在**内层 span** 上：data-i18n 走的是 textContent，
+          挂在外层会把里面的 .odfill（能量水位）一起清掉。
+       ⚠️ 三者的 rect 互不重叠、各留 8px 以上间距 —— 触屏按钮挨在一起必然误触。
+       ⚠️ 暂停 / 全屏是**工具键**，放在顶栏正中那条空档（y=36）—— 两个上角被 HUD
+          的血量 / 航段文字占着，压上去会把它们盖住（见 style.css 里那段注释）。 -->
   <div id="touch">
     <button class="tbtn tb-pause" data-act="pause">II</button>
     <button class="tbtn tb-full" data-act="full" data-i18n="touch.full">全</button>
+    <button class="tbtn tb-od" id="btn-od" data-act="od" aria-label="超载">
+      <span class="odfill"></span><span class="odtext" data-i18n="touch.od">燃</span>
+    </button>
+    <button class="tbtn tb-fire" id="btn-fire" data-act="fire" aria-pressed="false">
+      <span class="firetext" data-i18n="touch.fire">开火</span>
+      <span class="firestate" id="fire-state"></span>
+    </button>
     <button class="tbtn tb-dash" data-act="dash" data-i18n="touch.dash">冲</button>
-    <button class="tbtn tb-od" data-act="od" data-i18n="touch.od">燃</button>
   </div>
 </div>
 

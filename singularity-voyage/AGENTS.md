@@ -408,6 +408,59 @@ rx.drawImage(fl.cv, 0, 0);
   1px 的圆弧会被抗锯齿糊成灰边，跟像素素材不是一套语言。坐标每帧都变，**绝不能进任何精灵缓存**。
   `pointerKind === 'touch'` 时画触屏版；`mouse.inside` 为假（鼠标移出窗口 / 切到别的标签）时不画。
 
+## 触屏操作区：右下三件套 + 顶栏工具键（2026-09-26）
+
+作者口径：「右边的按钮改为两个 —— 一个是大一点的控制开火的开关，另一个是稍微小一点的控制冲刺」，
+超载「也放右侧，显示像一个容器，容器装满才可以按动触发」。
+
+布局（游戏像素，480×270）：
+
+| 控件 | 位置 | 尺寸 | 说明 |
+|---|---|---|---|
+| 开火开关 `#btn-fire` | right 10 / bottom 10 | 60×60 圆 | 最大，贴拇指支点；**默认关** |
+| 冲刺 `.tb-dash` | right 80 / bottom 14 | 46×46 圆 | 稍小 |
+| 超载容器 `#btn-od` | right 78 / bottom 68 | 44×44 圆 | 容器式：攒满才可按 |
+| 暂停 `.tb-pause` | left 207 / top 36 | 30×24 | 工具键 |
+| 全屏 `.tb-full` | left 243 / top 36 | 30×24 | 工具键 |
+
+- ⚠️⚠️ **工具键绝对不能放两个上角。** HUD 把左上（船体/护盾/经验，`x 8..124`，`y 8..60`）和右上
+  （分数/航段/星区/时间，右对齐到 `x 472`）全占了 —— 老版 `tb-pause{left:6;top:26}` /
+  `tb-full{right:14;top:26}` 正好把血量数字和「第 N/12 段」盖住（截图确认）。
+  顶栏 `y=36` 那条空档是算出来的：巨像血条 `y 8..16`、巨像名 `y 20..32`、横幅从 `y 74` 起、
+  左右 HUD 各占 `x ≤124` / `x ≥380` → 只有 `x 124..380, y 34..58` 完全不打架。
+  放正中还有个好处：**两个拇指的常驻区（左下摇杆 / 右下动作簇）都够不着**，躲弹幕时不会误触。
+- ⚠️ **文案必须挂在内层 `<span>` 上**：`data-i18n` 走 `textContent`，挂在外层会把里面的
+  `.odfill`（能量水位）一起清掉。开火按钮是 `.firetext` + `#fire-state`，超载是 `.odtext` + `.odfill`。
+- ⚠️ **开火开关的「开/关」是动态文案，不能给 `data-i18n`** —— `applyDom()` 会把它按静态键写死。
+  由 `syncFireBtn()` 负责，`boot()` 和 `langRefresh` 里各调一次（否则切完语言会留在旧语言）。
+- **开火开关只喂 `G.autoFire`**，和 `mouse.down` / `Space` 是「或」关系（`updatePlayer` 里的 `wantFire`）。
+  桌面端 `touchMode` 恒 false、按钮也不显示 → 「按住才开火」的手感与平衡探针基线都不受影响。
+  ⚠️ `autoFire` 是模块级 `let`，`newGame()` 里**必须**建 `autoFire:` 字段 —— `G.xxx` 不会自动存在
+  （和 `spawnEnemy` 漏 `xp` 是同一类坑）。
+- **超载容器**：`syncOdBtn()` 每帧把 `G.energy` 写进 `.odfill` 的 `height`（0~100%），
+  `overflow:hidden` 裁进圆里；`energy >= 100` 时挂 `.ready`（金框 + 亮水位）。
+  ⚠️ **只在值变了才写 DOM**（1% 阈值），每帧无条件写 `style.height` 会让浏览器每帧重排。
+  没满时按下走 `tryOverdrive()` → 只加 `.deny` 抖一下，**不放超载** —— 没有反馈的按钮等于坏按钮。
+- **触屏瞄准的三个连带修改**（不做的话「右半屏拖动瞄准」会静默失效、或抬指后一直追残影）：
+  1. 右半屏 `touchstart` 里**必须顺手 `aimMode = 'mouse'`**：合成 `mousemove` 被第 3 条挡掉了，再没人翻这个开关；
+  2. `endTouch` 里抬指要 `mouse.inside = false`：不然鼠标残留在最后那个触点，摇杆松手后
+     `updatePlayer` 的 `aimMode==='mouse'` 分支继续把船往残影方向带；
+  3. `mousemove` / `mousedown` 开头判 `e.sourceCapabilities.firesTouchEvents` 直接 return ——
+     触屏抬指后浏览器会补发一串兼容性鼠标事件（坐标就是最后那个触点），照单全收会让第 2 条当场失效。
+     Safari 没这个属性 → 退化成「照旧处理」，与改动前一致。
+- **横屏锁定**：`toggleFullscreen()` 里只在**进**全屏时试 `screen.orientation.lock('landscape')`，
+  且**必须吞掉 Promise 拒绝**（只在「已全屏 + 移动端」可用，iOS 没实现，桌面端一律 reject）——
+  不吞会在控制台多一条 unhandled rejection，探针会把它记成 JS 错误。
+- **惯性（阻尼）**：`updatePlayer` 上方的 `DAMP_COAST = 0.45/0.85`、`DAMP_BRAKE = 2.6/0.85`。
+  `τ = 1/k` 是「松手后速度衰减到 1/e 的时间」，作者要的「惯性 -15%」= τ 缩短 15% = k 放大 1/0.85。
+  ⚠️ **方向别搞反**：k 越大越跟手、漂得越短；把 k 调小才是更飘。
+- ⚠️ **`.tbtn` 的字号必须是 12 的整数倍**。老版本是 14px（1.17 倍缩放 → 像素网格对不齐），
+  `sv-text.py` 一直给它打 NOTE；现在统一回 12px，守卫也干净了。
+- 探针：`.workbuddy/sv-touch.py`（**49 条**：布局不重叠/都在 `#wrap` 内/字号 12 的倍数/工具键不压 HUD/
+  每颗按钮 `elementFromPoint` 真命中/开火开关四态/容器水位与 ready 与 deny/中英文跟着切/
+  触屏瞄准「按住会转、抬指停转」/竖屏提示四组合/暂停时收起按钮），
+  截图工具 `.workbuddy/sv-touch-shot.py [off|on] [宽x高]`。
+
 ## 其它已踩过的坑
 
 - ⚠️⚠️ **`irand(a, b)` 是「两参数」签名：`Math.floor(rand(a, b + 1))`，即闭区间 [a, b] 整数随机。**
@@ -526,6 +579,22 @@ rx.drawImage(fl.cv, 0, 0);
   **竖屏提示四种组合只有「粗指针 + 竖屏」显示**。改了输入 / 布局 / 准星就跑一次。
   它用 `PointerEvent` + `TouchEvent` 构造器打真实事件序列（不是 `click`），
   ⚠️ 所以**不要再用 `click` 去测按钮** —— 委托已经不听 `click` 了。
+- 触屏控件探针：`python .workbuddy/sv-touch.py` —— **49 条**，专治右下角三件套 + 顶栏工具键。
+  覆盖：`#touch` 的显隐时机（标题页 / 暂停时都必须是 `none`）· 五颗按钮两两**重叠面积为 0** ·
+  全部落在 `#wrap` 框内 · **字号是 12 的整数倍** · 开火比冲刺大 · 动作簇都在下半屏 ·
+  **工具键不压左右 HUD**（`x>124` / `x+w<380` / `34<=y` 且 `y+h<=74`）·
+  每颗按钮 `elementFromPoint` 真命中（先判尺寸再判 `el===t||el.contains(t)`）·
+  开火开关「关→真的不开火 / 开→真的开火 / 再关→停火 / `G.autoFire` 同步」·
+  超载容器「水位跟着能量 / 半满不是 ready / 没满按下不放超载且有 `.deny` / 满了水位 100 且可按」·
+  中英切换后 FIRE/OFF/ON/BURN/DASH 都对 · **触屏「按住会转机头、抬指必须停转」** ·
+  竖屏提示四组合 · 暂停时收起按钮。
+  ⚠️ 两个容易写错的点：① 等开火要等够**一个开火间隔**（`0.17/rate`，约 170ms）——
+  只等 4 个心跳（64ms）会让「关了不开火」假 PASS、「开了会开火」假 FAIL；
+  ② 布局坐标必须 `(rect.left - offX) / scale`，只除 scale 会把信箱式左边距算进 x 里，
+  `inWrap` 会整排假 FAIL。
+- 触屏截图：`python .workbuddy/sv-touch-shot.py [off|on] [宽x高]`（默认 `960x432` 手机横屏尺寸）
+  —— 无头桌面 Chrome 的 pointer 恒为 fine，所以靠 `__dbg.setTouchMode(true)` 手动挂 `.touch`，
+  再把 `G.energy` 钉死，截右下角三件套在真实缩放下的样子。改触屏 CSS 后看一眼。
 - UI 体检探针：`python .workbuddy/sv-ui.py` —— 遍历每个覆盖层，抓「当前可见的 `data-act`」和
   「当前可见的覆盖层」，专门找**开得出来、退不出去**的死路。还会用 `click`（`detail: 0`）
   模拟键盘激活 `<button>`。改 `index.html` 的覆盖层 / `handleAct()` / `onKey` 就跑一次。
@@ -581,7 +650,8 @@ rx.drawImage(fl.cv, 0, 0);
 - 调试 URL 参数：`?bot=1`（自动游玩）、`&god=1`（无敌）、`&fast=N`（N 倍速）、`&loop=1`。
   `window.__dbg` 暴露 `G`、`state`、`spawnBoss`、`giveXp`、`nextWave`、`aim(x,y)`、`aimOff()`、`nearest()`、`die()`，
   探针用的 `spawn/clearEnemies/killAll/hit/setMods/clearMods/save/writeSave/hullUnlocked/checkUnlocks/lockAll/reload/webSlowAt/soundVol`，
-  输入/布局用的 `pointerKind`、`touchMode`、`joyActive`、`joyVec`、`scale`、`off`、`pickHull`、`fit`、`updateLayoutMode`、`setLayout(coarse,portrait)`，
+  输入/布局用的 `pointerKind`、`touchMode`、`joyActive`、`joyVec`、`scale`、`off`、`pickHull`、`fit`、`updateLayoutMode`、`setLayout(coarse,portrait)`、`setTouchMode(on)`，
+  触屏控件用的 `autoFire`、`gameAutoFire`、`toggleFire`、`setAutoFire(v)`、`odState()`、`touchBtns()`、`odReach()`，
   以及机制验证用的 `grant(id, n)`、`resetStats()`、`setPos(x,y)`、`fire(ang)`、`hold(key,bool)`、`ebullet(...)`、
   `wakeCount`、`bulletCount`、`ebulletCount`。
   ⚠️ **`setMods()` 只改 `G.mods` 表，一次 `apply()` 都不执行** —— 想验「装了卡之后属性真的变了」必须用 `grant()`。

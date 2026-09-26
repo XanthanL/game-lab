@@ -257,14 +257,49 @@ em { font-style: normal; }
 /* touch */
 #touch { display: none; }
 #wrap.touch.playing #touch { display: block; }
-.tbtn { position: absolute; font: inherit; color: #f4f4f4; background: rgba(41, 54, 111, .55); border: 0; box-shadow: 0 0 0 1px #73eff7aa;
-  width: 40px; height: 40px; border-radius: 50%; font-size: 14px; line-height: 14px; touch-action: none;
-  display: flex; align-items: center; justify-content: center; }
+/* ⚠️ font-size 只能是 **12 的整数倍**（12/24/36）。字体只有 12px 一档，
+   给 14px = 1.17 倍缩放 → 像素网格对不齐、笔画糊边 —— 老版本这里正是 14px，
+   sv-text.py 那条静态断言一直给它打 NOTE。现在统一回 12px，守卫也干净了。 */
+.tbtn { position: absolute; font: inherit; font-size: 12px; line-height: 12px; color: #f4f4f4;
+  background: rgba(41, 54, 111, .55); border: 0; box-shadow: 0 0 0 1px #73eff7aa; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .tbtn:active { background: rgba(115, 239, 247, .35); }
-.tb-dash { right: 14px; bottom: 18px; }
-.tb-od { right: 62px; bottom: 42px; background: rgba(177, 62, 83, .6); box-shadow: 0 0 0 1px #ffcd75; }
-.tb-full { right: 14px; top: 26px; width: 30px; height: 24px; border-radius: 3px; font-size: 12px; }
-.tb-pause { left: 6px; top: 26px; width: 30px; height: 24px; border-radius: 3px; }
+
+/* 开火开关：最大的一颗，贴右下角（拇指弧的支点）。开/关两态靠 #wrap.fire-on 一眼区分 */
+.tb-fire { right: 10px; bottom: 10px; width: 60px; height: 60px; border-radius: 50%; }
+.tb-fire .firestate { color: #7a86a8; }
+#wrap.fire-on .tb-fire { background: rgba(177, 62, 83, .82);
+  box-shadow: 0 0 0 2px #ffcd75, inset 0 0 0 1px #ff8aa0; }
+#wrap.fire-on .tb-fire .firestate { color: #ffcd75; }
+#wrap.fire-on .tb-fire:active { background: rgba(224, 64, 96, .92); }
+
+/* 冲刺：稍小，放开火左边 */
+.tb-dash { right: 80px; bottom: 14px; width: 46px; height: 46px; border-radius: 50%; }
+
+/* 超载容器：能量攒满才「按得动」。
+   .odfill 是水位 —— JS 每帧把它的 height 写成 0~100%，overflow:hidden 裁进圆里。
+   没满 = 冷蓝暗色，按下只抖一下（.deny）；满了 = 金框 + 亮水位 + 可触发。 */
+.tb-od { right: 78px; bottom: 68px; width: 44px; height: 44px; border-radius: 50%;
+  overflow: hidden; background: rgba(20, 24, 48, .62); box-shadow: 0 0 0 1px #3b5dc9; }
+.tb-od .odfill { position: absolute; left: 0; right: 0; bottom: 0; height: 0;
+  background: linear-gradient(180deg, #73eff7, #3b5dc9); opacity: .5; }
+.tb-od .odtext { position: relative; color: #7a86a8; text-shadow: 0 1px 0 #05060d; }
+.tb-od.ready { background: rgba(41, 54, 111, .72); box-shadow: 0 0 0 2px #ffcd75; }
+.tb-od.ready .odfill { opacity: .95; background: linear-gradient(180deg, #ffe9a8, #ffcd75); }
+.tb-od.ready .odtext { color: #1a1c2c; text-shadow: 0 1px 0 #ffe9a8; }
+.tb-od.ready:active { background: rgba(255, 205, 117, .45); }
+.tb-od.deny { animation: deny .28s steps(3); }
+
+/* 工具键（暂停 / 全屏）：**顶栏正中那条空档**，y=36。
+   ⚠️ 不能留在两个上角 —— HUD 把左上（船体/护盾/经验，x 8..124）和右上
+      （分数/航段/星区/时间，右对齐到 x=472）全占了，按钮压在上面会把血量数字
+      和「第 N/12 段」直接盖住（2026-09-26 截图确认）。
+   y=36 这条空档是算出来的：巨像血条 y=8..16、巨像名 y=20..32、横幅从 y=74 起，
+      左边 HUD 到 x=124、右边从 x=380 起 —— 中间 124..380 只有这一条完全不打架。
+   放在正中还有个好处：两个拇指的常驻区（左下摇杆 / 右下动作簇）都够不着，
+      不会在躲弹幕时被误触。 */
+.tb-pause { left: 207px; top: 36px; width: 30px; height: 24px; border-radius: 3px; }
+.tb-full { left: 243px; top: 36px; width: 30px; height: 24px; border-radius: 3px; }
 
 /* 竖屏提示：粗指针 + 竖屏才出现。
    两条路都走 —— CSS 媒体查询（JS 还没跑起来时就生效）+ <html> 上的 JS class（可测），

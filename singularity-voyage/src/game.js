@@ -44,6 +44,11 @@ const fmtTime = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Ma
 let state = 'loading', G = null, scale = 1, offX = 0, offY = 0;
 let STARSETS = null, ROCKS = null;
 let touchMode = false, hangarSel = 0;
+// 触屏开火开关（右下角那颗大按钮）。作者口径：**默认关** —— 想开火自己点一下。
+// ⚠️ 它只喂 updatePlayer 里的 G.autoFire，和 mouse.down / Space 是「或」关系；
+//    桌面端 touchMode 恒 false、按钮也不显示，所以「按住才开火」的手感一点没变
+//    （平衡性探针的基线因此也不会被带跑）。
+let autoFire = false;
 // 混合设备（触屏笔记本）上鼠标和手指会交替用。这个只用来决定准星画哪种样式，
 // 判定走 pointer 事件的 pointerType —— 触屏点按之后浏览器会补一发兼容性 mousemove，
 // 拿 mousemove 判会把状态误判回鼠标，准星会一闪一闪。
@@ -782,6 +787,10 @@ function newGame(hullId) {
     syn: {},  // 协同 id -> true
     spawnQueue: [], spawnT: 0, waveKills: 0, waveNeed: 0,
     dead: false, won: false,
+    // 开火开关的当前值（触屏右下角那颗大按钮改的就是它）。
+    // ⚠️ 必须在**这里**建字段：updatePlayer 每帧读 G.autoFire，靠 `G.xxx` 自动存在
+    //    是这个项目踩过的坑（spawnEnemy 漏 xp 那回），漏了就是 undefined = 恒关。
+    autoFire: autoFire,
   };
 }
 
@@ -1173,8 +1182,9 @@ const EDGE = 20;
    ⚠️ 必须和 sprites.js 里的 ENEMY_SPR_SCALE / BOSS_SPR_SCALE **成对改**。
       这边乘 `e.r`（判定半径），那边乘像素画。只改一边就是
       「看着打中了却没伤害」/「隔着老远就掉血」，两种都不报错。
-   ⚠️ 巨像的精灵本来就是 2x 烘焙的，这里 BOSS_SCALE=1.5 → 实际显示 3x，
-      半径也从 21/22/23 变成 31.5/33/34.5（精灵半宽 30，对得上）。
+   ⚠️ 巨像精灵按 sprites.js 的 BOSS_SPR_SCALE=3 烘焙（半宽 30）；这里的 BOSS_SCALE=1.5
+      只放大**判定半径**：21/22/23 → 31.5/33/34.5，和精灵半宽 30 对得上。
+      （注意 BOSS_SCALE 不参与绘制 —— 显示大小只由 BOSS_SPR_SCALE 决定，别把两者搞混。）
    ⚠️ 半径变大 = 接触伤害的判定圈也变大，难度会上去一点。
       这是用户明确要的「视觉=判定」；如果以后觉得太挤，先调这里的数，
       不要单独改 e.r 而漏掉精灵 —— 那会退化成「看得到打不到」。 */
@@ -1601,8 +1611,15 @@ function updateEnemies(dt) {
 //         摇杆（joy.active） —— 推满 = 满舵；微推 = 慢转
 //   推进：W（或方向键上） —— 沿当前 G.ang 方向施加加速度
 //   制动：S（或方向键下） —— 指数衰减速度（强于常规阻尼）
-//   常态阻尼：exp(-0.45*dt)，松手后慢慢漂停
+//   常态阻尼：exp(-DAMP_COAST*dt)，松手后慢慢漂停
 // 开火 / 冲刺 / 超载 / 子弹 / 冲角 / 死亡尾流 / 网黏粒子照旧。
+//
+// 惯性系数（作者 2026-09-26 要求「惯性降低 15%」）。
+//   τ = 1/k 是「松手后速度衰减到 1/e 所需的时间」，也就是手感上的「还能漂多久」。
+//   惯性 -15% ⇔ τ 缩短 15% ⇔ k 放大 1/0.85 ≈ 1.176。
+//   ⚠️ 方向别搞反：k **越大**越跟手、漂得越短；把 k 调小才是更飘。
+const DAMP_COAST = 0.45 / 0.85;   // ≈ 0.529（原 0.45）
+const DAMP_BRAKE = 2.6 / 0.85;    // ≈ 3.059（原 2.6，制动时速度掉得更快）
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
@@ -1652,8 +1669,10 @@ function updatePlayer(dt) {
     G.vx += Math.cos(G.ang) * ACC * dt;
     G.vy += Math.sin(G.ang) * ACC * dt;
   }
-  // 阻尼：制动用 echo 的强衰减（exp -2.6），常态用轻阻尼（exp -0.45）保留太空感
-  const k = Math.exp((braking ? -2.6 : -0.45) * dt);
+  // 阻尼：制动用 echo 的强衰减，常态用轻阻尼保留太空感。
+  // ⚠️ 两个系数在 updatePlayer 上方定义（DAMP_COAST / DAMP_BRAKE）——
+  //    作者要的「惯性 -15%」就是在这两个数上体现的，改之前先读那段注释。
+  const k = Math.exp((braking ? -DAMP_BRAKE : -DAMP_COAST) * dt);
   G.vx *= k; G.vy *= k;
   const vm = Math.hypot(G.vx, G.vy);
   if (vm > MAXV) { G.vx = G.vx / vm * MAXV; G.vy = G.vy / vm * MAXV; }
@@ -2938,6 +2957,9 @@ function render() {
     ctx.fillRect(0, 0, 3, H); ctx.fillRect(W - 3, 0, 3, H);
     ctx.globalAlpha = 1;
   }
+  // 触屏超载容器的水位。它是 DOM 元素、和画布无关，但必须跟着能量走 ——
+  // 放在 render 末尾是因为「这一帧的能量」到这儿才是最新的。
+  if (touchMode) syncOdBtn();
 }
 
 // 标题页背景：缓慢漂移的星野
@@ -3592,6 +3614,50 @@ function toWorld(cx, cy) { const g = toGame(cx, cy); return [g[0] + cam.x - W / 
 
 function setTouchMode(on) { touchMode = on; wrap.classList.toggle('touch', on); }
 
+/* ============ 触屏按钮：开火开关 + 超载容器 ============
+   右下角改成「一大一小两颗按钮 + 一个容器」：
+     开火（最大，贴着右下角，拇指支点）/ 冲刺（稍小，在它左边）/
+     超载（容器式：能量灌满才按得动，水位由 syncOdBtn 每帧刷）。
+   ⚠️ 三者的 rect 互不重叠，间距各留 8px 以上 —— 触屏按钮挨在一起必然误触。 */
+
+// 开火开关。
+// ⚠️ 状态文字是**动态**的，所以它不走 data-i18n（applyDom 会把它按静态键写死），
+//    改由 syncFireBtn() 在 boot 与 langRefresh 里各刷一次，否则切完语言
+//    「开/关」两个字会留在旧语言里。
+function toggleFire() {
+  autoFire = !autoFire;
+  if (G) G.autoFire = autoFire;
+  syncFireBtn();
+  if (autoFire) Sound.sfx.select(); else Sound.sfx.lock();
+}
+function syncFireBtn() {
+  const on = G ? !!G.autoFire : autoFire;
+  wrap.classList.toggle('fire-on', on);
+  const b = $('btn-fire'); if (b) b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  const st = $('fire-state'); if (st) st.textContent = T(on ? 'touch.on' : 'touch.off');
+}
+// 超载容器：装满（energy >= 100）才按得动。没满就抖一下 ——
+// 一颗「按下去毫无反应」的按钮，玩家只会以为它坏了。
+function tryOverdrive() {
+  if (G && G.energy >= 100 && G.odT <= 0) { activateOverdrive(); return; }
+  const b = $('btn-od');
+  if (b) { b.classList.remove('deny'); void b.offsetWidth; b.classList.add('deny'); }
+}
+// 把能量水位写进容器。
+// ⚠️ 只在**值真的变了**才写 DOM：每帧无条件写 style.height 会让浏览器每帧重排一次，
+//    触屏上就是白掉几帧。1% 以下的抖动直接忽略。
+let odShown = -1, odReadyShown = null;
+function syncOdBtn() {
+  const b = $('btn-od'); if (!b) return;
+  const e = G ? clamp(G.energy, 0, 100) : 0;
+  const ready = e >= 100;
+  if (Math.abs(e - odShown) < 1 && ready === odReadyShown) return;
+  odShown = e; odReadyShown = ready;
+  const f = b.querySelector('.odfill');
+  if (f) f.style.height = e.toFixed(1) + '%';
+  b.classList.toggle('ready', ready);
+}
+
 function handleAct(a) {
   Sound.init();
   if (a === 'hangar') openHangar();
@@ -3619,7 +3685,9 @@ function handleAct(a) {
   else if (a === 'skipup') closeUpgrade();
   else if (a === 'pause') togglePause();
   else if (a === 'dash') tryDash();
-  else if (a === 'od') activateOverdrive();
+  // ⚠️ 走 tryOverdrive 而不是 activateOverdrive：容器没装满时要抖一下给反馈。
+  else if (a === 'od') tryOverdrive();
+  else if (a === 'fire') toggleFire();
   else if (a === 'full') toggleFullscreen();
   else if (a === 'rotatedismiss') dismissRotateHint();
 }
@@ -3656,6 +3724,13 @@ function toggleFullscreen() {
     if (on) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
     else { (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); }
   } catch (e) { /* 桌面端不允许也无所谓 */ }
+  // 顺手把屏幕方向锁成横屏（对应作者要的「手机端横屏游玩」）。
+  // ⚠️ 只在**进**全屏时试，而且必须吞掉 Promise 拒绝：这个 API 只在
+  //    「已全屏 + 移动端」才可用，iOS Safari 干脆没实现，桌面端一律 reject。
+  //    不吞的话控制台会多一条 unhandled rejection，探针会把它记成 JS 错误。
+  if (!on && screen.orientation && screen.orientation.lock) {
+    try { const p = screen.orientation.lock('landscape'); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  }
   // 全屏切换会改视口尺寸，等一帧再量
   setTimeout(fit, 60);
 }
@@ -3803,6 +3878,11 @@ function boot() {
 
   // 鼠标：动了就接管朝向（切到 'mouse' 模式）
   const upd = e => {
+    // ⚠️ 挡掉触屏抬指后浏览器补发的「兼容性 mousemove」：它的坐标就是最后那个触点，
+    //    照单全收会把 mouse.inside 又翻回 true，endTouch 里那条修法当场失效。
+    //    sourceCapabilities.firesTouchEvents 是 Chrome 标记这类合成事件的官方位；
+    //    拿不到该属性的浏览器（Safari）退化成「照旧处理」，与改动前一致。
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
     const [x, y] = toGame(e.clientX, e.clientY); mouse.x = x; mouse.y = y; mouse.inside = true;
     if (state === 'play') aimMode = 'mouse';
   };
@@ -3810,6 +3890,8 @@ function boot() {
   window.addEventListener('mousedown', e => {
     Sound.init();
     if (e.button === 2) { if (state === 'play') tryDash(); return; }
+    // 同上：合成 mousedown 也是触屏抬指后的补发事件，不能让它点亮准星
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
     if (state === 'play') { upd(e); mouse.down = true; }
   });
   window.addEventListener('mouseup', () => { mouse.down = false; });
@@ -3831,7 +3913,12 @@ function boot() {
       if (gx < W / 2) {
         joy.id = t.identifier; joy.ox = t.clientX; joy.oy = t.clientY; joy.active = true;
       } else {
+        // 右半屏：按住 = 朝手指方向转 + 开火。
+        // ⚠️ 必须顺手把 aimMode 切成 'mouse'：手机浏览器抬指后补发的兼容性
+        //    mousemove 被下面 upd() 挡掉了，再没人翻这个开关 —— 不切的话
+        //    「右半屏拖动瞄准」会静默失效（船不再朝手指转，只有火在打）。
         mouse.down = true;
+        aimMode = 'mouse';
         const [x, y] = toGame(t.clientX, t.clientY); mouse.x = x; mouse.y = y; mouse.inside = true;
       }
     }
@@ -3853,7 +3940,13 @@ function boot() {
   const endTouch = e => {
     for (const t of e.changedTouches) {
       if (t.identifier === joy.id) { joy.id = null; joy.active = false; joy.x = joy.y = 0; }
-      else mouse.down = false;
+      else {
+        mouse.down = false;
+        // ⚠️ 抬指必须把准星一起收掉。否则 mouse 会残留在最后那个触点上，
+        //    摇杆一松手，updatePlayer 里 aimMode==='mouse' 那条分支就继续生效 ——
+        //    飞船一直朝那个残影慢慢转，玩家明明没在操作。桌面端不走这条路径。
+        mouse.inside = false;
+      }
     }
   };
   wrapEl.addEventListener('touchend', endTouch);
@@ -4104,6 +4197,9 @@ function boot() {
     pickHull,
     fit,
     updateLayoutMode,
+    // 探针专用：触屏模式在无头桌面 Chrome 里永远为 false（pointer 恒为 fine），
+    // 只能手动挂上 —— 和 setLayout 是同一个理由（不可测的媒体查询要开个口子）。
+    setTouchMode: on => { setTouchMode(!!on); return touchMode; },
     // 探针专用：强制竖屏提示的开关，验证它不会在桌面端误触发
     setLayout: (coarse, portrait) => {
       const r = document.documentElement;
@@ -4112,6 +4208,65 @@ function boot() {
       rotateDismissed = false; updateRotateHint();
     },
     get rotateDismissed() { return rotateDismissed; },
+    // ---- 触屏按钮探针 ----
+    // 开火开关：读值 / 翻 / 直接设。⚠️ 直接读 G.autoFire 会踩到「G 可能为 null」，
+    // 所以走模块级的 autoFire 变量（它就是 G.autoFire 的来源）。
+    get autoFire() { return autoFire; },
+    get gameAutoFire() { return G ? !!G.autoFire : null; },
+    toggleFire,
+    setAutoFire: v => {
+      autoFire = !!v;
+      if (G) G.autoFire = autoFire;
+      syncFireBtn();
+      return autoFire;
+    },
+    // 超载容器：水位高度（%）+ 是否「按得动」+ 按一次的结果
+    odState: () => {
+      const b = $('btn-od'), f = b && b.querySelector('.odfill');
+      return {
+        exists: !!b,
+        ready: !!(b && b.classList.contains('ready')),
+        fillPct: f ? parseFloat(f.style.height) || 0 : null,
+        fillH: f ? Math.round(f.getBoundingClientRect().height / (scale || 1)) : null,
+        energy: G ? Math.round(G.energy) : null,
+      };
+    },
+    // 触屏按钮的布局体检：矩形 + 两两重叠面积（重叠必须为 0）。
+    // ⚠️ 必须**减掉 offX/offY 再除 scale**：getBoundingClientRect 给的是视口坐标，
+    //    而 #wrap 是 translate(offX,offY) + scale 的 —— 只除 scale 会把信箱式的
+    //    左边距算进按钮的 x 里，所有按钮看起来都往右挪了一截（inWrap 会假 FAIL）。
+    touchBtns: () => {
+      const out = [];
+      const s = scale || 1;
+      for (const b of document.querySelectorAll('#touch .tbtn')) {
+        const r = b.getBoundingClientRect();
+        out.push({
+          act: b.dataset.act || b.id,
+          x: Math.round((r.left - offX) / s), y: Math.round((r.top - offY) / s),
+          w: Math.round(r.width / s), h: Math.round(r.height / s),
+          visible: r.width > 0 && r.height > 0,
+          inWrap: (r.left - offX) >= -0.5 && (r.top - offY) >= -0.5 &&
+                  (r.right - offX) <= W * s + 0.5 && (r.bottom - offY) <= H * s + 0.5,
+          fontPx: parseFloat(getComputedStyle(b).fontSize),
+        });
+      }
+      let worst = 0;
+      for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
+        const a = out[i], b = out[j];
+        const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (ox > 0 && oy > 0) worst = Math.max(worst, ox * oy);
+      }
+      return { btns: out, overlapArea: worst };
+    },
+    // 超载容器的 DOM 真命中（尺寸判定 + elementFromPoint，别只信 rect）
+    odReach: () => {
+      const b = $('btn-od'); if (!b) return { ok: false, why: 'no-el' };
+      const r = b.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) return { ok: false, why: 'zero-size' };
+      const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { ok: t === b || b.contains(t), hit: t ? (t.id || t.className || t.tagName) : null };
+    },
     // ---- 中英切换探针 ----
     get lang() { return lang; },
     setLang: l => { setLang(l); return lang; },
@@ -4163,8 +4318,10 @@ function boot() {
   // ② 再注册「切完语言要重刷哪些**动态**内容」。⚠️ 只重画，绝不切状态机 ——
   //    切语言时顺手 toTitle() 会把打到一半的人踢回标题页。
   applyDom();
+  syncFireBtn();   // 「开火 关/开」是动态文案，data-i18n 刷不到它，得单独来一次
   langRefresh = () => {
     syncMuteBtn();
+    syncFireBtn();
     renderVolume();
     if (state === 'title') renderTitle();
     else if (state === 'hangar') renderHangar();

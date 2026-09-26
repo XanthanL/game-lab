@@ -52,7 +52,7 @@ const UI = {
     'title.kills': '累计击坠 {0}',
     'title.locked': '还有 {0} 台待解锁',
     'title.ctrlDesk': 'A/D 转向 · W 推进 · S 制动 · 鼠标瞄准 · 左键/空格开火 · Shift/右键冲刺',
-    'title.ctrlTouch': '左半屏拖动推进与转向 · 右半屏拖动瞄准并自动开火',
+    'title.ctrlTouch': '左半屏拖动转向推进 · 右半屏拖动瞄准 · 右下角：开火 / 冲刺 / 超载',
     'title.hintDesk': '按 ENTER 开始',
     'title.hintTouch': '轻触「开始航行」',
 
@@ -87,7 +87,7 @@ const UI = {
       '<p><b>SHIFT / 右键</b> 助推冲刺（短暂无敌）</p>',
       '<p><b>E</b> 超载爆发（能量满时）</p>',
       '<p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>',
-      '<p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏自动开火<br>右下角按钮 冲刺 / 超载</p>',
+      '<p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏拖动 = 瞄准<br>右下角 大按钮 = <b>开火开关</b>（默认关）· 小按钮 = 冲刺 · 上方容器 = 超载（攒满才可按）</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">青白色细针</em> 是你的炮弹；<em class="c-r">红紫圆弹</em> 是敌弹，务必躲开</p>',
@@ -215,6 +215,11 @@ const UI = {
     'touch.full': '全',
     'touch.dash': '冲',
     'touch.od': '燃',
+    // 开火开关（右下角最大的那颗）。开/关两字是**动态**文案，不走 data-i18n，
+    // 由 game.js 的 syncFireBtn() 刷 —— 但也必须在中英表里各留一份。
+    'touch.fire': '开火',
+    'touch.on': '开',
+    'touch.off': '关',
     'rotate.t': '请把手机横过来',
     'rotate.s': 'R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E',
     'rotate.x': '轻触此处仍然继续',
@@ -241,7 +246,8 @@ const UI = {
     'title.kills': 'TOTAL KILLS {0}',
     'title.locked': '{0} HULLS STILL LOCKED',
     'title.ctrlDesk': 'A/D TURN · W THRUST · S BRAKE · MOUSE AIM · LMB/SPACE FIRE · SHIFT/RMB DASH',
-    'title.ctrlTouch': 'DRAG LEFT HALF TO STEER &amp; THRUST · DRAG RIGHT HALF TO AIM AND AUTO-FIRE',
+    // ⚠️ 这条走 data-i18n（textContent），**不能**写 &amp; —— 会被原样显示出来。
+    'title.ctrlTouch': 'L HALF = STEER + THRUST · R HALF = AIM · CORNER: FIRE / DASH / BURN',
     'title.hintDesk': 'PRESS ENTER TO START',
     'title.hintTouch': 'TAP START VOYAGE',
 
@@ -273,7 +279,7 @@ const UI = {
       '<p><b>Mouse</b> aim — nose turns toward cursor (max 12 rad/s)</p>',
       '<p><b>LMB / Space</b> fire (hold) · <b>Shift / RMB</b> dash</p>',
       '<p><b>E</b> overdrive · <b>ESC/P</b> pause · <b>M</b> mute</p>',
-      '<p class="dim">Phone: drag L half = thrust + steer · R half = aim &amp; auto-fire · corner buttons for dash / overdrive</p>',
+      '<p class="dim">Phone: L half = thrust + steer · R half = aim<br>Bottom-right: big = <b>FIRE</b> toggle (off by default) · small = DASH · vessel above = OVERDRIVE (only when full)</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">Cyan needles</em> = your shots · <em class="c-r">red/purple orbs</em> = enemy fire (dodge)</p>',
@@ -399,6 +405,9 @@ const UI = {
     'touch.full': 'FULL',
     'touch.dash': 'DASH',
     'touch.od': 'BURN',
+    'touch.fire': 'FIRE',
+    'touch.on': 'ON',
+    'touch.off': 'OFF',
     'rotate.t': 'PLEASE ROTATE YOUR PHONE',
     'rotate.s': 'R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E',
     'rotate.x': 'TAP ANYWHERE TO CONTINUE',

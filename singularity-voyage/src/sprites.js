@@ -529,15 +529,31 @@ const PICK_SRC = {
   ]],
 };
 
+/* ============ 敌人 / 巨像的显示放大倍数 ============
+   起因：480×270 的画布上，最小的杂兵（掠夺者 5×5）和星尘（5×5）一样大，
+   玩家分不清哪是敌人哪是掉落。同时玩家船是 2x 烘焙的（44×32 显示），
+   杂兵却是 1x（1 个美术像素 = 1 个游戏像素）—— 像素格子都不一样大。
+
+   ⚠️ 这两个数必须和 game.js 里的 ENEMY_SCALE / BOSS_SCALE **成对改**：
+      那边乘的是**判定半径 e.r**，这边乘的是**像素画**。
+      只改一边 = 「看着打中了却没伤害」或者「隔着老远就掉血」，
+      两种都不抛异常，只能靠手感/逐像素探针发现。
+   ⚠️ 2x 之后杂兵的美术像素正好和玩家船对齐（都是 2 游戏像素一格）；
+      巨像 3x 是 3 游戏像素一格，比船粗一档 —— 这是有意的：它要显得更「重」。 */
+const ENEMY_SPR_SCALE = 2;   // 杂兵：5×5…11×9 → 10×10…22×18
+const BOSS_SPR_SCALE = 3;    // 巨像：原来 2x（40×26…40×30，比玩家船还小）→ 3x（60×39…60×45）
+
 const SPR = {};
 // 注意：不能叫 HULLS —— game.js 里的船体数据表叫这个名字，两个文件都是全局作用域会冲突
 const SHIPSET = {};
 let BULLET_SET = null;
 
 function buildSprites() {
-  for (const k in SPR_SRC) SPR[k] = makeSet(SPR_SRC[k]);
+  for (const k in SPR_SRC) SPR[k] = makeSet(SPR_SRC[k], ENEMY_SPR_SCALE);
+  // ⚠️ 拾取物**不放大**：星尘 / 治疗 / 能量本来就是按 1x 设计的，
+  //    而且「敌人比星尘大」正是这次改动的目的，把星尘一起放大等于没改。
   for (const k in PICK_SRC) SPR[k] = makeSet(PICK_SRC[k]);
-  for (const k in BOSS_SRC) SPR[k] = makeSet(BOSS_SRC[k], 2);
+  for (const k in BOSS_SRC) SPR[k] = makeSet(BOSS_SRC[k], BOSS_SPR_SCALE);
   // 船体：2x 放大后烘焙 24 向
   for (const k in HULL_SRC) {
     const base = scaled(spriteFrom(HULL_SRC[k][0]), 2);
