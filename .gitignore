@@ -104,6 +104,11 @@ singularity-echo/.tmp_test/
 # 回归脚本本身要进仓库（singularity-echo/test/*.js），但跑出来的截图不要
 singularity-echo/test/phase*/
 
+# ============ 一次性调试脚本：一律用 .tmp- 前缀，不进仓库 ============
+# 正式的探针叫 .probe-*.cjs（forcing-cosmos）或 .workbuddy/*.py（singularity-voyage），那些要进。
+# 这个前缀是给「只为看一眼截图、跑完就扔」的临时脚本用的。
+**/.tmp-*
+
 # ============ 无头 Chrome 探针的注入页（.workbuddy/sv-*.py 生成）============
 # 每个探针把自己的 JS 注入 index.html 后写成一个临时页面再喂给无头 Chrome，
 # 跑完自己删。探针中途崩掉时可能留下，绝不该进仓库。
