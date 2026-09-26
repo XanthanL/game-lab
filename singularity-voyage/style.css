@@ -78,6 +78,14 @@ em { font-style: normal; }
 .menu { display: flex; flex-direction: column; gap: 5px; align-items: stretch; margin-top: 4px; }
 .menu.row { flex-direction: row; gap: 5px; }
 
+/* 中英切换按钮（只在标题页出现，显隐由 JS 切 #wrap.showlang）。
+   ⚠️ 它是 #wrap 的直接子元素、而且**不在**任何 .ov 里面 —— 见 index.html 里的注释。
+   ⚠️ 必须给 z-index：#title 是 .ov（position:absolute, z-index:auto），
+      同级里 z-index:auto 的兄弟按 DOM 顺序绘制，按钮在前面就会被整个盖住
+      —— rect 正常、elementFromPoint 却命不中，正是 forcing-cosmos 踩过的那个坑。 */
+.langbtn { position: absolute; top: 4px; right: 6px; z-index: 6; min-width: 30px; }
+#wrap:not(.showlang) .langbtn { display: none; }
+
 /* title */
 /* ⚠️ 底部必须留 padding-bottom。
    .ov 靠「首个子元素 margin-top:auto + 末个子元素 margin-bottom:auto」实现垂直居中，
@@ -91,6 +99,9 @@ em { font-style: normal; }
 .t1 { font-size: 36px; line-height: 38px; color: #73eff7; letter-spacing: 3px;
   text-shadow: 2px 0 0 #3b5dc9, -2px 0 0 #3b5dc9, 0 2px 0 #3b5dc9, 0 -2px 0 #3b5dc9, 3px 3px 0 #29366f, 4px 4px 0 #1a1c2c; animation: glitch 4s steps(1) infinite; }
 .t2 { margin-top: 6px; color: #ffcd75; text-shadow: 1px 1px 0 #1a1c2c; }
+/* 英文标题比中文长一倍多：36px 下「SINGULARITY VOYAGE」+ letter-spacing 会顶到 480px 的边。
+   降到 24px 正好（24 仍是 12 的整数倍，像素网格不破 —— 这条规则在 sv-text.py 里守着）。 */
+#wrap.en .t1 { font-size: 24px; line-height: 30px; letter-spacing: 2px; }
 @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translateX(2px); filter: hue-rotate(90deg); } 95% { transform: translateX(-2px); } 97% { transform: translateX(1px); filter: hue-rotate(-60deg); } }
 @keyframes drop { from { transform: translateY(-40px); opacity: 0; } }
 .tagline { color: #c0cbdc; text-shadow: 1px 1px 0 #1a1c2c; margin-top: 2px; }
@@ -237,7 +248,7 @@ em { font-style: normal; }
 .cde { width: 104px; padding: 3px 4px 4px; background: #151933; display: flex; flex-direction: column;
        align-items: center; gap: 2px; box-shadow: inset 0 0 0 1px #29366f; filter: saturate(.25); }
 .cde.seen { filter: none; box-shadow: inset 0 0 0 1px #3b5dc9; }
-.cde canvas { width: 40px; height: 40px; image-rendering: pixelated; background: #05060d; }
+.cde canvas { width: 48px; height: 48px; image-rendering: pixelated; background: #05060d; }
 .cde .cdn { color: #566c86; }
 .cde.seen .cdn { color: #f4f4f4; }
 .cde .cdt { color: #566c86; text-align: center; line-height: 12px; }

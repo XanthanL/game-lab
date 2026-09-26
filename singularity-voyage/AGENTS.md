@@ -1,13 +1,15 @@
 # 奇点旅途 SINGULARITY VOYAGE — project notes
 
-像素风太空弹幕射击。纯静态站点（无构建）：`index.html`、`style.css`、`src/{audio,sprites,game}.js`、`assets/`（Fusion Pixel 12px 字体，OFL）。
+像素风太空弹幕射击。纯静态站点（无构建）：`index.html`、`style.css`、`src/{i18n,audio,sprites,game}.js`、`assets/`（Fusion Pixel 12px 字体，OFL）。
+**全游戏中英双语可切**（标题页右上角按钮，见「中英切换 i18n」一节）。
 
 **血统**：画风与代码框架照搬 `last-firewall`（终焉防火墙），内容（船体 / 敌型 / 模块 / 波次）来自 `singularity-echo`（奇点回响）的重设计版。
 本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 3 Boss / 29 模块卡（含 MAX 质变 + 26 组协同），完整可通关，**打通后转入无尽深渊**。
 29 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
 
 - 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。
-  ⚠️ **像素字号必须是 12 的整数倍**（12/24/36/48）。字体只有 12px 一档（Fusion Pixel），
+
+⚠️ **像素字号必须是 12 的整数倍**（12/24/36/48）。字体只有 12px 一档（Fusion Pixel），
   给 32px 就是 2.67 倍缩放 —— 像素网格对不齐、笔画糊边，而且**不抛异常、rect 也正常**，只有盯图才看得出。
   `sv-text.py` 有一条静态断言守着（纯读 `style.css`，在开浏览器之前跑）。
   ⚠️ 唯一的历史遗留是 `.tbtn`（触屏按钮）的 14px，探针会打印 NOTE 但放行 —— 想清掉就改成 12px。
@@ -20,6 +22,43 @@
   清空全部敌人后跃迁下一段；打通第 12 段不清场结束、直接转入无尽。经验满 → 三选一模块。
 - 存档：`localStorage['sv_save_v1']`（`SAVE`），存 best / 累计击坠 / 最远航段 / 通关次数 / 已解锁船体。
   老键 `sv_best` 在 `loadSave()` 里迁移，不要删。
+
+## 中英切换（`src/i18n.js` + `data-i18n*`）
+
+游戏纯静态、零构建，所以 i18n 也是一张扁平表 + 一个 `T()`，不引任何库。
+
+**三条约定，都是为了「漏翻能被发现」而不是「静默退回中文」**：
+
+1. **UI 文案走 `T('a.b.c')`**。缺键时 `T()` 返回 `⟪a.b.c⟫`（书名号键名），不是空串——
+   屏幕上一眼能看到 `⟪...⟫`，探针 `sv-lang.py` 的 `domMissingMarks()` 也扫它。
+2. **数据表（`MODULES` / `HULLS` / `ETYPES` / `BOSSES` / `SQUADS` / `SYNERGIES` / `ZONES`）的英文写在数据表自己身上**
+   （`nameEn` / `descEn` / `traitEn` / `tagEn` / `textEn`），用 `L(obj, 'name')` 取。
+   这样「加一张新卡」时中英文在同一处，不会漏。
+3. **zh / en 两张 UI 表的键集合必须完全一致**，探针 `sv-lang.py` 的 `__dbg.i18nMissing()` 逐键比对，
+   再扫所有六张数据表的 `*En` 字段是否非空。
+
+**实现要点**：
+
+- `LANGS = ['zh', 'en']`，存 `localStorage['sv_lang_v1']`，启动时读出来覆盖默认（默认 zh）。
+- `isEn()` / `setLang(l)` / `toggleLang()`：切完调 `applyDom()`（刷 DOM 的 `data-i18n`/`-html`/`-title`）
+  + `langRefresh()`（game.js 在 `boot()` 里注册，重画 `renderTitle/renderHangar/drawCodex/renderCards/renderPause/renderOver`）。
+- ⚠️ **`langRefresh()` 只重画、绝不切状态机**。切语言时顺手 `toTitle()` 会把打到一半的人踢回标题页。
+- **船体 / 巨像 / 星区三张表**故意不走 `L()` —— 它们有「中文名 + 英文副标题」的 `en` 字段
+  （机库卡面中文模式显示「游隼」+「PEREGRINE」）。用 `name1(o)`（英文选 `o.en`，否则 `o.name`）
+  和 `sub1(o)`（英文模式返空字符串），保留双语观感。
+- ⚠️ **DOM 上的 `.ov` 显隐别再用 `display` 控制**，用 `#wrap.showlang` —— `display:none` 会顶掉
+  `.ov > *:first-child:last-child { margin-top/bottom:auto }` 的居中，标题页内容直接塌。
+- ⚠️ **画在画布上的字**（HUD / 横幅 / 准星）每帧重画，**自动跟随语言**。但横幅对象 `G.banners`
+  里存的是**生成时的字符串**——切语言不会自动刷新它们（横幅 ≤ 2.6 秒消失，可接受）。
+- ⚠️ **英文版固定高卡片**（`.card` 178px / `.hull` 168px）的描述宽度硬约束：
+  `.card .desc` 116px 宽、12px 半角字 = **每行 ≤ 19 字符、≤ 3 行**；
+  `.hull .hdesc` 78px 宽 = **每行 ≤ 13 字符、≤ 5 行**（用词折行模拟）。
+  `banner` 副标题画在画布上 480px 宽 = **每行 ≤ 78 字符、≤ 1 行**。
+  `.workbuddy/sv-i18n-lint.py`（纯读源码）守住这些阈值。
+- `__dbg` 加了：`lang` / `setLang` / `toggleLang` / `uiKeys` / `i18nMissing` / `domMissingMarks`。
+
+**新加 UI 文案**：要么加到 `UI.zh` 和 `UI.en`（保持键集合一致），要么加到对应数据表的 `*En` 字段。
+加完跑 `python .workbuddy/sv-i18n-lint.py`（静态体检）+ `python .workbuddy/sv-lang.py`（端到端）。
 
 ## 三条硬纪律
 
@@ -529,6 +568,8 @@ rx.drawImage(fl.cv, 0, 0);
   改了 `ATTACH_ART` / `attachSprite` / `attachIcon` / `drawShipKit` / `renderCards` / `drawCodex` /
   `drawShipView` / `.card .glyph` 就跑一次。
   另配一个**眼睛工具**：`python .workbuddy/sv-kit-shot.py` 出 8 种装配的对比图（`.workbuddy/out/sv-kit.png`）。
+- 中英切换探针：`python .workbuddy/sv-lang.py` —— **91 断言**（标题 → 机库 → 开局 → 暂停 → 图鉴 → 升级 → 结算 → 帮助全程测切换；含「在 play 里切语言不许动状态机」、DOM 没 CJK / 没 `⟪...⟫` 缺键、29 条模块页英文描述不溢出、帮助面板两种语言都可滚到底）。改了 `i18n.js` / 数据表的 `*En` 字段 / 任何 `T()`/`L()` 接入点就跑一次。
+- 静态体检：`python .workbuddy/sv-i18n-lint.py`（纯读源码、不起浏览器）：六张数据表 `*En` 字段齐全 + 描述/特性行的宽度与行数在卡片阈值内 + zh/en UI 表键集合一致 + game.js 里没有硬编码中文的 `banner/toast/floatText` 字面量。
 - 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **71 断言**，遍历每个覆盖层
   （标题 / 标题带存档 / 帮助 / 机库 / 对局 / 满构筑暂停 / 图鉴三页 / 升级 / 结算），逐层验：
   **滚动条够不够细**（`sbW/sbH ≤ 8`）· **文字有没有溢出容器**（`txBoxSpill`）·
