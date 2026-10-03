@@ -4,8 +4,8 @@
 **全游戏中英双语可切**（标题页右上角按钮，见「中英切换 i18n」一节）。
 
 **血统**：画风与代码框架照搬 `last-firewall`（终焉防火墙），内容（船体 / 敌型 / 模块 / 波次）来自 `singularity-echo`（奇点回响）的重设计版。
-本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 3 Boss / 29 模块卡（含 MAX 质变 + 26 组协同），完整可通关，**打通后转入无尽深渊**。
-29 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
+本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 3 Boss / 33 模块卡（含 MAX 质变 + 30 组协同），完整可通关，**打通后转入无尽深渊**。
+33 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
 
 - 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。
 
@@ -147,12 +147,12 @@
 
 ### 图鉴：纯数据驱动，不另建文案表
 
-- 四个页签：敌型 16 / 巨像 3 / 船体 5 / 模块 29。条目**全部从现有数据表派生**：
+- 四个页签：敌型 16 / 巨像 3 / 船体 5 / 模块 33。条目**全部从现有数据表派生**：
   `ETYPES` / `BOSSES` / `HULLS` 各带一个 `trait`（一行「怎么对付它」），模块复用 `desc`。
   **新敌型只要带上 `trait` 就自动进图鉴。**
 - 收录状态在 `SAVE.seen`（id → 1），跨局累计。`markSeen()` **只在首次发现时写盘** ——
   `spawnEnemy` 每生成一个敌人都会被调用，一局几千次，次次 `writeSave()` 纯浪费
-  （首次发现整局最多 ~53 次：16 + 3 + 5 + 29）。所以存的是「见过没有」而不是「见过几次」。
+  （首次发现整局最多 ~57 次：16 + 3 + 5 + 33）。所以存的是「见过没有」而不是「见过几次」。
 - 没遭遇过的显示「？？？」+ 暗剪影 +「尚未遭遇」；遭遇过才显示名字和 trait。
 - 精灵预览：敌型 / 巨像走 `SPR[spr].r[0]`，船体走 `SHIPSET[id].imgs[0]`（`imageSmoothingEnabled = false` 放大）。
 
@@ -168,8 +168,8 @@
 
 ### 探针
 
-`.workbuddy/sv-codex.py` —— 28 断言：四个页签条数（16 / 3 / 5 / 29）、收录计数、
-「？？？」→ 遭遇后解锁、**每一页「返回」的真实 `elementFromPoint` 命中**（模块页 29 条最容易被
+`.workbuddy/sv-codex.py` —— 28 断言：四个页签条数（16 / 3 / 5 / 33）、收录计数、
+「？？？」→ 遭遇后解锁、**每一页「返回」的真实 `elementFromPoint` 命中**（模块页 33 条最容易被
 `#wrap` 的 270px 切掉，另外还断言按钮 rect 完整落在 `#wrap` 内）、
 标题 / 暂停往返不产生死路、`spawn → markSeen`、保存并退出 → 继续航程 → 段数 / 船体恢复、`gameOver` 清档。
 
@@ -240,6 +240,80 @@
 ⚠️ **`mineStasis` 协同往 `G.webs` 里塞元素时必须带 `grow` 字段**：
 `webSlowAt()` 算的是 `w.r * w.grow`，漏了就是 `NaN` 半径 → 减速判定全废且不报错。
 
+### 第四批：**条件式**能力（2026-10-03，参考《英雄联盟》的四个技能）
+
+前三批给的都是「输出源」或「更大的数字」，这一批给的是**判断**。参考对象写在这里，
+方便以后往同一条思路上接着补：
+
+| 卡 | 类型 | LoL 原型 | 机制 | 接线点 |
+|---|---|---|---|---|
+| 孤立协议 `isolate` | stat | 卡兹克「孤立无援」 | 半径内没有同伙的目标 +isoMul | `condMul()`（damageEnemy 扣血前） |
+| 湮灭指令 `execute` | stat | 诺手「断头台」+ 收割天赋 | 残血（execHp）目标 ×execMul；斩杀后 3 秒 +8%/级 | `condMul()` + `killEnemy()` 挂 `G.furyT` |
+| 拘束立场 `bind` | ability | 莫甘娜「暗之禁锢」 | 命中有几率把敌人钉住（不动、不开火、循环计时也冻） | `condMul()` 判定 + `updateEnemies()` 解冻逻辑 |
+| 时滞回溯 `rewind` | ability | 艾克「时空断裂」 | 致命伤触发倒带，回到几秒前的位置与部分船体 | `hurtPlayer()` 里 `tryRewind()`，`pushSnap()` 攒快照 |
+
+**四条实现约束（踩的方向都在这）**：
+- ⚠️ **`isoMul / isoR / execHp / execMul / bindP / bindT / rewindCd` 一律覆盖式赋值，不能累乘** ——
+  续档是**逐级重放 `apply()`** 的，累乘写法会把同一级的加成叠三次（和 `sprayMul` / `fissionMul` 同一个坑）。
+- ⚠️ **敌人身上的定身字段叫 `e.root`，卡等级叫 `S.bind`** —— 混起来写会让敌人永远不被解冻，
+  场上出现一排活的雕像，而且不报错。
+- ⚠️ **拘束要冻结攻击计时**：`e.cd -= dt` 写在各 case 内部，被定身时得**先前进再回滚**（`e.cd += dt`），
+  否则解禁瞬间会打出一颗蓄了很久的子弹。`e.st` 的回滚要夹 `Math.max(0, ...)` —— 不是每种 AI 都用到 `e.st`，
+  减成负数会让 dash AI 卡在「一直在蓄力」。
+- ⚠️ **回溯的血不能给当时的值**（通常是满血）：现在取 `snap.hp * 0.7` 再夹到 `maxHp` 的 25%~60%。
+  给满就是多一条命，不给就是回到原位再死一次。
+
+配套协同 4 组：`loneMark`（孤立×暴击 → 落单必暴，**一次性开关** `e.forceCrit`）、
+`harvest`（湮灭×噬能 → 斩杀线以下打死额外回 3%，标记要在**扣血前**打 `e.executed`）、
+`staticBind`（拘束×脉冲 → 冲击波必定定住）、`echoPhase`（回溯×相位 → 无敌翻倍）。
+
+### 2026-10-03 全局平衡
+
+削（覆盖面太广 / 完全被动 / 只是剂量问题）：
+
+| 卡 | 改动 | 理由 |
+|---|---|---|
+| `guided` | 转弯 1.1→0.62、homeR 260→204、**新增 homeTrav 里程上限** | 详见下面「制导」一节 |
+| `warhead` | 13%→11%、bloom 1.35→1.28 | 唯一乘法作用于**所有伤害来源**，满装配约 2.22 倍全盘，变成必拿而非选择 |
+| `critcap` | 8%→7%、bloom 3.4→3.2 | 叠够之后近一半子弹是 3 倍多，不再像「运气好」 |
+| `blink` | cd 15/11.5/8 → 17/13.5/10，bloom 6.5→8.5 | 完全被动、白嫖一次大伤害免疫，短冷却 = 多一条命 |
+| `lance` | cd 7.2/5.6/4.0 → 8.6/7.0/5.4，bloom 3.2→4.4 | 削频率不削伤害：白送的直线 AOE 太密就成了随身副炮 |
+| `fission` | 倍率 0.45→0.42 起、bloom 0.85→0.75 | 它是唯一「自己繁殖」的卡，与 hesh 组合是连锁的指数底数 |
+| `caliber` | bspd 1.08→1.06、range 1.10→1.08，bloom 同退 | 三维乘法放大器；`bulletR` 不动（「看得见的变粗」是它的性格） |
+| `overclock` | 扣血 -9→-12、bloom -20→-24 | 两个乘数同时给，9 点血在 armor / nanorepair 面前算不上代价，取舍就不存在了 |
+
+加（弱到没人选 / 存在感被基础值吃掉）：
+
+| 卡 | 改动 | 理由 |
+|---|---|---|
+| `nanorepair` | 0.8→1.3/秒，bloom dustHeal 0.6→1.0 | 满级 2.4/秒在后期等于没有，是唯一开局就完全没手感的生存卡 |
+| `phasehull` | +0.15→+0.22/级，bloom +0.5→+0.65 | 0.15 秒只有 9 帧，肉眼看不见；它给的是容错窗口，要和 shield 竞争得看得见 |
+| `arc` | 单跳 9→12（`ARC_DMG`）、范围 210→235、每跳 0.35→0.45 | 面板 DPS 比同期所有装置都低一截 |
+| `ricochet` | **新增 `bounceBoost`**：每弹一次伤害 +10%（bloom 16%） | 世界放大后反弹越来越像惩罚；给它正反馈才是「贴边打」的战术工具 |
+| `deathtrail` | spd 1.06→1.09、射速惩罚 -7%→-4% | 惩罚比收益清楚的典型，两头不讨好 |
+| `magnet` | +25%→+30%/级 | 基础吸附已从 46 抬到 78，这张卡的存在感被基础值吃掉了 |
+| `shield` | 28→32/级，bloom +70→+80 | 敌伤随段数线性涨，28 点一级后期是一次性纸 |
+| `drone` | 单发 7→8（`DRONE_DMG`） | 完全不占走位的火力本该弱，但满装满协同只有约 37 DPS，推不动后期血条 |
+
+### 制导（2026-10-03 削弱，作者口径「追踪别做那么好，全图追踪了」）
+
+问题不是「打得远」，而是**哪都能拐回来**。三处一起收：
+
+| 量 | 旧 | 新 | 说明 |
+|---|---|---|---|
+| `S.homing` | 1.1/级 +1.4 bloom（满级 4.70 rad/s） | 0.62/级 +0.75 bloom（满级 **2.61**） | 不再是「看见就必中」；横向拉开有可能甩掉 |
+| `S.homeR` | 140 起 +30/级，bloom **260**（近全屏） | 138 起 +22/级，bloom **204** | 超过锁定半径找不到目标，退化成普通弹 |
+| `S.homeTrav` | — | 300/340/380，bloom 430（**新增**） | 单发飞行里程上限，`updateBullets` 里按 `b.trav` 累计 |
+
+- 里程到限 → `expireBullet()`：一小撮灰烟 + `Sound.sfx.fizzle()`（节流 260ms，不然一梭子失坠会响成噪音墙）。
+  ⚠️ **失坠必须有看得见的反馈** —— 静默 splice 的话玩家只会觉得「制导时灵时不灵」。
+- ⚠️ 里程上限要**乘 `S.rangeMul`**：口径校准是「弹丸飞得更远」的卡，不乘就会出现
+  「射程卡反而把制导玩短」的倒错。
+- `guidedPierce` 协同的转向倍率也一起退（1.45 → 1.3）。
+- 目标缓存仍然 0.12s 搜一次（见 `updateBullets`），`b.trav` 只有制导弹记账。
+- 实测（`sv-modules-check.js`）：无目标直飞 **427px** 失坠（理论上限 `homeTrav × rangeMul` = 430），
+  带目标时 10 帧内转过 **24.9°**。
+
 ## 舰体配件（DIY 视觉升级）
 
 用户要的：**每次升级除了加数值，还往飞船上挂一件看得见的配件** —— 选不同能力就长出不同外形，
@@ -248,7 +322,7 @@
 ### 数据：`sprites.js` 的 `ATTACH_ART`
 
 `ATTACH_ART[id][lv]` → `[part, ...]`，`part = { x, y, rows }`，`rows` 是字符画（`PAL` 调色板字符，`.` 透明）。
-29 张卡每一级都有图（`max` 是 3 或 4）。缺图/空图时 `attachParts()` 返回 `null`，绘制自动跳过 —— 加了新卡忘了画图不会炸，只是没配件。
+33 张卡每一级都有图（`max` 是 3 或 4）。缺图/空图时 `attachParts()` 返回 `null`，绘制自动跳过 —— 加了新卡忘了画图不会炸，只是没配件。
 
 **坐标是「本地格」**，就是 `HULL_SRC` 那张 22×16 字符画的网格：
 
@@ -292,7 +366,7 @@
 
 ⚠️⚠️ **旋转的 `translate` 量必须是「源宽」`fl.w`，不是源高。** 输出画布是 `(h, w)`，
 像素 `(i, j)` 映射到 `(j, W−i)` —— 不补 `W` 整块会掉到画布下面。
-踩过：13/29 张图标**全空**，`fillRect` 计数为 0 但不报任何错。正确写法：
+踩过：13/29 张图标**全空**（当时全套是 29 张，现在 33 张），`fillRect` 计数为 0 但不报任何错。正确写法：
 
 ```js
 const rot = newCanvas(fl.h, fl.w), rx = rot.getContext('2d');
@@ -324,7 +398,7 @@ rx.drawImage(fl.cv, 0, 0);
 - **图鉴模块页**：`codexEntries('mod')` 带 `mod` / `modLv: m.max`，`drawCodexArt` 走 `attachIcon`。
   `.cdg` 那条「汉字 glyph」分支已删掉，现在**图鉴模块页全是 canvas 图标**。
 - **暂停页舰体预览**：`#shipview`（128×96，2×），`drawShipView()` 画当前船体 + 全部配件，
-  再以 `globalAlpha = 0.34` **重描一遍船体** —— 29 件配件会盖满船壳，不补这一层剪影就完全读不出来。
+  再以 `globalAlpha = 0.34` **重描一遍船体** —— 33 件配件会盖满船壳，不补这一层剪影就完全读不出来。
 
 ### 度量：不要数「非透明像素」
 
@@ -334,18 +408,18 @@ rx.drawImage(fl.cv, 0, 0);
 
 ### 调试参数与探针
 
-- `?kit=N`（第 N 个模块拉满）/ `?kit=all`（全 29 张拉满）—— 在 `startGame()` 里经 `replayMods` 应用。
+- `?kit=N`（第 N 个模块拉满）/ `?kit=all`（全 33 张拉满）—— 在 `startGame()` 里经 `replayMods` 应用。
   ⚠️ **`QS.get('kit')` 不带值会返回空串（falsy）→ 整个入口被静默跳过**（和 forcing-cosmos 的 `?charsel` 同一个坑）。
   所以顶部常量写的是 `QS.get('kit') || ''`，探针一律带值传参。
 - `__dbg` 新增：`renderKit(cv, mods, white)`、`kitDiff(a, b)`、`renderIcon(cv, id, lv)`、
   `attachInfo(id, lv)`（返回 `{w,h,cx,cy,parts,colors}`）、`cardIcons()`、`codexIcons()`。
-- `.workbuddy/sv-attach.py` —— **20 断言**：模块表 ≥29 · 每张卡每一级都有非空部件 · `attachInfo` 几何有效 ·
-  每件 ≥2 种颜色 · **像素数随等级单调不减** · 29 张图标都渲染出 >0 像素 ·
+- `.workbuddy/sv-attach.py` —— **20 断言**：模块表 ≥33 · 每张卡每一级都有非空部件 · `attachInfo` 几何有效 ·
+  每件 ≥2 种颜色 · **像素数随等级单调不减** · 33 张图标都渲染出 >0 像素 ·
   **逐卡 `kitDiff({}, {id:max}) > 0`**（真画上船了）· 满装 > 2× 空装 · 白闪变体可用 ·
-  升级卡 canvas 非空 · 暂停预览像素随装配增长且 caption 含「配件」· 图鉴模块页 29 条无空白 · 返回可达 ·
+  升级卡 canvas 非空 · 暂停预览像素随装配增长且 caption 含「配件」· 图鉴模块页 33 条无空白 · 返回可达 ·
   **卡池抽空那张「满」卡（唯一还用汉字字形的卡面）字号没顶出图标框**。
 - `.workbuddy/sv-kit-shot.py` —— **眼睛迭代工具**（不是断言）：把 8 种典型装配
-  （空 / 侧挂 / 鼻部武器 / 尾部 / 外环舱 / 背脊 / 中期 8 件 / 满 29 件）画进一张图，
+  （空 / 侧挂 / 鼻部武器 / 尾部 / 外环舱 / 背脊 / 中期 8 件 / 满 33 件）画进一张图，
   POST base64 存到 `.workbuddy/out/sv-kit.png`。
   ⚠️ **「好不好看」没法断言**，改完 `ATTACH_ART` 就靠它看一眼再定稿。
   ⚠️ 它需要 `?bot=1` 才会进 play 态，且超时分支必须**也 POST 一次**（否则探针侧只看到 NO RESULT）。
@@ -526,7 +600,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   **巨像段静默退化成普通编队**（同样不报错）。两处都已修成 `irand(0, i)` / `irand(0, 3)`。
   **新增任何用 `irand` 的代码，先确认传了两个参数。**
 - ⚠️ **全构筑下的覆盖层会被 `#wrap` 的 `overflow:hidden` 切掉。** `#wrap` 是 480×270 的信箱，
-  满构筑（29 卡 + 26 协同）的暂停 / 升级面板**物理高度超过 270**，多出来的按钮落在 `#wrap` 外面 →
+  满构筑（33 卡 + 30 协同）的暂停 / 升级面板**物理高度超过 270**，多出来的按钮落在 `#wrap` 外面 →
   `document.elementFromPoint` 返回 `null` → 点不到（rect 仍正常，纯 DOM 断言抓不到，必须真实命中测试）。
   修法：`.ov` 改 `justify-content:flex-start` + `overflow-y:auto` + 首尾 `margin:auto` + `.ov > * { flex-shrink:0 }`，
   让高面板内部滚动；`#build` 再 `max-height:104px; overflow-y:auto` 夹住长列表。
@@ -596,6 +670,10 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   iOS Safari 没这个 API（桌面 Chrome 反而有），所以必须两层判都有，缺了会在某些版本上抛异常。
 
 ## 命令
+
+⚠️ **2026-10-03 磁盘实况**：下面列出的 `.workbuddy/*.py` 探针在磁盘上**已经找不到了**（`.workbuddy/` 只剩 `memory/`），
+  它们从来没进过 git（`git ls-files singularity-voyage` 只有 10 个源文件），所以删除后无法恢复。
+  现在**实际可用的探针**是 `.workbuddy/probes/*.js`（Node + playwright-core，见本节末尾）。
 
 - 本地：`python -m http.server 8127` → http://127.0.0.1:8127/
 - 冒烟探针：`python .workbuddy/sv-probe.py`（自带 HTTP 服务，无需另起；每次自动清空 Chrome profile）
@@ -698,16 +776,16 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   无头 Chrome 的 rAF 被代理成 16ms 定时器，游戏时间滞后真实时间），`?god=1` 下验 A/D 转向 · W 推进 · S 制动。
   改了 `updatePlayer` / `aimMode` 就跑一次。
 - 图鉴 + 续档探针：`python .workbuddy/sv-codex.py` —— 28 断言：四个页签条数 / 收录计数 /
-  「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 29 条最容易被切）/
+  「？？？」→ 解锁 / **每一页「返回」的真实命中测试**（模块页 33 条最容易被切）/
   标题与暂停往返无死路 / `spawn → markSeen` / 保存并退出 → 继续航程 → 段数·船体恢复 / `gameOver` 清档。
   改了 `codexEntries` / `drawCodex` / `markSeen` / `snapshotRun` / `resumeRun` / `SAVE_DEF` 就跑一次。
-- 舰体配件探针：`python .workbuddy/sv-attach.py` —— **20 断言**，验 29 张卡的配件图
+- 舰体配件探针：`python .workbuddy/sv-attach.py` —— **20 断言**，验 33 张卡的配件图
   （每级非空 / ≥2 色 / **像素随等级单调不减** / 逐卡 `kitDiff` 真的画上船 / 图标非空 /
   升级卡与图鉴的 canvas 真有内容 / 暂停页舰体预览随装配增长 / **「满」卡汉字没顶出图标框**）。
   改了 `ATTACH_ART` / `attachSprite` / `attachIcon` / `drawShipKit` / `renderCards` / `drawCodex` /
   `drawShipView` / `.card .glyph` 就跑一次。
   另配一个**眼睛工具**：`python .workbuddy/sv-kit-shot.py` 出 8 种装配的对比图（`.workbuddy/out/sv-kit.png`）。
-- 中英切换探针：`python .workbuddy/sv-lang.py` —— **91 断言**（标题 → 机库 → 开局 → 暂停 → 图鉴 → 升级 → 结算 → 帮助全程测切换；含「在 play 里切语言不许动状态机」、DOM 没 CJK / 没 `⟪...⟫` 缺键、29 条模块页英文描述不溢出、帮助面板两种语言都可滚到底）。改了 `i18n.js` / 数据表的 `*En` 字段 / 任何 `T()`/`L()` 接入点就跑一次。
+- 中英切换探针：`python .workbuddy/sv-lang.py` —— **91 断言**（标题 → 机库 → 开局 → 暂停 → 图鉴 → 升级 → 结算 → 帮助全程测切换；含「在 play 里切语言不许动状态机」、DOM 没 CJK / 没 `⟪...⟫` 缺键、33 条模块页英文描述不溢出、帮助面板两种语言都可滚到底）。改了 `i18n.js` / 数据表的 `*En` 字段 / 任何 `T()`/`L()` 接入点就跑一次。
 - 静态体检：`python .workbuddy/sv-i18n-lint.py`（纯读源码、不起浏览器）：六张数据表 `*En` 字段齐全 + 描述/特性行的宽度与行数在卡片阈值内 + zh/en UI 表键集合一致 + game.js 里没有硬编码中文的 `banner/toast/floatText` 字面量。
 - 布局体检探针：`python .workbuddy/sv-text.py [--shots]` —— **71 断言**，遍历每个覆盖层
   （标题 / 标题带存档 / 帮助 / 机库 / 对局 / 满构筑暂停 / 图鉴三页 / 升级 / 结算），逐层验：
@@ -725,6 +803,35 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   以及机制验证用的 `grant(id, n)`、`resetStats()`、`setPos(x,y)`、`fire(ang)`、`hold(key,bool)`、`ebullet(...)`、
   `wakeCount`、`bulletCount`、`ebulletCount`。
   ⚠️ **`setMods()` 只改 `G.mods` 表，一次 `apply()` 都不执行** —— 想验「装了卡之后属性真的变了」必须用 `grant()`。
+
+### 现存的可跑探针：`.workbuddy/probes/*.js`（Node + playwright-core）
+
+`.py` 那批丢了以后，这几份是唯一还能跑的端到端验证。它们依赖 `playwright-core` 和本机 Chrome，
+所以**从 Node managed workspace 里跑**，全局名一律带前缀（见「三条硬纪律」第 1 条的 `__dbg` 撞车事故）：
+
+```bash
+# CWD = singularity-voyage 项目根目录（脚本按相对路径起静态服务，别在别的目录跑）
+WS=/c/Users/www27/.workbuddy/binaries/node
+export NODE_PATH=$WS/workspace/node_modules     # playwright-core 装在这儿
+export CHROME_EXE='C:/Program Files/Google/Chrome/Application/chrome.exe'
+$WS/versions/22.22.2-3/node.exe .workbuddy/probes/sv-modules-check.js
+```
+（脚本自己会起静态服务，不需要另开 `http.server`。）
+
+| 脚本 | 验什么 | 改了什么之后跑 |
+|---|---|---|
+| `sv-modules-check.js` | 模块表条数 / 新卡字段 / 协同是否成立 / 配件像素随等级单调 / i18n 缺键 / 页面 `⟪⟫` 漏翻 / JS 错误 | `MODULES` / `SYNERGIES` / `ATTACH_ART` / `i18n.js` |
+| `sv-dash-dir.js` | **冲刺只沿机头**：13 组按键 × 朝向组合，位移与速度方向相对 `G.ang` 偏差全 0° | `tryDash` / `updatePlayer` / 输入模型 |
+| `sv-move-check.js` | 推进加速时间 / 稳态速度 / 制动 / 滑行距离 / 吸附 / 爆炸 | `updatePlayer` / `aBoom` |
+| `sv-touch-check.js` | 移动端触屏按钮命中与射击 | `#touch` / `setTouchMode` / `.tbtn` |
+
+⚠️ `sv-dash-dir.js` 每个用例开头必须 `d.clearEnemies(); G.spawnQueue.length = 0;` ——
+  不隔离的话，`updateWave` 补出来的怪会用接触伤害的互推 `G.vx += ux*40` 污染速度，
+  偶发报 3° 的假偏差（flaky）。
+⚠️ `sv-modules-check.js` 测「制导失坠里程」时**每一帧都要清场**，不能只在开头清：
+  `updateWave` 会持续补怪，正前方随机生成一只就会让子弹「打到人就消失」，
+  报出来的里程是到那只敌人的距离。踩过一次报 **28px**（理论上限 430px），
+  改成分帧清场后稳定在 427px。
 
 ## 待办（下一轮）
 

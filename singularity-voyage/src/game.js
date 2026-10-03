@@ -333,30 +333,49 @@ const MODULES = [
     apply: S => { S.rate *= 1.10; },
     bloom: S => { S.rate *= 1.25; S.goldMuzzle = 1; } },
   { id: 'warhead', name: '重型弹头', nameEn: 'WARHEAD', type: 'stat', glyph: '弹', max: 4,
-    desc: '所有伤害 +13%',
-    descEn: 'All damage +13%',
-    apply: S => { S.dmg *= 1.13; },
-    bloom: S => { S.dmg *= 1.35; } },
+    desc: '所有伤害 +11%',
+    descEn: 'All damage +11%',
+    // 2026-10-03 平衡：13% → 11%，bloom 1.35 → 1.28。
+    //    它是**唯一乘法作用于所有来源**的卡（主炮 / 尾炮 / 扇形 / 光矛 / 电链 / 冲击波 / 磁雷全吃），
+    //    满级约 2.22 倍全盘伤害；没有任何一张其它数值卡能有这个覆盖面，
+    //    于是它变成了「必拿」，而不是「一张选择」。
+    apply: S => { S.dmg *= 1.11; },
+    bloom: S => { S.dmg *= 1.28; } },
   { id: 'critcap', name: '暴击电容', nameEn: 'CRIT CAP', type: 'stat', glyph: '暴', max: 4,
-    desc: '暴击率 +8%\n暴击造成 2.4 倍',
-    descEn: 'Crit +8%\nCrits deal 2.4x',
-    apply: S => { S.crit += 0.08; },
-    bloom: S => { S.crit += 0.10; S.critMul = 3.4; } },
+    desc: '暴击率 +7%\n暴击造成 2.4 倍',
+    descEn: 'Crit +7%\nCrits deal 2.4x',
+    // 2026-10-03 平衡：暴击率 8% → 7%/级，bloom critMul 3.4 → 3.2。
+    //    配合 warhead 的乘法，满装配基础暴击率能到 ~45% —— 每十发里有近一半是 3.4 倍伤害，
+    //    再叠 pierceCrit 协同就变成「常态输出」而不是「偶尔的惊喜」。
+    //    削的是**率**而不是倍率：暴击要少见才更像运气好，倍数留着才是「那一枪很重」。
+    apply: S => { S.crit += 0.07; },
+    bloom: S => { S.crit += 0.09; S.critMul = 3.2; } },
   { id: 'magnet', name: '磁力线圈', nameEn: 'MAGNET COIL', type: 'stat', glyph: '磁', max: 3,
-    desc: '拾取范围 +25%',
-    descEn: 'Pickup range +25%',
-    apply: S => { S.magnet *= 1.25; },
+    desc: '拾取范围 +30%',
+    descEn: 'Pickup range +30%',
+    // 2026-10-03 平衡：25% → 30%/级（bloom 不变）。
+    //    基础吸附已经从 46 抬到 78 —— 那时的 +25% 是给「屏幕里捡不到」解闷的，
+    //    78 起步之后它的存在感反而变淡了。抬一档，配得上那张卡面。
+    apply: S => { S.magnet *= 1.30; },
     bloom: S => { S.magnet *= 1.6; S.autoPull = 1; } },
   { id: 'nanorepair', name: '纳米修复', nameEn: 'NANO REPAIR', type: 'stat', glyph: '修', max: 3,
-    desc: '每秒回复 0.8 船体',
-    descEn: 'Heals 0.8 hull\nper second',
-    apply: S => { S.regen += 0.8; },
-    bloom: S => { S.regen *= 2; S.dustHeal += 0.6; } },
+    desc: '每秒回复 1.3 船体',
+    descEn: 'Heals 1.3 hull\nper second',
+    // 2026-10-03 平衡：0.8 → 1.3/秒（bloom 的 dustHeal 0.6 → 1.0）。
+    //    旧值满级 2.4/秒，在 100+ 船体和动辄几十点一发的敌伤面前等于没有 ——
+    //    它是**唯一开局就完全没手感**的生存卡。抬到 1.3 之后满级约 3.9/秒，
+    //    定位变成「持续的血压下来」，依旧追不上「装甲板」的爆发，但不再是废纸。
+    apply: S => { S.regen += 1.3; },
+    bloom: S => { S.regen *= 2; S.dustHeal += 1.0; } },
   { id: 'phasehull', name: '相位外壳', nameEn: 'PHASE HULL', type: 'stat', glyph: '相', max: 3,
-    desc: '受击无敌 +0.15 秒',
-    descEn: 'Invuln on hit\n+0.15s',
-    apply: S => { S.invBonus += 0.15; },
-    bloom: S => { S.invBonus += 0.5; S.goldHurt = 1; } },
+    desc: '受击无敌 +0.22 秒',
+    descEn: 'Invuln on hit\n+0.22s',
+    // 2026-10-03 平衡：+0.15 → +0.22/级，bloom +0.5 → +0.65。
+    //    0.15 秒在 60fps 下只有 9 帧，肉眼几乎看不出来，
+    //    但它给的是**容错窗口**而不是伤害减免，和「能量护盾」是直接竞争关系 ——
+    //    抬到 0.22 才配得上一张卡面，又不至于像满级 shield 那样把容错做成「完全免疫追猎」。
+    apply: S => { S.invBonus += 0.22; },
+    bloom: S => { S.invBonus += 0.65; S.goldHurt = 1; } },
 
   // ---- 弹体型 ----
   { id: 'multigun', name: '多联机炮', nameEn: 'MULTI-GUN', type: 'weapon', glyph: '炮', max: 3,
@@ -379,16 +398,26 @@ const MODULES = [
   { id: 'drone', name: '战斗无人机', nameEn: 'COMBAT DRONE', type: 'ability', glyph: '机', max: 3,
     desc: '环绕自动开火\n每级 +1 架',
     descEn: 'Orbiting drone\nfires by itself\n+1 per level',
+    // 2026-10-03 平衡：单发伤害 7 → 8（`DRONE_DMG`）。
+    //    它的 DPS 完全不看玩家的走位，量少一点是应该的；但满装满协同只有约 37 DPS，
+    //    推不动任何一条后期的血条。抬 1 点：不多不少，刚好让它从「摆设」变成「辅助火力」。
     apply: S => { S.drones += 1; },
     bloom: S => { S.drones += 2; S.droneGold = 1; } },
   { id: 'shield', name: '能量护盾', nameEn: 'ENERGY SHIELD', type: 'ability', glyph: '盾', max: 3,
-    desc: '护盾 +28\n脱战自动回复',
-    descEn: 'Shield +28\nRegens out of\ncombat',
-    apply: S => { S.shieldMax += 28; S.shield = S.shieldMax; },
-    bloom: S => { S.shieldMax += 70; S.shield = S.shieldMax; S.shieldRegenMul *= 2; } },
+    desc: '护盾 +32\n脱战自动回复',
+    descEn: 'Shield +32\nRegens out of\ncombat',
+    // 2026-10-03 平衡：28 → 32/级，bloom +70 → +80。
+    //    敌伤随段数线性涨（无尽里还要乘档位），28 点一级的盾在第 6 段往后基本是「一次性纸」，
+    //    而它没法像「装甲板」那样被 healing 卡放大 —— 只能加基础值，让它撑到后期还有意义。
+    apply: S => { S.shieldMax += 32; S.shield = S.shieldMax; },
+    bloom: S => { S.shieldMax += 80; S.shield = S.shieldMax; S.shieldRegenMul *= 2; } },
   { id: 'arc', name: '电弧线圈', nameEn: 'ARC COIL', type: 'ability', glyph: '电', max: 3,
     desc: '每 2.2 秒链击\n2 个目标',
     descEn: 'Every 2.2s\nchains 2 targets',
+    // 2026-10-03 平衡：单跳基础伤害 9 → 12（在 updateAbilities 里读作 `ARC_DMG`），
+    //    并把每跳的递减改成递增 grade 0.35 → 0.45。
+    //    旧值 2.2 秒链三个只有约 75 点面板伤害，比同期的主动/弹体卡都低一截 ——
+    //    它是第一张「装置型」卡，却一直是五张装置里最不被选的那个。抬到能看见的那一档就好。
     apply: S => { S.arc += 1; },
     bloom: S => { S.arc += 1; S.arcCdMul *= 0.55; } },
   { id: 'nova', name: '脉冲核心', nameEn: 'PULSE CORE', type: 'ability', glyph: '冲', max: 3,
@@ -410,18 +439,28 @@ const MODULES = [
     apply: S => { S.backshot += 1; },
     bloom: S => { S.backshot += 2; S.backGold = 1; } },
   { id: 'ricochet', name: '跳弹', nameEn: 'RICOCHET', type: 'weapon', glyph: '跳', max: 3,
-    desc: '炮弹撞到屏边\n反弹一次继续飞',
-    descEn: 'Shots bounce off\nthe screen edge',
-    apply: S => { S.bounce += 1; },
-    bloom: S => { S.bounce += 2; } },
+    desc: '炮弹撞到屏边\n反弹一次继续飞\n每弹一次伤害 +10%',
+    descEn: 'Shots bounce off\nthe screen edge\n+10% per bounce',
+    // 2026-10-03 平衡：新增 `bounceBoost`（每弹一次伤害 +10%，在 updateBullets 里结算）。
+    //    旧版只有「次数」，没有回报 —— 世界放大之后屏幕外的墙变远了，反弹越来越像惩罚
+    //    （弹在墙之间来回飞、既不 AOE 也不回本）。给它一个正反馈，
+    //    它才重新变成「贴着边打、让弹飞回来补刀」的战术工具，而不是纯装饰。
+    apply: (S, n) => { S.bounce += 1; S.bounceBoost = 0.10 * n; },
+    bloom: S => { S.bounce += 2; S.bounceBoost = 0.16; } },
   { id: 'guided', name: '制导弹药', nameEn: 'GUIDED ROUNDS', type: 'weapon', glyph: '导', max: 3,
-    desc: '炮弹自动咬住\n最近的敌人',
-    descEn: 'Shots home in on\nthe nearest enemy',
-    // homeR 不做上限截断：140→170→200→230，满级质变直接 260（接近全屏）。
-    // 敢给这么大是因为 updateBullets 里按弹缓存了目标，每 0.12 秒才搜一次 ——
-    // 没有那层缓存的话 (R/24)² 个格子 × 每发弹每帧会把帧率吃干净。
-    apply: S => { S.homing += 1.1; S.homeR += 30; },
-    bloom: S => { S.homing += 1.4; S.homeR = 260; } },
+    desc: '炮弹缓缓咬住\n最近的敌人\n飞出射程便失坠',
+    descEn: 'Shots drift toward\nthe nearest foe,\nthen fall short',
+    // ⚠️ 2026-10-03 削弱（作者口径「追踪别做那么好，可以全图追踪了」）——三处一起动：
+    //   ① 转弯速率 1.1 → 0.62 rad/s：改成「缓缓咬住」，横向拉开是有可能甩掉的，
+    //      不再是「不管从哪个角度打出去都必然命中」。
+    //   ② 锁定半径不再一路开到 260（近全屏）→ 满级 204 封顶，超过就找不到目标、退化成普通弹。
+    //   ③ 新增**飞行里程上限** `homeTrav`（pBullet 里给每发记账）：飞够 300~380px 就主动失坠，
+    //      不准它绕着场子一圈一圈地找人 —— 这才是「全图追踪」的罪魁祸首。
+    //      回避的能力来自 `updateBullets` 里的两件事：按弹缓存目标（0.12s 搜一次）。
+    // ⚠️ isoMul / execMul 之类的伤害倍率是另一回事，别混进来 ——
+    //    制导是「打得中」，不是「打得疼」。
+    apply: (S, n) => { S.homing += 0.62; S.homeR = 138 + n * 22; S.homeTrav = 300 + (n - 1) * 40; },
+    bloom: S => { S.homing += 0.75; S.homeR = 204; S.homeTrav = 430; } },
   { id: 'ram', name: '冲角装甲', nameEn: 'RAM PLATE', type: 'ability', glyph: '角', max: 3,
     desc: '撞上去就能杀伤\n撞击自伤 -40%\n射速 -30%（仅首级）',
     descEn: 'Ramming hurts\nSelf-dmg -40%\nRate -30% (lv1)',
@@ -430,7 +469,11 @@ const MODULES = [
   { id: 'deathtrail', name: '死亡尾流', nameEn: 'DEATH WAKE', type: 'ability', glyph: '流', max: 3,
     desc: '高速拖出灼热尾流\n消解触及的敌弹',
     descEn: 'Hot wake at speed\nMelts enemy shots',
-    apply: S => { S.death += 1; S.spd *= 1.06; S.rate *= 0.93; },
+    // 2026-10-03 平衡：速度 1.06 → 1.09，射速惩罚从 -7% 收到 -4%。
+    //    它原来是「惩罚比收益清楚」的典型：为了那点尾火先付掉 7% 输出，
+    //    而尾流本身还得先跑起来才有 —— 两头都不讨好。惩罚收一半，
+    //    让它至少能对得上「速度流」这条线的定位。
+    apply: S => { S.death += 1; S.spd *= 1.09; S.rate *= 0.96; },
     bloom: S => { S.death += 1; S.spd *= 1.10; S.deathGold = 1; } },
 
   // ---- 第二批搬运：《奇点回响》的「弹丸改造」与生存系 ----
@@ -440,8 +483,10 @@ const MODULES = [
     descEn: 'Fatter, longer\nshots, +8% speed',
     // 本作唯一同时动「半径 / 弹速 / 射程」三个维度的卡。三者都在 pBullet 里读，
     // 所以扇形弹、尾炮、弹片会一起变粗 —— 它是乘法放大器，不是加法。
-    apply: S => { S.bulletR += 1.0; S.bspd *= 1.08; S.rangeMul *= 1.10; },
-    bloom: S => { S.bulletR += 2.5; S.bspd *= 1.25; S.rangeMul *= 1.35; S.caliberGold = 1; } },
+    // 2026-10-03 平衡：三维各自退半档（1.08/1.10/1.0 → 1.06/1.08/0.8，bloom 也退），
+    //    bulletR 保持 1.0 不变 —— 「看得见的变粗」是这张卡的性格，削减的是背后那两个乘数。
+    apply: S => { S.bulletR += 1.0; S.bspd *= 1.06; S.rangeMul *= 1.08; },
+    bloom: S => { S.bulletR += 2.5; S.bspd *= 1.20; S.rangeMul *= 1.28; S.caliberGold = 1; } },
   { id: 'spray', name: '散射喷嘴', nameEn: 'SPRAY NOZZLE', type: 'weapon', glyph: '扇', max: 3,
     desc: '齐射额外喷出扇形弹\n单发伤害较低',
     descEn: 'Wider volley\nWeaker per shot',
@@ -452,15 +497,22 @@ const MODULES = [
   { id: 'fission', name: '裂变弹芯', nameEn: 'FISSION CORE', type: 'weapon', glyph: '裂', max: 3,
     desc: '炮弹首次命中时\n炸成一圈弹片',
     descEn: 'First hit bursts\ninto shrapnel',
-    apply: (S, n) => { S.fission += 1; S.fissionMul = 0.45 + (n - 1) * 0.13; },
-    bloom: S => { S.fission += 2; S.fissionMul = 0.85; S.fissionGold = 1; } },
+    // 2026-10-03 平衡：弹片倍率 0.45/0.58/0.71 → 0.42/0.52/0.62，bloom 0.85 → 0.75。
+    //    它是唯一「自己繁殖」的卡：一发变六片，每片还会继承别的弹体卡效果；
+    //    和 hesh 咬在一起就是连锁的指数底数。削倍率是削底数，比削片数温和 ——
+    //    片数一少，视觉上那「一朵散开」的味道就没了。
+    apply: (S, n) => { S.fission += 1; S.fissionMul = 0.42 + (n - 1) * 0.10; },
+    bloom: S => { S.fission += 2; S.fissionMul = 0.75; S.fissionGold = 1; } },
   { id: 'overclock', name: '过载超频', nameEn: 'OVERCLOCK', type: 'stat', glyph: '频', max: 3,
-    desc: '射速 +9%、伤害 +7%\n最大船体 -9',
-    descEn: 'Rate +9%, dmg +7%\nMax hull -9',
+    desc: '射速 +9%、伤害 +7%\n最大船体 -12',
+    descEn: 'Rate +9%, dmg +7%\nMax hull -12',
     // 高风险高回报：拿血换输出。⚠️ 必须同时夹住 hp（见 apply 末句），
     //    否则拿卡瞬间 S.hp 会大于新的 S.maxHp，血条直接画出界。
-    apply: S => { S.rate *= 1.09; S.dmg *= 1.07; S.maxHp = Math.max(30, S.maxHp - 9); S.hp = Math.min(S.hp, S.maxHp); },
-    bloom: S => { S.rate *= 1.22; S.dmg *= 1.18; S.maxHp = Math.max(30, S.maxHp - 20); S.hp = Math.min(S.hp, S.maxHp); S.ovGold = 1; } },
+    // 2026-10-03 平衡：扣血 -9 → -12（bloom -20 → -24）。
+    //    账面 +9% 射速 +7% 伤害是**两个乘数同时给**，这在 abyss 里最值钱；
+    //    而 9 点血在「装甲板」和「纳米修复」面前几乎不算代价 —— 代价不成立，取舍就消失了。
+    apply: S => { S.rate *= 1.09; S.dmg *= 1.07; S.maxHp = Math.max(30, S.maxHp - 12); S.hp = Math.min(S.hp, S.maxHp); },
+    bloom: S => { S.rate *= 1.22; S.dmg *= 1.18; S.maxHp = Math.max(30, S.maxHp - 24); S.hp = Math.min(S.hp, S.maxHp); S.ovGold = 1; } },
   { id: 'leech', name: '噬能回收', nameEn: 'ENERGY LEECH', type: 'ability', glyph: '噬', max: 3,
     desc: '每次击坠回复\n最大船体的 1.1%',
     descEn: 'Each kill heals\n1.1% of max hull',
@@ -477,19 +529,82 @@ const MODULES = [
     desc: '冷却就绪时\n下一发变成贯穿光矛',
     descEn: 'When ready, the\nnext shot is a\npiercing lance',
     // 冷却用 S.lanceCd 秒；装弹期间照常开火，所以这张卡不会「禁用主炮」。
-    apply: (S, n) => { S.lance = n; S.lanceCd = 7.2 - (n - 1) * 1.6; },
-    bloom: S => { S.lance = 3; S.lanceCd = 3.2; S.lanceGold = 1; } },
+    // 2026-10-03 平衡：冷却 7.2/5.6/4.0 → 8.6/7.0/5.4，bloom 3.2 → 4.4。
+    //    伤害没动 —— 削的是**频率**。光矛是「白送的一整条直线 AOE」，
+    //    光矛不用瞄、不计走位成本，4 秒一根等于平白多了一门随身的直线炮。
+    apply: (S, n) => { S.lance = n; S.lanceCd = 8.6 - (n - 1) * 1.6; },
+    bloom: S => { S.lance = 3; S.lanceCd = 4.4; S.lanceGold = 1; } },
   { id: 'blink', name: '相位折跃', nameEn: 'PHASE BLINK', type: 'ability', glyph: '跃', max: 3,
     desc: '重击袭来时自动折跃\n该次伤害作废',
     descEn: 'Auto-blinks from\nheavy hits,\nnegating them',
     // ⚠️ 只对「足以破盾的重击」触发（阈值 22）—— 对每一发流弹都触发等于全程无敌。
-    apply: (S, n) => { S.blink = n; S.blinkCd = 15 - (n - 1) * 3.5; },
-    bloom: S => { S.blink = 3; S.blinkCd = 6.5; S.blinkMax = 1; } },
+    // 2026-10-03 平衡：冷却整体拉长（15/11.5/8 → 17/13.5/10，bloom 6.5 → 8.5）。
+    //    这张卡是**完全被动**的 —— 玩家什么都不用做就能白嫖一次大伤害免疫，
+    //    冷却太短时它对 Boss 的价值等于多了一条命。拉长冷却不改变它「救急」的定位，
+    //    只是让它不再能把整场战斗的失误都擦掉。阈值 BLINK_MIN 不动 ——
+    //    那一刀（只对重击生效）才是这张卡不破坏游戏的根本，冷却只是剂量。
+    apply: (S, n) => { S.blink = n; S.blinkCd = 17 - (n - 1) * 3.5; },
+    bloom: S => { S.blink = 3; S.blinkCd = 8.5; S.blinkMax = 1; } },
   { id: 'mine', name: '磁暴雷', nameEn: 'MAG MINE', type: 'ability', glyph: '雷', max: 3,
     desc: '定时在船尾布设磁雷\n触爆后炸伤一片',
     descEn: 'Drops mines behind\nyou that blast\na group',
     apply: (S, n) => { S.mine = n; S.mineCd = 6.4 - (n - 1) * 1.4; S.mineMax = 1 + n; },
     bloom: S => { S.mine = 3; S.mineCd = 2.6; S.mineMax = 5; S.mineGold = 1; } },
+
+  // ---- 第四批（2026-10-03）：四张「先看清楚，再下手」的条件式能力 ----
+  // 前三批给的是「更多的输出源」或「更大的数字」，这一批给的是**判断**：
+  //   isolate 问的是「这一只旁边有没有同伙」
+  //   execute 问的是「它是不是快死了」
+  //   bind    给的是「这一枪能不能把它按在原地」
+  //   rewind  问的是「这一次失误值不值得倒回去」
+  // 参考对象是《英雄联盟》的四个技能：卡兹克孤立无援 / 诺手断头台 / 莫甘娜暗之禁锢 / 艾克时空断裂。
+  // ⚠️⚠️ desc / descEn 都有硬宽度：`.card .desc` 116px 宽、12px 字 ——
+  //    中文每行 ≤ 9 个汉字，**英文每行 ≤ 19 个半角字符**，都只能写 3 行。
+  //    （详见 AGENTS.md「中英切换」那节。）
+  { id: 'isolate', name: '孤立协议', nameEn: 'ISOLATION', type: 'stat', glyph: '孤', max: 3,
+    desc: '落单的敌人\n受到更高伤害',
+    descEn: 'Isolated targets\ntake more damage',
+    // 借卡兹克的「孤立无援」：判定的不是「打得多疼」，而是「它的同伴在不在」——
+    //    周围 isoR（54~82px）内没有其它敌人时才加成。
+    //    它给玩家换来的新决策是一个动词：**切**。先清边上的那一只，而不是对着人堆泼最强的火。
+    //    ⚠️ Boss 免疫（damageEnemy 里判 e.boss）—— 巨像身边永远跟着杂兵，
+    //       加了它只会把 Boss 战变成「先把小兵清空然后白嫖一半增伤」的固定流程。
+    //    ⚠️ isoMul / isoR 必须是**覆盖式赋值**（不能累乘）：续档要按等级逐级重放 apply，
+    //       累乘写法会把同一个加成叠三次（和 sprayMul / fissionMul 是同一个坑）。
+    apply: (S, n) => { S.isolate += 1; S.isoR = 46 + n * 8; S.isoMul = 0.30 + n * 0.12; },
+    bloom: S => { S.isoMul = 0.90; S.isoR = 82; S.isoGold = 1; } },
+  { id: 'execute', name: '湮灭指令', nameEn: 'EXECUTE ORDER', type: 'stat', glyph: '斩', max: 3,
+    desc: '残血目标\n受到重创\n斩杀后短暂狂热',
+    descEn: 'Low-hp foes take\nheavy damage;\nkills grant fury',
+    // 借诺手的「诺克萨斯断头台」：伤害是**分段**的 ——
+    //   ① 目标血量低于 execHp（24%~32%）时伤害乘以 execMul（1.8~2.8）；
+    //   ② 每次斩杀给 3 秒「狂热」（G.furyT），期间所有伤害 +8%/级。
+    //      第二条是这张卡的节奏：它奖励**连着收割**，而不是单点爆发。
+    //    ⚠️ 巨像的斩杀线减半（damageEnemy 里判 e.boss）—— Boss 血条长，
+    //       32% 线等于后半场永久增伤，Boss 战的时间会被压缩掉一截。减半之后它依然是主力。
+    apply: (S, n) => { S.exec += 1; S.execHp = 0.20 + n * 0.04; S.execMul = 1.8 + (n - 1) * 0.5; },
+    bloom: S => { S.execHp = 0.42; S.execMul = 3.6; S.execGold = 1; } },
+  { id: 'bind', name: '拘束立场', nameEn: 'BINDING FIELD', type: 'ability', glyph: '缚', max: 3,
+    desc: '命中有几率\n将敌人定住',
+    descEn: 'Hits can root\nfoes in place',
+    // 借莫甘娜的「暗之禁锢」：首次引进**硬控**（e.stun）—— 敌人不能动、不能投射、
+    //    铺网 / 放牧之类的循环计时也一起冻结（updateEnemies 里回滚 cd / st 增长）。
+    //    ⚠️ Boss 完全免疫 —— 巨像站桩 1 秒且不开火的话，机制会直接坏掉。
+    //    ⚠️ 概率判定挂在 damageEnemy 的 **quiet 之外**：爆炸 / 电链这类本来就不跳数字的范围伤害
+    //       不该顺带定人 —— 否则一发高爆把整场按死，玩家还看不懂发生了什么。
+    apply: (S, n) => { S.bind += 1; S.bindP = 0.10 + n * 0.05; S.bindT = 0.45 + n * 0.15; },
+    bloom: S => { S.bindP = 0.36; S.bindT = 1.4; S.bindGold = 1; } },
+  { id: 'rewind', name: '时滞回溯', nameEn: 'CHRONO REWIND', type: 'ability', glyph: '溯', max: 3,
+    desc: '致命伤自动回溯\n回到数秒之前',
+    descEn: 'Lethal damage\nrewinds time\n(long cooldown)',
+    // 借艾克的「时空断裂」：致命伤到来时，把位置与船体一起拨回几秒前，
+    //    并在**落点**（不是当前位置）炸开一记回响 —— 所以它是保命，也是一次翻盘。
+    //    ⚠️ 冷却必须长（26~12 秒）：它是「再来一次」的卡，短了就是无限容错，
+    //       玩家会失去对血条的敬畏，整个后半场的紧张感会被它一个人买走。
+    //    ⚠️ 快照每 0.5 秒记一格（位置 + 船体），`G.snaps` 只留最近 5 秒 ——
+    //       再往上留，回溯会把玩家丢到一个他早就不认识的位置上。
+    apply: (S, n) => { S.rewind = n; S.rewindCd = 26 - (n - 1) * 4; S.rewindBack = 3; },
+    bloom: S => { S.rewind = 3; S.rewindCd = 12; S.rewindBack = 3; S.rewindGold = 1; } },
 ];
 // 卡牌类型名（数值 / 弹体 / 装置）现在走 i18n 的 'up.type.*'（up.typeName() 是唯一入口）
 const typeName = t => T('up.type.' + t);
@@ -536,6 +651,16 @@ const SYNERGIES = [
   { id: 'blinkPhase',   name: '相位残响', nameEn: 'PHASE ECHO', a: 'blink',  b: 'phasehull',desc: '折跃后的无敌时间 ×2', descEn: 'Post-blink invuln x2' },
   { id: 'mineHesh',     name: '磁暴高爆', nameEn: 'MAG BLAST', a: 'mine',   b: 'hesh',     desc: '磁雷爆炸范围 +45%', descEn: 'Mine blast radius +45%' },
   { id: 'mineStasis',   name: '迟滞雷场', nameEn: 'LINGER FIELD', a: 'mine',   b: 'stasis',   desc: '磁雷爆炸后留下一片减速场', descEn: 'Mines leave a slowing field' },
+
+  // ---- 第四批的配对协同（2026-10-03）----
+  // 规则同前三批：desc 是**横幅副标题**，画布上只有一行 12px、居中 → 英文 ≤78 半角字符。
+  // 这一批刻意让每张新卡去咬一张叙事上说得通的旧卡：
+  //   孤立咬暴击（看清了才打得出致命）、湮灭咬噬能（收割换续航）、
+  //   拘束咬脉冲（先按住再推一波）、回溯咬相位（回去之后多喘一口气）。
+  { id: 'loneMark',     name: '猎手直觉', nameEn: 'HUNTER INSTINCT', a: 'isolate', b: 'critcap', desc: '孤立目标必定暴击', descEn: 'Isolated foes always take crits' },
+  { id: 'harvest',      name: '收割放牧', nameEn: 'HARVEST', a: 'execute', b: 'leech',    desc: '每一次斩杀额外回复 3% 船体', descEn: 'Each execute also heals 3% hull' },
+  { id: 'staticBind',   name: '静滞钳制', nameEn: 'STATIC GRIP', a: 'bind',    b: 'nova',     desc: '冲击波必定把范围内的敌人定住', descEn: 'Shockwave always roots its victims' },
+  { id: 'echoPhase',    name: '回溯残响', nameEn: 'ECHO PHASE', a: 'rewind',  b: 'phasehull',desc: '回溯后的无敌时间翻倍', descEn: 'Post-rewind invuln doubled' },
 ];
 const synOn = id => !!G.syn[id];
 function recalcSynergies() {
@@ -759,7 +884,8 @@ function newGame(hullId) {
     // 搬运过来的机制：尾炮 / 跳弹 / 制导 / 冲角 / 尾流
     backshot: 0, backGold: 0,
     bounce: 0,
-    homing: 0, homeR: 140,
+    homing: 0, homeR: 140, homeTrav: 0,   // 制导三件套：转弯角速度 / 锁定半径 / 单发最大里程（0 = 不启用）
+    bounceBoost: 0,                       // 跳弹：每次反弹后的伤害加成（2026-10-03 加强）
     ram: 0, ramGold: 0,
     death: 0, deathGold: 0,
     // 第二批搬运：口径 / 散射 / 裂变 / 过载 / 噬能
@@ -773,6 +899,13 @@ function newGame(hullId) {
     lance: 0, lanceCd: 0, lanceGold: 0, lanceT: 0,
     blink: 0, blinkCd: 0, blinkMax: 0, blinkT: 0,
     mine: 0, mineCd: 0, mineMax: 0, mineGold: 0, mineT: 0,
+    // 第四批（2026-10-03）：孤立协议 / 湮灭指令 / 拘束立场 / 时滞回溯
+    // ⚠️ isoMul / isoR / execHp / execMul / bindP / bindT / rewindCd 一律**覆盖式赋值** ——
+    //    续档是逐级重放 apply 的，写成累乘会把同一级的加成叠三次。
+    isolate: 0, isoMul: 0, isoR: 0, isoGold: 0,
+    exec: 0, execHp: 0, execMul: 1, execGold: 0,
+    bind: 0, bindP: 0, bindT: 0, bindGold: 0,
+    rewind: 0, rewindCd: 0, rewindBack: 3, rewindGold: 0,
     // 吸附半径基准 78px（含义见 updatePickups 上方注释；旧值 46）
     shield: 0, shieldMax: 0, shieldRegenMul: 1, magnet: 78,
     regen: 0, invBonus: 0, dustHeal: 0,
@@ -810,6 +943,11 @@ function newGame(hullId) {
     boss: null, bossRef: null, bossWarn: 0, bossPending: null, bossT: 0,
     shake: 0, banners: [], toasts: [], hitFlashN: 0,
     hitstop: 0, heartT: 0, vign: 0,     // 打击感：命中凝滞 / 心跳计时 / 受击暗角
+    // 第四批的新状态（2026-10-03）
+    furyT: 0,        // 湮灭指令的「狂热」剩余秒数：斩杀后短暂抬伤害
+    rewindT: 0,      // 时滞回溯的剩余冷却
+    snaps: [],       // 时间快照 [{x, y, hp, t}]，pushSnap 每 0.5s 记一格、只留最近 5 秒
+    snapT: 0,
     mods: {}, // id -> level
     syn: {},  // 协同 id -> true
     spawnQueue: [], spawnT: 0, waveKills: 0, waveNeed: 0,
@@ -945,7 +1083,20 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
     // 裂变弹芯：随弹丸走，命中那一刻才决定炸几片 —— 这样它也能被尾炮 / 弹片继承。
     fission: o.fission ?? G.S.fission, fissionMul: o.fissionMul ?? G.S.fissionMul,
     fissioned: false,
+    // 制导弹才用得上：已飞里程（updateBullets 里累计，超 S.homeTrav 就失坠）
+    trav: 0,
+    // 跳弹：已反弹次数（只用于算 bounceBoost 的伤害加成，和 bounce「剩余次数」是两回事）
+    bounceN: 0,
   });
+}
+/* 制导弹失坠：飞够里程就自己熄灭（作者 2026-10-03：「飘到一定距离就自己消失」）。
+   ⚠️ 必须给一个**看得见的反馈** —— 静默 splice 的话，玩家只会感觉「制导有时候不生效」，
+      永远意识不到这发是走完射程了。一小撮灰烟 + 一声很轻的音效，语义就清楚了：
+      「不是没制导，是它飞到头了」。 */
+function expireBullet(b, i) {
+  burst(b.x, b.y, 4, ['#7a86a8', '#566c86'], 46, 0.26, 1, true);
+  Sound.sfx.fizzle();
+  G.bullets.splice(i, 1);
 }
 // 敌弹自带 dmg（默认 9）。⚠️ 不要在 updateEBullets 里写死 9 ——
 // 无尽档位要靠这里把 TIER_DMG 传播到每一发弹丸上，写死就等于弹幕永远挠痒。
@@ -1100,6 +1251,45 @@ function tryDash() {
   }
 }
 
+/* 伤害的条件倍率：第四批四张卡里三张在这里结算（2026-10-03）。
+   抽成一个函数而不是散着写进 damageEnemy，是因为**顺序有讲究**：
+   ① 孤立的判定要看「当前还有多少敌人」，必须在**任何打击把同伴打死之前**算完；
+   ② 湮灭的斩杀线看的是「扣血之前」的血量比例，e.hp 一旦被扣就不是同一件事了；
+   ③ 狂热（furyT）是全局时限 buff，跟目标无关。
+   三条都一次性乘进去，返回单个系数 —— 伤害乘得越少的地方越好 debug。
+   ⚠️ `quiet` 的范围伤害（爆炸 / 电链）只吃 fury，不吃 bind —— 见 bind 卡那段注释。 */
+function enemyIsolated(e, R) {
+  const R2 = R * R;
+  for (const o of G.enemies) {
+    if (o === e || o.hp <= 0) continue;
+    const dx = o.x - e.x, dy = o.y - e.y;
+    if (dx * dx + dy * dy < R2) return false;
+  }
+  return true;
+}
+function condMul(e, quiet) {
+  const S = G.S;
+  let m = 1;
+  // 「猎手直觉」协同：孤立 × 暴击电容 → 落单的目标必定吃到暴击（见 isolate 卡）
+  const alone = S.isolate > 0 && !e.boss && enemyIsolated(e, S.isoR);
+  if (alone) m *= 1 + S.isoMul;
+  if (alone && synOn('loneMark')) e.forceCrit = 1;
+  if (S.exec > 0) {
+    const line = e.boss ? S.execHp * 0.5 : S.execHp;
+    if (e.hp <= e.maxHp * line) m *= S.execMul;
+  }
+  // 狂热：斩杀后的短时全局加成（见 killEnemy 里的挂载点）
+  if (G.furyT > 0 && S.exec > 0) m *= 1 + 0.08 * S.exec;
+  // 拘束立场：只有「非 quiet」的直接命中才有机会定住目标
+  // ⚠️ 敌人身上的字段叫 **e.root**（剩余定身秒数），别和 `S.bind`（卡等级）混 —— updateEnemies 里
+  //    读的是 e.root，写错成 e.bind 的话敌人永远不会被解冻，场上会出现一排活的雕像。
+  if (S.bind > 0 && !quiet && !e.boss && Math.random() < S.bindP) {
+    e.root = Math.max(e.root || 0, S.bindT);
+    ring(e.x, e.y, e.r + 7, '#a06cf0', .28, 2);
+  }
+  return m;
+}
+
 // ============ 伤害 & 击杀 ============
 function damageEnemy(e, dmg, dx, dy, crit, kb = 1, quiet = false) {
   if (e.hp <= 0) return;
@@ -1111,6 +1301,13 @@ function damageEnemy(e, dmg, dx, dy, crit, kb = 1, quiet = false) {
     const dot = dx * Math.cos(e.ang) + dy * Math.sin(e.ang);
     if (dot < -0.35) { dmg *= c.guard; guarded = true; }
   }
+  dmg *= condMul(e, quiet);
+  // 「猎手直觉」协同（孤立 × 暴击电容）：这一刀被标记为必暴，
+  // 用**一次性开关**（每次都清零）而不是一个持续 flag —— 否则目标被打上一次就永远暴击了。
+  if (e.forceCrit) { crit = true; e.forceCrit = 0; }
+  // 这一刀是不是落在斩杀线以下（协同「收割放牧」用）。
+  // ⚠️ 必须用**扣血前**的 e.hp —— 进了 killEnemy 之后 hp 已经是 0，判不出来了。
+  if (G.S.exec > 0 && e.hp <= e.maxHp * (e.boss ? G.S.execHp * 0.5 : G.S.execHp)) e.executed = 1;
   e.hp -= dmg;
   e.flash = 0.09;
   if (guarded) {
@@ -1167,6 +1364,14 @@ function killEnemy(e) {
   }
   if (e.boss) bossDeath(e);
   G.energy = Math.min(100, G.energy + (big ? 40 : 1.4));
+  // 湮灭指令的「狂热」：每次斩杀刷新 3 秒。挂在最后，等同一帧的伤害结算完再给，
+  // 免得「这一发把对方打死」的任务同时享受到它自己的奖励。
+  if (G.S.exec > 0) {
+    G.furyT = 3;
+    // 「收割放牧」协同（湮灭 × 噬能）：只有**确实是斩杀线以下打死**的才额外回血 ——
+    //    随手点掉一只满血杂兵不该拿这份奖励。判定标记在 damageEnemy 里、扣血之前打。
+    if (synOn('harvest') && e.executed) healPlayer(G.S.maxHp * 0.03);
+  }
   // 噬能回收：以战养战。按**最大**船体的百分比回血，所以它和「装甲板」是乘法关系 ——
   // 堆血同时买生存和续航。放在最后，让同一帧的击杀结算完再回。
   if (G.S.leech > 0) healPlayer(G.S.leech / 100 * G.S.maxHp * (synOn('fieldMedic') ? 1.5 : 1));
@@ -1222,6 +1427,63 @@ function tryBlink(dmg) {
   return true;
 }
 
+/* 时间快照（时滞回溯用）：每 0.5 秒记一格位置 + 船体，只留最近 SNAP_KEEP 秒。
+   ⚠️ **不要每一帧都记** —— 回溯的意义是「回到一个我记得的、几秒前的位置」，
+      逐帧记录会让回溯退化成「回到上一帧」＝原地复活，机制直接废掉。
+   ⚠️ 存的是**船体 S.hp**，也就是**当时的血量**；回溯时再和 25% 上限取 max（见 tryRewind）。 */
+const SNAP_EVERY = 0.5, SNAP_KEEP = 5.5;
+function pushSnap(dt) {
+  G.snapT -= dt;
+  if (G.snapT > 0) return;
+  G.snapT = SNAP_EVERY;
+  G.snaps.unshift({ x: G.px, y: G.py, hp: G.S.hp, t: G.t });
+  while (G.snaps.length > 1 && G.snaps[0].t - G.snaps[G.snaps.length - 1].t > SNAP_KEEP) G.snaps.pop();
+}
+/* 时滞回溯（2026-10-03，借艾克「时空断裂」）
+   致命伤到来时不结算这次伤害，把位置与船体拨回几秒前，并在落点炸一记回响。
+   ⚠️ 必须在 `hurtPlayer` 把 hp 扣掉之前调用 —— 判定依赖「这一击会不会致死」，
+      扣完之后就没有「原本的血」可以回了。
+   ⚠️ 回到的血量是**当时血量的七成**，再夹在最大船体的 25%~60%（见下面的 clamp）——
+      直接回到当时那个值（通常是满血）就变成免费回满了，这张卡会从「把这一次失误作废」
+      升级成「多一条命」；反过来完全不回，玩家会在同一个位置被同一群人再打死一次。 */
+function tryRewind(dmg) {
+  const S = G.S;
+  if (!S.rewind || G.rewindT > 0) return false;
+  const want = G.t - S.rewindBack;
+  let snap = null;
+  for (const s of G.snaps) { if (s.t <= want) { snap = s; break; } }
+  if (!snap) return false;
+  G.rewindT = S.rewindCd;
+  // 船体拨回去，但**不打满**：0.7 倍的当时血量，夹在最大船体的 25%~60% 之间。
+  //   直接给当时的血量（常见是满血）等于免费回满 —— 这张卡会变成一条额外的命，
+  //   而不是一次「把刚才那一下作废」。留一道疤，落点还是危险的地方。
+  S.hp = clamp(snap.hp * 0.7, S.maxHp * 0.25, S.maxHp * 0.6);
+  G.px = clamp(snap.x, 16, WORLD.w - 16); G.py = clamp(snap.y, 16, WORLD.h - 16);
+  G.vx = 0; G.vy = 0;
+  // 「回溯残响」协同（时滞 × 相位外壳）：回去之后多喘一口气
+  G.inv = (1.6 + S.invBonus) * (synOn('echoPhase') ? 2 : 1);
+  if (G.snaps.length) G.snaps = [Object.assign({}, snap)];
+  const fromX = G.px, fromY = G.py;
+  ring(fromX, fromY, 46, S.rewindGold ? '#ffcd75' : '#73eff7', .5, 3);
+  burst(fromX, fromY, 26, ['#73eff7', '#f4f4f4', '#a06cf0'], 190, .6, 2, true);
+  Sound.sfx.warp(); addShake(5);
+  banner(T('bn.rewind'), T('bn.rewindSub'), '#73eff7', 2.2);
+  // 回响：落点一记范围伤害 + 清掉身边的敌弹 —— 保命的同时也把刚才那群人推开，
+  //    否则它就是纯粹的「多活三秒」。
+  buildGrid();
+  noFreeze(() => {
+    forNear(fromX, fromY, 96, e => {
+      const d = Math.hypot(e.x - fromX, e.y - fromY);
+      if (d > 96 + e.r) return;
+      damageEnemy(e, 42 * S.dmg, (e.x - fromX) / (d || 1), (e.y - fromY) / (d || 1), false, 3);
+    });
+  });
+  for (let i = G.ebullets.length - 1; i >= 0; i--) {
+    const b = G.ebullets[i];
+    if (Math.hypot(b.x - fromX, b.y - fromY) < 110) G.ebullets.splice(i, 1);
+  }
+  return true;
+}
 function hurtPlayer(dmg) {
   if (G.inv > 0 || G.dead || GOD) return;
   const S = G.S;
@@ -1233,6 +1495,8 @@ function hurtPlayer(dmg) {
     Sound.sfx.shield(); ring(G.px, G.py, 18, '#73eff7', .3, 2);
     if (dmg <= 0) { G.inv = 0.25; return; }
   }
+  // 时滞回溯：这一击会致死 → 倒回去，这次伤害整个作废
+  if (tryRewind(dmg)) return;
   S.hp -= dmg;
   G.hurtFlash = 0.35; G.inv = 0.55 + S.invBonus; G.combo = 1; G.comboT = 0;
   addShake(SHAKE.hurt); Sound.sfx.hurt(); freeze(0.07);
@@ -1469,9 +1733,16 @@ function updateEnemies(dt) {
     const ux = dx / d, uy = dy / d;
     const c = e.cfg || {};
     if (e.boss) { updateBoss(e, dt, dx, dy, d); continue; }
+    // 拘束立场（2026-10-03）：被定住的敌人整个 AI 时钟都停 ——
+    //   位置几乎不动，攻击计时（cd）与循环计时（st，用来算铺网 / 放牧脉冲的间隔）一起冻结。
+    //   ⚠️ 冻结用「先前进再回滚」而不是跳过整段：`e.cd -= dt` 写在 case 内部，
+    //      分支很多，改成逐个判 ```stunned``` 会把这个文件改坏。
+    const stunned = e.root > 0 && !e.boss;
+    if (stunned) { e.root -= dt; e.vx *= 0.82; e.vy *= 0.82; }
     // 静止场的减速由 updateAbilities 每帧挂上，这里用完就衰减，出圈立刻恢复
     // spdMul 是生成时按深渊档位定死的（见 spawnEnemy），这里只乘上去
-    const spd = c.spd * (e.spdMul || 1) * (e.elite ? 1.15 : 1) * (1 - (e.slow || 0)) * (e.buffT > 0 ? 1.22 : 1);
+    const spd = stunned ? 0
+      : c.spd * (e.spdMul || 1) * (e.elite ? 1.15 : 1) * (1 - (e.slow || 0)) * (e.buffT > 0 ? 1.22 : 1);
     if (e.slow) e.slow = Math.max(0, e.slow - dt * 2.2);
 
     switch (c.ai) {
@@ -1675,6 +1946,11 @@ function updateEnemies(dt) {
       if (e.y > viewB() - IN) e.vy -= k;
     }
     // 阻尼 & 限速（冲锋态允许超速）
+    // ⚠️ 拘束时要把刚才各 case 里扣掉的攻击计时还回去，否则它看起来是「停住」，
+    //    实际冷却还在走 —— 解禁瞬间立刻打出一颗蓄了很久的子弹。
+    //    ⚠️ st 的回滚要夹到 0：不是每种 AI 都用了 e.st（chase / swarm 就没有），
+    //       减成负数会让 dash 那个 AI 解禁后卡在「一直在蓄力」的分支里。
+    if (stunned) { e.cd += dt; e.st = Math.max(0, e.st - dt); }
     const damp = c.ai === 'dash' && e.st >= 0.9 && e.st < 1.5 ? 0.995 : 0.94;
     e.vx *= damp; e.vy *= damp;
     const maxV = spd * (c.ai === 'dash' ? 3.4 : 1.5);
@@ -1908,7 +2184,7 @@ function updateDrones(dt) {
       const t = nearest(d.x, d.y, 190);
       if (t) {
         const a = Math.atan2(t.y - d.y, t.x - d.x);
-        pBullet(d.x, d.y, a, 300, 7 * S.dmg, { col: '#ffcd75', r: 2 });
+        pBullet(d.x, d.y, a, 300, DRONE_DMG * S.dmg, { col: '#ffcd75', r: 2 });
         Sound.sfx.drone();
         d.cd = 0.62 / S.rate;
       } else d.cd = 0.2;
@@ -1928,6 +2204,10 @@ function nearestN(x, y, R, n) {
   return out.slice(0, n).map(p => p[1]);
 }
 
+// 电弧单跳的基础伤害（2026-10-03 平衡：9 → 12，见 arc 卡那段注释）
+const ARC_DMG = 12;
+// 无人机单发伤害（2026-10-03 平衡：7 → 8，见 drone 卡那段注释）
+const DRONE_DMG = 8;
 function updateAbilities(dt) {
   const S = G.S;
   // --- 电弧线圈：定时链击最近 N 个目标 ---
@@ -1935,13 +2215,13 @@ function updateAbilities(dt) {
     S.arcT -= dt;
     if (S.arcT <= 0) {
       const cd = 2.2 * S.arcCdMul * (synOn('staticArc') ? 0.65 : 1);
-      const targets = nearestN(G.px, G.py, 210, 1 + S.arc);
+      const targets = nearestN(G.px, G.py, 235, 1 + S.arc);
       if (targets.length) {
         S.arcT = cd;
         let ax = G.px, ay = G.py;
         for (const t of targets) {
           G.fx.push({ type: 'arc', x0: ax, y0: ay, x1: t.x, y1: t.y, t: 0, life: 0.18, gold: S.arc >= 4 });
-          damageEnemy(t, 9 * S.dmg * (1 + S.arc * 0.35), 0, 0, false, 0.4, true);
+          damageEnemy(t, ARC_DMG * S.dmg * (1 + S.arc * 0.45), 0, 0, false, 0.4, true);
           ax = t.x; ay = t.y;
         }
         Sound.sfx.zap();
@@ -1961,8 +2241,11 @@ function updateAbilities(dt) {
       forNear(G.px, G.py, R, e => {
         const d = Math.hypot(e.x - G.px, e.y - G.py);
         if (d > R + e.r) return;
-        const mul = (e.slow > 0 && synOn('resonance')) ? 1.7 : 1;
-        damageEnemy(e, 26 * S.dmg * (1 + S.nova * 0.3) * mul, (e.x - G.px) / (d || 1), (e.y - G.py) / (d || 1), false, 3.5);
+      const mul = (e.slow > 0 && synOn('resonance')) ? 1.7 : 1;
+      damageEnemy(e, 26 * S.dmg * (1 + S.nova * 0.3) * mul, (e.x - G.px) / (d || 1), (e.y - G.py) / (d || 1), false, 3.5);
+      // 「静滞钳制」协同（拘束 × 脉冲）：冲击波必定把波及的人钉住一瞬。
+      //    平时「钉住」要看概率，这一路不看 —— 解控和免费的安全窗口是这张卡的价值。
+      if (synOn('staticBind') && !e.boss) e.root = Math.max(e.root || 0, 0.9 + S.bindT * 0.5);
       });
       // 质变：湮灭波及的敌弹
       if (S.novaVoid) {
@@ -2162,9 +2445,10 @@ function updateBullets(dt) {
     const b = G.bullets[i];
     b.life -= dt;
     // --- 制导：每隔 0.12 秒才重新找一次目标 ---
-    // ⚠️ 每帧都 nearest(homeR 满级 260) 的话是 (260/24)²≈118 个格子 × 场上每发弹，
+    // ⚠️ 每帧都 nearest(homeR 满级 204) 的话是 (204/24)²≈72 个格子 × 场上每发弹，
     //    装上制导就等于给整个弹幕系统加了一层固定开销。按弹缓存目标后开销降到 1/7。
-    //    正因为有这层缓存，homeR 才敢开到 260（近全屏）。
+    //    ⚠️ homeR 曾经开到 260 并且配上 4.7 rad/s 的转弯速率 —— 那是「全图追踪」：
+    //       弹从屏幕这一头飞出去，能绕回来追三个人。2026-10-03 三处一起收，见 guided 卡注释。
     if (b.homing) {
       b.retarget -= dt;
       if (b.retarget <= 0 || !b.tgt || b.tgt.dead || b.tgt.hp <= 0) {
@@ -2175,13 +2459,23 @@ function updateBullets(dt) {
       if (t) {
         const want = Math.atan2(t.y - b.y, t.x - b.x);
         let da = ((want - b.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
-        const turn = b.homing * (synOn('guidedPierce') ? 1.45 : 1);
+        const turn = b.homing * (synOn('guidedPierce') ? 1.3 : 1);
         b.ang += clamp(da, -turn * dt, turn * dt);
         const sp = Math.hypot(b.vx, b.vy);
         b.vx = Math.cos(b.ang) * sp; b.vy = Math.sin(b.ang) * sp;
       }
     }
-    b.x += b.vx * dt; b.y += b.vy * dt;
+    const mvx = b.vx * dt, mvy = b.vy * dt;
+    b.x += mvx; b.y += mvy;
+    // --- 制导弹的「失坠」：飞够里程就自己熄灭 ---
+    // ⚠️ 只在 G.S.homeTrav > 0 时启用 —— 没装制导弹药的普通弹不该被限。
+    if (b.homing && G.S.homeTrav > 0) {
+      b.trav += Math.hypot(mvx, mvy);
+      // ⚠️ 乘 rangeMul：口径校准是「弹丸飞得更远」的卡，它该让制导弹也受益，
+      //    否则装了口径反而出现「射程卡把制导玩短」的倒错。
+      const limit = G.S.homeTrav * G.S.rangeMul;
+      if (b.trav > limit) { expireBullet(b, i); continue; }
+    }
     if (b.life <= 0) { G.bullets.splice(i, 1); continue; }
     // --- 出界：跳弹先在**视口**边缘反弹，没次数了才在**世界**边界回收 ---
     // ⚠️⚠️ 这两件事必须分开算，而且回收边界（WORLD ± 60）必须比敌人的硬夹取
@@ -2197,6 +2491,7 @@ function updateBullets(dt) {
       b.ang = Math.atan2(b.vy, b.vx);
       b.tgt = null; b.retarget = 0;
       b.bounced = true;
+      b.bounceN = (b.bounceN || 0) + 1;     // 跳弹Boost 用（见命中那段）
       b.life = Math.max(b.life, 0.55);   // 别刚弹回来就寿终，那玩家根本看不见这一跳
       burst(b.x, b.y, 3, ['#73eff7', '#f4f4f4'], 46, .18, 1);
     } else if (b.x < -60 || b.x > WORLD.w + 60 || b.y < -60 || b.y > WORLD.h + 60) {
@@ -2211,7 +2506,11 @@ function updateBullets(dt) {
     if (!hit) continue;
     const S = G.S;
     const crit = Math.random() < S.crit;
-    const dmg = b.dmg * (crit ? (synOn('pierceCrit') ? 3.3 : S.critMul) : 1);
+    // 跳弹的回报（2026-10-03 加强）：弹过一次 +bounceBoost，按**已弹次数**累加。
+    // ⚠️ 用独立的 bounceN 计数，不要拿 b.bounce 反推 —— 那是「还剩几次」，
+    //    而且中途拿卡会让剩余次数变化，反推出来的伤害会莫名其妙地涨。
+    const dmg = b.dmg * (1 + (S.bounceBoost || 0) * (b.bounceN || 0))
+      * (crit ? (synOn('pierceCrit') ? 3.3 : S.critMul) : 1);
     const a = Math.atan2(b.vy, b.vx);
     damageEnemy(hit, dmg, Math.cos(a), Math.sin(a), crit, 0.6);
     if (b.blast) {
@@ -2479,6 +2778,12 @@ function step(dt) {
   if (hitstopCd > 0) hitstopCd = Math.max(0, hitstopCd - dt);
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 26);
   if (G.vign > 0) G.vign = Math.max(0, G.vign - dt * 2.4);
+  // 第四批的时间类状态（2026-10-03）：狂热 buff / 回溯冷却 / 时间快照。
+  // ⚠️ 和 shake / vign 放在同一层、都在「凝滞早退」之上 —— 它们挂在主流程的上游，
+  //    被冻住的那些帧也不该让 buff 偷偷偷跑。
+  if (G.furyT > 0) G.furyT = Math.max(0, G.furyT - dt);
+  if (G.rewindT > 0) G.rewindT = Math.max(0, G.rewindT - dt);
+  if (G.S.rewind > 0) pushSnap(dt);
   // 命中凝滞：实体全冻，只让粒子慢放 —— 顿挫感就来自这里
   if (G.hitstop > 0) {
     G.hitstop -= dt;
@@ -2607,6 +2912,16 @@ function drawEnemies() {
       drawSpriteFrame(set, e.x, e.y, frame, e.flash, e.alpha, flip);
       // 精英：金色外框
       if (e.elite) { ctx.strokeStyle = '#ffcd75'; ringPx(e.x, e.y, e.r + 2, 1); }
+      // 拘束立场：被定住的敌人踩一圈紫色静电 ——— 必须看得见，否则玩家不知道
+      // 「它为什么不动」，只会在心里记成一次随机卡顿。
+      if (e.root > 0) {
+        const k = 0.5 + Math.sin(e.t * 26) * 0.25;
+        ctx.globalAlpha = 0.75 * Math.min(1, e.root * 2);
+        ctx.strokeStyle = '#a06cf0'; ringPx(e.x, e.y, e.r + 4, 1);
+        ctx.globalAlpha = 0.55 * k;
+        ctx.strokeStyle = '#f4f4f4'; ringPx(e.x, e.y, e.r + 5, 1);
+        ctx.globalAlpha = 1;
+      }
     }
   }
 }
@@ -2695,6 +3010,9 @@ function drawPlayer() {
   const blink = G.inv > 0 && ((G.t * 20) | 0) % 2 === 0;
   if (blink) ctx.globalAlpha = 0.45;
   if (G.odT > 0) drawGlow(ctx, '#73eff7', 22, 0.4, G.px, G.py);
+  // 湮灭指令的「狂热」：斩杀之后的一圈暗红光。必须看得见 —— 它只有 3 秒，
+  //    看不见就等于玩家永远不知道自己是「现在该压上去」还是「刚才那只是个意外」。
+  if (G.furyT > 0) drawGlow(ctx, '#ef7d57', 19, 0.22 + Math.sin(G.t * 14) * 0.08, G.px, G.py);
   drawShipKit(ctx, S.hull, G.px, G.py, G.ang, G.mods, G.hurtFlash > 0, 1);
   ctx.globalAlpha = 1;
   // 引擎焰

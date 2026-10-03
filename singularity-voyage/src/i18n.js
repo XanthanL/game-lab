@@ -204,6 +204,9 @@ const UI = {
     'bn.bloomSub': '已升至满级',
     'bn.syn': '协同 · {0}',
     'bn.unlock': '船体解锁 · {0}',
+    // 第四批（2026-10-03）
+    'bn.rewind': '时空回溯',
+    'bn.rewindSub': '回到三秒前 · 船体部分修复',
     'toast.mute': '静音',
     'toast.unmute': '声音开',
     'toast.fitLv': '装配等级 {0}',
@@ -397,6 +400,8 @@ const UI = {
     'bn.bloomSub': 'MAX LEVEL REACHED',
     'bn.syn': 'SYNERGY · {0}',
     'bn.unlock': 'HULL UNLOCKED · {0}',
+    'bn.rewind': 'CHRONO REWIND',
+    'bn.rewindSub': 'Back 3s · hull partly restored',
     'toast.mute': 'MUTED',
     'toast.unmute': 'SOUND ON',
     'toast.fitLv': 'FITTED LV {0}',
