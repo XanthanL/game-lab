@@ -180,6 +180,10 @@ const UI = {
     'hud.energy': '能量',
     'hud.odReady': '超载就绪 [E]',
     'hud.left': '剩余 {0}',
+    // 关卡形态的 HUD 目标（2026-10-03，见 FORMS）：只有清剿沿用「剩余」
+    'hud.survive': '存活 {0}s',
+    'hud.salvage': '星尘 {0}/{1}',
+    'hud.duel': '精锐 {0}',
     'hud.cd.lance': '枪',
     'hud.cd.blink': '跃',
     'hud.cd.mine': '雷',
@@ -192,6 +196,9 @@ const UI = {
     'bn.bossTier': '{0}（深渊 {1} 档）',
     'bn.squad': '编队主题：{0}',
     'bn.squadTier': '深渊 {0} 档 · {1}',
+    // 形态 + 编队 / 形态 + 档位 + 编队（{0}=形态 {1}=编队，Tier 版 {1}=档位 {2}=编队）
+    'bn.form': '{0} · {1}',
+    'bn.formTier': '{0} · 深渊 {1} 档 · {2}',
     'bn.clear': '航段肃清',
     'bn.warp': '跃迁至第 {0} 段',
     'bn.winSub': '通关 —— 无尽航程开启',
@@ -376,6 +383,10 @@ const UI = {
     'hud.energy': 'ENERGY',
     'hud.odReady': 'OVERLOAD [E]',
     'hud.left': 'LEFT {0}',
+    // Wave-form HUD objectives (2026-10-03, see FORMS); only PURGE still uses "LEFT"
+    'hud.survive': 'SURVIVE {0}s',
+    'hud.salvage': 'DUST {0}/{1}',
+    'hud.duel': 'ELITE {0}',
     'hud.cd.lance': 'L',
     'hud.cd.blink': 'B',
     'hud.cd.mine': 'M',
@@ -388,6 +399,9 @@ const UI = {
     'bn.bossTier': '{0} (ABYSS {1})',
     'bn.squad': 'FORMATION: {0}',
     'bn.squadTier': 'ABYSS {0} · {1}',
+    // Form + formation / Form + tier + formation ({0}=form {1}=formation; Tier: {1}=tier {2}=formation)
+    'bn.form': '{0} · {1}',
+    'bn.formTier': '{0} · ABYSS {1} · {2}',
     'bn.clear': 'WAVE CLEARED',
     'bn.warp': 'WARPING TO WAVE {0}',
     'bn.winSub': 'CLEARED — ENDLESS VOYAGE UNLOCKED',

@@ -243,17 +243,83 @@ const ZONES = [
 ];
 const zoneOf = w => ZONES.find(z => w >= z.from && w <= z.to) || ZONES[2];
 const WAVES = 12;                 // 主线航段数：打完这 12 段 = 通关，但**不停机**，转入无尽
+// ⚠️ BOSS_WAVES 现在只是**兜底 / 图鉴预览**用的默认编排（G 还没建立时 peekBoss 会读它）。
+//    真跑一局时主线 4/8/12 段出哪只由 `G.mainBosses` 决定（每局开局洗牌抽 3 只，见 rollMainBosses）。
 const BOSS_WAVES = { 4: 'motherrock', 8: 'warden', 12: 'gate' };
+
+/* 巨像血量 = b.hp（基准）× 槽位倍率 × 深渊档位倍率。
+   ⚠️ b.hp 是「**放到第 4 段时**的血量」，**不是**最终血量 —— 槽位自己会把它放大。
+      以前三只巨像的 hp 直接写死 900/2000/3600，等于把「它只会出现在第 4/8/12 段」
+      焊进了数值里；要让 7 只巨像轮换进主线，就必须把「槽位」和「巨像」解耦。
+      基准 900 × {4:1, 8:2.2, 12:4} 正好复现原来的 900 / 1980 / 3600，老平衡没被打破。 */
+const BOSS_SLOT_MUL = { 4: 1, 8: 2.2, 12: 4 };
+// 无尽里没有 4/8/12 槽位，统一按「最深的槽」算，再随段数线性加一点（指数部分交给 eTierHp）
+const bossSlotMul = w => w <= WAVES ? (w <= 4 ? BOSS_SLOT_MUL[4] : w <= 8 ? BOSS_SLOT_MUL[8] : BOSS_SLOT_MUL[12])
+                                    : BOSS_SLOT_MUL[12] * (1 + (w - WAVES) * 0.06);
+
+/* ============ 关卡形态（2026-10-03）============
+   以前**所有**非 Boss 段都是同一个形态：排队刷 N 只、杀光 → 跃迁。
+   12 段里有 9 段是它，所以中段打起来就是「换了个编队名字的同一件事」。
+   现在把那 9 段分成四种**目标**，每种逼玩家做不同的取舍：
+
+     清剿 purge   杀光队列里的 N 只（原本的默认）  —— 比输出，站桩输出也行
+     潮涌 surge   存活 N 秒，敌人一直涌             —— 比走位，**杀不完也不用杀完**
+     回收 salvage 在骚扰下捡够 N 份星尘             —— 逼你离开安全路线去够掉落
+     死斗 duel    3~4 只精锐重甲，杀光              —— 少量高血，考验穿透 / 爆发
+
+   ⚠️ 判完成的条件**逐形态不同**，统一挂在 updateWave 里按 G.waveForm 分支。
+      漏一个分支 = 那一段永远打不完 = 整局卡死，而且不报错，所以四种都要有探针。 */
+const FORMS = {
+  purge:   { name: '清剿', nameEn: 'PURGE' },
+  surge:   { name: '潮涌', nameEn: 'SURGE' },
+  salvage: { name: '回收', nameEn: 'SALVAGE' },
+  duel:    { name: '死斗', nameEn: 'DUEL' },
+};
+// 主线 12 段的形态编排：每段都要和**相邻段**不一样，别连着两段都是杀光。
+// 4/8/12 是 Boss 段，不在这张表里（startWave 里 bossId 优先）。
+const MAIN_FORMS = {
+  1: 'purge', 2: 'purge', 3: 'salvage',
+  5: 'purge', 6: 'surge', 7: 'duel',
+  9: 'purge', 10: 'salvage', 11: 'surge',
+};
+// 无尽里四种形态轮着来（Boss 段除外），否则打 30 段全在「杀光」
+const ENDLESS_FORM_CYCLE = ['purge', 'surge', 'salvage', 'duel'];
+const formForWave = w => w <= WAVES
+  ? (MAIN_FORMS[w] || 'purge')
+  : ENDLESS_FORM_CYCLE[(w - ENDLESS_FROM) % ENDLESS_FORM_CYCLE.length];
+
+// 7 只巨像。**每只都必须改变玩家的决策**（和「敌型设计原则」同一条铁律），
+// 不能只是换个血条和配色：
+//   母岩   冲撞 —— 要绕侧后方，不能站正面
+//   狱卒   三套弹幕轮转 —— 读缝穿过去
+//   之门   含激光 —— 拼续航
+//   蜂巢   持续产兵 —— 必须顶着弹幕优先点掉母体，否则被小怪淹没
+//   磁暴   引力井 —— 一直把你往里拽，得靠冲刺 / 制动对抗拉力
+//   锻炉   一路留火场 —— 场地被逐渐切割，别往它去过的地方飞
+//   棱镜   分光激光扇 —— 光束之间有缝，要贴着缝站
 const BOSSES = {
-  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 900, r: 21, pats: ['charge', 'spread'], color: '#c070f0',
+  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 860, r: 21, pats: ['charge', 'spread'], color: '#c070f0',
                 trait: '冲撞 + 扇形弹幕，冲撞前有蓄力 —— 绕侧后方输出',
                 traitEn: 'Rams and fires spreads; it winds up before ramming — flank it' },
-  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 2000, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577',
+  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 900, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577',
                 trait: '环形 / 螺旋 / 扇形三套弹幕轮转，找缝穿过去',
                 traitEn: 'Rotates ring, spiral and fan patterns — thread the gaps' },
-  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 3600, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7',
+  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 940, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7',
                 trait: '四套弹幕含一道激光，血最厚 —— 拼的是续航',
                 traitEn: 'Four patterns including a laser, and the most HP — an endurance test' },
+  // ---- 第二批（2026-10-03）：四只新机制 ----
+  hive:       { name: '蜂巢母体', en: 'HIVE MATRIARCH', spr: 'hive', hp: 880, r: 22, pats: ['summon', 'spread', 'ring'], color: '#a7f070',
+                trait: '持续产出虫群 —— 不管它的话小怪会淹没你，优先拆巢',
+                traitEn: 'Keeps birthing swarms — ignore it and you drown; kill the hive first' },
+  tempest:    { name: '磁暴核心', en: 'TEMPEST CORE', spr: 'tempest', hp: 900, r: 21, pats: ['pull', 'ring', 'spiral'], color: '#41a6f6',
+                trait: '引力井一直把你往核心拽 —— 靠冲刺和制动顶住，别被拖进弹幕里',
+                traitEn: 'Its gravity well drags you in — dash or brake out, do not get pulled into the fire' },
+  forge:      { name: '熔渣锻炉', en: 'SLAG FORGE', spr: 'forge', hp: 920, r: 22, pats: ['burn', 'fan', 'charge'], color: '#ef7d57',
+                trait: '飞过的地方留下火场 —— 场地会被它一点点切碎，别往它去过的地方飞',
+                traitEn: 'Leaves burning ground behind it — the arena gets carved up; never fly where it has been' },
+  prism:      { name: '棱镜之眼', en: 'PRISM EYE', spr: 'prism', hp: 900, r: 20, pats: ['beamFan', 'fan', 'ring'], color: '#ffe9a8',
+                trait: '放出分光的激光扇，光束之间留着缝 —— 贴着缝站，别乱窜',
+                traitEn: 'Fires a fan of split beams with gaps between them — stand in a gap, do not scramble' },
 };
 
 /* ============ 无尽航程 & 深渊强度（搬运自《奇点回响》的 ETIER_* 档位） ============
@@ -301,11 +367,28 @@ function bagPickBoss() {
   }
   return BOSS_BAG.pop();
 }
+/* 主线巨像轮换（2026-10-03）：每局开局从 7 只里洗牌抽 3 只，填进 4 / 8 / 12 段。
+   巨像多了以后，主线要是还钉死「4 母岩 · 8 狱卒 · 12 之门」，玩家连跑三局看到的
+   一模一样 —— 新做的四只只有进无尽才见得到，等于白做一半。所以主线也走轮换袋。
+   ⚠️ 一轮里不会重复：i 直接取洗牌后的前 3 个，所以不会出现「第 4 段和第 8 段都是母岩」。
+   ⚠️ 7 ≥ 3 才成立。要是哪天巨像被砍到少于 3 只，`k % pool.length` 会开始重复填同一只，
+      那时得改成允许跨轮重洗。 */
+const MAIN_BOSS_SLOTS = [4, 8, 12];
+function rollMainBosses() {
+  const pool = Object.keys(BOSSES);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = irand(0, i); const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+  }
+  const out = {};
+  MAIN_BOSS_SLOTS.forEach((w, k) => { out[w] = pool[k % pool.length]; });
+  return out;
+}
 // 本段该不该出巨像。⚠️ 只在 startWave 里调用一次 —— bagPickBoss 有副作用（抽走一张牌），
 //    任何「预判式」的重复调用都会白白吃掉一轮轮换。
 function bossForWave(w) {
-  if (BOSS_WAVES[w]) return BOSS_WAVES[w];
-  if (w >= ENDLESS_FROM && (w - WAVES) % ENDLESS_BOSS_EVERY === 0) return bagPickBoss();
+  // 主线：本局开局抽好的那 3 只。G 还没建立时（图鉴 / peekBoss）退回 BOSS_WAVES。
+  if (w <= WAVES) return (G && G.mainBosses && G.mainBosses[w]) || BOSS_WAVES[w] || null;
+  if ((w - WAVES) % ENDLESS_BOSS_EVERY === 0) return bagPickBoss();
   return null;
 }
 // 段数标签（HUD 用，带单位）：主线「第 N/12 段」，无尽「第 N 段 · 深渊 K 档」。
@@ -313,6 +396,17 @@ function bossForWave(w) {
 //    「第 17 · 深渊 1 档 段」这种断句。
 function waveLabel(w) {
   return w <= WAVES ? T('hud.waveMain', w, WAVES) : T('hud.waveEndless', w, eTier(w));
+}
+// 本段目标的 HUD 文案（见 FORMS 注释）。Boss 段不走这里 —— 它已经有血条了。
+function waveObjective() {
+  const f = G.waveForm;
+  // Boss 段返回空串：它已经有血条了，再挂一个「剩余 N」只会让人以为
+  // 还得把小怪清完才算过段（实际上巨像一死就跃迁）。
+  if (f === 'boss' || G.boss) return '';
+  if (f === 'surge') return T('hud.survive', Math.max(0, Math.ceil(G.waveDur - G.waveT)));
+  if (f === 'salvage') return T('hud.salvage', Math.min(G.dustGot, G.dustNeed), G.dustNeed);
+  if (f === 'duel') return T('hud.duel', G.spawnQueue.length + G.enemies.length);
+  return T('hud.left', G.spawnQueue.length + G.enemies.length);
 }
 
 // ============ 模块卡（16） ============
@@ -803,6 +897,60 @@ function drawWebs() {
   }
 }
 
+/* ============ 火场（熔渣锻炉留下的灼烧区）============
+   和蛛网是**同一族机制**（都是「空间压力」），但落点不同：
+     蛛网 = 不痛，只是把你不想去的地方变慢 → 玩家在读地图
+     火场 = 真的掉血 → 玩家在被**切割场地**
+   所以它才有资格撑起一只巨像：锻炉飞过哪里，哪里就不能再去，可用空间一点点被吃掉。
+
+   ⚠️ 持续伤害靠 f.tick 做间隔，不是每帧扣 —— 每帧扣的话 60fps 下 7 点伤害
+      一秒就是 420 点，玩家会在 0.1 秒内蒸发（而且完全看不出是被什么打死的）。 */
+const FIRE_LIFE = 5.5, FIRE_R = 26, FIRE_DMG = 7, FIRE_TICK = 0.5, FIRE_MAX = 18;
+function addFire(x, y, r) {
+  if (G.fires.length >= FIRE_MAX) G.fires.shift();
+  G.fires.push({
+    x: clamp(x, 16, WORLD.w - 16), y: clamp(y, 16, WORLD.h - 16),
+    r: r || FIRE_R, life: FIRE_LIFE, t: rand(TAU), grow: 0, tick: 0,
+  });
+}
+function updateFires(dt) {
+  for (let i = G.fires.length - 1; i >= 0; i--) {
+    const f = G.fires[i];
+    f.t += dt; f.life -= dt;
+    f.grow = Math.min(1, f.grow + dt * 3.2);   // 铺开比蛛网快，它是「喷出来」的
+    f.tick -= dt;
+    if (f.life <= 0) { G.fires.splice(i, 1); continue; }
+    if (G.dead || G.inv > 0 || f.tick > 0 || f.grow < 0.4) continue;
+    if (Math.hypot(G.px - f.x, G.py - f.y) < f.r * f.grow) {
+      f.tick = FIRE_TICK;
+      hurtPlayer(FIRE_DMG);
+      // 站在火里持续冒橙烟 —— 不给反馈的话玩家只会觉得「血莫名其妙在掉」
+      for (let k = 0; k < 3; k++) part({ x: G.px + rand(-6, 6), y: G.py + rand(-6, 6), vx: rand(-14, 14), vy: rand(-30, -12), life: .35, max: .35, col: '#ef7d57', size: 1, drag: 2 });
+    }
+  }
+}
+function drawFires() {
+  for (const f of G.fires) {
+    if (!onScreen(f.x, f.y, f.r + 8)) continue;
+    const R = f.r * f.grow;
+    const fade = f.life < 1.5 ? f.life / 1.5 : 1;
+    const flick = 0.72 + Math.sin(f.t * 9) * 0.28;
+    ctx.globalAlpha = 0.26 * fade * flick;
+    ctx.fillStyle = '#ef7d57'; disc(f.x, f.y, R);
+    ctx.globalAlpha = 0.34 * fade * flick;
+    ctx.fillStyle = '#ffcd75'; disc(f.x, f.y, R * 0.62);
+    ctx.globalAlpha = 0.85 * fade;
+    ctx.strokeStyle = '#ef7d57'; ringPx(f.x, f.y, R, 1);
+    // 三层跳动的火舌边：纯装饰，但让它和「静态的蛛网」一眼分得开
+    for (let k = 0; k < 6; k++) {
+      const a = f.t * 0.9 + k / 6 * TAU;
+      const rr = R * (0.82 + Math.sin(f.t * 7 + k) * 0.16);
+      pline(f.x + Math.cos(a) * R * 0.5, f.y + Math.sin(a) * R * 0.5, f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
 // 死亡尾流：一条会自己淡掉的灼热带。
 // 只用 fillRect / disc 画方块（不做圆形抗锯齿），观感和其余像素素材一致；
 // 颜色随「还剩多少寿命」从亮白 → 橙 → 暗红，玩家能直接读出这条带子快没了。
@@ -955,6 +1103,15 @@ function newGame(hullId) {
     mods: {}, // id -> level
     syn: {},  // 协同 id -> true
     spawnQueue: [], spawnT: 0, waveKills: 0, waveNeed: 0,
+    // ---- 关卡形态（2026-10-03）：本段是「清剿 / 潮涌 / 回收 / 死斗」里的哪一种 ----
+    // ⚠️ 四个字段必须在这里建好：updateWave 每帧读 G.waveForm 决定怎么判完成，
+    //    靠 `G.xxx` 自动存在是这个项目踩过的坑，漏了就是 undefined = 永不完成 = 整局卡死。
+    waveForm: 'purge',
+    waveDur: 0,        // 潮涌：要存活的秒数
+    dustNeed: 0, dustGot: 0, salvageT: 0,   // 回收：要捡够的星尘 / 补撒计时
+    // 本局主线 4/8/12 段各出哪只巨像（开局洗牌抽 3 只，见 rollMainBosses）
+    mainBosses: rollMainBosses(),
+    fires: [],         // 熔渣锻炉留下的火场（updateFires 消费）
     dead: false, won: false,
     // 开火开关的当前值（触屏右下角那颗大按钮改的就是它）。
     // ⚠️ 必须在**这里**建字段：updatePlayer 每帧读 G.autoFire，靠 `G.xxx` 自动存在
@@ -1652,9 +1809,12 @@ function spawnEnemy(type, x, y, opt = {}) {
 function spawnBoss(id) {
   const b = BOSSES[id]; if (!b) return;
   markSeen(id);          // 图鉴：巨像名录
-  // 巨像血量：主线的线性成长同样在 WAVES 封顶，之后交给深渊档位的指数曲线。
+  // 巨像血量 = 基准血 × **槽位倍率** × 深渊档位倍率。
+  // ⚠️ 槽位倍率替代了原来那个「(1 + (wave-4)*0.05)」的线性项 —— 巨像现在会轮换进
+  //    4/8/12 三个槽位，血厚必须跟着**槽位**走，而不是跟着「这只巨像原本排第几」。
+  //    （基准 900 × {4:1, 8:2.2, 12:4} 正好复现老数值，见 BOSS_SLOT_MUL 的注释。）
   // 无尽里巨像会重复出场（轮换袋），所以它必须真的跟着档位变硬，否则第 3 轮就是纸糊的。
-  const hp = b.hp * (1 + (Math.min(G.wave, WAVES) - 4) * 0.05) * eTierHp(G.wave);
+  const hp = b.hp * bossSlotMul(G.wave) * eTierHp(G.wave);
   const e = {
     type: 'boss', boss: id, name: b.name, en: b.en, spr: b.spr, color: b.color,
     // 巨像从**视口正上方**入场、悬停在视口上半区（相机锁在玩家身上，所以它永远在玩家眼前）。
@@ -1701,6 +1861,38 @@ function bossFire(e, dx, dy) {
     const base = Math.atan2(dy, dx);
     G.fx.push({ type: 'laser', x: e.x, y: e.y, ang: base, t: 0, life: 1.4, len: 460, w: 7, color: e.color });
     Sound.sfx.laser(); addShake(4);
+  // ---- 第二批巨像的四个新机制（2026-10-03）----
+  } else if (pat === 'summon') {
+    // 蜂巢：产兵。⚠️ 必须有数量上限 —— 它每 1.9 秒就来一次，不封顶的话
+    //   玩家一旦决定先躲不先打，场上会在十几秒内堆到上百只，直接卡死。
+    const n = e.enraged ? 4 : 2;
+    for (let i = 0; i < n && G.enemies.length < 34; i++) {
+      spawnEnemy('reaver', e.x + rand(-26, 26), e.y + rand(-18, 18));
+    }
+    ring(e.x, e.y, 44, '#a7f070', 0.45, 2);
+    Sound.sfx.dust();
+  } else if (pat === 'pull') {
+    // 磁暴：一次强引力脉冲（持续的那部分在 updateBoss 里，这里是「突然一顿拽」）。
+    // ⚠️ 方向是**从玩家指向核心**（dx,dy 已经是 player - boss，所以取负）。
+    const PULSE = 210;
+    G.vx -= dx * PULSE; G.vy -= dy * PULSE;
+    ring(e.x, e.y, 150, '#41a6f6', 0.5, 2);
+    Sound.sfx.zap(); addShake(3);
+  } else if (pat === 'burn') {
+    // 锻炉：在自己脚下 + 身后喷火（身后那一片才是「别往它去过的地方飞」的由来）
+    addFire(e.x, e.y, 30);
+    addFire(e.x - Math.cos(e.ang) * 22, e.y - Math.sin(e.ang) * 22, 26);
+    ring(e.x, e.y, 34, '#ef7d57', 0.35, 2);
+    Sound.sfx.dust();
+  } else if (pat === 'beamFan') {
+    // 棱镜：分光激光扇。⚠️ 6 道**、间隔 0.3rad** 是刻意的 ——
+    //   在 150px 处两道之间约 45px，玩家船（约 30px 宽）钻得过去但很挤，
+    //   这就是「贴着缝站」的手感来源。间距再小就变成必挨一发，就不是弹幕是处刑了。
+    const base = Math.atan2(dy, dx);
+    for (let i = 0; i < 6; i++) {
+      G.fx.push({ type: 'laser', x: e.x, y: e.y, ang: base + (i - 2.5) * 0.3, t: 0, life: 1.4, len: 460, w: 6, color: e.color });
+    }
+    Sound.sfx.laser(); addShake(4);
   }
 }
 
@@ -1726,6 +1918,14 @@ function updateBoss(e, dt, dx, dy, d) {
   e.x = clamp(e.x + e.vx * dt, e.r, WORLD.w - e.r);
   e.y = clamp(e.y + e.vy * dt, e.r, WORLD.h - e.r);
   e.ang = Math.atan2(dy, dx);
+  // 磁暴核心的**持续**引力井：只在 fire tick 上拽一下的话，玩家会把它当成
+  // 「偶尔被推一把」，而不是「这整片场地都在往里塌」。持续拉力才是它的身份。
+  // ⚠️ 按距离衰减：贴脸时反而松，否则一旦被拽到核心就再也出不来（必死循环）。
+  if (e.pats.indexOf('pull') >= 0) {
+    const pull = (e.enraged ? 132 : 96) * clamp(1 - d / 520, 0.15, 1);
+    G.vx -= (dx / d) * pull * dt;
+    G.vy -= (dy / d) * pull * dt;
+  }
   e.cd -= dt * (e.enraged ? 1.5 : 1);
   if (e.cd <= 0) {
     bossFire(e, dx, dy);
@@ -2686,6 +2886,9 @@ function updatePickups(dt) {
       G.pickups.splice(i, 1);
       if (p.type === 'dust') {
         addXp(p.v); Sound.sfx.dust();
+        // 回收形态的进度（见 FORMS 注释）：捡到几份才算数，按「份」不按经验值 ——
+        //   星尘有大小两种（v=1 / v=3），按 v 算的话一份大的顶三份，需求量就没意义了。
+        if (G.waveForm === 'salvage') G.dustGot++;
         // 纳米修复质变 / 回收循环协同：拾取顺带回血
         const heal = S.dustHeal + (synOn('recycle') ? 1.2 : 0);
         if (heal > 0 && S.hp < S.maxHp) S.hp = Math.min(S.maxHp, S.hp + heal);
@@ -2749,6 +2952,10 @@ function startWave(w) {
   const bossId = bossForWave(w);
   if (bossId) {
     G.waveState = 'boss';
+    // ⚠️ 形态也要跟着切成 'boss'：否则它会**留着上一段的值**（比如第 3 段是回收，
+    //    第 4 段打巨像时 HUD 还显示「星尘 3/17」）—— 巨像段根本没有星尘目标，
+    //    玩家会以为要边打 Boss 边捡东西。
+    G.waveForm = 'boss';
     // ⚠️ 不要用 setTimeout 排 boss 入场：那是**真实时间**，而 waveT 是**游戏时间**。
     // fast>1 时 waveT 先跑到 2 秒 → updateWave 判「场上没 boss 也没敌人」→ 直接 finishWave，
     // 巨像整段被跳过（实测 fast=4 时第 4/8 段只用 3.7s 就过了）。
@@ -2768,18 +2975,60 @@ function startWave(w) {
     G.squadNameEn = sq.nameEn;
     // 无尽里每档额外加量（封顶 +10）—— 这是「越打越挤」的主要来源，比单纯加血更有压迫感
     const base = 7 + Math.min(w, WAVES) * 2.2;
-    const n = Math.round(base * sq.cnt) + eTierExtra(w);
-    G.waveNeed = n;
-    for (let i = 0; i < n; i++) {
+    const extra = eTierExtra(w);
+    const form = formForWave(w);
+    G.waveForm = form;
+
+    // 各形态共用的「挑一只敌型」：星区越深混入越硬的；无尽固定按最深星区配
+    const rollType = () => {
       let t = pick(sq.mix);
-      // 星区越深，混入更硬的敌型；无尽里强度固定按最深的星区来配
       if (G.zone === 2 || tier > 0) {
         if (Math.random() < 0.26) t = pick(['bastion', 'stalker', 'bulwark', 'shepherd', 'weaver']);
       } else if (G.zone === 1 && Math.random() < 0.2) t = pick(['shifter', 'mine', 'leech', 'weaver', 'nova']);
-      G.spawnQueue.push(t);
+      return t;
+    };
+
+    if (form === 'purge') {
+      // 清剿：原来的默认形态，杀光队列
+      const n = Math.round(base * sq.cnt) + extra;
+      G.waveNeed = n;
+      for (let i = 0; i < n; i++) G.spawnQueue.push(rollType());
+    } else if (form === 'surge') {
+      // 潮涌：不要求杀光，只要求**活到时间到**。
+      // ⚠️ 队列故意给得很长（远超能刷完的量）—— 玩家要是抱着「杀完就过段」的心态打，
+      //    会发现永远杀不完，这正是这段要教的事。真正的终点是 G.waveDur。
+      // ⚠️ 时长按「和一段清剿差不多长」来定（清剿 w=6 约 20 只、含击杀大约 15~25 秒）。
+      //    一开始给到 30+w*1.1（w=11 时 42 秒），实测读起来就是「这一段怎么还没完」——
+      //    存活段的压力来自**密度不停**，不是来自让你熬满一分钟。
+      G.waveDur = 22 + Math.min(w, WAVES) * 0.9;
+      G.waveNeed = 0;
+      for (let i = 0; i < 260; i++) G.spawnQueue.push(rollType());
+    } else if (form === 'salvage') {
+      // 回收：先在地上撒够星尘（比需求多 6 份，留出「漏掉几份」的余量），再放敌人骚扰。
+      // ⚠️ 星尘必须**预撒**而不能指望击杀掉落：击杀掉几份全看运气，
+      //    脸黑的时候场上根本没有够数的星尘，这一段就永远完成不了。
+      G.dustNeed = 12 + Math.round(Math.min(w, WAVES) * 1.5);
+      G.dustGot = 0;
+      G.salvageT = 3;
+      G.waveNeed = 0;
+      for (let i = 0; i < G.dustNeed + 6; i++) {
+        dropPickup('dust', G.px + rand(-190, 190), G.py + rand(-130, 130), 1);
+      }
+      for (let i = 0; i < 200; i++) G.spawnQueue.push(rollType());
+    } else { // duel
+      // 死斗：少量精锐重甲。精锐自带血量倍率，所以数量必须少 ——
+      //   一段里塞 20 只精锐重甲会把帧率和心态一起打穿。
+      const HEAVY = ['bastion', 'bulwark', 'shepherd', 'stalker', 'weaver'];
+      const n = 3 + Math.floor(Math.min(w, WAVES) / 6) + (tier > 0 ? 1 : 0);
+      G.waveNeed = n;
+      for (let i = 0; i < n; i++) G.spawnQueue.push(pick(HEAVY));
+      // ⚠️ 精锐标记**不在**这里给：spawnQueue 只存敌型字符串，
+      //    updateWave 出怪时按 `G.waveForm === 'duel'` 直接判定（少一份要同步的状态）。
     }
+    // banner 副标题：形态 + 编队（形态是这一段真正要玩家做的事，得排在编队前面）
+    const formName = L(FORMS[form], 'name');
     banner(T('bn.wave', w, name1(zone)),
-      tier > 0 ? T('bn.squadTier', tier, L(sq, 'name')) : T('bn.squad', L(sq, 'name')), '#73eff7', 2.2);
+      tier > 0 ? T('bn.formTier', formName, tier, L(sq, 'name')) : T('bn.form', formName, L(sq, 'name')), '#73eff7', 2.2);
   }
   // 每段开场落一次续档快照（这时状态是干净的 —— 理由见 snapshotRun 的注释）
   snapshotRun();
@@ -2791,18 +3040,48 @@ function updateWave(dt) {
   const alive = G.enemies.length;
   G.waveT += dt; // 本段已进行时间（rosters：跃迁过场也用它计时）
   if (G.waveState === 'spawn') {
+    const form = G.waveForm;
     G.spawnT -= dt;
-    if (G.spawnQueue.length && G.spawnT <= 0 && alive < 58) {
-      G.spawnT = Math.max(0.12, 0.55 - w * 0.02);
+    // ⚠️ 场上上限**逐形态不同**：清剿可以堆到 58（它靠「杀光」推进，堆着是设计的一部分），
+    //    潮涌 / 回收是按时长推进的，堆到 58 只会把帧率和可读性一起打穿；死斗本来就该是
+    //    「一小撮硬目标」，超过 12 只就不是死斗了。
+    const aliveCap = form === 'purge' ? 58 : form === 'duel' ? 12 : 26;
+    if (G.spawnQueue.length && G.spawnT <= 0 && alive < aliveCap) {
+      G.spawnT = Math.max(0.12, 0.55 - w * 0.02) * (form === 'surge' ? 0.75 : 1);
       const t = G.spawnQueue.shift();
-      const elite = Math.random() < Math.min(0.18, 0.03 + w * 0.012);
+      // 死斗：整段都是精锐（「少量高血」就是它的定义）；其余形态维持原来的随机精锐率
+      const elite = form === 'duel' ? true : Math.random() < Math.min(0.18, 0.03 + w * 0.012);
       spawnEnemy(t, undefined, undefined, { elite });
     }
-    if (!G.spawnQueue.length && alive === 0) finishWave();
-    // 兜底：真有敌人卡在打不到的位置（浮游雷踩过一次），别让整局挂死
-    else if (!G.spawnQueue.length && alive <= 3 && G.waveT > 180) {
-      for (const e of G.enemies.slice()) if (e.hp > 0) killEnemy(e);
+
+    if (form === 'surge') {
+      // 潮涌：活到时间到就过段 —— **剩下的敌人不管**（跃迁会把它们带走）。
+      if (G.waveT >= G.waveDur) finishWave();
+    } else if (form === 'salvage') {
+      if (G.dustGot >= G.dustNeed) finishWave();
+      // 星尘会过期（life 22s）。场上不够数就补撒，否则玩家永远捡不满 → 整局卡死。
+      // ⚠️ 这个补撒是**安全阀**不是玩法：正常玩的话开场撒的那批就够。
+      G.salvageT -= dt;
+      if (G.salvageT <= 0) {
+        G.salvageT = 3;
+        let onField = 0;
+        for (const p of G.pickups) if (p.type === 'dust') onField++;
+        const short = (G.dustNeed - G.dustGot) - onField;
+        for (let i = 0; i < Math.min(6, short); i++) {
+          dropPickup('dust', G.px + rand(-190, 190), G.py + rand(-130, 130), 1);
+        }
+      }
+    } else {
+      // 清剿 / 死斗：杀光（死斗的队列本来就很短）
+      if (!G.spawnQueue.length && alive === 0) finishWave();
+      // 兜底：真有敌人卡在打不到的位置（浮游雷踩过一次），别让整局挂死
+      else if (!G.spawnQueue.length && alive <= 3 && G.waveT > 180) {
+        for (const e of G.enemies.slice()) if (e.hp > 0) killEnemy(e);
+      }
     }
+    // 潮涌 / 回收的总兜底：万一计时或计数出岔子，200 秒后一律放行。
+    // 宁可让玩家「莫名过段」，也不能把整局永久挂死。
+    if (form !== 'purge' && form !== 'duel' && G.waveT > 200) finishWave();
   } else if (G.waveState === 'boss') {
     // 巨像入场也走游戏时间，跟 fast 倍速保持一致
     if (G.bossPending) {
@@ -2884,6 +3163,7 @@ function step(dt) {
   updateFx(dt);
   updateLances(dt);
   updateWebs(dt);
+  updateFires(dt);
   updateWave(dt);
 }
 
@@ -3473,9 +3753,10 @@ function drawHUD() {
   const dw = 60, dx2 = W / 2 - dw - 74;
   bar(dx2, ey, dw, 6, G.dashCd > 0 ? 1 - G.dashCd / 1.25 : 1, G.dashCd > 0 ? '#566c86' : '#73eff7');
   text(T('hud.dash'), dx2 + dw / 2, ey - 11, '#7a86a8', 'c');
-  // 剩余敌数
-  const remain = G.spawnQueue.length + G.enemies.length;
-  text(T('hud.left', remain), W / 2 + 74 + 14, ey + 1, '#c0cbdc', 'l');
+  // 本段目标：逐形态不同（见 FORMS）。「剩余 N 只」只对清剿/死斗成立 ——
+  //   潮涌要看倒计时、回收要看星尘进度，沿用「剩余」会让玩家以为杀完就过段。
+  text(waveObjective(), W / 2 + 74 + 14, ey + 1,
+       G.waveForm === 'purge' ? '#c0cbdc' : '#ffcd75', 'l');
 
   // Boss 血条
   if (G.boss) {
@@ -3671,6 +3952,8 @@ function render() {
   }
   drawBackground();
   drawWebs();
+  // 火场画在蛛网**之上**：锻炉和织网者同场时，玩家得先看见「哪里会烧到我」
+  drawFires();
   drawWakes();
   drawMines();
   drawPickups();
@@ -4860,8 +5143,29 @@ function boot() {
     hpScale: () => hpScale(),
     waveLabel: w => waveLabel(w === undefined ? G.wave : w),
     // 只读地算「第 w 段该出哪只巨像」，不消耗轮换袋（照抄 bossForWave 但去掉 bagPick 副作用）
-    peekBoss: w => BOSS_WAVES[w] || (w >= ENDLESS_FROM && (w - WAVES) % ENDLESS_BOSS_EVERY === 0 ? '(袋)' : null),
+    // ⚠️ peekBoss 现在要走 bossForWave（主线是本局抽的，不再是钉死的 BOSS_WAVES）；
+    //    BOSS_WAVES 只是 G 还没建立时的兜底。无尽的「袋」仍不能真抽（有副作用），只报 '(袋)'。
+    peekBoss: w => bossForWave(w) || (w >= ENDLESS_FROM && (w - WAVES) % ENDLESS_BOSS_EVERY === 0 ? '(袋)' : null),
     bossBagLeft: () => BOSS_BAG.length,
+    // ---- 巨像轮换 / 关卡形态（2026-10-03）----
+    bossIds: () => Object.keys(BOSSES),
+    bossSlotMul,
+    rollMainBosses,
+    mainBosses: () => (G ? G.mainBosses : null),
+    // 关卡形态：查某段的形态、以及给探针直接铺一段（不靠打完前面的段）
+    formForWave,
+    forms: () => Object.keys(FORMS),
+    waveForm: () => (G ? G.waveForm : null),
+    waveState: () => (G ? G.waveState : null),
+    // ⚠️ HUD 目标文案也得开个口子：`waveObjective` 是函数声明所以 window 上有，
+    //    但**它读的是 G.waveForm**，探针要先铺段再读才读得对，直接调最稳。
+    objective: () => waveObjective(),
+    // ⚠️ BOSSES 是 `const`，**不会**挂到 window（和 aimMode 那个坑同一条），
+    //    探针想看整张表（pats / traitEn / spr）只能走这里。
+    bossTable: () => BOSSES,
+    // 火场（熔渣锻炉）：探针要验「站进去会掉血 / 会过期」，直接铺一块最稳
+    addFire,
+    fires: () => (G ? G.fires.length : 0),
     // 真·抽一次巨像（会消耗轮换袋）—— 用来验证「一轮内三只不重复」
     drawBoss: () => bagPickBoss(),
     // 探针专用：把轮换袋倒空重来。gotoWave 到巨像段也会消耗袋子，
