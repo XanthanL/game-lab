@@ -14,7 +14,34 @@
 <div id="wrap">
   <canvas id="game" width="480" height="270"></canvas>
 
-  <div id="loading" class="ov"><div class="blink">LOADING...</div></div>
+  <div id="loading" class="ov">
+    <div class="ld">
+      <div class="ld-stars lds1"></div>
+      <div class="ld-stars lds2"></div>
+      <div class="ld-warp"></div>
+      <div class="ld-core"></div>
+      <div class="ld-ship">
+        <div class="ld-flame"></div>
+        <svg class="ld-hull" viewBox="0 0 34 22" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="6,11 2,4 12,9" fill="#29366f"/>
+          <polygon points="6,11 2,18 12,13" fill="#29366f"/>
+          <rect x="6" y="8" width="20" height="6" fill="#1a1c2c"/>
+          <rect x="6" y="7" width="20" height="1" fill="#3b5dc9"/>
+          <rect x="6" y="14" width="20" height="1" fill="#3b5dc9"/>
+          <polygon points="26,8 33,11 26,14" fill="#ffcd75"/>
+          <rect x="14" y="10" width="3" height="2" fill="#73eff7"/>
+          <rect x="20" y="10" width="2" height="2" fill="#73eff7"/>
+        </svg>
+      </div>
+      <div class="ld-title">
+        <div class="ld-l1">奇点旅途</div>
+        <div class="ld-l2">SINGULARITY VOYAGE</div>
+      </div>
+      <div class="ld-bar"><i></i></div>
+      <div class="ld-status">校准导航阵列…</div>
+      <div class="ld-rotate">⟳ 已切换横屏模式 · 准备跃迁</div>
+    </div>
+  </div>
 
   <!-- 中英切换。
        ⚠️ 它**不能**放进 #title 里：.ov 靠「首个子元素 margin-top:auto + 末个子元素
@@ -162,6 +189,38 @@
     <button class="tbtn tb-dash" data-act="dash" data-i18n="touch.dash">冲</button>
   </div>
 </div>
+
+<!-- 手机端提前检测画幅：一进来就横屏，避免「先竖屏加载、进游戏才转横屏」的突兀跳变。
+     必须在 game.js（阻塞脚本）之前执行 —— 浏览器要等它跑完才首帧绘制，所以这一条
+     早于首帧，竖屏的加载画面根本不会出现。逻辑与 fit() 的竖屏分支完全一致
+     （安全区按 0 算，由 game.js 的 fit() 用真实安全区再补一次，无可见跳变）。 -->
+<script>
+(function () {
+  try {
+    var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    var portrait = window.innerWidth < window.innerHeight;
+    if (!coarse || !portrait) return;
+    var wrap = document.getElementById('wrap');
+    if (!wrap) return;
+    var W = 480, H = 270;            // 必须与 #game 画布尺寸一致
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var scale = Math.min(vw / H, vh / W);
+    var offX = vw / 2 + H * scale / 2;
+    var offY = vh / 2 - W * scale / 2;
+    wrap.style.transform =
+      'translate(' + offX + 'px,' + offY + 'px) scale(' + scale + ') rotate(90deg)';
+    document.documentElement.classList.add('coarse'); // 让加载页显示「已进入横屏模式」提示
+  } catch (e) {}
+})();
+// 加载页状态文案轮播（独立于 game.js，慢网也不会卡住动画）
+(function () {
+  var st = document.querySelector('#loading .ld-status');
+  if (!st) return;
+  var msgs = ['校准导航阵列…', '装载弹道数据库…', '点亮星图航段…', '注入反应堆燃料…', '跃迁引擎预热…'];
+  var i = 0;
+  setInterval(function () { i = (i + 1) % msgs.length; st.textContent = msgs[i]; }, 520);
+})();
+</script>
 
 <script src="src/i18n.js"></script>
 <script src="src/audio.js"></script>
