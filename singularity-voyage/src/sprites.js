@@ -601,8 +601,21 @@ function buildSprites() {
   // 船体：2x 放大后烘焙 24 向
   for (const k in HULL_SRC) {
     const base = scaled(spriteFrom(HULL_SRC[k][0]), 2);
-    SHIPSET[k] = bakeRotation(base, 24);
-    SHIPSET[k].white = bakeRotation(tinted(base, '#ffffff'), 24);
+    const set = bakeRotation(base, 24);
+    set.white = bakeRotation(tinted(base, '#ffffff'), 24);
+    // 量出「机首 / 机尾」沿 +x 方向伸出船体中心的像素距离 —— 弹丸出膛点、尾焰锚点都用它，
+    // 这样子弹才真的是「从模型炮口打出去」、尾焰才真的是「从船尾喷出来」，而不是以船心为锚。
+    // 全船 22×16 本地格、原点 (11,8)，scaled(2) 后画布中心正对 grid 中心，
+    // 所以只要扫 base 的实像素 x 包络、以 base.width/2 为原点即可。
+    const bd = base.getContext('2d').getImageData(0, 0, base.width, base.height).data;
+    let minC = base.width, maxC = -1;
+    for (let j = 0; j < base.height; j++)
+      for (let i = 0; i < base.width; i++)
+        if (bd[(j * base.width + i) * 4 + 3] > 0) { if (i < minC) minC = i; if (i > maxC) maxC = i; }
+    const c0 = base.width / 2;
+    set.nose = Math.max(0, (maxC + 0.5) - c0);   // 机首伸出量（px）
+    set.tail = Math.max(0, c0 - (minC - 0.5));    // 机尾伸出量（px）
+    SHIPSET[k] = set;
   }
 }
 // ============ 敌弹 & 辉光（缓存纪律：key 只放有界集合，绝不放逐帧变化的 alpha） ============

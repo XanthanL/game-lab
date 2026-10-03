@@ -1069,10 +1069,15 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
   // 口径校准：半径与射程都从这里读，所以扇形弹 / 尾炮 / 弹片会一起变粗变远。
   // 重弹穿甲协同再给一层半径 —— 叠在口径之上，而不是替换它。
   const extraR = synOn('heavyBore') ? 1.5 : 0;
+  const life0 = o.life || (homing ? 1.45 : 1.1) * G.S.rangeMul;
   G.bullets.push({
     x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, dmg,
     r: o.r || (G.S.bulletR + extraR),
-    life: o.life || (homing ? 1.45 : 1.1) * G.S.rangeMul,
+    life: life0, life0,
+    // 初速（decel 分支按剩余寿命把它往 BDECEL_S 收，营造「出膛快、临终慢」的手感）
+    sp0: spd,
+    // 普通子弹（主炮 / 散射 / 尾炮）的基础特性：临近消失时减速。制导 / 弹片 / 无人机不减速。
+    decel: o.decel ?? (kind === 'main'),
     // 齐射穿甲：每根枪管额外 +1 穿透，所以要在发射时算（枪管数会变）
     pierce: o.pierce ?? (G.S.pierce + (synOn('volley') ? G.S.barrels : 0)
                           + (synOn('heavyBore') ? 1 : 0)),
@@ -1112,6 +1117,15 @@ function eShot(x, y, ang, spd, r, color, o = {}) {
 }
 const HOSTILE = { red: '#ff3355', pink: '#ff66cc', purple: '#c070f0', amber: '#ffcd75' };
 
+/* 当前船体「机首 / 机尾」伸出船体中心的像素距离（sprites.js 在 buildSprites 里量好塞进 SHIPSET）。
+   子弹出膛点 = 机首，尾焰锚点 = 机尾 —— 这样弹丸是从模型炮口打出去、尾焰从船尾喷出来的。 */
+function hullNose() { const s = SHIPSET[G.S.hull]; return s ? s.nose : 13; }
+function hullTail() { const s = SHIPSET[G.S.hull]; return s ? s.tail : 11; }
+
+/* 普通子弹的基础手感：开火初速快，临近消失时减速（见 updateBullets 里的 decel 分支）。
+   BDECEL_T = 进入减速的剩余寿命比例阈值（最后 40% 才开始掉速），BDECEL_S = 临终速度下限（初始速度的 45%）。 */
+const BDECEL_T = 0.4, BDECEL_S = 0.45;
+
 /* 轨道长枪（搬运自 echo 的 lance）
    冷却就绪时，**这一发主动射击**被换成贯穿光矛：不做成「另一门炮自动开火」，
    而是把玩家自己扣的那一次扳机放大 —— 这样它才有「攒一发」的节奏感。
@@ -1126,7 +1140,8 @@ function fireLance(ang) {
   //   的 O(n) 判定白白拉长。）
   const len = W + 80;
   const dmg = (44 + S.lance * 26) * S.dmg * (synOn('lanceCaliber') ? 1.4 : 1);
-  const ox = G.px + Math.cos(ang) * 10, oy = G.py + Math.sin(ang) * 10;
+  const mz = hullNose();
+  const ox = G.px + Math.cos(ang) * mz, oy = G.py + Math.sin(ang) * mz;
   const ca = Math.cos(ang), sa = Math.sin(ang);
   let hitN = 0;
   for (const e of G.enemies) {
@@ -1180,12 +1195,17 @@ function fireMain(ang, dmgMul = 1) {
   // 过热膛线：heatMul 直接乘进 base —— 尾炮 / 扇形弹 / 跳弹全从 base 派生，自动继承。
   // 非熔炉船体 heatMul 恒 1，这一项等于没乘。
   const base = 10 * S.dmg * dmgMul * G.heatMul;
-  const muzzle = 11;
+  // 出膛点 = 机首（炮口），不是船心。sprites.js 在 buildSprites 里量好的 nose/tail。
+  // 多管在主炮口沿「舷向」略微错开，看起来像一排炮管齐射，而不是全挤在一个点。
+  const mz = hullNose(), tl = hullTail();
   const spd = 320 * S.bspd;      // 口径校准：弹速是全局弹丸参数，尾炮 / 扇形弹一起吃
   for (let i = 0; i < n; i++) {
     const spread = n === 1 ? 0 : (i - (n - 1) / 2) * 0.13;
     const a = ang + spread;
-    pBullet(G.px + Math.cos(a) * muzzle, G.py + Math.sin(a) * muzzle, a, spd, base);
+    const perp = (i - (n - 1) / 2) * 3;   // 舷向错开
+    const ox = G.px + Math.cos(a) * mz - Math.sin(a) * perp;
+    const oy = G.py + Math.sin(a) * mz + Math.cos(a) * perp;
+    pBullet(ox, oy, a, spd, base, { decel: true });
   }
   // 散射喷嘴：用「弹丸数量」换「单发威力」，把「命中」变成「覆盖」。
   // ⚠️ 扇形弹走同一套 pBullet，所以穿甲 / 跳弹 / 制导 / 裂变会**全部自动继承**。
@@ -1197,12 +1217,13 @@ function fireMain(ang, dmgMul = 1) {
     for (let i = 0; i < sn; i++) {
       const t = sn === 1 ? 0 : (i / (sn - 1) - 0.5) * 2;   // -1 → +1
       const a = ang + t * arc;
-      pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.92,
-        base * S.sprayMul, { kind: 'spray' });
+      pBullet(G.px + Math.cos(a) * mz * 0.92, G.py + Math.sin(a) * mz * 0.92, a, spd * 0.92,
+        base * S.sprayMul, { kind: 'spray', decel: true });
     }
   }
   // 尾炮：每次齐射同时向船尾开火。伤害只有正面的 55%，所以它不是「DPS 翻倍」，
   // 而是把「背后永远安全」这条默认规则取消掉 —— 被追着跑的时候才有意义。
+  // 出膛点 = 机尾（与正面炮口对称），所以尾焰和尾炮都真的从船尾出来。
   if (S.backshot > 0) {
     const bn = S.backshot + (synOn('rearVolley') ? 1 : 0);
     const back = ang + Math.PI;
@@ -1211,8 +1232,11 @@ function fireMain(ang, dmgMul = 1) {
     for (let i = 0; i < bn; i++) {
       const spread = bn === 1 ? 0 : (i - (bn - 1) / 2) * 0.17;
       const a = back + spread;
-      pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.94, base * bMul,
-        { kind: 'rear', pierce: bpierce });
+      const perp = (i - (bn - 1) / 2) * 3;
+      const ox = G.px + Math.cos(a) * tl - Math.sin(a) * perp;
+      const oy = G.py + Math.sin(a) * tl + Math.cos(a) * perp;
+      pBullet(ox, oy, a, spd * 0.94, base * bMul,
+        { kind: 'rear', pierce: bpierce, decel: true });
     }
   }
   Sound.sfx.shoot();
@@ -2447,6 +2471,16 @@ function updateBullets(dt) {
   for (let i = G.bullets.length - 1; i >= 0; i--) {
     const b = G.bullets[i];
     b.life -= dt;
+    // --- 普通子弹基础手感：出膛快、临终慢 ---
+    // 只在 decel 弹上生效（主炮 / 散射 / 尾炮）；制导 / 弹片 / 无人机走各自逻辑不动。
+    // 前 BDECEL_T 的寿命保持初速，之后线性收到 BDECEL_S（临终只剩 45% 初速），
+    // 视觉上就是「飞出去猛，快没劲儿了慢慢飘」，不影响判定半径 / 伤害。
+    if (b.decel) {
+      const lf = b.life0 > 0 ? b.life / b.life0 : 0;   // 剩余寿命比例：1 → 0
+      const f = lf >= BDECEL_T ? 1 : BDECEL_S + (1 - BDECEL_S) * (lf / BDECEL_T);
+      const sp = b.sp0 * f;
+      b.vx = Math.cos(b.ang) * sp; b.vy = Math.sin(b.ang) * sp;
+    }
     // --- 制导：每隔 0.12 秒才重新找一次目标 ---
     // ⚠️ 每帧都 nearest(homeR 满级 204) 的话是 (204/24)²≈72 个格子 × 场上每发弹，
     //    装上制导就等于给整个弹幕系统加了一层固定开销。按弹缓存目标后开销降到 1/7。
@@ -3001,6 +3035,8 @@ function drawShipView() {
 
 function drawPlayer() {
   const S = G.S;
+  // 机首 / 机尾伸出量（出膛点 / 尾焰锚点用）
+  const mz = hullNose(), tl = hullTail();
   // 冲刺残影
   if (G.dashT > 0) {
     for (let i = 1; i <= 3; i++) {
@@ -3018,9 +3054,9 @@ function drawPlayer() {
   if (G.furyT > 0) drawGlow(ctx, '#ef7d57', 19, 0.22 + Math.sin(G.t * 14) * 0.08, G.px, G.py);
   drawShipKit(ctx, S.hull, G.px, G.py, G.ang, G.mods, G.hurtFlash > 0, 1);
   ctx.globalAlpha = 1;
-  // 引擎焰
+  // 引擎焰：锚在**机尾**而不是船心 —— 火焰是从船尾喷口往后喷出来的。
   if (G.thrust) {
-    const bx = G.px - Math.cos(G.ang) * 9, by = G.py - Math.sin(G.ang) * 9;
+    const bx = G.px - Math.cos(G.ang) * tl, by = G.py - Math.sin(G.ang) * tl;
     const len = 3 + ((G.t * 30) | 0) % 3;
     ctx.fillStyle = '#ffcd75';
     for (let i = 0; i < len; i++) {
@@ -3028,9 +3064,9 @@ function drawPlayer() {
       ctx.fillRect(Math.round(bx - Math.cos(G.ang) * d) - 1, Math.round(by - Math.sin(G.ang) * d) - 1, 2, 2);
     }
   }
-  // 枪口闪光（自动装填质变后喷金焰）
+  // 枪口闪光（自动装填质变后喷金焰）：锚在**机首炮口**而不是船心。
   if (G.muzzle > 0) {
-    const mx = G.px + Math.cos(G.ang) * 12, my = G.py + Math.sin(G.ang) * 12;
+    const mx = G.px + Math.cos(G.ang) * mz, my = G.py + Math.sin(G.ang) * mz;
     const g = S.goldMuzzle;
     ctx.fillStyle = '#f4f4f4';
     ctx.fillRect(Math.round(mx) - 2, Math.round(my) - 2, 4, 4);
