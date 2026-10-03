@@ -42,6 +42,10 @@ const KIT = QS.get('kit') || '';
 const fmtTime = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 let state = 'loading', G = null, scale = 1, offX = 0, offY = 0, rot = 0;
+// 主题化加载动画最短展示时长（ms）。必须和 style.css 里 .ld-bar i 的 ldfill 时长一致，
+// 否则进度条还没满就切到标题页，看着像「卡了一下」。本地资源是同步加载、boot 一瞬间
+// 跑完，不延时动画根本看不到。
+const LOADING_MIN = 2200;
 let STARSETS = null, ROCKS = null;
 let touchMode = false, hangarSel = 0;
 // 触屏开火开关（右下角那颗大按钮）。作者口径：**默认关** —— 想开火自己点一下。
@@ -1070,6 +1074,12 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
   // 重弹穿甲协同再给一层半径 —— 叠在口径之上，而不是替换它。
   const extraR = synOn('heavyBore') ? 1.5 : 0;
   const life0 = o.life || (homing ? 1.45 : 1.1) * G.S.rangeMul;
+  // 外观族标记先取出来（纯视觉，判定不看它）。⚠️ 必须在这里声明成局部常量：
+  //   下面的 decel 默认值要拿它和 'main' 比，而 `o.decel ?? …` 在**调用方没传 decel 时**
+  //   一定会去求值那一侧 —— 之前直接写 `kind === 'main'` 而函数里没有 kind，
+  //   于是无人机弹（2239）和裂变弹片（2593）这两条不传 decel 的路径一开火就抛
+  //   ReferenceError（`kind is not defined`），整帧更新被中断。
+  const kind = o.kind || 'main';
   G.bullets.push({
     x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, dmg,
     r: o.r || (G.S.bulletR + extraR),
@@ -1086,7 +1096,7 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
     blast: o.blast ?? G.S.blast, homing, hit: null,
     // 外观来源标记（**纯视觉**）：main 主炮 / rear 尾炮 / spray 散射 / shard 裂变弹片 / drone 无人机。
     // 判定一律不看它 —— 它只用来在 drawPBullets 里查「这一族该画成什么样」。
-    kind: o.kind || 'main',
+    kind: kind,
     tgt: null, retarget: 0, bounced: false,
     // 裂变弹芯：随弹丸走，命中那一刻才决定炸几片 —— 这样它也能被尾炮 / 弹片继承。
     fission: o.fission ?? G.S.fission, fissionMul: o.fissionMul ?? G.S.fissionMul,
@@ -2046,20 +2056,41 @@ const DASH_TOP = 1.9;
 // 掉个头要 3 秒），键盘和摇杆都转不动。3.2 rad/s = 半圈 1 秒，跟手且不飘。
 // ⚠️ 鼠标那条支线是**独立的** 12 rad/s（见下），不受这个数影响。
 const TURN_BASE = 3.2;
+// 触屏摇杆专用的角速度上限 rad/s。作者 2026-10-03：「手机上摇杆推到哪，
+// 船就立刻转到哪」—— 手机是**唯一只能靠朝向瞄准**的输入方式，
+// 所以这里必须比键盘快一个量级：满舵掉头 180° 约 0.14s，手感是「跟手」。
+// 旧值走 TURN_BASE（满舵 3.2 rad/s）→ 掉头要 1 秒，推了像没反应。
+// ⚠️ 仍然保留角速度上限，**不直接写 G.ang = want**：一帧瞬移到目标角，
+//    看眼里是「闪转 / 不听指挥」，反而更不像操控。留 0.14s 转过去才有手感。
+//    （20 rad/s = 每帧 19°，正好对齐 24 向烘焙船体的 15°/帧，不会看出跳帧。）
+const TURN_TOUCH = 20;
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
   if (joy.active) {
-    // 摇杆：方向即目标，转速随推杆幅度线性放缩（模拟量手感）
-    // 触屏是唯一只能靠「朝向」瞄准的输入方式：这里的转速必须给足，
-    // 否则手机上掉个头要好几秒 —— 这条路本来就带转动上限，给足转速不会失控。
-    const want = Math.atan2(joy.y, joy.x);
-    const mag = Math.hypot(joy.x, joy.y);
-    const rate = TURN_BASE * S.turn * (0.55 + 0.45 * Math.min(1, mag));
-    let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
-    if (d > rate * dt) d = rate * dt;
-    else if (d < -rate * dt) d = -rate * dt;
-    G.ang += d;
+    // 摇杆：方向即朝向 —— 推到哪，船头就**立刻**朝哪（见 TURN_TOUCH）。
+    // 触屏是唯一只能靠「朝向」瞄准的输入方式，老路径走 TURN_BASE（满舵 3.2 rad/s）
+    // 要 1 秒才掉过头，手机上这个延迟直接毁掉操作感。
+    // ⚠️ 死区 0.12 是**必需**的，不是手感微调：mag 很小时 atan2 的方向只是
+    //    手指抖出来的噪声，不过滤的话船会在死区里自己小幅抽搐。死区内保持原朝向。
+    // ⚠️ 幅度仍留一点权重，让「刚出死区」的微调柔一点、推满给满舵；
+    //    但下限 0.6 保证最差也有 12 rad/s（180°/0.26s），依旧是「立刻」。
+    const jm = Math.hypot(joy.x, joy.y);
+    if (jm > 0.12) {
+      const want = Math.atan2(joy.y, joy.x);
+      const rate = TURN_TOUCH * S.turn * (0.6 + 0.4 * Math.min(1, jm / 0.35));
+      let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
+      const step = rate * dt;
+      // 上限之外再留一个**收敛吸附**：差得很少时直接咬住目标角。
+      // 不这么做的话会以每帧不到一度的步长在目标附近「蹭」过去，看着像角度抖动。
+      if (d > step) d = step;
+      else if (d < -step) d = -step;
+      // 已经很接近目标角：**直接吸附到 want**。不这么做的话会以每帧不到一度的
+      // 步长在目标附近「蹭」过去，看着像角度抖动。差值 <0.02rad（1.1°）时一帧跳过去
+      // 在画面上完全看不出来，但枪口因此是严格对准摇杆方向的（弹道不偏）。
+      if (Math.abs(d) < 0.02) { G.ang = want; }
+      else { G.ang += d; }
+    }
   } else if (aimMode === 'mouse' && mouse.inside) {
     // ⚠️ mouse 存的是**视口坐标**（准星要按屏幕画，见 drawCrosshair），
     //    而瞄准要在世界坐标里算 —— 少了这一步相机偏移，准星指哪儿打哪儿就全错了，
@@ -4594,6 +4625,11 @@ function loop(now) {
 
 // ============ 启动 ============
 function boot() {
+  // ⚠️ 必须在 fit() 之前置位 touchMode！否则首帧 fit() 还看不到触屏、不会把竖屏视口转成
+  // 横屏，要等一次 resize 才转 —— 表现就是「进游戏才横屏」的突兀跳变。
+  // （index.html 里的内联脚本更早就把 #wrap 转了，这里只是让 game.js 自己的 fit() 也对齐，
+  //   好让后续 resize/全屏重算时保持一致。）
+  if (isTouchDevice()) setTouchMode(true);
   // 启动阶段抛异常的话，页面会永远停在 LOADING —— 把错误直接写到那一屏上，
   // 否则「白屏 / 卡 loading」只能靠猜。
   window.addEventListener('error', e => {
@@ -4796,6 +4832,16 @@ function boot() {
     // 直接吃一次伤害：相位折跃的判定在 hurtPlayer 里，走这条路径才算真的测到
     hurt: (dmg) => hurtPlayer(dmg === undefined ? 30 : dmg),
     hold: (k, v) => { keys[k] = !!v; },
+    // 探针专用：直接摆摇杆。摇杆正常只由 touchstart/touchmove 写，
+    // 无头桌面 Chrome 里 pointer 恒为 fine，合成 touch 事件又必须先 setTouchMode，
+    // 绕一圈太脆 —— 转向探针要量的是 updatePlayer 里的角速度，给个直写口最稳。
+    // on=false 用来测「松手后不再转向」。
+    setJoy: (x, y, on) => {
+      joy.x = x; joy.y = y;
+      joy.active = on !== false;
+      if (!joy.active) { joy.id = null; joy.x = joy.y = 0; }
+      return { active: joy.active, x: joy.x, y: joy.y };
+    },
     ebullet: (x, y, ang, spd, r, color) => eShot(x, y, ang, spd, r, color || HOSTILE.red),
     // ---- 探针专用：无尽航程 / 深渊档位 ----
     // ⚠️ bossForWave 有副作用（会从轮换袋里抽走一张），所以单独开一个 peek 版本给探针做
@@ -5096,10 +5142,12 @@ function boot() {
     // play / help / loading：画布上的 HUD 每帧重画、help 全是静态 DOM，都不用管
   };
 
-  toTitle();
-  // 触屏设备一进来就把 .touch 挂上：右下角的按钮不该等到玩家先碰一下屏幕才出现
-  if (isTouchDevice()) setTouchMode(true);
-  // ?bot=1 直接开局：平衡性跑测不该还要人肉点进机库
+  // 主题化加载动画：本地资源同步加载、boot 一瞬间跑完，不延时的话动画根本看不到。
+  // 2.2s 必须和 style.css 里 .ld-bar i 的 ldfill 时长一致（否则进度条没满就切标题）。
+  // BOT 模式会在下面立刻 startGame() 把 state 改成 play，所以 reveal 要判 state==='loading'
+  // 才切，否则会把已经开局的 bot 踢回标题页。
+  setTimeout(() => { if (state === 'loading') toTitle(); }, LOADING_MIN);
+  // ?bot=1 直接开局：平衡性跑测不该还要人肉点进机库（touchMode 已在 boot 开头置位）
   if (BOT) { hangarSel = 0; startGame(); }
   requestAnimationFrame(loop);
 }

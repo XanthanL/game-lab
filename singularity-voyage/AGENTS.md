@@ -79,6 +79,14 @@
    ⚠️ 别拿 `tinted()` 去改玩家弹的颜色，那会把弹芯的白色一起吃掉、弹丸糊成一坨色块；
    要新配色就在 `bulletskin.js` 的 `BTINT` 表里加一行具名三色。
 3. **弹幕可读性**：友方 = 青白/金色细针（画在敌人**下**层），敌方 = 红/粉/紫描边圆弹（画在**最上**层）。新颜色只能在这两个色族里加。
+4. **`o.xxx ?? 表达式` 里的标识符必须在函数作用域里有声明。** 踩过：`pBullet` 写
+   `decel: o.decel ?? (kind === 'main')`，而 `kind` 只在对象字面量里出现过（`kind: o.kind || 'main'`），
+   作用域里**没有** `kind` 这一个变量 → 调用方不传 `decel` 时（无人机弹、裂变弹片）
+   那一侧一定被求值 → `ReferenceError: kind is not defined`，整帧更新中断。
+   ⚠️ 危险在于**主炮 / 散射 / 尾炮都显式传了 `decel: true`**，普通试玩和大部分探针都碰不到，
+   只有开到无人机或裂变弹片才炸 —— 靠手测几乎发现不了。
+   现在 `pBullet` 顶部有一行 `const kind = o.kind || 'main';` 作为唯一真相源。
+   **教训：`??` 的右值不是「默认值摆设」，它在左值缺失时一定会跑。**
 
 ## 敌型设计原则（第二批定下的）
 
@@ -460,13 +468,26 @@ rx.drawImage(fl.cv, 0, 0);
 
 **A/D 转向 · W 推进 · S 制动**，鼠标只负责画准星 + 让机头缓慢朝光标转。三档优先级在 `updatePlayer()` 里：
 
-1. `joy.active`（触屏摇杆）—— 杆指向哪就朝哪转，转速随推杆幅度线性放缩（`0.55 → 1.0` 倍 `TURN_BASE × S.turn`）
+1. `joy.active`（触屏摇杆）—— **杆指向哪就立刻朝哪转**（见下方「摇杆转向」一节）
 2. `aimMode === 'mouse' && mouse.inside` —— 朝光标方向转，**最大 12 rad/s**（`clamp(d, -12*dt, 12*dt)`）
 3. 否则（`aimMode === 'key'`）—— `kd = D - A`，**不按键就不转**（绝不自行漂移）
 
+**摇杆转向：推向哪就转向哪**（2026-10-03）。手机是**唯一只能靠机身朝向瞄准**的输入方式，
+所以摇杆单独用 `TURN_TOUCH = 20` rad/s（键盘的 `TURN_BASE = 3.2` 只管键盘 / 键鼠那条路）：
+
+- 实测满舵掉头 180° 约 **0.17s**、90° 约 0.08s。老路径（3.2 rad/s）掉头要 1 秒，推了像没反应。
+- **仍然保留角速度上限**，绝不写 `G.ang = want`：一帧瞬移过去看眼里是「闪转 / 不听指挥」，
+  反而更不像操控。留 0.14s 转过去才有「跟手」的手感。
+  20 rad/s ≈ 每帧 19°，正好对齐 24 向烘焙船体的 15°/帧，看不出跳帧。
+- **死区 0.12 是必需的安全阀**：幅度很小时 `atan2` 的方向只是手指抖出来的噪声，
+  不过滤的话船会在死区里自己小幅抽搐。死区内**完全保持原朝向**（不漂移）。
+- 幅度仍留一点权重（`0.6 + 0.4 × min(1, jm/0.35)`），让刚出死区的微调柔一点；但下限 0.6
+  保证最差也有 12 rad/s（180°/0.26s），依旧是「立刻」。
+- 差值 < 0.02 rad（1.1°）时**直接吸附到 `want`**：否则会以每帧不到一度的步长在目标附近
+  「蹭」过去，看着像角度抖动；吸附后枪口严格对准摇杆方向，弹道不偏。
+
 **转向基准 `TURN_BASE = 3.2` rad/s**（2026-10-03）：`S.turn` 只是船体倍率，原来实际转向 = 1.0 rad/s，
-掉头要 3 秒，**手机上等于转不动**（摇杆是唯一只能靠机身朝向瞄准的输入方式）。
-3.2 rad/s = 半圈 1 秒，键盘和摇杆共用这同一个基准；鼠标那 12 rad/s 不受影响。
+掉头要 3 秒。3.2 rad/s = 半圈 1 秒，键盘和鼠标共用；**摇杆不走这个基准**（见上）。
 
 **冲刺方向只认机头 `G.ang`**（2026-10-03 修）：`tryDash()` 不读 WASD、也不用鼠标准星 `G.aim`
 —— 按键是给**转向**用的，机头才是「船正对着哪」的唯一真相。旧实现读 WASD 组合，
@@ -492,6 +513,12 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 ⚠️ **`__dbg.hold(k,v)` 只改 `keys[]`，不走 `keydown` 监听器** —— 所以它**不会**翻转 `aimMode`。
 探针要测 `aimMode` 就得派真的 `KeyboardEvent`；要测推进/转向用 `hold` 更稳。
+
+⚠️ **测摇杆转向用 `__dbg.setJoy(x, y, on)`**（2026-10-03 新增），不要去合成 `touchstart`：
+无头桌面 Chrome 里 pointer 恒为 fine，合成 touch 事件还得先 `setTouchMode(true)`，绕一圈太脆。
+`setJoy` 直写 `joy.x/y/active`，而 `updatePlayer` 的转向分支读的就是这三个值 ——
+量的正是真实代码路径。`on=false` 顺带清零并复位 `joy.id`（模拟松手）。
+参考：`probes/sv-touch-turn-check.js`。
 
 ⚠️ **bot 不再走 `keys['KeyW/S/A/D']` 那套八向推进**（那套和现在的操控不是一回事了）。
 `botStep()` 直接吃 `G.ang` + `keys['KeyW']` 两个自由度：机首角度直接赋值，推进按 W，开火仍走 `mouse.down`。
@@ -863,6 +890,8 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-touch-check.js` | 移动端触屏按钮命中与射击 | `#touch` / `setTouchMode` / `.tbtn` |
 | `sv-orientation-check.js` | 移动端直接横屏：竖屏视口 `#wrap` 含 `rotate(90deg)` / 横屏不转 / `#rotate` 已移除 / 不调 `screen.orientation.lock` / `toGame` 逆变换误差 <1px，双截图 | `fit()` / `rot` / `toGame` |
 | `sv-bulletskin-check.js` | 子弹外观：家族矩阵 / 逐级 tier / 配色优先级 / 协同+单卡装饰 / 缓存封顶 / 90 帧零 JS 错误，产出 `bullet-overview.png` | `bulletskin.js` / `BSPEC_FAMILY` / `BKIND` / `BDECO_BY_*` / `drawPBullets` |
+| `sv-touch-turn-check.js` | **摇杆「推向哪转向哪」**：满舵 180°/90° 耗时（≤0.2s / ≤0.1s）/ 轻推档 / 死区不转不漂 / 满速掉头时速度方向跟上 / 松手不转，阈值 0.2s+0.35s+0° | `TURN_TOUCH` / `updatePlayer` 转向分支 / `__dbg.setJoy` |
+| `sv-loading-check.js` | 主题化加载动画 + 手机端**首帧即横屏**（内联脚本先于 game.js 生效 / `fit()` 首帧就转 / 标题延后揭示），双截图 | `#loading` / `LOADING_MIN` / `fit()` / `boot()` |
 
 ⚠️ `sv-dash-dir.js` 每个用例开头必须 `d.clearEnemies(); G.spawnQueue.length = 0;` ——
   不隔离的话，`updateWave` 补出来的怪会用接触伤害的互推 `G.vx += ux*40` 污染速度，

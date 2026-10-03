@@ -66,7 +66,10 @@ const URL = process.env.SV_URL || 'http://127.0.0.1:8612/index.html?god=1';
   console.log('按下后摇杆激活               : ' + R.joyActive + ' / 抬指后 ' + R.joyActiveAfter);
   console.log('满推杆 joyVec                : ' + JSON.stringify(R.joyVec));
   console.log('摇杆推动下的推进速度         : ' + R.joySpeed.toFixed(1) + ' px/s');
-  console.log('摇杆转向速率                 : ' + R.joyTurnRate.toFixed(2) + ' rad/s (设计值 3.2)');
+  // ⚠️ 这是**一段时间内的平均**角速度，不是瞬时峰值：摇杆刚推上去时 `jm` 还在爬，
+  //    所以实测值会明显低于 TURN_TOUCH(20) 的满舵值。判「跟不跟手」请看
+  //    probes/sv-touch-turn-check.js（那里按 2° 收敛阈值量实际耗时）。
+  console.log('摇杆转向速率(均值)            : ' + R.joyTurnRate.toFixed(2) + ' rad/s (满舵峰值 20)');
   console.log('90° 掉头是否成功             : ' + R.joyTurned90);
   console.log('抬指 → 完全停住              : ' + (R.joyReleaseStop < 0 ? '未停（>1s）' : R.joyReleaseStop.toFixed(3) + ' s'));
 
