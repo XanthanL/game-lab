@@ -3674,79 +3674,148 @@ function bar(x, y, w, h, frac, col, bg = '#1a1c2c', hi) {
   ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
 }
 
+// ============ HUD 排版：舰桥仪表（2026-10-03 重排）============
+// 统一视觉语言：左上「舰况」/ 右上「航程」/ 顶部「巨像」/ 底部「推进控制台」四簇
+// 共用一块仪表背板 —— 深色底 + 1px 描边 + 角上 10x2 的亮色角标（accent 取各簇主色，
+// 全部来自现有调色板，不引入新颜色）。
+// ⚠️ 只动「框」和「行距」，各元素的**锚点避让计算不变**（触屏工具键 y=36 那条空档、
+//    摇杆 / 开火键的圆形区域，见 index.html #touch 注释）。
+const HUD_BG = 'rgba(10,12,26,0.78)', HUD_LINE = '#29366f';
+function hudPanel(x, y, w, h, accent, corners) {
+  ctx.fillStyle = HUD_BG; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = HUD_LINE; ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.fillStyle = accent;
+  for (const c of corners) {
+    if (c === 'tl') ctx.fillRect(x + 1, y + 1, 10, 2);
+    else if (c === 'tr') ctx.fillRect(x + w - 11, y + 1, 10, 2);
+    else if (c === 'bl') ctx.fillRect(x + 1, y + h - 3, 10, 2);
+    else if (c === 'br') ctx.fillRect(x + w - 11, y + h - 3, 10, 2);
+  }
+}
+
 function drawHUD() {
   const S = G.S;
-  // 左上：船体 / 护盾 / 经验
-  const hpf = S.hp / S.maxHp;
-  bar(8, 8, 116, 7, hpf, hpf > 0.35 ? '#e04060' : '#ff3355', '#1a1c2c', '#ff8aa0');
-  text(T('hud.hull'), 8, 17, '#7a86a8');
-  text(Math.ceil(S.hp) + '/' + Math.round(S.maxHp), 124, 17, '#f4f4f4', 'r');
-  if (S.shieldMax > 0) {
-    bar(8, 26, 116, 4, S.shield / S.shieldMax, '#73eff7');
-    text(T('hud.shield'), 8, 31, '#7a86a8');
-  }
-  const yxp = S.shieldMax > 0 ? 42 : 30;
-  bar(8, yxp, 116, 4, G.xp / G.xpNext, '#ffcd75');
-  text('LV ' + G.level, 8, yxp + 5, '#ffcd75');
-  text(G.xp + '/' + G.xpNext, 124, yxp + 5, '#7a86a8', 'r');
-
-  // 过热膛线：**只有熔炉显示**（非熔炉船体 heat 恒 0，这一整块跳过，HUD 与改动前完全一致）。
-  // 满膛转警示橙、锁膛时整条转朱砂 —— 玩家必须一眼看出「现在打不动」，而不是以为卡了。
-  let ymod = yxp + 18;
+  // ---------- 左上「舰况」簇 ----------
+  // 行距制：每行 = 条(barH) + 2px 隙 + 标签行，行推进 = barH + 15。
+  //   旧版过热条写死在 yxp+10：4px 经验条 + 12px「LV 3」标签 > 10px 行距，
+  //   熔炉船体上膛温条会压住 LV 行的文字 —— 现在按真实行高推进，永不叠字。
+  const stats = [{
+    barH: 7, frac: S.hp / S.maxHp, col: S.hp / S.maxHp > 0.35 ? '#e04060' : '#ff3355', hi: '#ff8aa0',
+    label: T('hud.hull'), lc: '#7a86a8', val: Math.ceil(S.hp) + '/' + Math.round(S.maxHp), vc: '#f4f4f4',
+  }];
+  if (S.shieldMax > 0) stats.push({
+    barH: 4, frac: S.shield / S.shieldMax, col: '#73eff7', hi: null,
+    label: T('hud.shield'), lc: '#7a86a8', val: Math.ceil(S.shield) + '/' + Math.round(S.shieldMax), vc: '#c0cbdc',
+  });
+  stats.push({
+    barH: 4, frac: G.xp / G.xpNext, col: '#ffcd75', hi: null,
+    label: 'LV ' + G.level, lc: '#ffcd75', val: G.xp + '/' + G.xpNext, vc: '#7a86a8',
+  });
   if (G.heatOn) {
-    const hf = clamp(G.heat / HEAT_MAX, 0, 1);
-    const lock = G.heatLock > 0;
-    const hcol = lock ? '#ff3355' : hf > 0.85 ? '#ff8a3d' : '#ffcd75';
-    bar(8, yxp + 10, 116, 5, hf, hcol, '#1a1c2c', lock ? null : '#ffe9a8');
-    text(T('hud.heat'), 8, yxp + 16, lock ? '#ff3355' : '#7a86a8');
-    text(lock ? T('hud.heatLock') : Math.round(hf * 100) + '%', 124, yxp + 16,
-      lock ? '#ff3355' : '#7a86a8', 'r');
-    ymod = yxp + 32;
+    const hf = clamp(G.heat / HEAT_MAX, 0, 1), lock = G.heatLock > 0;
+    stats.push({
+      barH: 5, frac: hf, col: lock ? '#ff3355' : hf > 0.85 ? '#ff8a3d' : '#ffcd75', hi: lock ? null : '#ffe9a8',
+      label: T('hud.heat'), lc: lock ? '#ff3355' : '#7a86a8',
+      val: lock ? T('hud.heatLock') : Math.round(hf * 100) + '%', vc: lock ? '#ff3355' : '#7a86a8',
+    });
   }
 
-  // 已装配模块
-  let mx = 8, my = ymod;
-  for (const id in G.mods) {
-    const m = MODULES.find(v => v.id === id); if (!m) continue;
-    ctx.fillStyle = '#1a1c2c'; ctx.fillRect(mx, my, 15, 13);
-    ctx.strokeStyle = m.type === 'stat' ? '#41a6f6' : m.type === 'weapon' ? '#ef7d57' : '#c070f0';
-    ctx.lineWidth = 1; ctx.strokeRect(mx - 0.5, my - 0.5, 16, 14);
-    // 15x13 的小格放不下英文单词，取**当前语言名字的首字母**（中文就是汉字本身）
-    text(L(m, 'name')[0], mx + 2, my + 1, '#f4f4f4');
-    text('' + G.mods[id], mx + 11, my + 6, '#ffcd75', 'c', 12, null);
-    mx += 18;
-    if (mx > 110) { mx = 8; my += 16; }
-  }
+  // 模块芯片：一行 5 枚、最多 3 行。满装配 29 枚时旧版会向下铺到 y≈160，
+  //   把整块战场左缘压成芯片墙；溢出折成一枚「+N」—— 完整清单永远在暂停页（#build），
+  //   战斗中没有人逐枚读芯片，一眼「装了多少格」才是芯片的本职。
+  //   ⚠️ 芯片 19px 宽是量出来的：12px 像素字的汉字墨宽 ~10px + 等级数字 ~6px，
+  //   旧版 15px 格里两个字左右排必撞（首字母和金色等级数字叠成一团）。
+  const ids = Object.keys(G.mods);
+  const CHIP_CAP = 15, shown = ids.slice(0, CHIP_CAP), extra = ids.length - shown.length;
 
   // 主动能力冷却（装了才显示）：长枪 / 折跃 / 磁雷。
   // 这三张卡的强度全在「就绪」那一刻，玩家必须一眼看到还剩多久 —— 藏在暂停页里等于没有。
-  let ax = 8;
-  const ay = my + 17;
-  const cdPip = (g, ready, ratio, col) => {
-    ctx.fillStyle = '#1a1c2c'; ctx.fillRect(ax, ay, 15, 14);
-    // 就绪时外框亮起，未就绪时只画底部进度条
-    ctx.strokeStyle = ready ? col : '#333c57';
-    ctx.lineWidth = 1; ctx.strokeRect(ax - 0.5, ay - 0.5, 16, 15);
-    text(g, ax + 3, ay + 1, ready ? col : '#566c86');
-    ctx.fillStyle = ready ? col : '#41a6f6';
-    ctx.fillRect(ax, ay + 12, Math.round(15 * clamp(ratio, 0, 1)), 2);
-    ax += 18;
-  };
-  if (S.lance > 0) cdPip(T('hud.cd.lance'), S.lanceT <= 0, 1 - S.lanceT / S.lanceCd, S.lanceGold ? '#ffcd75' : '#73eff7');
-  if (S.blink > 0) cdPip(T('hud.cd.blink'), S.blinkT <= 0, 1 - S.blinkT / S.blinkCd, S.blinkMax ? '#ffcd75' : '#c070f0');
-  if (S.mine > 0) cdPip(T('hud.cd.mine'), G.mines.length < S.mineMax, 1 - S.mineT / S.mineCd, S.mineGold ? '#ffcd75' : '#c070f0');
+  const pips = [];
+  if (S.lance > 0) pips.push({ g: T('hud.cd.lance'), ready: S.lanceT <= 0, ratio: 1 - S.lanceT / S.lanceCd, col: S.lanceGold ? '#ffcd75' : '#73eff7' });
+  if (S.blink > 0) pips.push({ g: T('hud.cd.blink'), ready: S.blinkT <= 0, ratio: 1 - S.blinkT / S.blinkCd, col: S.blinkMax ? '#ffcd75' : '#c070f0' });
+  if (S.mine > 0) pips.push({ g: T('hud.cd.mine'), ready: G.mines.length < S.mineMax, ratio: 1 - S.mineT / S.mineCd, col: S.mineGold ? '#ffcd75' : '#c070f0' });
 
-  // 右上：分数 / 航段 / 时间
-  text(T('hud.score'), W - 8, 6, '#7a86a8', 'r');
-  text('' + G.score, W - 8, 16, '#f4f4f4', 'r');
+  // 先量后画：背板高度 = 统计行 + 芯片行 + 技能行 + 内边距
+  let cy = 10;
+  for (const r of stats) cy += r.barH + 15;
+  const chipTop = cy;
+  let rows = Math.ceil(shown.length / 5);
+  if (extra > 0 && shown.length % 5 === 0) rows++;      // +N 正好折进新行
+  if (rows) cy = chipTop + rows * 16;
+  if (pips.length) cy = (rows ? cy : chipTop) + 3 + 17;
+  hudPanel(4, 4, 124, cy - 10 + 6, '#73eff7', ['tl']);
+
+  cy = 10;
+  for (const r of stats) {
+    bar(8, cy, 116, r.barH, r.frac, r.col, '#1a1c2c', r.hi);
+    text(r.label, 8, cy + r.barH + 2, r.lc);
+    text(r.val, 124, cy + r.barH + 2, r.vc, 'r');
+    cy += r.barH + 15;
+  }
+  if (rows) {
+    let mx = 8, my = chipTop;
+    for (const id of shown) {
+      const m = MODULES.find(v => v.id === id);
+      ctx.fillStyle = '#1a1c2c'; ctx.fillRect(mx, my, 19, 13);
+      ctx.strokeStyle = m.type === 'stat' ? '#41a6f6' : m.type === 'weapon' ? '#ef7d57' : '#c070f0';
+      ctx.lineWidth = 1; ctx.strokeRect(mx - 0.5, my - 0.5, 20, 14);
+      // 19px 的小格放不下英文单词，取**当前语言名字的首字母**（中文就是汉字本身）；
+      // 等级数字右对齐收在格尾 —— 两个字一左一右，19px 正好容下不叠。
+      text(L(m, 'name')[0], mx, my + 1, '#f4f4f4');
+      text('' + G.mods[id], mx + 18, my + 1, '#ffcd75', 'r', 12, null);
+      mx += 21;
+      if (mx > 100) { mx = 8; my += 16; }
+    }
+    if (extra > 0) {
+      ctx.fillStyle = '#1a1c2c'; ctx.fillRect(mx, my, 19, 13);
+      ctx.strokeStyle = '#333c57'; ctx.lineWidth = 1; ctx.strokeRect(mx - 0.5, my - 0.5, 20, 14);
+      text('+' + extra, mx, my + 1, '#7a86a8');
+    }
+  }
+  if (pips.length) {
+    let ax = 8;
+    const ay = (rows ? chipTop + rows * 16 : chipTop) + 3;
+    for (const p of pips) {
+      ctx.fillStyle = '#1a1c2c'; ctx.fillRect(ax, ay, 15, 14);
+      // 就绪时外框亮起，未就绪时只画底部进度条
+      ctx.strokeStyle = p.ready ? p.col : '#333c57';
+      ctx.lineWidth = 1; ctx.strokeRect(ax - 0.5, ay - 0.5, 16, 15);
+      text(p.g, ax + 3, ay + 1, p.ready ? p.col : '#566c86');
+      ctx.fillStyle = p.ready ? p.col : '#41a6f6';
+      ctx.fillRect(ax, ay + 12, Math.round(15 * clamp(p.ratio, 0, 1)), 2);
+      ax += 18;
+    }
+  }
+
+  // ---------- 右上「航程」簇：label/value 同行对齐，宽度按最宽行动态 ----------
+  //   旧版是「标签一行、数值一行」的浮动文字堆，分数大时和航段行挤在一起；
+  //   收进背板后每行 15px，右缘全部对齐到同一条线。
   const z = ZONES[G.zone];
-  text(waveLabel(G.wave), W - 8, 28, G.wave > WAVES ? '#ffcd75' : '#73eff7', 'r');
-  text(name1(z), W - 8, 38, '#7a86a8', 'r');
-  text(fmtTime(G.t), W - 8, 48, '#7a86a8', 'r');
-  if (G.combo > 1) text('x' + G.combo, W - 8, 60, '#ffcd75', 'r');
+  const rrows = [
+    { l: T('hud.score'), v: '' + G.score, lc: '#7a86a8', vc: '#f4f4f4' },
+    { l: '', v: waveLabel(G.wave), vc: G.wave > WAVES ? '#ffcd75' : '#73eff7' },
+    { l: '', v: name1(z), vc: '#7a86a8' },
+    { l: '', v: fmtTime(G.t), vc: '#7a86a8' },
+  ];
+  if (G.combo > 1) rrows.push({ l: '', v: 'x' + G.combo, vc: '#ffcd75' });
+  let rw = 0;
+  for (const r of rrows) rw = Math.max(rw, measure(r.l) + 8 + measure(r.v));
+  rw = Math.max(96, rw + 16);
+  const rx = W - 6 - rw;
+  hudPanel(rx, 4, rw, rrows.length * 15 + 8, '#ffcd75', ['tr']);
+  let ry = 10;
+  for (const r of rrows) {
+    if (r.l) text(r.l, rx + 8, ry, r.lc);
+    text(r.v, W - 12, ry, r.vc, 'r');
+    ry += 15;
+  }
 
-  // 能量条（底部中央）
+  // ---------- 底部「推进控制台」：冲刺 | 能量 | 本段目标 ----------
+  //   旧版目标文字画在 ey+1，字模底缘正好贴到 270px 画布底边；连同能量/冲刺一起
+  //   收进一条背板，目标行上移 3px，四个元素共享同一条基线区。
   const ew = 120, ex = (W - ew) / 2, ey = H - 16;
+  hudPanel(92, H - 27, 320, 23, '#41a6f6', ['bl', 'br']);
   bar(ex, ey, ew, 6, G.energy / 100, G.energy >= 100 ? '#ffcd75' : '#41a6f6');
   text(G.energy >= 100 ? T('hud.odReady') : T('hud.energy'), W / 2, ey - 11, G.energy >= 100 ? '#ffcd75' : '#7a86a8', 'c');
   // 冲刺冷却
@@ -3755,18 +3824,25 @@ function drawHUD() {
   text(T('hud.dash'), dx2 + dw / 2, ey - 11, '#7a86a8', 'c');
   // 本段目标：逐形态不同（见 FORMS）。「剩余 N 只」只对清剿/死斗成立 ——
   //   潮涌要看倒计时、回收要看星尘进度，沿用「剩余」会让玩家以为杀完就过段。
-  text(waveObjective(), W / 2 + 74 + 14, ey + 1,
-       G.waveForm === 'purge' ? '#c0cbdc' : '#ffcd75', 'l');
+  text(waveObjective(), W / 2 + 74 + 14, ey - 2,
+    G.waveForm === 'purge' ? '#c0cbdc' : '#ffcd75', 'l');
 
-  // Boss 血条
+  // ---------- 巨像血条 ----------
+  //   旧版血条 (x=120..360) 和左上船体条 (x=8..124) 同在 y=8、同为红色系，
+  //   视觉上连成一条 350px 的长条 —— 收进居中背板并左右让开两侧簇的领地。
   if (G.boss) {
-    const b = G.boss, bw = 240, bx = (W - bw) / 2;
-    bar(bx, 8, bw, 8, b.hp / b.maxHp, b.enraged ? '#ff3355' : '#e04060', '#1a1c2c', '#ff8aa0');
-    text(bossName(b) + (sub1(b) ? ' · ' + sub1(b) : ''), W / 2, 20, '#ffcd75', 'c');
+    const b = G.boss, bw = 216, bx = (W - bw) / 2;
+    hudPanel(bx, 4, bw, 34, '#e04060', ['tl', 'tr']);
+    bar(bx + 6, 10, bw - 12, 8, b.hp / b.maxHp, b.enraged ? '#ff3355' : '#e04060', '#1a1c2c', '#ff8aa0');
+    text(bossName(b) + (sub1(b) ? ' · ' + sub1(b) : ''), W / 2, 22, '#ffcd75', 'c');
   }
 }
 
 function drawBanners() {
+  // 多条横幅同时在场（开段：航段 + 巨像 + 协同×N）时压缩行距 —— 否则第 4 条的
+  //   副标题正好压进底部控制台（y≥243）。可用高度按「最后一条的副标题 ≤ 205」反推。
+  const n = G.banners.length;
+  const step = n > 1 ? Math.min(48, Math.floor(131 / (n - 1))) : 48;
   let y = 74;
   for (const b of G.banners) {
     const k = b.t / b.life;
@@ -3775,7 +3851,7 @@ function drawBanners() {
     text(b.title, W / 2, y, b.color, 'c', 24);
     if (b.sub) text(b.sub, W / 2, y + 26, '#c0cbdc', 'c');
     ctx.globalAlpha = 1;
-    y += 48;
+    y += step;
   }
 }
 function drawToasts() {
@@ -3966,9 +4042,13 @@ function render() {
   drawParts();
   drawFx();
   ctx.restore();
-  drawHUD();
-  drawBanners();
-  drawToasts();
+  // 升级 / 结算这两屏遮罩近乎全黑、和战局无关 —— HUD 在 .96 遮罩下仍会透出灰字，
+  //   干脆不画；暂停页保留（遮罩只有 .55，「战场还在」的氛围是故意的）。
+  if (state !== 'upgrade' && state !== 'over') {
+    drawHUD();
+    drawBanners();
+    drawToasts();
+  }
   if (state === 'play' && !G.dead) { drawCrosshair(); drawOffscreenMarkers(); }
   // 红色暗角：低血量常驻脉动 + 受击时的一记重闪（取两者较强的一个）
   const S = G.S;

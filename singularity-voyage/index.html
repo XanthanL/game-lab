@@ -130,12 +130,16 @@
     <div class="panel">
       <div class="ptitle" data-i18n="pause.title">暂停</div>
       <div id="pause-stats" class="dim"></div>
-      <!-- 当前舰体：把这一局的配件整船画出来，装配结果肉眼可见（drawShipView） -->
-      <div id="shipview-box">
-        <canvas id="shipview" width="128" height="96"></canvas>
-        <div id="shipview-cap" class="dim"></div>
+      <!-- 双栏：左 = 舰体预览（128x96），右 = 装配清单（自己滚）。
+           旧版上下堆叠时，面板常高 ≈340px，必然超出 270px 的框、把底部两排按钮
+           顶出画面；改双栏后常用局 ≈235px，整面板放得下 —— 满装配仍由 .ov 兜底滚动。 -->
+      <div class="pause-cols">
+        <div id="shipview-box">
+          <canvas id="shipview" width="128" height="96"></canvas>
+          <div id="shipview-cap" class="dim"></div>
+        </div>
+        <div id="build"></div>
       </div>
-      <div id="build"></div>
       <div class="volbox" id="vol-pause"></div>
       <div class="menu row">
         <button class="btn primary" data-act="resume" data-i18n="pause.resume">继续</button>

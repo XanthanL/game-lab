@@ -75,7 +75,7 @@ em { font-style: normal; }
 .btn.primary:hover { background: #e04060; }
 .btn.small { padding: 2px 8px 3px; }
 .btn:disabled { opacity: .4; cursor: default; }
-.menu { display: flex; flex-direction: column; gap: 5px; align-items: stretch; margin-top: 4px; }
+.menu { display: flex; flex-direction: column; gap: 5px; align-items: stretch; margin-top: 2px; }
 .menu.row { flex-direction: row; gap: 5px; }
 
 /* 中英切换按钮（只在标题页出现，显隐由 JS 切 #wrap.showlang）。
@@ -94,11 +94,11 @@ em { font-style: normal; }
    而 12px 像素字的字形框比行框高约 3px，最后一行「按 ENTER 开始」的下缘就正好被
    #wrap 的 overflow:hidden 削掉（2026-09-25 截图确认：字被切了一半）。
    留 6px 底边距，让字形框有落处。 */
-#title { background: transparent; justify-content: flex-start; padding-top: 16px; padding-bottom: 10px; gap: 5px; }
+#title { background: transparent; justify-content: flex-start; padding-top: 10px; padding-bottom: 8px; gap: 4px; }
 .logo { text-align: center; animation: drop .5s steps(6) both; }
 .t1 { font-size: 36px; line-height: 38px; color: #73eff7; letter-spacing: 3px;
   text-shadow: 2px 0 0 #3b5dc9, -2px 0 0 #3b5dc9, 0 2px 0 #3b5dc9, 0 -2px 0 #3b5dc9, 3px 3px 0 #29366f, 4px 4px 0 #1a1c2c; animation: glitch 4s steps(1) infinite; }
-.t2 { margin-top: 6px; color: #ffcd75; text-shadow: 1px 1px 0 #1a1c2c; }
+.t2 { margin-top: 4px; color: #ffcd75; text-shadow: 1px 1px 0 #1a1c2c; }
 /* 英文标题比中文长一倍多：36px 下「SINGULARITY VOYAGE」+ letter-spacing 会顶到 480px 的边。
    降到 24px 正好（24 仍是 12 的整数倍，像素网格不破 —— 这条规则在 sv-text.py 里守着）。 */
 #wrap.en .t1 { font-size: 24px; line-height: 30px; letter-spacing: 2px; }
@@ -131,7 +131,7 @@ em { font-style: normal; }
 .logrow.now { color: #ffcd75; }
 
 /* panels */
-.panel { background: #0e1022ee; padding: 8px 10px; box-shadow: 0 0 0 1px #3b5dc9, 0 0 0 2px #1a1c2c, 4px 4px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 440px; }
+.panel { background: #0e1022f2; padding: 8px 10px; box-shadow: 0 0 0 1px #3b5dc9, 0 0 0 2px #1a1c2c, 4px 4px 0 2px #05060d; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 440px; }
 .panel.narrow { max-width: 340px; padding: 6px 8px; gap: 4px; }
 .ptitle { color: #ffcd75; font-size: 24px; line-height: 24px; text-shadow: 2px 2px 0 #b13e53; }
 .cols { display: flex; gap: 14px; text-align: left; }
@@ -140,14 +140,18 @@ em { font-style: normal; }
 /* 当前舰体预览（暂停页）：2 倍整数放大，128x96 画布正好装得下船体 + 最外沿的配件
    （配件最远到 ±30 游戏像素，×2 = ±60，居中后落在 4..124 里）。
    image-rendering: pixelated 不能省 —— 它是 2 倍烘焙的位图，交给浏览器平滑就糊了。 */
-#shipview-box { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 1px 0; }
+/* 双栏（2026-10-03）：预览居左、装配清单居右 —— 上下堆叠会把面板顶出 270px 的框。 */
+.pause-cols { display: flex; gap: 10px; align-items: stretch; max-width: 440px; }
+#shipview-box { display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 0 0 auto; justify-content: center; }
 #shipview { width: 128px; height: 96px; image-rendering: pixelated; background: #05060d;
             box-shadow: inset 0 0 0 1px #29366f; }
 #shipview-cap { color: #7a86a8; }
 /* 装配清单自己滚，别把暂停面板顶出 270px 的框。
-   满装配 55 枚芯片会排到 213px 高（占掉整块画布），这里压到 5 行左右。 */
-#build { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 420px;
-         max-height: 104px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+   满装配 55 枚芯片会排到 213px 高，这里压到与左侧预览同高（112px），内部滚动。 */
+#build { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;
+  align-content: flex-start; max-width: none; max-height: 112px; overflow-y: auto;
+  overscroll-behavior: contain; touch-action: pan-y; }
 .chip { padding: 1px 4px 2px; background: #1a1c2c; box-shadow: inset 0 0 0 1px currentColor; }
 .chip.t-stat { color: #41a6f6; } .chip.t-weapon { color: #ef7d57; } .chip.t-ability { color: #c070f0; }
 .chip.t-syn { color: #ffcd75; }
@@ -159,7 +163,10 @@ em { font-style: normal; }
    于是 5 台船体的描述**全部**溢出卡面、压到底下的 #hull-detail 统计条上。
    修法：立绘 48→44（省 4px，仍是 22x16 源图的 2 倍），卡面 140→168（+28），
    再把机库的外围间距各收 1~2px。机库里本来有 ~31px 的 auto-margin 余量，装得下。 */
-#hangar { background: rgba(8, 9, 20, .9); gap: 4px; }
+#hangar { background: rgba(8, 9, 20, .94); gap: 3px; }
+/* ⚠️ 机库内容总高必须 ≤ 270px：.ov 的「首/末子元素 margin:auto」在内容溢出时会把
+   顶部顶到滚动原点**之外** —— 症状是「选择船体」字头被裁掉一截且滚不回来（实测踩过）。
+   除 gap 收紧外，滑轨净高也从 176 压到 172（上下裁切余量仍 ≥ 卡片选中态的外扩量）。 */
 /* ---- 机库滑轨（7 台船体 · 单行 650px 装不进 480px）----
    #hull-view 是裁切视口，#hulls 靠 transform 位移。四处不能省：
    ① `overflow: clip` 而不是 `hidden` —— hidden 会让它变成**可滚动**容器，手指在卡面上
@@ -171,7 +178,7 @@ em { font-style: normal; }
    ④ ⚠️ 那点留白**不能真的占高度** —— 机库里只剩十几 px 余量。所以 padding 多给多少，
       margin 就负着收回多少：`padding:8px 0 5px` + `margin:-4px 0 -1px`，
       净占位仍是 168px，但裁切框比原来上下各多出 4px 余量。 */
-#hull-view { width: 100%; padding: 8px 0 5px; margin: -4px 0 -1px;
+#hull-view { width: 100%; padding: 8px 0 3px; margin: -4px 0 -1px;
   overflow: hidden; overflow: clip; }
 #hulls { display: flex; gap: 8px; width: max-content; padding: 0 9px; margin: 0;
   transition: transform .16s steps(5); }
@@ -203,7 +210,9 @@ em { font-style: normal; }
 #hull-detail .hstat u { float: none; margin-left: 3px; color: #f4f4f4; }
 
 /* upgrade cards */
-#upgrade { background: rgba(8, 9, 20, .86); gap: 4px; }
+/* 遮罩加深到 .93：HUD 就在底下不到 1px 的地方，.86 时分数 / 航段文字会透出来，
+   和「模块装配」标题叠成一团（2026-10-03 截图确认）。 */
+#upgrade { background: rgba(8, 9, 20, .96); gap: 4px; }
 .up-title { font-size: 24px; line-height: 24px; color: #ffcd75; text-shadow: 2px 2px 0 #b13e53, 3px 3px 0 #1a1c2c; animation: drop .25s steps(4) both; }
 #cards { display: flex; gap: 10px; margin: 4px 0; }
 .card { --c: #41a6f6; --d: #29366f; position: relative; width: 128px; height: 178px; padding: 18px 6px 5px; background: #0e1022; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -246,7 +255,8 @@ em { font-style: normal; }
 .card .mx { position: absolute; top: 16px; left: 3px; color: #ffcd75; animation: blink .6s steps(2) infinite; }
 
 /* game over */
-#over { background: rgba(20, 5, 12, .78); gap: 5px; }
+/* .9：.78 时整局 HUD（血条 / 横幅 / 航段）全都在底下透字，结算数据反而成了背景噪音。 */
+#over { background: rgba(20, 5, 12, .94); gap: 5px; }
 .over-title { font-size: 24px; line-height: 24px; color: #ff5577; text-shadow: 2px 2px 0 #5d275d, 3px 3px 0 #1a1c2c; animation: drop .4s steps(5) both; }
 .over-title.win { color: #ffcd75; text-shadow: 2px 2px 0 #b13e53, 3px 3px 0 #1a1c2c; }
 #over-stats { display: grid; grid-template-columns: repeat(3, 110px); gap: 4px; margin: 6px 0 2px; }
