@@ -673,7 +673,9 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 ⚠️ **2026-10-03 磁盘实况**：下面列出的 `.workbuddy/*.py` 探针在磁盘上**已经找不到了**（`.workbuddy/` 只剩 `memory/`），
   它们从来没进过 git（`git ls-files singularity-voyage` 只有 10 个源文件），所以删除后无法恢复。
-  现在**实际可用的探针**是 `.workbuddy/probes/*.js`（Node + playwright-core，见本节末尾）。
+  现在**实际可用的探针**是 `probes/*.js`（Node + playwright-core，见本节末尾）。
+  ⚠️ 根因：仓库根目录 `.gitignore:30` 有 `**/.workbuddy/`，所以放在 `.workbuddy` 下的东西
+  **永远进不了 git**，删了就是真没了 —— 探针一律放 `probes/`（可入库）。
 
 - 本地：`python -m http.server 8127` → http://127.0.0.1:8127/
 - 冒烟探针：`python .workbuddy/sv-probe.py`（自带 HTTP 服务，无需另起；每次自动清空 Chrome profile）
@@ -804,7 +806,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   `wakeCount`、`bulletCount`、`ebulletCount`。
   ⚠️ **`setMods()` 只改 `G.mods` 表，一次 `apply()` 都不执行** —— 想验「装了卡之后属性真的变了」必须用 `grant()`。
 
-### 现存的可跑探针：`.workbuddy/probes/*.js`（Node + playwright-core）
+### 现存的可跑探针：`probes/*.js`（Node + playwright-core，随仓库入库）
 
 `.py` 那批丢了以后，这几份是唯一还能跑的端到端验证。它们依赖 `playwright-core` 和本机 Chrome，
 所以**从 Node managed workspace 里跑**，全局名一律带前缀（见「三条硬纪律」第 1 条的 `__dbg` 撞车事故）：
@@ -814,7 +816,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 WS=/c/Users/www27/.workbuddy/binaries/node
 export NODE_PATH=$WS/workspace/node_modules     # playwright-core 装在这儿
 export CHROME_EXE='C:/Program Files/Google/Chrome/Application/chrome.exe'
-$WS/versions/22.22.2-3/node.exe .workbuddy/probes/sv-modules-check.js
+$WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 ```
 （脚本自己会起静态服务，不需要另开 `http.server`。）
 
