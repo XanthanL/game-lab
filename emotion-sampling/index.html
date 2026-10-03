@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>情绪取样 · 15 题看你最常出现的那句话</title>
+<meta name="description" content="15 道情景题，看你最常出现的那句话。测完出一个码，可保存结果图。完整 60 题覆盖职场、家里、一个人待着的时候。">
+<meta property="og:title" content="情绪取样 · 15 题看你最常出现的那句话">
+<meta property="og:description" content="不测你是什么人，只测那句最常出现的话。">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#FDF7F2">
+<!-- favicon 内联 SVG（0 请求）：2×2 命中矩阵，和结果页那张方块图同一套语言 -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23FDF7F2'/><rect x='6' y='6' width='8' height='8' rx='2' fill='%232557A7'/><rect x='18' y='6' width='8' height='8' rx='2' fill='%23EDE2D8'/><rect x='6' y='18' width='8' height='8' rx='2' fill='%23EDE2D8'/><rect x='18' y='18' width='8' height='8' rx='2' fill='%232557A7'/></svg>">
+<noscript><p style="padding:20px;font-size:15px;line-height:1.8">情绪取样需要 JavaScript 才能跑。打开浏览器设置里的脚本权限，再刷新一次就行。</p></noscript>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <section id="view-land" class="view">
+    <p class="eyebrow">情绪取样 · 自我觉察</p>
+    <h1><span id="h1-n">15</span> 道题，测出你脑子里那句<br><span class="hi">最常出现的话</span></h1>
+    <!-- lead 承担「这是什么、怎么玩、得到什么」——落地页第一段必须能让新观众看懂。
+         原来写「测完你会拿到一个码」，但「码」是我们内部叫法，访客不知道是什么。
+         改成举一个真码当例子，一眼就明白。 -->
+    <p class="lead">不测你是什么人，只测那句最常出现的话。<br>
+      每道题选一个更像你的反应——答完给你一个代号，<br>
+      像 <b class="lead-code">#BOSS</b>「自带监工」，外加一张能存下来的结果图。</p>
+    <div class="chips">
+      <span class="chip warm" id="chip-free">15 题 · 免费</span>
+      <span class="chip" id="chip-full">完整 60 题 · 全场景</span>
+    </div>
+    <p class="peek-h">会出这 <span id="peek-n">10</span> 种码里的一个</p>
+    <div class="peek" id="peek"></div>
+    <div id="resume" style="margin-top:14px"></div>
+    <div class="acts">
+      <button class="primary" id="btn-free">先试 15 题（免费）</button>
+      <button class="secondary" id="btn-full">做完整 60 题</button>
+    </div>
+    <div id="unlock-note"></div>
+    <p class="disc">仅供自我觉察参考，非专业心理评估</p>
+  </section>
+
+  <section id="view-quiz" class="view">
+    <div class="qbar">
+      <button class="back" id="btn-back">← 上一题</button>
+      <span id="prog" style="flex:1;display:flex;gap:4px"></span>
+      <span class="prog-num" id="prog-num"></span>
+    </div>
+    <div class="scene-wrap">
+      <p class="scene" id="q-scene"></p>
+      <span class="q-comp" id="q-comp"></span>
+    </div>
+    <div class="opts" id="q-opts"></div>
+  </section>
+
+  <section id="view-analyzing" class="view">
+    <div class="an-wrap">
+      <div class="an-comp" id="an-comp"></div>
+      <div class="an-grid" id="an-grid"></div>
+      <p class="an-msg" id="an-msg"></p>
+    </div>
+  </section>
+
+  <section id="view-result" class="view">
+    <h2 class="res-head" id="res-head"></h2>
+    <p class="res-sub" id="res-sub"></p>
+    <div id="res-hero"></div>
+    <div id="res-chart"></div>
+    <div id="res-cards"></div>
+    <div id="res-flag"></div>
+    <div id="res-say"></div>
+    <div id="res-upgrade"></div>
+    <div id="res-next"></div>
+    <div class="acts" style="margin-top:26px">
+      <button class="primary" id="btn-share">保存结果图</button>
+      <button class="secondary" id="btn-again">重新测一次</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="fixbar">仅供自我觉察参考，非专业心理评估</div>
+
+<div class="share" id="share">
+  <div class="share-in">
+    <img id="share-img" alt="结果图">
+    <div class="share-acts">
+      <a class="primary" id="share-link" href="#" download="result.png">下载图片</a>
+      <button class="secondary" id="share-close">关闭</button>
+    </div>
+    <p class="share-tip">手机长按图片即可保存</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

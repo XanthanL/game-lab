@@ -1,0 +1,340 @@
+/* 视觉系统 v3 · 小红书向
+ * ---------------------------------------------------------------
+ * 分层用色，两条互不打搅：
+ *   界面层 = 奶油暖白 + 大圆角 + 柔阴影      → 观感（小红书偏好）
+ *   数据层 = 深蓝 #2557A7                     → 方块矩阵 / 图表 / 链接
+ *
+ * ⚠️ 数据层**不得**改成红 / 粉 / 橙：
+ *    我们对外口径是「命中多 ≠ 更糟」，暖色一上就等于在说「红=不好」。
+ *    装饰色 --coral 只许用在与此无关的装饰上（代号卡的点缀线、序号）。
+ * --------------------------------------------------------------- */
+:root{
+  --bg:#FDF7F2;
+  --card:#FFFFFF;
+  --ink:#2B2320;
+  --ink2:#4A403A;
+  --muted:#8B7C72;
+  --line:#F0E4D9;
+  --soft:#FFF6EF;
+  --blush:#FBE9E1;
+  --coral:#D9705A;
+  --accent:#2557A7;          /* 数据层主色，勿改暖色 */
+  --accent-deep:#1E4382;
+  --cell:#EDE2D8;
+  --r:20px;
+  --shadow:0 6px 22px rgba(122,82,52,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink)}
+body{
+  font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:480px;margin:0 auto;padding:26px 20px 44px}
+.view{display:none}
+.view.on{display:block;animation:rise .34s cubic-bezier(.22,.68,.4,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+h1{font-size:26px;font-weight:800;line-height:1.38;letter-spacing:-.02em}
+h1 .hi{color:var(--coral)}
+.lead{margin-top:12px;color:var(--ink2);font-size:15px}
+.eyebrow{font-size:12px;letter-spacing:.18em;color:var(--coral);font-weight:700;margin-bottom:10px}
+
+/* lead 里举例的那个真码（#BOSS）——数据层身份，用等宽 + 深蓝，和页面其它码一致 */
+.lead-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:700;letter-spacing:.02em;color:var(--accent);
+}
+
+.chips{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.chip{
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:6px 13px;font-size:13px;color:var(--ink2);
+}
+.chip.warm{background:var(--blush);border-color:transparent;color:#A2553F}
+
+.acts{margin-top:24px;display:flex;flex-direction:column;gap:10px}
+button{font:inherit;border-radius:15px;cursor:pointer;border:1px solid transparent;transition:transform .12s,background .12s,border-color .12s,box-shadow .12s}
+button:active{transform:scale(.985)}
+.primary{background:var(--ink);color:#fff;padding:16px 18px;font-size:16px;font-weight:700;box-shadow:var(--shadow)}
+.secondary{background:#fff;color:var(--ink);border-color:var(--line);padding:16px 18px;font-size:16px;font-weight:600}
+.ghost{background:transparent;color:var(--muted);border-color:var(--line);padding:11px 16px;font-size:14px;width:100%}
+.unlock-note{margin-top:14px;font-size:12px;color:var(--muted)}
+.fine{font-size:12px;color:var(--muted);margin-top:8px}
+.disc{margin-top:24px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+
+/* 落地页：结果样张预览
+ * 直接把"测完长什么样"摆出来——比任何自我介绍都管用。
+ * 码用等宽 + 数据层深蓝（它属于数据，不属于装饰），中文是解释。 */
+.peek-h{margin-top:26px;font-size:11.5px;letter-spacing:.16em;color:var(--muted)}
+.peek{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.peek span{
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:8px 10px;display:flex;align-items:baseline;gap:6px;
+  font-size:12.5px;color:var(--ink2);box-shadow:var(--shadow);
+  transform:rotate(-1deg);
+}
+.peek span:nth-child(even){transform:rotate(1.4deg)}
+.peek span b{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);
+}
+/* 「还有 7 种」：不给码、不参与 rotate 的随机感，做成一个安静的余量提示 */
+.peek span.peek-more{
+  background:transparent;border-style:dashed;box-shadow:none;transform:none;
+  color:var(--muted);font-size:12px;padding:8px 12px;
+}
+
+/* 答题 */
+.qbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.pcell{flex:1;height:7px;border-radius:999px;background:var(--cell);display:block;transition:background .2s}
+.pcell.done{background:var(--accent)}
+.pcell.cur{outline:2px solid var(--accent);outline-offset:2px}
+.prog-num{font-size:12px;color:var(--muted);white-space:nowrap}
+.back{background:none;border:none;color:var(--muted);font-size:13px;padding:4px 0}
+.scene{
+  font-size:19px;line-height:1.8;font-weight:700;margin-bottom:20px;
+  padding:18px 18px 18px 20px;background:#fff;border-radius:var(--r);
+  border-left:4px solid var(--coral);box-shadow:var(--shadow);
+}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{
+  display:flex;gap:12px;align-items:flex-start;text-align:left;
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-height:60px;
+  font-size:15.5px;line-height:1.68;color:var(--ink2);box-shadow:var(--shadow);
+}
+.opt .key{
+  flex:0 0 24px;height:24px;border-radius:50%;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--muted);margin-top:2px;
+}
+.opt.picked{background:var(--blush);border-color:var(--coral);color:var(--ink)}
+.opt.picked .key{background:var(--coral);border-color:var(--coral);color:#fff}
+
+/* 分析中 */
+.an-wrap{padding-top:64px;text-align:center}
+/* 60 题下每行 24 格，格子必须缩到 12px / 间距 3px，否则一行装不下（440 - 40 = 400px） */
+.an-grid{display:inline-flex;flex-direction:column;gap:6px;margin-bottom:26px}
+.an-row{display:flex;gap:3px;justify-content:flex-start}
+.acell{width:12px;height:12px;border-radius:3px;background:var(--cell);display:block}
+.acell.on{background:var(--accent)}
+.an-msg{font-size:14px;color:var(--muted)}
+
+/* 结果页 */
+.res-head{font-size:22px;font-weight:800;line-height:1.45;letter-spacing:-.02em}
+.res-sub{font-size:13.5px;color:var(--muted);margin-top:6px;margin-bottom:22px}
+
+/* hero 代号卡 —— 结果页最值得截图的那一块 */
+.hero{
+  background:linear-gradient(160deg,var(--blush) 0%,#FFF3EC 100%);
+  border-radius:26px;padding:26px 22px 22px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.hero-kicker{font-size:12px;letter-spacing:.2em;color:var(--coral);font-weight:700}
+/* 英文码：传播货币，评论区暗号。等宽 + 数据层深蓝（它属于数据，不属于装饰） */
+.hero-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:44px;font-weight:700;line-height:1.08;letter-spacing:.12em;
+  color:var(--accent);margin-top:12px;
+}
+.hero-tag{font-size:21px;font-weight:800;line-height:1.4;letter-spacing:-.01em;margin-top:8px}
+.hero-line{margin-top:10px;font-size:16.5px;line-height:1.72;color:var(--ink2);font-weight:600}
+/* 热词行：网上对这种想法的叫法，只作搜索词 / 记忆钩。
+   刻意压到最小号 —— 它是入口，不是结论；也不许盖过代号那行大字。 */
+.hero-hot{margin-top:8px;font-size:12px;color:var(--muted)}
+.hero-hot b{color:#A2553F;font-weight:700}
+.hero-hit{margin-top:10px;font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:600}
+.hero-hit b{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:19px;font-weight:700;letter-spacing:.05em;color:var(--accent);margin-left:2px;
+}
+.hero-pair{margin-top:12px;font-size:12.5px;color:#A2553F;font-weight:600}
+.hero-pair b{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:700;letter-spacing:.05em;color:var(--accent);
+}
+.hero-note{margin-top:12px;font-size:11.5px;color:#A98A7C}
+.hero-post{
+  margin-top:14px;background:rgba(255,255,255,.72);border-radius:14px;
+  padding:13px 15px;font-size:14px;line-height:1.7;color:var(--ink2);
+  border-left:3px solid var(--coral);
+}
+.hero-post i{display:block;font-style:normal;font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:4px}
+
+/* 方块矩阵
+ * 机会数随题量变（免费 6 / 完整 24 格）：格子区独占一行并允许换行，
+ * 名字那一行的宽度就不被格子吃掉——60 题下也不会把习惯名挤成省略号。 */
+.mx{margin-bottom:8px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 12px;box-shadow:var(--shadow)}
+.mx-row{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap}
+.mx-name{flex:1;min-width:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx-row.hit .mx-name{color:var(--ink);font-weight:600}
+.mx-num{width:40px;text-align:right;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mx-row.hit .mx-num{color:var(--accent);font-weight:700}
+.mx-cells{flex:0 0 100%;display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.cell{width:12px;height:12px;border-radius:3px;background:var(--cell);display:block;cursor:default}
+.cell.on{background:var(--accent);cursor:pointer}
+.mx-tip{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.mx-note{font-size:11.5px;color:#A98A7C;margin:8px 2px 0;line-height:1.6}
+
+/* 场景画像：答的是「想法发生在哪儿」。用暖调（界面层）——
+   这里的命中数 n/m 是数据，仍走深蓝；卡片底色走暖色，不跟矩阵抢「统计表」的身份。
+   ⚠️ 类名必须是 where 不能用 scene：`.scene` 是答题页题干卡（左侧珊瑚边的白卡），
+   同特异性下后写的规则会把它整块改掉。 */
+.where{margin-top:12px;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--soft);box-shadow:var(--shadow)}
+.where-line{margin:0;font-size:13.5px;line-height:1.7;color:var(--ink2);font-weight:600}
+.where-line b{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-size:15px}
+.where-hot{margin:6px 0 0;font-size:12.5px;color:#A2553F}
+.where-hot b{font-weight:700}
+.where-note{margin:8px 0 0;font-size:11px;color:#A98A7C;line-height:1.6}
+
+/* 卡片 */
+.card{border:1px solid var(--line);border-radius:var(--r);padding:20px 18px;margin-bottom:14px;background:var(--card);box-shadow:var(--shadow)}
+.card.flat,.card.flag{background:var(--soft)}
+.card.up{text-align:center}
+/* 结果抽屉：默认只露代号 + 名字 + 一句话，点开才展开完整拆解 */
+.list-hint{font-size:12px;color:var(--muted);margin:0 2px 10px}
+.acc{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;
+}
+.acc-head{
+  display:block;width:100%;text-align:left;background:none;border:none;border-radius:0;
+  padding:15px 46px 15px 16px;position:relative;box-shadow:none;
+}
+.acc-head:active{transform:none}
+.acc-tag{
+  display:inline-block;font-size:11.5px;font-weight:700;color:#A2553F;
+  background:var(--blush);border-radius:999px;padding:3px 10px;margin-bottom:7px;
+}
+.acc-title{display:block;font-size:17px;font-weight:800;line-height:1.5;letter-spacing:-.01em}
+.acc-one{display:block;margin-top:3px;font-size:13.5px;color:var(--muted);line-height:1.6}
+.acc-arrow{
+  position:absolute;right:16px;top:50%;width:9px;height:9px;margin-top:-6px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);transition:transform .22s ease;
+}
+.acc.open .acc-arrow{transform:rotate(-135deg)}
+.acc.open .acc-head{border-bottom:1px solid var(--line)}
+.acc-body{display:none;padding:14px 16px 18px;animation:drop .24s ease}
+.acc-body.open{display:block}
+@keyframes drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.acc .ropen{margin-top:0}
+.acc-body .what{margin-top:10px}
+.ropen{margin-top:10px;font-size:16px;color:var(--accent-deep);line-height:1.7;font-weight:600}
+.revidence{
+  margin-top:10px;font-size:13px;line-height:1.75;color:var(--muted);
+  border-left:2px solid var(--line);padding-left:12px;
+}
+.what{margin-top:12px;font-size:15px;color:var(--ink2);line-height:1.78}
+.rlabel{margin-top:16px;font-size:11.5px;letter-spacing:.16em;color:var(--coral);font-weight:700}
+.signs{margin-top:8px;padding-left:18px;font-size:14.5px;color:var(--ink2)}
+.signs li{margin:4px 0}
+.swap{margin-top:16px;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+.swap .rlabel{margin-top:0}
+.swap-t{margin-top:8px;font-size:17px;line-height:1.68;font-weight:700;color:var(--ink)}
+.contrast{margin-top:14px;font-size:14px;color:var(--muted)}
+.ov-list{margin-top:10px;padding-left:18px;font-size:14px;color:var(--ink2)}
+.ov-list li{margin:5px 0}
+.next{margin-top:10px;padding-left:20px;font-size:15px;color:var(--ink2)}
+.next li{margin:6px 0}
+.next a{color:var(--accent)}
+
+/* 评论区自报家门 —— 分发动机 */
+.say{
+  background:var(--blush);border:1px solid transparent;border-radius:var(--r);
+  padding:18px;text-align:center;margin-bottom:14px;
+}
+.say b{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.say p{margin-top:6px;font-size:13px;color:#A2553F}
+.say .say-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:700;letter-spacing:.05em;color:var(--accent);
+}
+
+/* 结果页底部固定条 */
+.fixbar{display:none}
+body.in-result .fixbar{
+  display:block;position:sticky;bottom:0;left:0;right:0;z-index:5;
+  background:rgba(253,247,242,.94);border-top:1px solid var(--line);
+  padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+  font-size:11.5px;color:var(--muted);text-align:center;
+  backdrop-filter:blur(6px);
+}
+body.in-result{padding-bottom:0}
+
+/* 分享弹层 */
+.share{display:none;position:fixed;inset:0;z-index:20;background:rgba(43,35,32,.66);padding:20px;overflow:auto}
+.share.on{display:block}
+.share-in{max-width:420px;margin:0 auto}
+/* 图是 750×1120 的长图，手机上一屏放不下。
+   max-height + object-fit 让它缩到视口内，同时给滚动留余地——
+   ⚠️ 不能给 max-height:100% 配 overflow:auto 的父容器，Safari 上会双层滚动。 */
+.share img{width:100%;max-height:calc(100vh - 150px);object-fit:contain;object-position:top;
+           display:block;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);margin:0 auto}
+.share-acts{margin-top:14px;display:flex;gap:10px}
+.share-acts a,.share-acts button{flex:1;text-align:center;text-decoration:none}
+.share-tip{color:#fff;font-size:13px;text-align:center;margin-top:10px}
+
+#toast{
+  position:fixed;left:50%;bottom:70px;transform:translateX(-50%) translateY(8px);
+  background:rgba(43,35,32,.94);color:#fff;font-size:13.5px;padding:10px 16px;border-radius:12px;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:30;max-width:88vw;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- 图片装饰层 ----------
+ * 全部是可选装饰：sprite 探测失败 → body.no-art → 一律隐藏，布局不塌、不留空洞。
+ * 人偶图已去背（透明底 RGBA，见 产出/_debk.py）：贴在白卡 / 奶油底 / blush 卡上
+ * 都是同一个小人浮在上面，不再有"图片底色 ≠ 页面底色"的方块印。
+ */
+.spr{
+  display:inline-block;background-repeat:no-repeat;
+  vertical-align:middle;flex:0 0 auto;
+}
+.no-art .deco{display:none !important}
+
+/* 答题页：陪伴小人贴在题干卡右上角 */
+.scene-wrap{position:relative}
+.scene{padding-right:84px}
+.no-art .scene{padding-right:18px}
+.q-comp{position:absolute;right:14px;top:16px;pointer-events:none;line-height:0}
+
+/* 分析中：等待小人居中在格子上方 */
+.an-comp{margin-bottom:20px;line-height:0}
+
+/* 结果页 hero：大图压右上角，不挤压代号大字 */
+.hero{position:relative}
+.hero-kicker{padding-right:96px}
+.no-art .hero-kicker{padding-right:0}
+.hero-art{position:absolute;right:14px;top:14px;line-height:0}
+
+/* 矩阵行首：两位序号（数据层语言，替代看不清的小人偶，不依赖图片开关） */
+.mx-idx{
+  flex:0 0 18px;font-style:normal;font-size:10.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.mx-row.hit .mx-idx{color:var(--accent);font-weight:700}
+
+/* 结果抽屉：代号 pill 本身就是视觉锚点，标题左侧不再放小图 */
+.acc{position:relative}
+
+/* 兜底卡 / 解锁卡 / 评论区 */
+.flat-comp{text-align:center;margin-bottom:14px}
+.up-comp{display:block;margin:0 auto 12px;line-height:0}
+.say-comp{display:block;margin:0 auto 10px;line-height:0}
+
+/* ---------- 质感层（纯 CSS，不占图片请求） ----------
+ * 原 G 批底纹 / H 批条带实测装饰密度 0~3%，缩到实际尺寸后肉眼不可见，已整体下线。
+ * 卡片质感改为：
+ *   hero：inset 1px 内高光 —— 奶油渐变卡有了一道"受光边"，像实体卡片立起来；
+ *   白卡：边界靠既有 shadow + line，不动；
+ *   分隔：band 删除后用间距补偿，节奏靠空白不靠花边。
+ */
+.hero{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), var(--shadow);
+}
+.list-hint{margin:16px 2px 10px}
+
+@media (prefers-reduced-motion:reduce){
+  .view.on{animation:none}
+  *{transition-duration:.01ms !important}
+}
