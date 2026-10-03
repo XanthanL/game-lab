@@ -1,6 +1,6 @@
 # 奇点旅途 SINGULARITY VOYAGE — project notes
 
-像素风太空弹幕射击。纯静态站点（无构建）：`index.html`、`style.css`、`src/{i18n,audio,sprites,game}.js`、`assets/`（Fusion Pixel 12px 字体，OFL）。
+像素风太空弹幕射击。纯静态站点（无构建）：`index.html`、`style.css`、`src/{i18n,audio,sprites,bulletskin,game}.js`、`assets/`（Fusion Pixel 12px 字体，OFL）。
 **全游戏中英双语可切**（标题页右上角按钮，见「中英切换 i18n」一节）。
 
 **血统**：画风与代码框架照搬 `last-firewall`（终焉防火墙），内容（船体 / 敌型 / 模块 / 波次）来自 `singularity-echo`（奇点回响）的重设计版。
@@ -70,12 +70,14 @@
      ⚠️ 而且**只在探针页复现**，直接开 index.html 完全正常 —— 极难定位。
      **注入脚本的全局名一律加前缀**（`balLog` / `balOut` / `balPost` / `balTicks`），别用 `out`/`t`/`st`/`lastT` 这种大众名。
    **新增全局常量前先 grep 三个文件 + 两个探针脚本。**
-2. **精灵缓存的 key 必须是有界集合。** `_bcache`/`_gcache`/`tcache`/`_pvar` 存 canvas，绝不把逐帧变化的量（alpha、浮点半径）写进 key，
-   否则每帧泄漏一个 canvas、几分钟后 GPU 内存耗尽。要淡出就在 draw 时用 `drawGlow(ctx, color, R, alpha, x, y)` 改 `globalAlpha`
+2. **精灵缓存的 key 必须是有界集合。** `_bcache`/`_gcache`/`tcache` 与 bulletskin 的 `BSHAPE_CACHE`/`BDECO_CACHE` 存 canvas，
+   绝不把逐帧变化的量（alpha、浮点半径）写进 key，否则每帧泄漏一个 canvas、几分钟后 GPU 内存耗尽。
+   要淡出就在 draw 时用 `drawGlow(ctx, color, R, alpha, x, y)` 改 `globalAlpha`
    （`glowSprite(color, R)` 本身不带 alpha 参数，key 只有 `color|R|1`，所以安全）。
-   `_pvar`（`bulletSetFor(color)`，玩家弹配色变体）同理 —— key 只能是那几个固定色字符串。
+   子弹外观的三层缓存 key 只能是**有限枚举字符串**（家族/等级/尺寸/具名配色/装饰名，见「子弹外观系统」一节），
+   超出 `BCACHE_MAX(56)` 走 LRU 淘汰 —— 探针穷举 1008 种组合实测封顶不涨。
    ⚠️ 别拿 `tinted()` 去改玩家弹的颜色，那会把弹芯的白色一起吃掉、弹丸糊成一坨色块；
-   要新配色就在 `bulletSetFor()` 里照原样重画一遍细针。
+   要新配色就在 `bulletskin.js` 的 `BTINT` 表里加一行具名三色。
 3. **弹幕可读性**：友方 = 青白/金色细针（画在敌人**下**层），敌方 = 红/粉/紫描边圆弹（画在**最上**层）。新颜色只能在这两个色族里加。
 
 ## 敌型设计原则（第二批定下的）
@@ -423,6 +425,36 @@ rx.drawImage(fl.cv, 0, 0);
   POST base64 存到 `.workbuddy/out/sv-kit.png`。
   ⚠️ **「好不好看」没法断言**，改完 `ATTACH_ART` 就靠它看一眼再定稿。
   ⚠️ 它需要 `?bot=1` 才会进 play 态，且超时分支必须**也 POST 一次**（否则探针侧只看到 NO RESULT）。
+
+## 子弹外观系统（`src/bulletskin.js`，2026-10-03）
+
+**纯视觉层，一条铁律**：本文件只被 `drawPBullets` 调用；`pBullet` / `damageEnemy` / `updateBullets`
+一行都不许反向依赖它。判定半径、伤害、穿透、命中一律不读外观 —— 外观调整永远不许悄悄变成数值调整。
+
+旧玩家弹只有「颜色」一维（`b.col`），叠多少张卡都只换色。现在拆成**三个正交、可组合的轴**，
+全部由 `game.js` 里的数据表驱动（外观层自己一张表都不查进度，只吃传入的 spec）：
+
+| 轴 | 来源表（game.js） | 说明 |
+|---|---|---|
+| shape 家族×等级 | `BSPEC_FAMILY` + `bFamilyIndex()` | 从上往下第一条命中生效 → **组合家族必须排在单卡前面**；双卡组合的 tier = 两卡等级均值向上取整 |
+| shape 尺寸档 | `BSIZE` | 只吃「口径校准」等级（视觉变粗变长 = 判定半径变大的另一种读数；`BSIZE` 本身碰不到判定） |
+| tint 具名配色 | `BTINT`（bulletskin）+ `BKIND[*].tint` + `BTINT_BY_MOD` | 优先级：**协同 > 质变金 > 卡 > 来源默认**；一律具名（cyan/ice/amber/gold/violet/rose/mint），禁止裸色串进缓存 key |
+| deco 装饰层 | `BDECO_BY_SYN`（协同）> `BDECO_BY_MOD`（单卡 lv2+）> `BDECO_BOUNCED`（已弹过，临时态最优先） | 独立小精灵叠在最上层，24 向与母弹同索引，永远贴合朝向 |
+
+- 来源种类（`b.kind`，`pBullet` 的纯视觉字段）：`main` 主炮 / `rear` 尾炮 / `spray` 散射 / `shard` 裂变弹片 / `drone` 无人机。
+  `main/rear/spray` 跟着主炮装配长（家族 + 口径尺寸档），`shard/drone` 有自己固定的小家族 —— 它们是「别的东西」，不是主炮缩小版。
+- 家族速查：无卡 `plain`（与改造前逐像素一致）· 穿甲 `spear` · 高爆 `bomb` · 裂变 `core`（空心）· 制导 `seeker`（带鳍）·
+  穿甲×高爆 `sabot` · 穿甲×口径 `hammer` · 穿甲×制导 `dive` · 跳弹×高爆 `bound` · 裂变×高爆 `pod` · 弹片 `frag` · 无人机 `nub`。
+- **性能纪律（分层缓存）**：把「组合」整体烘焙成一张精灵的话，家族×等级×尺寸×配色×装饰会炸出上千张 canvas。
+  分三层各自缓存（shape 键 `<family>_<tier>_<size>|<tint>`、deco 键 `<名>`），规模相加不相乘；
+  `bulletLookSpec()` **每种来源每帧只调一次**（drawPBullets 里一次性取齐），绝不在子弹循环里逐发拼 spec。
+  辉光 aura 是一发一次 drawImage，场上弹 ≥110 就整体关掉。
+- 弹头「提亮」：锥尖/圆头前缘的孤立像素会被「贴空气即描边」规则判成描边色，在星空背景上等于隐形 ——
+  所以非 flat 弹头的前缘孤立像素强制提亮成弹芯色（`bnoseK` 两处共用同一个 k，各算一次就会留下暗针）。
+- 探针：`probes/sv-bulletskin-check.js`（自带静态服务，**809 行的跑法表要加它一条**）——
+  家族矩阵 11 例 · 逐级 tier 单调 · 来源/质变配色 · 协同装饰与配色覆盖 · 单卡 lv2 装饰（lv1 无）·
+  已弹装饰 · 全家族×3 级轮廓非空白 · **穷举 1008 种组合后缓存封顶 56 不涨** · 真实对局 90 帧零 JS 错误 · 产出 `probes/bullet-overview.png` 总览图。
+- 旧链路已删：`sprites.js` 的 `BULLET_SET` / `bulletSetFor` / `_pvar` / `drawBulletSet` 全部移除，玩家弹绘制只有 `BulletSkin` 一条路。
 
 ## 操控模型：`aimMode`（对齐《奇点回响》）
 
@@ -818,7 +850,8 @@ export NODE_PATH=$WS/workspace/node_modules     # playwright-core 装在这儿
 export CHROME_EXE='C:/Program Files/Google/Chrome/Application/chrome.exe'
 $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 ```
-（脚本自己会起静态服务，不需要另开 `http.server`。）
+⚠️ **只有 `sv-bulletskin-check.js` 自己起静态服务**；其余四份依赖 `http://127.0.0.1:8612`
+（`SV_URL` 可覆盖）—— 先在项目根起 `python -m http.server 8612 --bind 127.0.0.1` 再跑。
 
 | 脚本 | 验什么 | 改了什么之后跑 |
 |---|---|---|
@@ -826,6 +859,7 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-dash-dir.js` | **冲刺只沿机头**：13 组按键 × 朝向组合，位移与速度方向相对 `G.ang` 偏差全 0° | `tryDash` / `updatePlayer` / 输入模型 |
 | `sv-move-check.js` | 推进加速时间 / 稳态速度 / 制动 / 滑行距离 / 吸附 / 爆炸 | `updatePlayer` / `aBoom` |
 | `sv-touch-check.js` | 移动端触屏按钮命中与射击 | `#touch` / `setTouchMode` / `.tbtn` |
+| `sv-bulletskin-check.js` | 子弹外观：家族矩阵 / 逐级 tier / 配色优先级 / 协同+单卡装饰 / 缓存封顶 / 90 帧零 JS 错误，产出 `bullet-overview.png` | `bulletskin.js` / `BSPEC_FAMILY` / `BKIND` / `BDECO_BY_*` / `drawPBullets` |
 
 ⚠️ `sv-dash-dir.js` 每个用例开头必须 `d.clearEnemies(); G.spawnQueue.length = 0;` ——
   不隔离的话，`updateWave` 补出来的怪会用接触伤害的互推 `G.vx += ux*40` 污染速度，

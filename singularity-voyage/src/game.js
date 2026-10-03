@@ -1078,7 +1078,10 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
                           + (synOn('heavyBore') ? 1 : 0)),
     // 跳弹：反弹次数同样发射时定格；穿甲跳弹协同额外 +1
     bounce: o.bounce ?? (G.S.bounce + (synOn('bouncePierce') ? 1 : 0)),
-    blast: o.blast ?? G.S.blast, homing, hit: null, col: o.col || null,
+    blast: o.blast ?? G.S.blast, homing, hit: null,
+    // 外观来源标记（**纯视觉**）：main 主炮 / rear 尾炮 / spray 散射 / shard 裂变弹片 / drone 无人机。
+    // 判定一律不看它 —— 它只用来在 drawPBullets 里查「这一族该画成什么样」。
+    kind: o.kind || 'main',
     tgt: null, retarget: 0, bounced: false,
     // 裂变弹芯：随弹丸走，命中那一刻才决定炸几片 —— 这样它也能被尾炮 / 弹片继承。
     fission: o.fission ?? G.S.fission, fissionMul: o.fissionMul ?? G.S.fissionMul,
@@ -1195,7 +1198,7 @@ function fireMain(ang, dmgMul = 1) {
       const t = sn === 1 ? 0 : (i / (sn - 1) - 0.5) * 2;   // -1 → +1
       const a = ang + t * arc;
       pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.92,
-        base * S.sprayMul, { col: S.sprayGold ? '#ffcd75' : '#94b0c2' });
+        base * S.sprayMul, { kind: 'spray' });
     }
   }
   // 尾炮：每次齐射同时向船尾开火。伤害只有正面的 55%，所以它不是「DPS 翻倍」，
@@ -1209,7 +1212,7 @@ function fireMain(ang, dmgMul = 1) {
       const spread = bn === 1 ? 0 : (i - (bn - 1) / 2) * 0.17;
       const a = back + spread;
       pBullet(G.px + Math.cos(a) * 9, G.py + Math.sin(a) * 9, a, spd * 0.94, base * bMul,
-        { col: S.backGold ? '#ffcd75' : '#ef7d57', pierce: bpierce });
+        { kind: 'rear', pierce: bpierce });
     }
   }
   Sound.sfx.shoot();
@@ -2184,7 +2187,7 @@ function updateDrones(dt) {
       const t = nearest(d.x, d.y, 190);
       if (t) {
         const a = Math.atan2(t.y - d.y, t.x - d.x);
-        pBullet(d.x, d.y, a, 300, DRONE_DMG * S.dmg, { col: '#ffcd75', r: 2 });
+        pBullet(d.x, d.y, a, 300, DRONE_DMG * S.dmg, { kind: 'drone', r: 2 });
         Sound.sfx.drone();
         d.cd = 0.62 / S.rate;
       } else d.cd = 0.2;
@@ -2535,7 +2538,7 @@ function updateBullets(dt) {
           fission: 0,
           bounce: synOn('bounceFission') ? 1 : 0,
           blast: synOn('fissionBoom') ? 1 : 0,
-          col: G.S.fissionGold ? '#ffcd75' : '#ef7d57',
+          kind: 'shard',
         });
       }
       ring(b.x, b.y, 9, G.S.fissionGold ? '#ffcd75' : '#ef7d57', .16, 1);
@@ -3084,10 +3087,165 @@ function drawPickups() {
   }
 }
 
+/* ================== 子弹外观规则表（纯视觉：不参与任何数值 / 判定） ==================
+   这张表和下面的解析器是**本次唯一改变画面、不动玩法**的地方。三条轴按固定顺序裁决：
+
+       ① 家族 family ← 装配里「哪几张弹体卡同时在场」（组合优先于单卡）
+       ② 尺寸 size   ← 口径校准的等级（和它的判定半径同源）
+       ③ 配色 tint   ← 来源色 → 卡 → 质变金 → 协同（后者覆盖前者）
+       ④ 装饰 deco   ← 已弹过的临时状态 → 协同 → 单卡高阶
+
+   ⚠️⚠️ 铁律：**这里出现的任何数字都不许被别的函数读到**。
+       pBullet / damageEnemy / updateBullets / updateEnemies 一行都不许引用本节的常量，
+       否则「外观调整」就会悄悄变成「数值调整」 —— 这次明确要求两者解耦。
+   ================================================================================= */
+
+// ① 家族：从上往下第一条命中的生效，所以**组合家族必须排在单卡前面**
+//    （不然「穿甲 + 高爆」会先被『穿甲』截胡，永远看不到脱壳弹）。
+const BSPEC_FAMILY = [
+  { id: 'hammer', req: { piercer: 1, caliber: 1 }, note: '穿甲 × 口径 → 重型矛' },
+  { id: 'sabot', req: { piercer: 1, hesh: 1 }, note: '穿甲 × 高爆 → 脱壳榴弹' },
+  { id: 'dive', req: { piercer: 1, guided: 1 }, note: '穿甲 × 制导 → 带鳍矛' },
+  { id: 'pod', req: { fission: 1, hesh: 1 }, note: '裂变 × 高爆 → 空心荚舱' },
+  { id: 'bound', req: { ricochet: 1, hesh: 1 }, note: '跳弹 × 高爆 → 连环跳雷' },
+  { id: 'spear', req: { piercer: 1 }, note: '穿甲弹' },
+  { id: 'bomb', req: { hesh: 1 }, note: '高爆弹' },
+  { id: 'core', req: { fission: 1 }, note: '裂变弹芯' },
+  { id: 'seeker', req: { guided: 1 }, note: '制导弹药' },
+];
+// 家族 internally 的等级取法：单卡 = 那张卡的等级；双卡组合 = 两张等级的平均向上取整。
+// 后者是刻意的 —— 「一张 lv3 一张 lv1」应该比「两张 lv1」更像回事，但到不了双 lv3。
+function bFamilyIndex(m, req) {
+  const keys = Object.keys(req);
+  if (keys.length === 1) return Math.min(3, m[keys[0]] | 0);
+  let sum = 0;
+  for (const k of keys) sum += Math.min(3, m[k] | 0);
+  return Math.min(3, Math.max(1, Math.ceil(sum / keys.length)));
+}
+// 每种来源的基础表：默认家族 / 是否吃尺寸档 / 基础配色
+const BKIND = {
+  main: { fam: true, size: true, tint: S => S.caliberGold ? 'gold' : 'cyan' },
+  rear: { fam: true, size: true, tint: S => S.backGold ? 'gold' : 'amber' },
+  // 散射弹刻意整族小一档：它是「用数量换单发威力」，一眼就该比主炮弱
+  spray: { fam: true, size: true, sizeAdj: -1, tint: S => S.sprayGold ? 'gold' : 'ice' },
+  // 弹片 / 无人机有自己的家族，不跟着主炮的装配长 —— 它们是「别的东西」，不是主炮的缩小版
+  shard: { fam: 'frag', by: 'fission', tint: S => S.fissionGold ? 'gold' : 'amber' },
+  drone: { fam: 'nub', by: 'drone', tint: () => 'gold' },
+};
+// ③ 卡带来的配色覆盖（低优先级：质变金 > 卡 > 来源默认）
+//    只放「叙事上真的改写了弹药」的卡，别每张卡都给一份颜色，那样颜色就贬值了。
+const BTINT_BY_MOD = {
+  rewind: 'mint',     // 时滞回溯：时空系的冷绿
+};
+// ④ 单卡高阶的装饰（比协同装饰低一级）
+const BDECO_BY_MOD = [
+  { id: 'bind', lv: 2, deco: 'bindRing' },
+  { id: 'isolate', lv: 2, deco: 'loneDot' },
+  { id: 'execute', lv: 2, deco: 'harvestMark' },
+];
+/* 协同的额外变化。这里刻意**没有**给全部 30 组协同都配一条 ——
+   像「相位护壁」「撞击汲取」「磁暴高爆」这种改的是护盾 / 冲角 / 磁雷的协同，
+   和弹药没关系，硬给子弹加装饰只会让人读不懂「为什么突然变了」。
+   进这张表的标准是：这条协同的 desc 里提到了「弹 / 炮 / 穿透 / 爆炸」。 */
+const BDECO_BY_SYN = {
+  heavyBore: { deco: 'goldRing', aura: ['#ffcd75', 9, 0.30] },
+  volley: { deco: 'crossBar' },
+  rearVolley: { deco: 'arrowBack' },
+  rearPierce: { deco: 'arrowBack', aura: ['#ffe9a8', 8, 0.22] },
+  bulletWall: { deco: 'wallSweep' },
+  pierceCrit: { deco: 'critGlint', aura: ['#fff4d0', 8, 0.26] },
+  guidedPierce: { deco: 'haloWave', aura: ['#73eff7', 10, 0.26] },
+  bouncePierce: { deco: 'sparkTail' },
+  bounceBlast: { deco: 'sparkTail' },
+  bounceFission: { deco: 'sparkTail' },
+  cluster: { deco: 'clusterDot', aura: ['#ffcd75', 9, 0.22] },
+  fissionBoom: { deco: 'clusterDot' },
+  lanceCaliber: { deco: 'lanceEdge' },
+  lancePierce: { deco: 'burnEdge' },
+  staticArc: { deco: 'voidCore' },
+  resonance: { deco: 'voidCore', tint: 'violet' },
+  staticBind: { deco: 'bindRing', tint: 'violet' },
+  harvest: { deco: 'harvestMark', tint: 'rose' },
+  loneMark: { deco: 'loneDot', aura: ['#c070f0', 8, 0.20] },
+  droneSwarm: { deco: 'swarmPing' },
+};
+// 已经弹过至少一次 → 更烫（临时状态，优先级最高：它要告诉玩家「这一发现在打得更疼」）
+const BDECO_BOUNCED = 'hotSparks';
+
+/* 解析一个来源当前的 spec。**每种来源每帧只调一次**（drawPBullets 里一次性取齐），
+   别在子弹循环里逐发拼 —— 那样每帧要拼几百个字符串。 */
+function bulletLookSpec(kind, extraDeco) {
+  const S = G.S, m = G.mods;
+  const kd = BKIND[kind] || BKIND.main;
+  const out = { family: 'plain', tier: 1, size: 0, tint: kd.tint(S), deco: null, aura: null };
+  // ① 家族
+  if (kd.fam === true) {
+    for (const r of BSPEC_FAMILY) {
+      let ok = true;
+      for (const q in r.req) if ((m[q] | 0) < r.req[q]) { ok = false; break; }
+      if (ok) { out.family = r.id; out.tier = bFamilyIndex(m, r.req); break; }
+    }
+  } else {
+    out.family = kd.fam;
+    out.tier = Math.min(3, Math.max(1, m[kd.by] | 0));
+  }
+  // ② 尺寸（只有跟着主炮装配的那几族才吃口径加成）
+  if (kd.size) out.size = Math.min(3, Math.max(0, (m.caliber | 0) + (kd.sizeAdj || 0)));
+  // ③ 配色优先级：协同 > 质变金 > 卡 > 来源默认。
+  //    「质变金」由 kd.tint(S) 自己返回，所以只要知道来源默认色是不是金色就够了。
+  const gold = out.tint === 'gold';
+  let ov = null;
+  for (const id in BDECO_BY_SYN) if (G.syn[id] && BDECO_BY_SYN[id].tint) ov = BDECO_BY_SYN[id].tint;
+  if (!ov && !gold) {
+    for (const id in BTINT_BY_MOD) if ((m[id] | 0) > 0) ov = BTINT_BY_MOD[id];
+  }
+  if (ov) out.tint = ov;
+  // ④ 装饰：已弹过的临时状态 > 协同 > 单卡高阶
+  if (extraDeco) out.deco = extraDeco;
+  if (!out.deco) {
+    for (const id in BDECO_BY_SYN) if (G.syn[id] && BDECO_BY_SYN[id].deco) {
+      out.deco = BDECO_BY_SYN[id].deco;
+      break;
+    }
+  }
+  if (!out.deco) for (const b of BDECO_BY_MOD) if ((m[b.id] | 0) >= b.lv) { out.deco = b.deco; break; }
+  // 辉光只跟随协同（这是「这一枪不一样」的最强信号），但也最贵 —— 由 drawPBullets 按弹数开关
+  if (!extraDeco) {
+    for (const id in BDECO_BY_SYN) if (G.syn[id] && BDECO_BY_SYN[id].aura) {
+      out.aura = BDECO_BY_SYN[id].aura;
+      break;
+    }
+  }
+  return out;
+}
+
 function drawPBullets() {
-  // 友方：青白细针，画在敌人之下。带 col 的（尾炮橙 / 满级尾炮金 / 无人机金）走配色变体。
+  // 每帧只解析一次：同帧所有同种弹药共用同一份外观对象。
+  const Lmain = BulletSkin.make(bulletLookSpec('main'));
+  const Lrear = BulletSkin.make(bulletLookSpec('rear'));
+  const Lspray = BulletSkin.make(bulletLookSpec('spray'));
+  const Lshard = BulletSkin.make(bulletLookSpec('shard'));
+  const Ldrone = BulletSkin.make(bulletLookSpec('drone'));
+  // 已经弹过的那几发：可能同时存在，所以 multi-hotmirror 也只解析一次
+  let Lhot = null, LhotB = null;
+  if (G.S.bounce > 0) {
+    Lhot = BulletSkin.make(bulletLookSpec('main', BDECO_BOUNCED));
+    LhotB = BulletSkin.make(bulletLookSpec('rear', BDECO_BOUNCED));
+  }
+  // 辉光是一发一次 drawImage：弹云密布时关掉，画面识别度靠轮廓和配色撑着
+  const aura = G.bullets.length < 110;
   for (const b of G.bullets) {
-    drawBulletSet(ctx, b.ang, b.x, b.y, b.col);
+    let look = Lmain;
+    switch (b.kind) {
+      case 'rear': look = Lrear; break;
+      case 'spray': look = Lspray; break;
+      case 'shard': look = Lshard; break;
+      case 'drone': look = Ldrone; break;
+    }
+    if (Lhot && (b.bounceN | 0) > 0 && (b.kind === 'main' || b.kind === 'rear')) {
+      look = b.kind === 'rear' ? LhotB : Lhot;
+    }
+    BulletSkin.draw(ctx, look, b.ang, b.x, b.y, aura);
   }
 }
 function drawEBullets() {

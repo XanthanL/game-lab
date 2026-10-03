@@ -592,8 +592,6 @@ const BOSS_SPR_SCALE = 3;    // 巨像：原来 2x（40×26…40×30，比玩家
 const SPR = {};
 // 注意：不能叫 HULLS —— game.js 里的船体数据表叫这个名字，两个文件都是全局作用域会冲突
 const SHIPSET = {};
-let BULLET_SET = null;
-
 function buildSprites() {
   for (const k in SPR_SRC) SPR[k] = makeSet(SPR_SRC[k], ENEMY_SPR_SCALE);
   // ⚠️ 拾取物**不放大**：星尘 / 治疗 / 能量本来就是按 1x 设计的，
@@ -606,27 +604,7 @@ function buildSprites() {
     SHIPSET[k] = bakeRotation(base, 24);
     SHIPSET[k].white = bakeRotation(tinted(base, '#ffffff'), 24);
   }
-  // 玩家弹：细针（青白），朝右
-  const nb = newCanvas(9, 3), nx = nb.getContext('2d');
-  nx.fillStyle = '#0b2a3a'; nx.fillRect(0, 0, 9, 3);
-  nx.fillStyle = '#73eff7'; nx.fillRect(1, 1, 7, 1);
-  nx.fillStyle = '#f4f4f4'; nx.fillRect(3, 1, 5, 1);
-  BULLET_SET = bakeRotation(nb, 24);
 }
-// 玩家弹的配色变体：尾炮（橙）/ 满级尾炮（金）需要在屏幕上一眼分得出来。
-// 缓存 key 只有几个固定色字符串 —— 有界集合，符合精灵缓存纪律。
-// 注意：不能直接 tinted()，那会把弹芯的白色一起吃掉，弹丸就糊成一坨色块了。
-const _pvar = {};
-function bulletSetFor(color) {
-  if (!color) return BULLET_SET;
-  if (_pvar[color]) return _pvar[color];
-  const nb = newCanvas(9, 3), nx = nb.getContext('2d');
-  nx.fillStyle = '#0b2a3a'; nx.fillRect(0, 0, 9, 3);
-  nx.fillStyle = color;     nx.fillRect(1, 1, 7, 1);
-  nx.fillStyle = '#f4f4f4'; nx.fillRect(3, 1, 5, 1);
-  return (_pvar[color] = bakeRotation(nb, 24));
-}
-
 // ============ 敌弹 & 辉光（缓存纪律：key 只放有界集合，绝不放逐帧变化的 alpha） ============
 const _bcache = {}, _gcache = {};
 function bulletSprite(color, r) {
@@ -666,10 +644,6 @@ function drawShip(ctx, hull, ang, x, y, white) {
   if (!S) return;
   const img = S.imgs[dirIndex(ang, S.n)];
   ctx.drawImage(img, Math.round(x - S.half), Math.round(y - S.half));
-}
-function drawBulletSet(ctx, ang, x, y, color) {
-  const S = bulletSetFor(color);
-  ctx.drawImage(S.imgs[dirIndex(ang, S.n)], Math.round(x - S.half), Math.round(y - S.half));
 }
 
 // ============ 星空背景 tile（每层视差一套，64x64 无缝） ============
