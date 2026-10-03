@@ -773,7 +773,8 @@ function newGame(hullId) {
     lance: 0, lanceCd: 0, lanceGold: 0, lanceT: 0,
     blink: 0, blinkCd: 0, blinkMax: 0, blinkT: 0,
     mine: 0, mineCd: 0, mineMax: 0, mineGold: 0, mineT: 0,
-    shield: 0, shieldMax: 0, shieldRegenMul: 1, magnet: 46,
+    // 吸附半径基准 78px（含义见 updatePickups 上方注释；旧值 46）
+    shield: 0, shieldMax: 0, shieldRegenMul: 1, magnet: 78,
     regen: 0, invBonus: 0, dustHeal: 0,
     // 装置型能力状态
     arc: 0, arcT: 0, arcCdMul: 1,
@@ -824,9 +825,50 @@ function newGame(hullId) {
 // 命中瞬间冻结画面几十毫秒。这是像素弹幕游戏最重要的手感来源：
 // 没有它，击杀只是"敌人消失"；有了它，每一次命中都有重量。
 // 上限 0.18s：连杀时不该把游戏冻成幻灯片
-function freeze(t) { if (G) G.hitstop = Math.min(0.18, Math.max(G.hitstop, t)); }
+//
+// ⚠️ `freezeQ` 是「连锁反应的熔断闸」（作者 2026-10-03：高爆弹的组合子弹多了会卡顿）。
+//    单次凝滞只有几十毫秒，但**高爆 / 集束 / 裂变**叠满时，一帧里能触发十几次
+//    「爆炸 → 打死一群 → 各自再炸」，每炸一次就把 hitstop 灌一轮，画面变成连续顿挫。
+//    所以 `noFreeze()` 包起来的那段（explode 的范围伤害与它连带打死的一切）只留画面震动、
+//    不留凝滞 —— 爆炸给的是「一片」的反馈，不是「一发入魂」的反馈。
+//    单发命中的顿挫感（暴击 / 直接打死）照旧，那才是凝滞该出场的地方。
+let freezeQ = 0;
+// 凝滞节流。把 explode 里的 freeze 拿干净之后还有一半问题：
+// 剩下的**逐杀 freeze(0.045)** 照样能把画面锁住 —— 一秒里连杀二十次，
+// 每次都把 hitstop 灌到一个值，画面就是连续顿挫，和爆炸那边的观感是同一件事。
+// 所以给「小事件」加一个最短间隔：冻 45ms + 冷却 160ms →
+//    连杀退化成「有节奏的脉冲」，单次击杀的顿挫感原样保留。
+// ⚠️ 只对 t < 0.06 的事件生效 —— 受击(0.07)、精英击杀(0.08)、巨像陨落(0.16)必须**每次都给**，
+//    那几件是玩家要读到的信息，不是装饰。
+const HITSTOP_GAP = 0.16;
+let hitstopCd = 0;
+function freeze(t) {
+  if (!G || freezeQ > 0) return;
+  if (hitstopCd > 0 && t < 0.06) return;
+  G.hitstop = Math.min(0.18, Math.max(G.hitstop, t));
+  hitstopCd = HITSTOP_GAP;
+}
+function noFreeze(fn) {
+  freezeQ++;
+  try { return fn(); } finally { freezeQ--; }
+}
 // 按事件分级的震动，避免所有东西都震得一样
-const SHAKE = { hit: 1.2, crit: 2.4, kill: 3.2, bigKill: 9, hurt: 5.5, blast: 3.5, od: 6 };
+// ⚠️ blastSmall 是新增的：以前小爆炸（R<40，弹片 / 连锁的主力）**完全不震**，
+//    连锁起来画面毫无反馈，只剩 hitstop 在冻。现在给一点点，和真·高爆那发区分开。
+const SHAKE = { hit: 1.2, crit: 2.4, kill: 3.2, bigKill: 9, hurt: 5.5, blast: 3.0, blastSmall: 1.1, od: 6 };
+const SHAKE_CAP = 9;
+// 震动也不再简单相加 —— 一帧十几次 addShake 会一路顶到上限、屏幕糊成一片。
+// 改成「先记账，帧末结算」：**最大的那次全额发出**（巨像爆炸这种单次大事件不能被稀释），
+// 其余按平方根压缩后叠加（10 次小连锁 ≈ 一次中等爆炸的量级，而不是 10 倍）。
+let shakeQ = 0, shakeMax = 0;
+function addShake(v) { if (v > shakeMax) shakeMax = v; shakeQ += v; }
+function flushShake() {
+  const q = shakeQ, mx = shakeMax;
+  shakeQ = 0; shakeMax = 0;
+  if (!G || q <= 0) return;
+  const rest = Math.sqrt(Math.max(0, q - mx));
+  G.shake = Math.min(SHAKE_CAP, G.shake + mx + rest * 0.6);
+}
 
 // ============ 空间网格 ============
 const CELL = 24; const grid = new Map();
@@ -872,7 +914,9 @@ function addNum(x, y, v, crit) {
 function floatText(x, y, str, color, life = 1) {
   part({ x, y, vx: 0, vy: -22, life, max: life, num: str, color, drag: 2, size: 0, keep: true });
 }
-function addShake(v) { G.shake = Math.min(11, G.shake + v); }
+// ⚠️ addShake **不在这里** —— 它和 freeze / SHAKE / flushShake 一起定义在「打击感」那一节
+//    （本文件靠上一点）。这里原本有一份旧的 `Math.min(11, ...)` 实现，删掉之前它一直在
+//    **覆盖**新实现（同名函数声明，后者胜出），所谓「帧末合并」根本没生效。
 // ⚠️ banner/toast 都是往 G 上挂的，但机库里 G === null（toTitle 会把它清掉）。
 //    机库点未解锁船体会走 toast，没这层保护就是一句 TypeError 直接抛出去。
 function banner(title, sub, color = '#ffcd75', life = 2.6) { if (!G) return; G.banners.push({ title, sub, color, t: 0, life }); }
@@ -1040,14 +1084,15 @@ function activateOverdrive() {
 function tryDash() {
   if (G.dashCd > 0) return;
   const S = G.S;
-  let dx = 0, dy = 0;
-  if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
-  if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
-  if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
-  if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
-  if (!dx && !dy) { dx = Math.cos(G.aim); dy = Math.sin(G.aim); }
-  const m = Math.hypot(dx, dy) || 1;
-  G.vx += dx / m * 300 * S.spd; G.vy += dy / m * 300 * S.spd;
+  // ⚠️ 冲刺方向**只认机头** `G.ang`：不读 WASD（按键是给转向用的），也不用鼠标的 `G.aim`
+  //    （那是准星，`aimMode==='key'` 时它跟机头根本不是一个角）。
+  const dx = Math.cos(G.ang), dy = Math.sin(G.ang);
+  // 把旧速度投影到机头轴上、只留正向分量：横向分量会让这一下偏出机头方向，
+  //    反向漂移（刚被打退 / 正在倒退）甚至能把冲刺拽成倒着飞。
+  const keep = Math.max(0, G.vx * dx + G.vy * dy);
+  const nv = keep + 300 * S.spd;
+  G.vx = dx * nv; G.vy = dy * nv;
+  // 超出 MAXV_CAP 的部分交给 `updatePlayer` 统一夹（那里才拿到 webSlow 的 slowMul）。
   G.dashT = 0.22; G.dashCd = 1.25; G.inv = Math.max(G.inv, 0.3);
   Sound.sfx.dash();
   for (let i = 0; i < 10; i++) {
@@ -1191,6 +1236,7 @@ function hurtPlayer(dmg) {
   S.hp -= dmg;
   G.hurtFlash = 0.35; G.inv = 0.55 + S.invBonus; G.combo = 1; G.comboT = 0;
   addShake(SHAKE.hurt); Sound.sfx.hurt(); freeze(0.07);
+  buzz(22);   // 手机上受击给一下短震（桌面上恒为空操作）
   G.vign = 1;   // 受击暗角，随时间衰减
   burst(G.px, G.py, 14, ['#e04060', '#ffcd75'], 110, .5, 2, true);
   if (S.hp <= 0) { S.hp = 0; die(); }
@@ -1207,12 +1253,18 @@ function die() {
 function explode(x, y, R, dmg, small) {
   ring(x, y, R, '#ffcd75', small ? .22 : .38, small ? 1 : 2);
   burst(x, y, small ? 6 : 14, ['#ffcd75', '#ef7d57'], small ? 70 : 130, .4, 2, true);
-  if (!small) { Sound.sfx.boom(); addShake(SHAKE.blast); freeze(0.05); }
+  // ⚠️ 只有画面震动，**没有 freeze()**（老版本这里 freeze(0.05)）。
+  //    连锁爆炸一帧能来十几次，每次都灌一次凝滞，画面就是连续的顿挫 —— 作者要的是「简单震动」。
+  if (!small) Sound.sfx.boom();
+  addShake(small ? SHAKE.blastSmall : SHAKE.blast);
   buildGrid();
-  forNear(x, y, R, e => {
-    const d = Math.hypot(e.x - x, e.y - y);
-    if (d > R + e.r) return;
-    damageEnemy(e, dmg * (1 - d / (R + e.r) * .5), (e.x - x) / (d || 1), (e.y - y) / (d || 1), false, 1.5, small);
+  // 范围伤害连带的一切连击 / 连锁都不再冻画面（详见 freeze 上方那段注释）
+  noFreeze(() => {
+    forNear(x, y, R, e => {
+      const d = Math.hypot(e.x - x, e.y - y);
+      if (d > R + e.r) return;
+      damageEnemy(e, dmg * (1 - d / (R + e.r) * .5), (e.x - x) / (d || 1), (e.y - y) / (d || 1), false, 1.5, small);
+    });
   });
 }
 
@@ -1654,24 +1706,53 @@ function updateEnemies(dt) {
 //         鼠标（aimMode=='mouse'） —— 朝光标方向缓慢转向（最大 12 rad/s）
 //         摇杆（joy.active） —— 推满 = 满舵；微推 = 慢转
 //   推进：W（或方向键上） —— 沿当前 G.ang 方向施加加速度
-//   制动：S（或方向键下） —— 指数衰减速度（强于常规阻尼）
-//   常态阻尼：exp(-DAMP_COAST*dt)，松手后慢慢漂停
+//   制动：S（或方向键下） —— 用更强的减速度立刻收住
+//   松手：常量减速度（线性刹车），不是「慢慢漂停」
 // 开火 / 冲刺 / 超载 / 子弹 / 冲角 / 死亡尾流 / 网黏粒子照旧。
 //
-// 惯性系数（作者 2026-09-26 要求「惯性降低 15%」）。
-//   τ = 1/k 是「松手后速度衰减到 1/e 所需的时间」，也就是手感上的「还能漂多久」。
-//   惯性 -15% ⇔ τ 缩短 15% ⇔ k 放大 1/0.85 ≈ 1.176。
-//   ⚠️ 方向别搞反：k **越大**越跟手、漂得越短；把 k 调小才是更飘。
-const DAMP_COAST = 0.45 / 0.85;   // ≈ 0.529（原 0.45）
-const DAMP_BRAKE = 2.6 / 0.85;    // ≈ 3.059（原 2.6，制动时速度掉得更快）
+// ============ 运动模型（作者 2026-10-03：「惯性再降，松开立刻停」）============
+// 老版本是**指数阻尼** `exp(-k·dt)`，k=0.53 → τ=1.9s：松手后要漂将近两秒才停，
+// 而且数学上**永远逼近不到零** —— 手感就是「松了手还在滑」。
+// 现在换成「推进加速度 + **常量（线性）减速度**」，刹车有确定的时间和距离：
+//      T_stop = MAXV / DECEL = 168 / 940 ≈ 0.18s
+//      S_stop = MAXV² / (2·DECEL) ≈ 15px
+// 这就是「松开立刻停」——线性刹车能真正到达零，不会拖一条无穷小的尾。
+//
+// ⚠️ 三个数是一组，一起改：
+//    · **DECEL 必须远小于 ACC**。线性摩擦是「只要还在动就一直扣」，推进时的
+//      净加速度 = ACC - DECEL；DECEL ≥ ACC 的话船根本开不出去。
+//      正因为要配得上这么强的刹车，ACC 才从 620 抬到 1500。
+//    · 净加速度 = 560 px/s² → 从静止到满速 0.3 秒，比老版本还快一点；
+//      转向时旧方向的余速按 940 线性吃掉，「扭頭就走」不会有甩尾感。
+//    · 三种减速度都乘 S.spd，所以快慢不同的船体**停止时间一致**，
+//      只是绝对速度和刹车距离不同；乘 slowMul 是因为蛛网里连刹车也该变软。
+const MAXV_BASE   = 168;    // 满速 px/s（沿用旧 MAXV，别改：它也决定了尾流的触发线）
+const ACC_BASE    = 1500;   // 推进加速度 px/s²（旧 620）
+const DECEL_COAST = 940;    // 松手减速度 px/s² → 满速到停 ≈ 0.18s
+const DECEL_BRAKE = 2400;   // S 键 / 摇杆按在死区里 → ≈ 0.07s
+const DECEL_DASH  = 180;    // 冲刺那 0.22 秒保留一段滑行，否则冲刺只剩位移、没有速度感
+const STOP_EPS    = 6;      // 残速低于这个值直接归零（见 updatePlayer 里为什么必须判 thrusting）
+// 冲刺的**速度硬上限**倍率。tryDash 给的是 300px/s 的冲量，而正常满速只有 168 ——
+// 有了线性刹车之后，多出来的那部分会在一帧里被 `clamp(MAXV)` 砍掉，冲刺距离直接腰斩。
+// 所以推进只负责把速度推到正常满速（见 updatePlayer 里 `thrusting && vm < MAXV`），
+// 硬上限放宽到 1.9 倍留给冲刺 / 撞击推开，**让线性刹车自己把它收回来** ——
+// 既保住了「冲出去一段」的距离感，又不会在冲刺结束那一帧突然掉速。
+const DASH_TOP = 1.9;
+// 转向基准角速度 rad/s。S.turn 是各船体的**倍率**（堡垒 0.82 / 玄鸦 1.30），
+// 所以这里改的是「1.0 倍率 = 多少 rad/s」——原来就等于 S.turn 本身（≈1 rad/s，
+// 掉个头要 3 秒），键盘和摇杆都转不动。3.2 rad/s = 半圈 1 秒，跟手且不飘。
+// ⚠️ 鼠标那条支线是**独立的** 12 rad/s（见下），不受这个数影响。
+const TURN_BASE = 3.2;
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
   if (joy.active) {
     // 摇杆：方向即目标，转速随推杆幅度线性放缩（模拟量手感）
+    // 触屏是唯一只能靠「朝向」瞄准的输入方式：这里的转速必须给足，
+    // 否则手机上掉个头要好几秒 —— 这条路本来就带转动上限，给足转速不会失控。
     const want = Math.atan2(joy.y, joy.x);
     const mag = Math.hypot(joy.x, joy.y);
-    const rate = S.turn * (0.45 + 0.55 * Math.min(1, mag));
+    const rate = TURN_BASE * S.turn * (0.55 + 0.45 * Math.min(1, mag));
     let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
     if (d > rate * dt) d = rate * dt;
     else if (d < -rate * dt) d = -rate * dt;
@@ -1689,11 +1770,11 @@ function updatePlayer(dt) {
     // 键盘 A/D：未按键不漂移
     const kd = ((keys['KeyD'] || keys['ArrowRight']) ? 1 : 0)
              - ((keys['KeyA'] || keys['ArrowLeft']) ? 1 : 0);
-    if (kd) G.ang += kd * S.turn * dt;
+    if (kd) G.ang += kd * TURN_BASE * S.turn * dt;
   }
   G.aim = G.ang;
 
-  // ---- 推进 / 制动 / 阻尼 ----
+  // ---- 推进 / 制动 / 线性刹车 ----
   const wHeld = keys['KeyW'] || keys['ArrowUp'];
   const sHeld = keys['KeyS'] || keys['ArrowDown'];
   // 摇杆：mag > 死区 = 推进；按着不动（在死区里）= 制动
@@ -1707,19 +1788,30 @@ function updatePlayer(dt) {
   const slow = webSlowAt(G.px, G.py);
   G.webSlow = slow;
   const slowMul = 1 - slow;
-  const ACC = 620 * S.spd * slowMul;
-  const MAXV = 168 * S.spd * slowMul;
-  if (thrusting) {
+  const ACC = ACC_BASE * S.spd * slowMul;
+  const MAXV = MAXV_BASE * S.spd * slowMul;          // 推进能到的满速
+  const MAXV_CAP = MAXV * DASH_TOP;                  // 速度硬上限（留给冲刺 / 被撞开）
+  // ⚠️ 到了满速就不再加推力 —— 高于满速的部分（冲刺余速）必须交给线性刹车去收，
+  //    否则 300px/s 的冲刺冲量会在下一帧被硬夹回 168，冲刺等于白按。
+  const vmPre = Math.hypot(G.vx, G.vy);
+  if (thrusting && vmPre < MAXV) {
     G.vx += Math.cos(G.ang) * ACC * dt;
     G.vy += Math.sin(G.ang) * ACC * dt;
   }
-  // 阻尼：制动用 echo 的强衰减，常态用轻阻尼保留太空感。
-  // ⚠️ 两个系数在 updatePlayer 上方定义（DAMP_COAST / DAMP_BRAKE）——
-  //    作者要的「惯性 -15%」就是在这两个数上体现的，改之前先读那段注释。
-  const k = Math.exp((braking ? -DAMP_BRAKE : -DAMP_COAST) * dt);
-  G.vx *= k; G.vy *= k;
-  const vm = Math.hypot(G.vx, G.vy);
-  if (vm > MAXV) { G.vx = G.vx / vm * MAXV; G.vy = G.vy / vm * MAXV; }
+  // ⚠️ 刹车段必须用「推进之后」的速度 —— 用 vmPre 会把本帧刚加上的推力当成超出去的部分扣掉，
+  //    结果是按住 W 也纹丝不动（踩过一次：探针量出稳态速度 0.0 px/s）。
+  let vm = Math.hypot(G.vx, G.vy);
+  // 线性刹车：沿速度反方向按固定速率扣速度（见上方「运动模型」那一段）。
+  // ⚠️ `nv < STOP_EPS` 的归零必须挂在「**没有**推进」这个前提下 ——
+  //    蛛网里 ACC 和 DECEL 一起被 slowMul 缩小，单帧的净速度本来就可能低于 STOP_EPS，
+  //    不判 thrusting 会把「按住 W 在网里挪」判成静止，变成网里完全开不动。
+  const dec = (G.dashT > 0 ? DECEL_DASH : (braking ? DECEL_BRAKE : DECEL_COAST)) * S.spd * slowMul;
+  if (vm > 0) {
+    const nv = vm - dec * dt;
+    if (nv <= 0 || (!thrusting && nv < STOP_EPS)) { G.vx = 0; G.vy = 0; vm = 0; }
+    else { const f = nv / vm; G.vx *= f; G.vy *= f; vm = nv; }
+  }
+  if (vm > MAXV_CAP) { G.vx = G.vx / vm * MAXV_CAP; G.vy = G.vy / vm * MAXV_CAP; }
   G.px = clamp(G.px + G.vx * dt, 10, WORLD.w - 10);
   G.py = clamp(G.py + G.vy * dt, 10, WORLD.h - 10);
   if (G.px <= 10 || G.px >= WORLD.w - 10) G.vx *= 0.4;
@@ -1954,11 +2046,14 @@ function explodeMine(m) {
   burst(m.x, m.y, 20, m.gold ? ['#ffcd75', '#f4f4f4'] : ['#c070f0', '#ef7d57'], 180, .5, 2, true);
   Sound.sfx.boom(); addShake(3.4);
   buildGrid();
-  forNear(m.x, m.y, R, e => {
-    if (e.dead || e.hp <= 0) return;
-    const d = Math.hypot(e.x - m.x, e.y - m.y);
-    if (d > R + e.r) return;
-    damageEnemy(e, dmg, (e.x - m.x) / (d || 1), (e.y - m.y) / (d || 1), false, 3);
+  // 同 explode()：范围伤害连带的一切都不冻画面
+  noFreeze(() => {
+    forNear(m.x, m.y, R, e => {
+      if (e.dead || e.hp <= 0) return;
+      const d = Math.hypot(e.x - m.x, e.y - m.y);
+      if (d > R + e.r) return;
+      damageEnemy(e, dmg, (e.x - m.x) / (d || 1), (e.y - m.y) / (d || 1), false, 3);
+    });
   });
   // 质变：磁暴湮灭波及的敌弹
   if (m.gold) {
@@ -2193,23 +2288,34 @@ function addXp(v) {
     openUpgrade();
   }
 }
+/* 星尘吸附（作者 2026-10-03：「基础吸附范围至少要比战机体型大一圈」）。
+   基准 78px：船体像素精灵是 44×32（半宽 22），78 ≈ 三倍半宽，确实是「大出一圈」
+   （旧基准 46，刚够包住机身，动起来基本兜不住）。
+   ⚠️ 光把半径调大是**没用**的 —— 旧的写法是「每帧给加速度 + `p.vx *= 0.9` 的固定沉减」，
+      稳态速度被压到 `9 × pull × dt ≈ 0.15 × pull`：边缘 13px/s、贴脸也只有 58px/s，
+      而船的满速 168px/s —— 星尘根本**追不上在移动的船**，看上去就是「吸不到」。
+      现在场内直接给位移，速度 220..430px/s：一定追得上，也保留「越近越快」的手感。 */
+const MAG_SPD_MIN = 220, MAG_SPD_MAX = 430;
+const PICK_R = 11;      // 拾取判定半径（沿用旧值：它是「贴到船身」的距离，不是吸附半径）
 function updatePickups(dt) {
   // 磁力线圈质变后全屏吸附
   const S = G.S, R = S.autoPull ? 420 : S.magnet;
+  const drift = Math.pow(0.9, dt * 60);   // 旧 `*= 0.9` 是「每帧」，改成与帧率无关
   for (let i = G.pickups.length - 1; i >= 0; i--) {
     const p = G.pickups[i];
     p.t += dt; p.life -= dt;
     if (p.life <= 0) { G.pickups.splice(i, 1); continue; }
     const dx = G.px - p.x, dy = G.py - p.y, d = Math.hypot(dx, dy) || 1;
     if (d < R) {
-      // 磁力吸附：越近越快
-      const pull = 300 * (1 - d / R) + 90;
-      p.vx += dx / d * pull * dt; p.vy += dy / d * pull * dt;
+      // 场内：位移由磁场直接给定，不走 vx/vy 的沉减 —— 否则会被拖成追不上的慢动作
+      const sp = MAG_SPD_MIN + (MAG_SPD_MAX - MAG_SPD_MIN) * (1 - d / R);
+      p.x += dx / d * sp * dt; p.y += dy / d * sp * dt;
+    } else {
+      p.vx *= drift; p.vy *= drift;
+      p.x += p.vx * dt; p.y += p.vy * dt;
     }
-    p.vx *= 0.9; p.vy *= 0.9;
-    p.x += p.vx * dt; p.y += p.vy * dt;
     p.x = clamp(p.x, 4, WORLD.w - 4); p.y = clamp(p.y, 4, WORLD.h - 4);
-    if (d < 11) {
+    if (d < PICK_R) {
       G.pickups.splice(i, 1);
       if (p.type === 'dust') {
         addXp(p.v); Sound.sfx.dust();
@@ -2366,6 +2472,11 @@ function finishWave() {
 function step(dt) {
   G.t += dt;
   G.hitFlashN = 0;
+  // 这一帧攒下的震动在这里结算（见 addShake 上方那条注释）
+  flushShake();
+  // ⚠️ 冷却必须在「凝滞早退」**之前**减 —— 否则被冻住的那些帧不走这一步，
+  //    冷却永远到不了 0，连杀之后就再也冻不起来了。
+  if (hitstopCd > 0) hitstopCd = Math.max(0, hitstopCd - dt);
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 26);
   if (G.vign > 0) G.vign = Math.max(0, G.vign - dt * 2.4);
   // 命中凝滞：实体全冻，只让粒子慢放 —— 顿挫感就来自这里
@@ -3864,6 +3975,17 @@ function isTouchDevice() {
   // 只认「主指针是粗的」：'ontouchstart' in window 在带触摸屏的 Windows 上也为真，
   // 那会把桌面端也误判成手机，进而在开局时弹全屏。
   return matchMedia('(pointer: coarse)').matches;
+}
+
+/* 手机端的触感反馈（作者 2026-10-03 补）。
+   手机上受击只有「画面红一下 + 一声」很轻，指尖没有任何东西 —— 加一记短震最直接。
+   ⚠️ iOS Safari 没有 navigator.vibrate（桌面 Chrome 反而有），所以这里：
+      ① 只在触屏设备回调（不为桌面鼠标玩家加没来由的震动）；
+      ② navigator.vibrate 不存在就直接返回，绝不抛异常。 */
+function buzz(ms) {
+  if (!isTouchDevice()) return;
+  if (typeof navigator.vibrate !== 'function') return;
+  try { navigator.vibrate(ms); } catch (e) { /* 某些浏览器只在用户手势里允许 */ }
 }
 
 // 竖屏提示的开关。CSS 里那条 @media 已经够用，但它是「不可测」的 ——

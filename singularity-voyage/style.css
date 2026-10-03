@@ -340,8 +340,12 @@ em { font-style: normal; }
       左边 HUD 到 x=124、右边从 x=380 起 —— 中间 124..380 只有这一条完全不打架。
    放在正中还有个好处：两个拇指的常驻区（左下摇杆 / 右下动作簇）都够不着，
       不会在躲弹幕时被误触。 */
-.tb-pause { left: 207px; top: 36px; width: 30px; height: 24px; border-radius: 3px; }
-.tb-full { left: 243px; top: 36px; width: 30px; height: 24px; border-radius: 3px; }
+/* ⚠️ 两颗工具键原来只有 30×24 —— 缩放到手机上约 43×35 CSS px，正好卡在
+   安卓/iOS 44px 的最小可点尺寸线以下，手指常常点空。放宽到 34×28（≈49×40 CSS px）
+   并保持彼此 8px 间距（`247 - 241`）；纵向 36..64 仍在横幅（y=74 起）之上。
+   ⚠️ 横向只能往右推 —— 左边不能再越过 x=124（左侧 HUD 的地盘）。 */
+.tb-pause { left: 207px; top: 36px; width: 34px; height: 28px; border-radius: 3px; }
+.tb-full { left: 247px; top: 36px; width: 34px; height: 28px; border-radius: 3px; }
 
 /* 竖屏提示：粗指针 + 竖屏才出现。
    两条路都走 —— CSS 媒体查询（JS 还没跑起来时就生效）+ <html> 上的 JS class（可测），
