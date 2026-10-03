@@ -347,22 +347,6 @@ em { font-style: normal; }
 .tb-pause { left: 207px; top: 36px; width: 34px; height: 28px; border-radius: 3px; }
 .tb-full { left: 247px; top: 36px; width: 34px; height: 28px; border-radius: 3px; }
 
-/* 竖屏提示：粗指针 + 竖屏才出现。
-   两条路都走 —— CSS 媒体查询（JS 还没跑起来时就生效）+ <html> 上的 JS class（可测），
-   两边都要求「粗指针 + 竖屏」，桌面端不可能命中。
-   ⚠️ 整块可点（data-act="rotatedismiss"）：判定万一卡住，玩家必须还有办法绕开。 */
-#rotate { display: none; position: fixed; inset: 0; z-index: 90; background: #05060d; cursor: pointer;
-  flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  font-family: FP, monospace; font-size: 12px; line-height: 12px; color: #73eff7; text-align: center; }
-#rotate .rt { font-size: 24px; line-height: 24px; }
-#rotate .rs { color: #566c86; }
-#rotate .rx { color: #7a86a8; margin-top: 6px; text-decoration: underline; }
-html.coarse.portrait #rotate { display: flex; }
-html.norotate #rotate { display: none !important; }
-@media (orientation: portrait) and (pointer: coarse) {
-  #rotate { display: flex; }
-}
-
 /* 键盘焦点：既然补了「Tab 聚焦 + Enter 激活」，就必须看得见焦点在哪 */
 .btn:focus-visible, .tbtn:focus-visible, .card:focus-visible, .hull:focus-visible,
 input[type=range]:focus-visible { outline: 2px solid #73eff7; outline-offset: 2px; }

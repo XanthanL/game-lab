@@ -521,10 +521,13 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 - **安全区**：CSS 把 `env(safe-area-inset-*)` 读进 `--sat/--sab/--sal/--sar`，
   `fit()` 用 `getComputedStyle` 取出来，从视口尺寸里减掉再算缩放。`fit()` 同时改用 `visualViewport`
   （地址栏收放 / 转屏 / 进全屏都会改视口，只听 `window.resize` 会漏）。
-- ⚠️ **竖屏提示 `#rotate` 走了两条路**：CSS `@media (orientation:portrait) and (pointer:coarse)`
-  **加上** `<html>` 上的 JS class（`html.coarse.portrait #rotate`）。原因是纯媒体查询在无头桌面 Chrome 里
-  永远为假、**测不了** —— 而这种全屏遮罩一旦在桌面端误触发，游戏直接不可玩。
-  探针用 `__dbg.setLayout(coarse, portrait)` 四种组合都验一遍。
+- **移动端「直接横屏」（2026-10-03 改）**：不再读手机物理朝向 —— `#rotate`「请横屏」遮罩、
+  `screen.orientation.lock('landscape')`、开局全屏的「必须已横屏」门槛**全部移除**。
+  现在 `fit()` 在「触屏 + 竖屏视口」时把 480×270 舞台**顺时针转 90°** 直接以横屏呈现
+  （`rot=90`，transform 追加 `rotate(90deg)`，缩放改为 `min(vw/H, vh/W)`，偏移把旋转后包围盒
+  `H·s × W·s` 对到可用区中心）；横屏视口 / 桌面端一律不转。⚠️ 旋转必须同步改两处输入：
+  `toGame()` 的逆变换（`[(cy-offY)/s, (offX-cx)/s]`）和 touchmove 里摇杆增量的逆旋
+  （`dx↔dy` 交换再取负），否则手指点和飞船朝向差 90°。探针 `sv-orientation-check.js` 验证。
 - **准星**（`drawCrosshair`）：桌面画在鼠标位置（`#wrap.playing { cursor:none }` 负责藏系统光标），
   触屏换成四角括线 + 摇杆底座。**全用 `fillRect` 画，不用 `ctx.arc`/`stroke`** ——
   1px 的圆弧会被抗锯齿糊成灰边，跟像素素材不是一套语言。坐标每帧都变，**绝不能进任何精灵缓存**。
@@ -583,9 +586,8 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   3. `mousemove` / `mousedown` 开头判 `e.sourceCapabilities.firesTouchEvents` 直接 return ——
      触屏抬指后浏览器会补发一串兼容性鼠标事件（坐标就是最后那个触点），照单全收会让第 2 条当场失效。
      Safari 没这个属性 → 退化成「照旧处理」，与改动前一致。
-- **横屏锁定**：`toggleFullscreen()` 里只在**进**全屏时试 `screen.orientation.lock('landscape')`，
-  且**必须吞掉 Promise 拒绝**（只在「已全屏 + 移动端」可用，iOS 没实现，桌面端一律 reject）——
-  不吞会在控制台多一条 unhandled rejection，探针会把它记成 JS 错误。
+- ~~**横屏锁定**：`toggleFullscreen()` 里 `screen.orientation.lock('landscape')`~~ **已移除（2026-10-03）**：
+  朝向交给 CSS 旋转（见上文「移动端直接横屏」），不再依赖方向锁 API（iOS 没实现、桌面端一律 reject）。
 - **运动模型（2026-10-03 重写，作者口径「惯性再降，松开立刻停」）**：参数都在 `updatePlayer` 上方：
   `MAXV_BASE = 168` / `ACC_BASE = 1500` / `DECEL_COAST = 940` / `DECEL_BRAKE = 2400` / `DECEL_DASH = 180` / `STOP_EPS = 6`，
   另有转向基准 `TURN_BASE = 3.2`。
@@ -620,7 +622,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   `sv-text.py` 一直给它打 NOTE；现在统一回 12px，守卫也干净了。
 - 探针：`.workbuddy/sv-touch.py`（**49 条**：布局不重叠/都在 `#wrap` 内/字号 12 的倍数/工具键不压 HUD/
   每颗按钮 `elementFromPoint` 真命中/开火开关四态/容器水位与 ready 与 deny/中英文跟着切/
-  触屏瞄准「按住会转、抬指停转」/竖屏提示四组合/暂停时收起按钮），
+  触屏瞄准「按住会转、抬指停转」/暂停时收起按钮），
   截图工具 `.workbuddy/sv-touch-shot.py [off|on] [宽x高]`。
 
 ## 其它已踩过的坑
@@ -756,7 +758,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 - 输入链路探针：`python .workbuddy/sv-input.py` —— 专治「桌面能跑、手机上按不动」这类问题。
   覆盖：`pointerdown` 能否真的出击 · 点未解锁船体不抛异常且不改变选中 · **准星画在鼠标位置 / 移动后旧位置
   清空 / `mouse.inside=false` 时收掉** · 触屏 `pointerType` 切换 · 左半屏摇杆满推杆 ·
-  **竖屏提示四种组合只有「粗指针 + 竖屏」显示**。改了输入 / 布局 / 准星就跑一次。
+  暂停时收起按钮。改了输入 / 布局 / 准星就跑一次。
   它用 `PointerEvent` + `TouchEvent` 构造器打真实事件序列（不是 `click`），
   ⚠️ 所以**不要再用 `click` 去测按钮** —— 委托已经不听 `click` 了。
 - 触屏控件探针：`python .workbuddy/sv-touch.py` —— **51 条**，专治右下角三件套 + 顶栏工具键。
@@ -769,7 +771,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   超载电池「水位跟着能量 / 半满不是 ready / 没满按下不放超载且有 `.deny` / 满了水位 100 且可按」·
   ⚠️ 水位量的是 **`fillW`（横向宽度）**，并加一条「`fillH` 必须 < 28」防止哪天又退回竖灌 ·
   中英切换后 FIRE/OFF/ON/BURN/DASH 都对 · **触屏「按住会转机头、抬指必须停转」** ·
-  竖屏提示四组合 · 暂停时收起按钮。
+  暂停时收起按钮。
   ⚠️ 两个容易写错的点：① 等开火要等够**一个开火间隔**（`0.17/rate`，约 170ms）——
   只等 4 个心跳（64ms）会让「关了不开火」假 PASS、「开了会开火」假 FAIL；
   ② 布局坐标必须 `(rect.left - offX) / scale`，只除 scale 会把信箱式左边距算进 x 里，
@@ -850,7 +852,7 @@ export NODE_PATH=$WS/workspace/node_modules     # playwright-core 装在这儿
 export CHROME_EXE='C:/Program Files/Google/Chrome/Application/chrome.exe'
 $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 ```
-⚠️ **只有 `sv-bulletskin-check.js` 自己起静态服务**；其余四份依赖 `http://127.0.0.1:8612`
+⚠️ **`sv-bulletskin-check.js` 与 `sv-orientation-check.js` 自己起静态服务**；其余几份依赖 `http://127.0.0.1:8612`
 （`SV_URL` 可覆盖）—— 先在项目根起 `python -m http.server 8612 --bind 127.0.0.1` 再跑。
 
 | 脚本 | 验什么 | 改了什么之后跑 |
@@ -859,6 +861,7 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-dash-dir.js` | **冲刺只沿机头**：13 组按键 × 朝向组合，位移与速度方向相对 `G.ang` 偏差全 0° | `tryDash` / `updatePlayer` / 输入模型 |
 | `sv-move-check.js` | 推进加速时间 / 稳态速度 / 制动 / 滑行距离 / 吸附 / 爆炸 | `updatePlayer` / `aBoom` |
 | `sv-touch-check.js` | 移动端触屏按钮命中与射击 | `#touch` / `setTouchMode` / `.tbtn` |
+| `sv-orientation-check.js` | 移动端直接横屏：竖屏视口 `#wrap` 含 `rotate(90deg)` / 横屏不转 / `#rotate` 已移除 / 不调 `screen.orientation.lock` / `toGame` 逆变换误差 <1px，双截图 | `fit()` / `rot` / `toGame` |
 | `sv-bulletskin-check.js` | 子弹外观：家族矩阵 / 逐级 tier / 配色优先级 / 协同+单卡装饰 / 缓存封顶 / 90 帧零 JS 错误，产出 `bullet-overview.png` | `bulletskin.js` / `BSPEC_FAMILY` / `BKIND` / `BDECO_BY_*` / `drawPBullets` |
 
 ⚠️ `sv-dash-dir.js` 每个用例开头必须 `d.clearEnemies(); G.spawnQueue.length = 0;` ——

@@ -41,7 +41,7 @@ const BOT = QS.has('bot'), GOD = QS.has('god'), FAST = +QS.get('fast') || 1;
 const KIT = QS.get('kit') || '';
 const fmtTime = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
-let state = 'loading', G = null, scale = 1, offX = 0, offY = 0;
+let state = 'loading', G = null, scale = 1, offX = 0, offY = 0, rot = 0;
 let STARSETS = null, ROCKS = null;
 let touchMode = false, hangarSel = 0;
 // 触屏开火开关（右下角那颗大按钮）。作者口径：**默认关** —— 想开火自己点一下。
@@ -3807,16 +3807,6 @@ function drawCodex() {
   }
   box.scrollTop = 0;
 }
-// 竖屏提示的逃生口：万一 coarse/portrait 判定卡住，玩家还能点掉它继续玩。
-// 没有这个，一张全屏遮罩就能让游戏永久不可玩。
-let rotateDismissed = false;
-function dismissRotateHint() {
-  rotateDismissed = true;
-  document.documentElement.classList.add('norotate');
-}
-function updateRotateHint() {
-  document.documentElement.classList.toggle('norotate', rotateDismissed);
-}
 // ---- 机库滑轨（7 台船体 · 单行 650px 装不进 480px）----
 // #hull-view 是裁切视口，#hulls 靠 transform 位移（CSS 见 style.css）。
 // ⚠️ 翻页是两个独立 act（hpage-prev / hpage-next），**不是**读 data-dir：
@@ -4002,9 +3992,8 @@ function startGame() {
   }
   state = 'play';
   // 手机上开局顺手进全屏：横屏游戏被地址栏吃掉 60~80px 高度差别很大。
-  // 只在「粗指针 + 已横屏」时尝试，桌面端完全不碰。
-  if (isTouchDevice() && matchMedia('(orientation: landscape)').matches
-      && !document.fullscreenElement && !document.webkitFullscreenElement) {
+  // 不再卡「必须是横屏」—— 触屏下 fit() 会把竖屏视口直接转成横屏呈现。
+  if (isTouchDevice() && !document.fullscreenElement && !document.webkitFullscreenElement) {
     toggleFullscreen();
   }
   Sound.init(); Sound.music(true); Sound.setMode('cruise');
@@ -4315,7 +4304,12 @@ function onKey(code, down) {
   if (state === 'help' && (code === 'Escape' || code === 'Enter')) closeHelp();
 }
 
-function toGame(cx, cy) { return [(cx - offX) / scale, (cy - offY) / scale]; }
+// 屏幕坐标 → 游戏坐标。触屏竖屏视口下 #wrap 被顺时针转了 90°（见 fit()），
+// 这里做对应的逆变换，否则手指点和飞船朝向会差一个 90°。
+function toGame(cx, cy) {
+  if (rot === 90) return [(cy - offY) / scale, (offX - cx) / scale];
+  return [(cx - offX) / scale, (cy - offY) / scale];
+}
 // 视口坐标 → 世界坐标。`toGame` 给的是**画布/视口**坐标（准星、摇杆底座、左右半屏判定都靠它，
 // 那几处必须留在屏幕空间），而瞄准、生成、碰撞全在世界空间 —— 中间就差这一个相机偏移。
 function mouseWorld() { return [mouse.x + cam.x - W / 2, mouse.y + cam.y - H / 2]; }
@@ -4402,7 +4396,6 @@ function handleAct(a) {
   else if (a === 'od') tryOverdrive();
   else if (a === 'fire') toggleFire();
   else if (a === 'full') toggleFullscreen();
-  else if (a === 'rotatedismiss') dismissRotateHint();
 }
 
 // 安全区（刘海 / 圆角 / 手势条）。CSS 里把 env() 读进 --sa*，这里再取出来。
@@ -4422,11 +4415,22 @@ function fit() {
   const sa = safeArea();
   const vw = Math.max(1, vw0 - sa.l - sa.r);
   const vh = Math.max(1, vh0 - sa.t - sa.b);
-  const s = Math.min(vw / W, vh / H);
-  scale = s;
-  offX = sa.l + (vw - W * s) / 2;
-  offY = sa.t + (vh - H * s) / 2;
-  wrap.style.transform = `translate(${offX}px, ${offY}px) scale(${s})`;
+  // 触屏 + 竖屏视口：把 480×270 舞台顺时针转 90° 直接以横屏呈现，
+  // 不再读手机物理朝向、不弹「请横屏」、不调 screen.orientation.lock。
+  // 横屏视口 / 桌面端一律不转，沿用旧信箱式铺满。
+  rot = (touchMode && vh > vw) ? 90 : 0;
+  if (rot === 90) {
+    scale = Math.min(vw / H, vh / W);
+    // 旋转后舞台包围盒为 H·scale × W·scale，中心对到可用区中心
+    offX = sa.l + vw / 2 + H * scale / 2;
+    offY = sa.t + vh / 2 - W * scale / 2;
+    wrap.style.transform = `translate(${offX}px, ${offY}px) scale(${scale}) rotate(90deg)`;
+  } else {
+    scale = Math.min(vw / W, vh / H);
+    offX = sa.l + (vw - W * scale) / 2;
+    offY = sa.t + (vh - H * scale) / 2;
+    wrap.style.transform = `translate(${offX}px, ${offY}px) scale(${scale})`;
+  }
 }
 
 // 触屏全屏：手机浏览器地址栏很吃高度，横屏游戏尤其需要
@@ -4437,13 +4441,6 @@ function toggleFullscreen() {
     if (on) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
     else { (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); }
   } catch (e) { /* 桌面端不允许也无所谓 */ }
-  // 顺手把屏幕方向锁成横屏（对应作者要的「手机端横屏游玩」）。
-  // ⚠️ 只在**进**全屏时试，而且必须吞掉 Promise 拒绝：这个 API 只在
-  //    「已全屏 + 移动端」才可用，iOS Safari 干脆没实现，桌面端一律 reject。
-  //    不吞的话控制台会多一条 unhandled rejection，探针会把它记成 JS 错误。
-  if (!on && screen.orientation && screen.orientation.lock) {
-    try { const p = screen.orientation.lock('landscape'); if (p && p.catch) p.catch(() => {}); } catch (e) {}
-  }
   // 全屏切换会改视口尺寸，等一帧再量
   setTimeout(fit, 60);
 }
@@ -4464,15 +4461,10 @@ function buzz(ms) {
   try { navigator.vibrate(ms); } catch (e) { /* 某些浏览器只在用户手势里允许 */ }
 }
 
-// 竖屏提示的开关。CSS 里那条 @media 已经够用，但它是「不可测」的 ——
-// 无头桌面 Chrome 的 pointer 永远是 fine，媒体查询永远为假，没法验证。
-// 所以在 <html> 上再挂一份 JS 判定的 class，探针可以直接改这两个 class 看效果。
-// 两条路都要求「粗指针 + 竖屏」，桌面端不可能误触发。
+// 触屏下不再用「竖屏/横屏」分流任何 UI（游戏永远以横屏呈现，见 fit()）。
+// 这里只留 coarse 判断，给 .touch-only 等类用。
 function updateLayoutMode() {
-  const root = document.documentElement;
-  root.classList.toggle('coarse', isTouchDevice());
-  root.classList.toggle('portrait', matchMedia('(orientation: portrait)').matches);
-  updateRotateHint();
+  document.documentElement.classList.toggle('coarse', isTouchDevice());
 }
 
 // ============ bot（?bot=1 自动游玩，用于平衡性验证） ============
@@ -4653,7 +4645,9 @@ function boot() {
   wrapEl.addEventListener('touchmove', e => {
     for (const t of e.changedTouches) {
       if (t.identifier === joy.id) {
-        const dx = (t.clientX - joy.ox) / scale, dy = (t.clientY - joy.oy) / scale;
+        let dx = (t.clientX - joy.ox) / scale, dy = (t.clientY - joy.oy) / scale;
+        // 竖屏视口下舞台转了 90°，屏幕拖拽向量要先逆旋回游戏空间
+        if (rot === 90) { const tx = dx; dx = dy; dy = -tx; }
         const m = Math.hypot(dx, dy) || 1, k = Math.min(1, m / 40);
         joy.x = dx / m * k; joy.y = dy / m * k;
       } else {
@@ -4933,14 +4927,13 @@ function boot() {
     // 探针专用：触屏模式在无头桌面 Chrome 里永远为 false（pointer 恒为 fine），
     // 只能手动挂上 —— 和 setLayout 是同一个理由（不可测的媒体查询要开个口子）。
     setTouchMode: on => { setTouchMode(!!on); return touchMode; },
-    // 探针专用：强制竖屏提示的开关，验证它不会在桌面端误触发
+    // 探针专用：强制 coarse / portrait 类（不可测的媒体查询要开个口子）。
+    // 竖屏/横屏不再分流任何 UI，所以 portrait 只是个惰性标记，供将来探针用。
     setLayout: (coarse, portrait) => {
       const r = document.documentElement;
       r.classList.toggle('coarse', !!coarse);
       r.classList.toggle('portrait', !!portrait);
-      rotateDismissed = false; updateRotateHint();
     },
-    get rotateDismissed() { return rotateDismissed; },
     // ---- 触屏按钮探针 ----
     // 开火开关：读值 / 翻 / 直接设。⚠️ 直接读 G.autoFire 会踩到「G 可能为 null」，
     // 所以走模块级的 autoFire 变量（它就是 G.autoFire 的来源）。
