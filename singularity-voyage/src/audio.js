@@ -30,6 +30,8 @@ const Sound = (() => {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol();
     setInterval(schedule, 25);
+    // 首次用户手势后恢复被自动播放策略拦下的成品曲（music(true) 可能已在标题页先跑过）
+    if (musOn && fileBgmOn) startFileCur();
   }
 
   function thr(name, ms) {
@@ -180,6 +182,9 @@ const Sound = (() => {
 
   function schedule() {
     if (!ac || !musOn) return;
+    // 成品曲在播时压住合成 BGM：两层音乐叠一起只会糊成噪音。
+    // curBgm.paused 在「还没开始播 / 已被拦」时为 true → 这时合成 BGM 照常兜底。
+    if (fileBgmOn && curBgm && !curBgm.paused) return;
     const bpm = BPM[mode] || 132;
     if (nextT < ac.currentTime) nextT = ac.currentTime + 0.05;
     while (nextT < ac.currentTime + 0.12) {
@@ -188,17 +193,67 @@ const Sound = (() => {
     }
   }
 
+  // ---------------- 文件 BGM（来自 singularity-echo/bgms 的成品曲）----------------
+  // 合成 BGM 是「状态响应」的芯片乐，成品曲更耐听，这里用 <audio> 播成品曲，
+  // 按游戏模式（title/cruise/battle/boss）切换对应曲子并循环。
+  // ⚠️ 与合成 BGM **互斥**：成品曲在播时由 schedule() 压住合成 BGM（见上）；
+  //    成品曲加载/播放失败（如本地无文件、自动播放被拦后未恢复）则合成 BGM 自然兜底。
+  let fileBgm = {}, curBgm = null, fileBgmOn = false, fileBgmReady = false;
+  const BGM_MAP = {
+    title:  'assets/bgm/Afterglow.mp3',
+    cruise: 'assets/bgm/Endless_Drift_1.mp3',
+    battle: 'assets/bgm/Comet_Trail_1.mp3',
+    boss:   'assets/bgm/Colossus.mp3',
+  };
+  function ensureBgm() {
+    if (fileBgmOn || fileBgmReady) return;
+    if (typeof Audio === 'undefined') return;   // 无 Audio（极个别环境）静默退化到合成 BGM
+    let n = 0;
+    for (const k in BGM_MAP) {
+      const a = new Audio();
+      a.src = BGM_MAP[k]; a.loop = true; a.preload = 'none'; a.volume = muted ? 0 : volBgm * 0.7;
+      a.addEventListener('canplaythrough', () => { fileBgmReady = true; }, { once: true });
+      a.addEventListener('error', () => {}, { once: true });
+      fileBgm[k] = a; n++;
+    }
+    fileBgmOn = n > 0;
+  }
+  function applyFileVol() {
+    const v = muted ? 0 : volBgm * 0.7;
+    for (const k in fileBgm) if (fileBgm[k]) fileBgm[k].volume = v;
+  }
+  function startFileCur() {
+    if (!fileBgmOn || !BGM_MAP[mode]) return;
+    const a = fileBgm[mode]; if (!a) return;
+    if (curBgm && curBgm !== a) { try { curBgm.pause(); } catch (e) {} }
+    curBgm = a;
+    applyFileVol();
+    const p = a.play();
+    if (p && p.catch) p.catch(() => {});   // 自动播放被拦：等首次手势后 init() 里再 resume
+  }
+  function stopFile() {
+    if (curBgm) { try { curBgm.pause(); } catch (e) {} curBgm = null; }
+  }
+
   return {
     init, sfx,
-    music(on) { musOn = on; if (on) step = 0; },
-    setMode(m) { if (PROG[m]) mode = m; },
-    toggleMute() { muted = !muted; applyVol(); return muted; },
+    music(on) {
+      musOn = on;
+      if (on) { step = 0; ensureBgm(); if (fileBgmOn) startFileCur(); }
+      else { stopFile(); }
+    },
+    setMode(m) {
+      if (!PROG[m]) return;
+      mode = m;
+      if (fileBgmOn && musOn && BGM_MAP[m]) startFileCur();
+    },
+    toggleMute() { muted = !muted; applyVol(); applyFileVol(); return muted; },
     get muted() { return muted; },
     // 音量 0..1；ac 还没建也先存着，init() 时会一起应用
     setVolumes(v) {
       if (v && typeof v.bgm === 'number') volBgm = Math.max(0, Math.min(1, v.bgm));
       if (v && typeof v.sfx === 'number') volSfx = Math.max(0, Math.min(1, v.sfx));
-      applyVol();
+      applyVol(); applyFileVol();
     },
     get vol() { return { bgm: volBgm, sfx: volSfx }; },
   };

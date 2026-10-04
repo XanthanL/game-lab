@@ -113,12 +113,12 @@ const log = (...a) => console.log(...a);
     out.velDirDegOff = +(norm(Math.PI / 2 - Math.atan2(G.vy, G.vx)) * 57.3).toFixed(1);
     d.setJoy(0, 0, false);
 
-    // 松手后是否继续转向（应当不转）
-    G.ang = 0.5; G.aim = 0.5; G.vx = 0; G.vy = 0;
+    // 松手后：船体应回摆到「悬浮瞄准标」方向（新设计），而非停在最后一帧朝向
+    d.setAim(0.5);
+    G.ang = 2.0; G.aim = 0.5; G.vx = 0; G.vy = 0;
     d.setJoy(0, 0, false);
-    await frame();
-    for (let i = 0; i < 30; i++) await frame();
-    out.afterReleaseDeg = +(norm(0.5 - G.ang) * 57.3).toFixed(2);
+    for (let i = 0; i < 60; i++) await frame();
+    out.afterReleaseDeg = +(norm(0.5 - G.ang) * 57.3).toFixed(2);   // 应≈0：已回到瞄准标 0.5
 
     out.spdMul = G.S.spd; out.turnMul = G.S.turn;
     clearTimeout(wd);

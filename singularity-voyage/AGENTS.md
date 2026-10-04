@@ -627,6 +627,23 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   1px 的圆弧会被抗锯齿糊成灰边，跟像素素材不是一套语言。坐标每帧都变，**绝不能进任何精灵缓存**。
   `pointerKind === 'touch'` 时画触屏版；`mouse.inside` 为假（鼠标移出窗口 / 切到别的标签）时不画。
 
+## 成品曲 BGM 接入（2026-10-04）
+
+`src/audio.js` 在 WebAudio 合成 BGM 之外，新增**成品曲 BGM**（`fileBgm` 模块）：用 `HTMLAudioElement`
+循环播放 `assets/bgm/` 下已入库的 4 首成品曲，按游戏模式映射：
+`title → Afterglow` / `cruise → Endless_Drift_1` / `battle → Comet_Trail_1` / `boss → Colossus`。
+
+互斥规则：**成品曲在播时 `schedule()` 直接 return，压住合成 BGM**；成品曲加载/播放失败则合成 BGM 自然兜底
+（`startFileCur()` 的 `play()` catch 吞掉自动播放被拦错误，`init()` 末尾在首次手势后补播）。
+`setMode(m)` 切模式时若 `fileBgmOn && musOn && BGM_MAP[m]` 就切曲；`music(on)` 开关、`toggleMute()`、
+`setVolumes()` 都同步 `applyFileVol()`（成品曲音量 = `volBgm × 0.7`）。
+
+⚠️ **这 4 首是复用 `singularity-echo/bgms/` 里已 git 跟踪的成品，复制到 `assets/bgm/`（ASCII 文件名）。**
+`singularity-echo/bgms/` 下另有 5 首**未跟踪的 WIP**（Ember Cradle / Tidewalk 1&2 / Crimson Bloom / Still Idol），
+**绝不允许纳入本仓库提交**——仓库根是 `E:/Code/game-lab` 单仓，两个子项目都在里面；
+`git add` 时只能精确指定 voyage 内文件，**禁止 `git add -A` / `git add .`**（`-A` 会把那 5 首 WIP 一起收进来）。
+换曲只从已跟踪成品里挑。i18n 已补 `title.ctrlTouch` / `help.col1` 的手机瞄准说明。
+
 ## 触屏操作区：右下三件套 + 顶栏工具键（2026-09-26）
 
 作者口径：「右边的按钮改为两个 —— 一个是大一点的控制开火的开关，另一个是稍微小一点的控制冲刺」，
@@ -640,8 +657,8 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 | 开火开关 `#btn-fire` | right 10 / bottom 10 | 60×60 圆 | 最大，贴拇指支点；**默认关**；**透明淡蓝**（两态同色相，靠亮度分） |
 | 冲刺 `.tb-dash` | right 80 / bottom 14 | 46×46 圆 | 稍小 |
 | 超载电池 `#btn-od` | right 10 / bottom 78 | 60×28 横向电池 | **手机电量样式**：外壳 + 右侧极柱，装满才可按；在开火**正上方**（右边缘对齐） |
-| 暂停 `.tb-pause` | left 207 / top 36 | 34×28 | 工具键（2026-10-03 从 30×24 放宽：手机上只有 43×35 CSS px，点空率很高） |
-| 全屏 `.tb-full` | left 247 / top 36 | 34×28 | 工具键（左边不能越过 x=124，所以只能往右挪；两键间距保持 8px） |
+| 暂停 `.tb-pause` | left 207 / top 28 | 34×28 | 工具键（2026-10-04 上移到 y=28：顶栏正中整条空着，巨像战只压面板空底边；像素切角+青描边+顶部凸耳+青光，配成对仪表） |
+| 全屏 `.tb-full` | left 247 / top 28 | 34×28 | 工具键（左边不能越过 x=124，只能往右挪；两键间距保持 8px；同款顶部设计） |
 
 - ⚠️ **触屏按钮一律「像素轮廓」，不许用平滑圆角/圆弧**（作者 2026-10-04，嫌 `border-radius` 的
   反锯齿弧线和像素 HUD「打架」）：
@@ -668,8 +685,9 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 - ⚠️⚠️ **工具键绝对不能放两个上角。** HUD 把左上（船体/护盾/经验，`x 8..124`，`y 8..60`）和右上
   （分数/航段/星区/时间，右对齐到 `x 472`）全占了 —— 老版 `tb-pause{left:6;top:26}` /
   `tb-full{right:14;top:26}` 正好把血量数字和「第 N/12 段」盖住（截图确认）。
-  顶栏 `y=36` 那条空档是算出来的：巨像血条 `y 8..16`、巨像名 `y 20..32`、横幅从 `y 74` 起、
-  左右 HUD 各占 `x ≤124` / `x ≥380` → 只有 `x 124..380, y 34..58` 完全不打架。
+  顶栏 `y=28` 那条空档是算出来的：巨像面板 `y 4..38`、但名字 `y 12..24`/血条 `y 10..18` 都在上半、
+  横幅从 `y 74` 起、左右 HUD 各占 `x ≤124` / `x ≥380` → 只有 `x 124..380, y 28..64` 整条不打架
+  （巨像战时按钮 28..56 只压到面板空底边 y28..38，不挡名字/血条，刻意取舍）。
   放正中还有个好处：**两个拇指的常驻区（左下摇杆 / 右下动作簇）都够不着**，躲弹幕时不会误触。
 - ⚠️ **文案必须挂在内层 `<span>` 上**：`data-i18n` 走 `textContent`，挂在外层会把里面的
   `.odfill`（能量水位）一起清掉。开火按钮是 `.firetext` + `#fire-state`，超载是 `.odtext` + `.odfill`。
@@ -678,7 +696,7 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 - **HUD 排版（2026-10-03 重排，「舰桥仪表」）**：左上舰况 / 右上航程 / 顶部巨像 / 底部控制台
   四簇共用 `hudPanel()` 背板（`rgba(10,12,26,.78)` + 1px `#29366f` 描边 + 角上 10×2 亮色角标），
-  只动「框」和「行距」，**锚点避让计算不变**（工具键 y=36 空档、摇杆/开火键圆形区）。
+  只动「框」和「行距」，**锚点避让计算不变**（工具键 y=28 空档、摇杆/开火键圆形区）。
   - ⚠️ **巨像血条必须收进居中背板并让开两侧**：旧版血条 `x=120..360` 与船体条 `x=8..124`
     同在 `y=8` 且同为红色系，视觉上连成一条 350px 长条。现在 `bw=216`（`bx=132..348`），
     左簇面板到 128、右簇面板从 ≥378 起，三块互不越界。
@@ -713,6 +731,16 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   3. `mousemove` / `mousedown` 开头判 `e.sourceCapabilities.firesTouchEvents` 直接 return ——
      触屏抬指后浏览器会补发一串兼容性鼠标事件（坐标就是最后那个触点），照单全收会让第 2 条当场失效。
      Safari 没这个属性 → 退化成「照旧处理」，与改动前一致。
+- **悬浮瞄准标（2026-10-04 新增，触屏专属）**：`touchMode && !BOT` 时，炮口方向 `G.aim` 与船体方向
+  `G.ang` **解耦**——`touchAim`（`let`，模块级）单独存一个角，`G.aim = touchAim`、开火沿它（不是 `G.ang`）：
+  - 摇杆按下 → 船体立刻朝摇杆（`G.ang` 跟 `joy`），`touchAim` 不动；
+  - 摇杆松手 → 船体以 `TURN_TOUCH × S.turn × dt` 回摆到 `touchAim`；
+  - 右半屏拖动 → `aimFromTouch(cx,cy)` 重算 `touchAim`（船→手指的世界夹角），拖动期间 `aimDrag.fire=true` 即开火。
+  - 桌面端不启用，保持旧的 `G.aim = G.ang` 行为。
+  - ⚠️ 开局 / `resumeRun()` 后必须 `touchAim = G.ang`，否则船会无故甩头。
+  - ⚠️ 调参铁律：`wantFire` 已含 `aimDrag.fire`；`fireMain(G.aim, …)` 必须在 `updatePlayer` 转向段
+    之后调用（同帧里 G.aim 已被同步成 touchAim）。探针 `probes/sv-aim-mark-check.js` 验四项：
+    解耦 / 松手回摆 / 拖动 / 开火沿瞄准，全绿。
 - ~~**横屏锁定**：`toggleFullscreen()` 里 `screen.orientation.lock('landscape')`~~ **已移除（2026-10-03）**：
   朝向交给 CSS 旋转（见上文「移动端直接横屏」），不再依赖方向锁 API（iOS 没实现、桌面端一律 reject）。
 - **运动模型（2026-10-03 重写，作者口径「惯性再降，松开立刻停」）**：参数都在 `updatePlayer` 上方：

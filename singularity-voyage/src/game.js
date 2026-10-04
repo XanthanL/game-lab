@@ -64,6 +64,11 @@ const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
 // ⚠️ 必须用 var 而不是 let —— 探针通过 window.aimMode 读这个状态，
 //    plain <script> 下 let 是 script-scope，不会挂到 window。
 var aimMode = 'key';
+// 手机版「悬浮瞄准标」：炮口朝向 G.aim 与船体朝向 G.ang **解耦**。
+// 拖动右侧悬浮标 = 设定 G.aim（开火方向）；摇杆移动时船体转向摇杆方向，
+// 松手后船体回摆到瞄准标方向。桌面端不启用（仍走鼠标/键盘瞄准）。
+let touchAim = -Math.PI / 2;
+const aimDrag = { id: null, fire: false };
 
 // ============ 像素文字（缓存 canvas） ============
 const tcache = new Map();
@@ -2267,8 +2272,34 @@ const TURN_TOUCH = 20;
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
-  if (joy.active) {
-    // 摇杆：方向即朝向 —— 推到哪，船头就**立刻**朝哪（见 TURN_TOUCH）。
+  // 手机版「悬浮瞄准标」：炮口(G.aim)与船体(G.ang)解耦。
+  // 摇杆移动 → 船体朝摇杆；松手 → 船体回摆到瞄准标；开火始终沿 G.aim。
+  const touchAimMode = touchMode && !BOT;
+  if (touchAimMode) {
+    if (joy.active) {
+      // 摇杆：推到哪船头立刻朝哪（见 TURN_TOUCH）。炮口保持瞄准标方向，不跟随船体。
+      const jm = Math.hypot(joy.x, joy.y);
+      if (jm > 0.12) {
+        const want = Math.atan2(joy.y, joy.x);
+        const rate = TURN_TOUCH * S.turn * (0.6 + 0.4 * Math.min(1, jm / 0.35));
+        let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
+        const step = rate * dt;
+        if (d > step) d = step; else if (d < -step) d = -step;
+        // 差值 <0.02rad（1.1°）直接吸附，避免每帧在目标附近「蹭」（看着像角度抖动）。
+        if (Math.abs(d) < 0.02) G.ang = want; else G.ang += d;
+      }
+      // 摇杆活动期间：船体朝摇杆，炮口保持瞄准标方向（touchAim），不跟随船体
+    } else {
+      // 松手：船体回摆到瞄准标方向（同 TURN_TOUCH 速度，保留「跟手」手感）。
+      const want = touchAim;
+      let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
+      const step = TURN_TOUCH * S.turn * dt;
+      if (Math.abs(d) <= step || Math.abs(d) < 0.02) G.ang = want;
+      else G.ang += Math.sign(d) * step;
+    }
+    G.aim = touchAim;
+  } else if (joy.active) {
+    // 摇杆（桌面/非触屏路径，逻辑同旧版）：方向即朝向，推到哪船头立刻朝哪。
     // 触屏是唯一只能靠「朝向」瞄准的输入方式，老路径走 TURN_BASE（满舵 3.2 rad/s）
     // 要 1 秒才掉过头，手机上这个延迟直接毁掉操作感。
     // ⚠️ 死区 0.12 是**必需**的，不是手感微调：mag 很小时 atan2 的方向只是
@@ -2291,6 +2322,7 @@ function updatePlayer(dt) {
       if (Math.abs(d) < 0.02) { G.ang = want; }
       else { G.ang += d; }
     }
+    G.aim = G.ang;
   } else if (aimMode === 'mouse' && mouse.inside) {
     // ⚠️ mouse 存的是**视口坐标**（准星要按屏幕画，见 drawCrosshair），
     //    而瞄准要在世界坐标里算 —— 少了这一步相机偏移，准星指哪儿打哪儿就全错了，
@@ -2300,13 +2332,14 @@ function updatePlayer(dt) {
     const d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
     const max = 12 * dt;
     G.ang += clamp(d, -max, max);
+    G.aim = G.ang;
   } else {
     // 键盘 A/D：未按键不漂移
     const kd = ((keys['KeyD'] || keys['ArrowRight']) ? 1 : 0)
              - ((keys['KeyA'] || keys['ArrowLeft']) ? 1 : 0);
     if (kd) G.ang += kd * TURN_BASE * S.turn * dt;
+    G.aim = G.ang;
   }
-  G.aim = G.ang;
 
   // ---- 推进 / 制动 / 线性刹车 ----
   const wHeld = keys['KeyW'] || keys['ArrowUp'];
@@ -2368,7 +2401,7 @@ function updatePlayer(dt) {
 
   // ---- 开火 ----
   G.fireT -= dt;
-  const wantFire = (mouse.down || keys['Space'] || G.autoFire) && !G.dead;
+  const wantFire = (mouse.down || keys['Space'] || G.autoFire || aimDrag.fire) && !G.dead;
   // ---- 过热膛线（熔炉专属）：开火蓄热 / 停火散热 / 见顶锁膛 ----
   // ⚠️ 蓄热只看 wantFire（按速率），**不看这一帧是否真的打出一发** —— 与射速解耦是 echo 的原设计。
   // ⚠️ 锁膛期间 canFire=false，但 fireT 照常走，所以解锁后立刻就能开火，不会多等一个间隔。
@@ -2400,7 +2433,7 @@ function updatePlayer(dt) {
   if (canFire && G.fireT <= 0) {
     const iv = 0.17 / S.rate / (G.odT > 0 ? 2 : 1);
     G.fireT = iv;
-    fireMain(G.ang, G.odT > 0 ? 1.35 : 1);
+    fireMain(G.aim, G.odT > 0 ? 1.35 : 1);
   }
   if (G.muzzle > 0) G.muzzle -= dt;
   if (G.dashT > 0) G.dashT -= dt;
@@ -3871,6 +3904,30 @@ function drawToasts() {
 // 这里画一个跟着鼠标走的像素十字 —— 全用 fillRect 画 1px 方块，不做抗锯齿，
 // 保持和其余像素素材同一个观感；也不要进任何精灵缓存（坐标每帧都变）。
 // 触屏：手指会盖住瞄准点，所以换成一个更大的环 + 点，顺带把虚拟摇杆也画出来。
+// 手机版「悬浮瞄准标」：在炮口方向、离船体固定半径处画一个像素风准星 + 连接线。
+// 仅触屏对局显示；桌面端由 drawCrosshair 处理，不画这个。
+function drawAimMark() {
+  const Rw = 46;                                   // 悬浮标离船体的世界半径
+  const ax = G.px + Math.cos(touchAim) * Rw;
+  const ay = G.py + Math.sin(touchAim) * Rw;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(115,239,247,.32)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(G.px, G.py); ctx.lineTo(ax, ay); ctx.stroke();
+  ctx.strokeStyle = '#73eff7'; ctx.lineWidth = 1;
+  const r = 7;
+  ctx.strokeRect(Math.round(ax - r), Math.round(ay - r), r * 2, r * 2);
+  ctx.beginPath();
+  ctx.moveTo(Math.round(ax - r - 3), Math.round(ay)); ctx.lineTo(Math.round(ax - 2), Math.round(ay));
+  ctx.moveTo(Math.round(ax + 2), Math.round(ay)); ctx.lineTo(Math.round(ax + r + 3), Math.round(ay));
+  ctx.moveTo(Math.round(ax), Math.round(ay - r - 3)); ctx.lineTo(Math.round(ax), Math.round(ay - 2));
+  ctx.moveTo(Math.round(ax), Math.round(ay + 2)); ctx.lineTo(Math.round(ax), Math.round(ay + r + 3));
+  ctx.stroke();
+  ctx.fillStyle = '#f4f4f4';
+  ctx.fillRect(Math.round(ax) - 1, Math.round(ay) - 1, 2, 2);
+  ctx.restore();
+}
+
 function drawCrosshair() {
   const S = G.S;
   const firing = G.muzzle > 0;
@@ -4037,6 +4094,7 @@ function render() {
   drawEnemies();
   drawDrones();
   drawPlayer();
+  if (touchMode && !BOT && state === 'play' && G && !G.dead) drawAimMark();   // 手机版悬浮瞄准标
   drawLances();     // 光矛压在船身之上：它是「刚打出去」的一击，必须盖住一切
   drawEBullets();
   drawParts();
@@ -4387,6 +4445,7 @@ function resumeRun() {
   if (!hull || !hullUnlocked(hull)) { clearRun(); return false; }
   hangarSel = HULLS.indexOf(hull);
   G = newGame(hull.id);
+  touchAim = G.ang;      // 悬浮瞄准标初始与船体同向，避免续档开局无故甩头
   G.wave = r.wave | 0 || 1;
   G.score = r.score | 0;
   G.level = r.level | 0 || 1;
@@ -4412,6 +4471,7 @@ function startGame() {
   const h = HULLS[hangarSel];
   if (!hullUnlocked(h)) { Sound.sfx.lock(); denyDetail(); return; }
   G = newGame(h.id);
+  touchAim = G.ang;      // 悬浮瞄准标初始与船体同向，避免开局无故甩头
   markSeen(h.id);        // 图鉴：船体名录
   // 调试用：?kit=3 开局直接装满 3 级，?kit=all 装满每张卡的满级。
   // 用途只有一个 —— 一眼看满装配的飞船长什么样（配件全挂满的样子），不用打一局。
@@ -4744,6 +4804,13 @@ function toGame(cx, cy) {
 // 那几处必须留在屏幕空间），而瞄准、生成、碰撞全在世界空间 —— 中间就差这一个相机偏移。
 function mouseWorld() { return [mouse.x + cam.x - W / 2, mouse.y + cam.y - H / 2]; }
 function worldToView(x, y) { return [x - cam.x + W / 2, y - cam.y + H / 2]; }
+// 触屏：把手指屏幕坐标换算成「船体 → 手指」的世界夹角（= 悬浮瞄准标方向）。
+function aimFromTouch(cx, cy) {
+  const [vx, vy] = toGame(cx, cy);                          // 视口（游戏空间）坐标
+  const wx = vx - W / 2 + cam.x, wy = vy - H / 2 + cam.y;   // → 世界坐标
+  if (!G) return -Math.PI / 2;
+  return Math.atan2(wy - G.py, wx - G.px);
+}
 function toWorld(cx, cy) { const g = toGame(cx, cy); return [g[0] + cam.x - W / 2, g[1] + cam.y - H / 2]; }
 
 function setTouchMode(on) { touchMode = on; wrap.classList.toggle('touch', on); }
@@ -5061,16 +5128,13 @@ function boot() {
       // 按「游戏坐标」分左右半屏：直接拿 clientX 跟 innerWidth/2 比，
       // 在居中的信箱式布局里会错位（左边被裁掉的那块也会被算成左半屏）。
       const [gx] = toGame(t.clientX, t.clientY);
-      if (gx < W / 2) {
+      if (gx < W / 2 && joy.id === null) {
         joy.id = t.identifier; joy.ox = t.clientX; joy.oy = t.clientY; joy.active = true;
-      } else {
-        // 右半屏：按住 = 朝手指方向转 + 开火。
-        // ⚠️ 必须顺手把 aimMode 切成 'mouse'：手机浏览器抬指后补发的兼容性
-        //    mousemove 被下面 upd() 挡掉了，再没人翻这个开关 —— 不切的话
-        //    「右半屏拖动瞄准」会静默失效（船不再朝手指转，只有火在打）。
-        mouse.down = true;
-        aimMode = 'mouse';
-        const [x, y] = toGame(t.clientX, t.clientY); mouse.x = x; mouse.y = y; mouse.inside = true;
+      } else if (gx >= W / 2 && aimDrag.id === null) {
+        // 右半屏拖动 = 转动「悬浮瞄准标」（设定 G.aim 开火方向）；拖动期间即开火。
+        aimDrag.id = t.identifier;
+        aimDrag.fire = true;
+        touchAim = aimFromTouch(t.clientX, t.clientY);
       }
     }
   }, { passive: true });
@@ -5085,6 +5149,9 @@ function boot() {
         if (rot === 90) { const tx = dx; dx = dy; dy = -tx; }
         const m = Math.hypot(dx, dy) || 1, k = Math.min(1, m / 40);
         joy.x = dx / m * k; joy.y = dy / m * k;
+      } else if (t.identifier === aimDrag.id) {
+        // 右半屏拖动：悬浮瞄准标跟随手指方向（绕船体旋转，半径固定）。
+        touchAim = aimFromTouch(t.clientX, t.clientY);
       } else {
         const [x, y] = toGame(t.clientX, t.clientY); mouse.x = x; mouse.y = y;
       }
@@ -5093,7 +5160,10 @@ function boot() {
   const endTouch = e => {
     for (const t of e.changedTouches) {
       if (t.identifier === joy.id) { joy.id = null; joy.active = false; joy.x = joy.y = 0; }
-      else {
+      else if (t.identifier === aimDrag.id) {
+        // 松手保留 touchAim：悬浮标停在原方向，只停止「拖动即开火」。
+        aimDrag.id = null; aimDrag.fire = false;
+      } else {
         mouse.down = false;
         // ⚠️ 抬指必须把准星一起收掉。否则 mouse 会残留在最后那个触点上，
         //    摇杆一松手，updatePlayer 里 aimMode==='mouse' 那条分支就继续生效 ——
@@ -5205,6 +5275,10 @@ function boot() {
       if (!joy.active) { joy.id = null; joy.x = joy.y = 0; }
       return { active: joy.active, x: joy.x, y: joy.y };
     },
+    // 探针专用：直接设定手机版「悬浮瞄准标」方向（touchAim）。
+    // 正常只由右半屏拖动写，无头环境绕一圈太脆 —— 给个直写口测解耦最稳。
+    setAim: (a) => { touchAim = a; return touchAim; },
+    get aim() { return touchAim; },
     ebullet: (x, y, ang, spd, r, color) => eShot(x, y, ang, spd, r, color || HOSTILE.red),
     // ---- 探针专用：无尽航程 / 深渊档位 ----
     // ⚠️ bossForWave 有副作用（会从轮换袋里抽走一张），所以单独开一个 peek 版本给探针做

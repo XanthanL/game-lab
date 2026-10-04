@@ -52,7 +52,7 @@ const UI = {
     'title.kills': '累计击坠 {0}',
     'title.locked': '还有 {0} 台待解锁',
     'title.ctrlDesk': 'A/D 转向 · W 推进 · S 制动 · 鼠标瞄准 · 左键/空格开火 · Shift/右键冲刺',
-    'title.ctrlTouch': '左半屏拖动转向推进 · 右半屏拖动瞄准 · 右下角：开火 / 冲刺 / 超载',
+    'title.ctrlTouch': '左半屏拖动转向推进 · 右半屏拖动悬浮标瞄准（拖动即开火）· 右下角：开火 / 冲刺 / 超载',
     'title.hintDesk': '按 ENTER 开始',
     'title.hintTouch': '轻触「开始航行」',
 
@@ -87,7 +87,7 @@ const UI = {
       '<p><b>SHIFT / 右键</b> 助推冲刺（短暂无敌）</p>',
       '<p><b>E</b> 超载爆发（能量满时）</p>',
       '<p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>',
-      '<p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏拖动 = 瞄准<br>右下角 大按钮 = <b>开火开关</b>（默认关）· 小按钮 = 冲刺 · 上方容器 = 超载（攒满才可按）</p>',
+      '<p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏拖动 = 转动悬浮瞄准标（拖动即开火）<br>右下角 大按钮 = <b>开火开关</b>（默认关）· 小按钮 = 冲刺 · 上方容器 = 超载（攒满才可按）</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">青白色细针</em> 是你的炮弹；<em class="c-r">红紫圆弹</em> 是敌弹，务必躲开</p>',
@@ -260,7 +260,7 @@ const UI = {
     'title.locked': '{0} HULLS STILL LOCKED',
     'title.ctrlDesk': 'A/D TURN · W THRUST · S BRAKE · MOUSE AIM · LMB/SPACE FIRE · SHIFT/RMB DASH',
     // ⚠️ 这条走 data-i18n（textContent），**不能**写 &amp; —— 会被原样显示出来。
-    'title.ctrlTouch': 'L HALF = STEER + THRUST · R HALF = AIM · CORNER: FIRE / DASH / BURN',
+    'title.ctrlTouch': 'L HALF = STEER+THRUST · R HALF = DRAG AIM MARK (FIRES) · CORNER: FIRE/DASH/BURN',
     'title.hintDesk': 'PRESS ENTER TO START',
     'title.hintTouch': 'TAP START VOYAGE',
 
@@ -292,7 +292,7 @@ const UI = {
       '<p><b>Mouse</b> aim — nose turns toward cursor (max 12 rad/s)</p>',
       '<p><b>LMB / Space</b> fire (hold) · <b>Shift / RMB</b> dash</p>',
       '<p><b>E</b> overdrive · <b>ESC/P</b> pause · <b>M</b> mute</p>',
-      '<p class="dim">Phone: L half = thrust + steer · R half = aim<br>Bottom-right: big = <b>FIRE</b> toggle (off by default) · small = DASH · vessel above = OVERDRIVE (only when full)</p>',
+      '<p class="dim">Phone: L half = thrust + steer · R half = drag AIM MARK (fires while dragging)<br>Bottom-right: big = <b>FIRE</b> toggle (off by default) · small = DASH · vessel above = OVERDRIVE (only when full)</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">Cyan needles</em> = your shots · <em class="c-r">red/purple orbs</em> = enemy fire (dodge)</p>',

@@ -353,27 +353,36 @@ em { font-style: normal; }
 .tb-od.ready:active .odbatt { background: rgba(255, 205, 117, .28); }
 .tb-od.deny { animation: deny .28s steps(3); }
 
-/* 工具键（暂停 / 全屏）：**顶栏正中那条空档**，y=36。
+/* 工具键（暂停 / 全屏）：顶栏正中那条空档，y=28。
    ⚠️ 不能留在两个上角 —— HUD 把左上（船体/护盾/经验，x 8..124）和右上
       （分数/航段/星区/时间，右对齐到 x=472）全占了，按钮压在上面会把血量数字
       和「第 N/12 段」直接盖住（2026-09-26 截图确认）。
-   y=36 这条空档是算出来的：巨像血条 y=8..16、巨像名 y=20..32、横幅从 y=74 起，
-      左边 HUD 到 x=124、右边从 x=380 起 —— 中间 124..380 只有这一条完全不打架。
+   空档怎么来的：横幅从 y=74 起，巨像面板只占 y 4..38 且名字(y12..24)/血条(y10..18)
+      都在上半 —— 所以顶栏正中、巨像名之下到横幅之上这段（y 28..64）整条空着，
+      按钮落在这里左右（x 207..281，落在 HUD 中心空档 124..380 内）和上下都不打架。
+   ⚠️ y 上移到 28（原 36）：普通波次顶栏正中全空，零风险；巨像战时按钮 28..56
+      只压到巨像面板的**空底边**（y28..38），不挡名字/血条 —— 这是刻意的取舍
+      （坐标见 game.js drawHUD：bossName 基线 y=22、血条 y10..18、面板 y4..38）。
    放在正中还有个好处：两个拇指的常驻区（左下摇杆 / 右下动作簇）都够不着，
       不会在躲弹幕时被误触。 */
-/* ⚠️ 两颗工具键原来只有 30×24 —— 缩放到手机上约 43×35 CSS px，正好卡在
-   安卓/iOS 44px 的最小可点尺寸线以下，手指常常点空。放宽到 34×28（≈49×40 CSS px）
-   并保持彼此 8px 间距（`247 - 241`）；纵向 36..64 仍在横幅（y=74 起）之上。
+/* ⚠️ 两颗工具键 34×28（≈49×40 CSS px）卡在安卓/iOS 44px 最小可点线之上；
+   彼此 8px 间距（`247 - 241`）；纵向 28..56 在横幅（y=74 起）之上。
    ⚠️ 横向只能往右推 —— 左边不能再越过 x=124（左侧 HUD 的地盘）。 */
-/* 工具键：像素角（2px 切角），和整体像素风统一，不用平滑圆角 */
-.tb-pause { left: 207px; top: 36px; width: 34px; height: 28px;
+/* 工具键：像素角（2px 切角）+ 青色内描边 + 顶部高光 + 顶部「安装凸耳」
+   + 青色辉光，与右下开火键的辉光语言统一，像嵌在机舱顶盖上的成对仪表。 */
+.tb-pause, .tb-full { top: 28px; color: #cfeffb;
   clip-path: polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px,
     100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%,
-    2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px)); }
-.tb-full { left: 247px; top: 36px; width: 34px; height: 28px;
-  clip-path: polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px,
-    100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%,
-    2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px)); }
+    2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px));
+  box-shadow: inset 0 0 0 1px #73eff7cc, inset 0 1px 0 #c9f7fb;
+  filter: drop-shadow(0 0 4px rgba(115, 239, 247, .45)); }
+/* 顶部「安装凸耳」：把键钉在顶盖上的视觉暗示，落在切角内、不破形 */
+.tb-pause::before, .tb-full::before { content: ''; position: absolute; top: 0; left: 50%;
+  transform: translateX(-50%); width: 12px; height: 3px; background: #9df3fa;
+  box-shadow: 0 0 3px #73eff7; }
+.tb-pause { left: 207px; width: 34px; height: 28px; }
+.tb-full { left: 247px; width: 34px; height: 28px; }
+.tb-pause:active, .tb-full:active { filter: drop-shadow(0 0 7px rgba(157, 243, 250, .85)); }
 
 /* 键盘焦点：既然补了「Tab 聚焦 + Enter 激活」，就必须看得见焦点在哪 */
 .btn:focus-visible, .tbtn:focus-visible, .card:focus-visible, .hull:focus-visible,
