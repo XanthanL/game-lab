@@ -170,7 +170,16 @@
 
   /* ---------- 计分 ----------
      score 恒等于已答题数（每题必选且只选一条），所以「命中多」是相对的，
-     分母（机会数）必须一起给——分母相等，命中数才可比。 */
+     分母（机会数）必须一起给——分母相等，命中数才可比。
+     ⚠️ 2026-10-04 起每题 5 个选项，第 5 个是「这次我没被带走」（h:0）。
+        它不进任何惯性，所以「命中」不再是 60 题 × 4 选项的必然满额——
+        一个人完全可以 40 题都没被带走。此时惯性分母（机会数）不变，
+        分子自然降低，这就是我们要的正向空间。
+        keptOf() 统计「没被带走」的次数，它是一个**正向指标**，
+        不是第 11 条惯性（那样会把它塞进同一个排名里，变成「你得分最高」）。 */
+  function keptOf() {
+    return answered().filter(function (a) { return !a.h; }).length;
+  }
   function score() {
     var out = [];
     D.habits.forEach(function (h) {
@@ -187,6 +196,19 @@
   function isLow(sc, free) {
     if (free || !sc.length) return false;
     return sc[0].score <= Math.floor(sc[0].opps * SPREAD);
+  }
+
+  /* ---------- 正向结果态（2026-10-04）----------
+     加了 h:0 选项之后出现的新情况：一个人可能大部分题都选了「没被带走」。
+     这时命中数普遍偏低，会落进 isLow 的「分散」分支，对用户说「十种都沾了一点」——
+     可用户真实的处境是「这批题基本没把我带走」，这是**好消息**，
+     把它说成「分散」是误读，等于刚做完一次自我觉察就被泼冷水。
+     所以先判正向态：走这一支时不列任何惯性，只给正向数字 + 解释。 */
+  var KEPT_STRONG = 0.60;
+  function isKeptStrong() {
+    var a = answered();
+    if (!a.length) return false;
+    return keptOf() / a.length >= KEPT_STRONG;
   }
 
   /* ---------- 结果条目取舍（并列规则，显式写死） ----------
@@ -367,7 +389,11 @@
     // 缺格 / 越界自动回退「想想」陪伴小人（sceneDeco 内部处理）
     $('q-comp').innerHTML = sceneDeco(q, 76);
     $('q-opts').innerHTML = q.opts.map(function (o, i) {
-      return '<button class="opt" data-i="' + i + '"><span class="key">' + 'ABCD'[i] + '</span><span>' + esc(o.t) + '</span></button>';
+      /* 选项从 4 个变成 5 个（第 5 个是「这次我没被带走」），字母表跟着扩到 ABCDE。
+         h:0 那个选项在视觉上不标出来——它是出口，不是「正确答案」，
+         标出来等于告诉用户「选这个就对了」，测的就不是真东西了。 */
+      return '<button class="opt' + (o.h ? '' : ' opt-free') + '" data-i="' + i + '">' +
+        '<span class="key">' + 'ABCDE'[i] + '</span><span>' + esc(o.t) + '</span></button>';
     }).join('');
 
     Array.prototype.forEach.call($('q-opts').children, function (btn) {
@@ -498,6 +524,13 @@
   function renderHero(picks, free, low) {
     var top = (!low && picks.length) ? habit(picks[0].id) : null;
     var r0 = top ? picks[0] : null;
+    var kept = keptOf(), total = answered().length;
+    var keptStrong = isKeptStrong();
+    /* 正向指标：「没被带走」N/M。放在 hero 代号卡里，与「命中 n/m」并列。
+       为什么不用百分比：命中用「n/机会数」，这里也用同一种口径，两行能直接对照读。
+       为什么不给它单独造一个代号：它是**次数**，不是第 11 条惯性——
+       塞进同一个排名就会变成「你在这一条上得分最高」，正好和我们的口径相反。 */
+    var keptHTML = '<p class="hero-kept"><b>' + kept + '/' + total + '</b> 题你没被带走</p>';
 
     $('res-say').innerHTML =
       '<div class="say">' +
@@ -509,13 +542,19 @@
         : '<b>隔几天再测一次</b>' +
           '<p>出现最多的那条，就是你的码。评论区对暗号，等它成形再来。</p></div>');
 
-    if (!top) {
+    if (!top || keptStrong) {
       $('res-hero').innerHTML =
         '<div class="hero">' +
         (artOn() ? deco('ui', D.art.ui.shrug, 116, 'hero-art') : '') +
         '<p class="hero-kicker">这次的结果</p>' +
-        '<p class="hero-tag" style="font-size:28px">十种都沾了一点</p>' +
-        '<p class="hero-line">没有被某一种带走，也是一种结果。真要用起来，先记具体那句话，别急着分类。</p>' +
+        '<p class="hero-tag" style="font-size:28px">' +
+        (keptStrong ? '这批题基本没把你带走' : '十种都沾了一点') + '</p>' +
+        keptHTML +
+        '<p class="hero-line">' +
+        (keptStrong
+          ? '这不代表你以后也不会被带走——只是这一次，这 ' + total + ' 句话里，你没被其中任何一条拽住。记住这个手感，它有名字，叫「我在」。'
+          : '没有被某一种带走，也是一种结果。真要用起来，先记具体那句话，别急着分类。') +
+        '</p>' +
         '</div>';
       return;
     }
@@ -529,8 +568,9 @@
       '<p class="hero-line">' + esc(top.tagline) + '</p>' +
       (top.hot ? '<p class="hero-hot">网友管这种想法叫 <b>' + esc(top.hot) + '</b></p>' : '') +
       '<p class="hero-hit">命中 <b>' + r0.score + '/' + r0.opps + '</b></p>' +
+      keptHTML +
       (top.post ? '<div class="hero-post"><i>如果它发朋友圈</i>' + esc(top.post) + '</div>' : '') +
-      '<p class="hero-pair">让他也测一个，评论区对暗号 <b>#' + esc(top.code) + '</b></p>' +
+      '<p class="hero-pair">让朋友也测一个，评论区对暗号 <b>#' + esc(top.code) + '</b></p>' +
       '<p class="hero-note">代号和热词都只是为了方便记住和搜索，不是给你盖章。</p>' +
       '</div>';
 
@@ -568,12 +608,15 @@
     var top = sc[0];
     var free = state.stage === 'free';
     var low = isLow(sc, free);
+    var keptStrong = isKeptStrong();
 
     var picks = selectPicks(sc, free, low);   // 取舍规则见 selectPicks 注释
 
     $('res-head').textContent = free
       ? '这 ' + D.freeIds.length + ' 题里，你选到了这几条'
-      : (low ? '十条里没有哪条特别突出' : (picks.length > 1 ? '你最常出现的是这两条' : '你最常出现的是这一条'));
+      : (keptStrong
+        ? '这批题基本没把你带走'
+        : (low ? '十条里没有哪条特别突出' : (picks.length > 1 ? '你最常出现的是这两条' : '你最常出现的是这一条')));
     $('res-sub').textContent = free
       ? D.freeIds.length + ' 题只覆盖感情和日常这两块。完整 ' + D.questions.length + ' 题还有职场、家里、一个人待着的时候。'
       : '';
@@ -583,11 +626,28 @@
     var sp = sceneProfile(picks);
     $('res-chart').innerHTML = matrixHTML(true) +
       sceneHTML(sp) +
+      /* 正向态下矩阵几乎全空（这正是「基本没被带走」的图形含义），
+         但空矩阵看起来像加载失败，补一句说明把它变成结论的一部分。 */
+      (keptStrong
+        ? '<p class="mx-kept">上面这 10 行基本没亮 —— 那就是这题的答案。</p>'
+        : '') +
       '<p class="mx-note">' + esc(D.resNote) + '</p>';
     bindMatrix($('res-chart'));
 
     // 抽屉式结果：收件了解概览，点开看完整拆解。第一条默认展开，其余折叠。
-    if (low) {
+    if (keptStrong) {
+      /* 正向态：不列惯性清单，改说「接下来怎么用」。
+         为什么不给「十大清单」当补充材料——那个入口的语义是
+         「看看哪条最像你」，用在正向态上等于把刚形成的正向结论立刻拽回分类游戏。 */
+      $('res-cards').innerHTML =
+        '<div class="card flat">' +
+        (artOn() ? '<div class="flat-comp">' + deco('ui', D.art.ui.note, 100) + '</div>' : '') +
+        '<p class="what">这 ' + answered().length + ' 题里有 ' + keptOf() +
+        ' 题你没被带走——占了大头。说明这批场景当下踩不中你的开关。</p>' +
+        '<p class="what">接下来换个难一点的场景试试：越贴近你真实生活里反复出现的那件事，' +
+        '越可能看到平时看不到的那一句。</p>' +
+        '<p class="what">也留意另外那几题——它们不是「答错」，只是说明那一句你还在用。</p></div>';
+    } else if (low) {
       $('res-cards').innerHTML =
         '<div class="card flat">' +
         (artOn() ? '<div class="flat-comp">' + deco('ui', D.art.ui.note, 100) + '</div>' : '') +
@@ -625,7 +685,9 @@
     // 理由：免费层每条只有 6 次机会，「几乎每次都出现」统计上不成立；
     //       且这是未付费用户的第一印象，在这里推「找专业的人聊聊」会掉转化。
     //       合规风险集中在完整层；免费层题量少 + 只有一句话，风险低。
-    var concentrated = free ? [] : sc.filter(function (r) {
+    // ⚠️ 正向态下一律不弹：刚说完「这批题基本没把你带走」，紧跟一句
+    //    「可以找专业的人聊聊」是自相矛盾的自伤。
+    var concentrated = (free || keptStrong) ? [] : sc.filter(function (r) {
       return r.score >= Math.ceil(r.opps * DENSE);
     });
     $('res-flag').innerHTML = concentrated.length
@@ -690,6 +752,9 @@
   function pickFirst() {
     var sc = score(), free = state.stage === 'free';
     var low = isLow(sc, free);
+    /* 正向态不返回代号：分享图的 hero 位置要留给「你没被带走 N/M」，
+       空出位置由 drawShare 的正向分支接管。 */
+    if (isKeptStrong()) return null;
     var picks = selectPicks(sc, free, low);
     return picks[0] ? habit(picks[0].id) : null;
   }
@@ -707,8 +772,11 @@
     var sc = score();
     var free = state.stage === 'free';
     var low = isLow(sc, free);
+    var keptStrong = isKeptStrong();
     // 矩阵画全部命中（不排序、不取舍），hero 只写第一条代号
-    var picks = selectPicks(sc, free, low);
+    /* 正向态下不给代号：截图上的主角应该是「你没被带走 N/M」，
+       硬塞一条最多 5/24 的惯性代号上去，等于把一张正向的图讲成负面的。 */
+    var picks = keptStrong ? [] : selectPicks(sc, free, low);
     var first = picks[0] ? habit(picks[0].id) : null;
 
     var MONO = '"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace';
@@ -750,6 +818,7 @@
       y = wrap(g, first.tagline, 60, y + 32, MW, 38);
       // 命中 n/m：等宽深蓝。有朋友圈气泡就跟气泡同行右侧，不另占一行
       var hitNum = picks[0].score + '/' + picks[0].opps;
+      var keptNum = keptOf() + '/' + answered().length;
       g.font = '700 26px ' + MONO;
       var nw = g.measureText(hitNum).width;
       g.font = '600 20px ' + F;
@@ -776,10 +845,36 @@
         g.fillText(hitNum, 60 + lw, y + 28);
         y += 48;
       }
+      /* 「没被带走」正向指标（2026-10-04）：
+         截图会被转发到评论区/朋友圈，所以正向口径必须**印在图上**，
+         不能只在网页里——不然发出去的图还是只有「命中」这一条负面数字。
+         写法上和「命中」对齐：等宽深蓝的 n/m + 灰字标签。
+         ⚠️ 本区块属于「自下而上排版」的内容，必须参与上面 y 的推进，
+            否则会压到下面的矩阵卡（2026-10-04 修过一次同样的压字 bug）。 */
+      g.fillStyle = MUTED;
+      g.font = '600 20px ' + F;
+      var ktxt = '你没被带走 ';
+      g.fillText(ktxt, 60, y + 28);
+      var kw = g.measureText(ktxt).width;
+      g.fillStyle = ACCENT;
+      g.font = '700 26px ' + MONO;
+      g.fillText(keptNum, 60 + kw, y + 28);
+      y += 48;
     } else {
       g.fillStyle = INK;
       g.font = '800 40px ' + F;
-      y = wrap(g, '十种都沾了一点', 60, y, 630, 52);
+      y = wrap(g, keptStrong ? '这批题基本没把我带走' : '十种都沾了一点', 60, y, 630, 52);
+      /* 空结果分支：没有代号，但「你没被带走」的数字必须印出来——
+         这个场景下它是图上唯一的数字，不印就成了一张纯负面图。 */
+      g.fillStyle = MUTED;
+      g.font = '600 20px ' + F;
+      var kt3 = '你没被带走 ';
+      g.fillText(kt3, 60, y + 26);
+      var kw3 = g.measureText(kt3).width;
+      g.fillStyle = ACCENT;
+      g.font = '700 26px ' + MONO;
+      g.fillText(keptNum, 60 + kw3, y + 26);
+      y += 48;
     }
 
     // 矩阵（白卡）：格子数随题量变，24 格时自动缩成 10px + 2px 间距的密度条
@@ -813,6 +908,15 @@
 
     var mh = 26 + rows.length * step + 8 + spH;
     var mCardTop = BOTTOM - (swapH ? swapH + 16 : 0) - mh;
+    /* ⚠️ 2026-10-04：这里曾经加过一条「矩阵卡顶不许压到 hero 末行」的钳制
+     *    （Math.min(mCardTop, heroBottom + 22)）。实测 9 种情形后确认它是**死代码**——
+     *    矩阵卡顶由 BOTTOM 往上倒推（swapH + mh），跟 hero 占多高无关；
+     *    正向态下 rows 为空、mh≈34，卡片根本不画（实测 mCardTop 恒为 464/492，
+     *    距 hero 末行还有富余）。注入变异把它去掉，_layout.js 27 项断言全过——
+     *    即「没有它也不会坏」。留着它只会让人误以为这里有保护。
+     *    真正防压字的是：① 自下而上从 BOTTOM 倒推；② swapH 按实际折行数算；
+     *    ③ _layout.js 验 9 种情形（含正向态、惯性占多数、3/4 边界）。
+     *    若日后 hero 再加内容，先跑 _layout.js，再考虑要不要真正的钳制。 */
     rr(g, 60, mCardTop, 630, mh, 22, CARD);
     var my = mCardTop + 26;
     rows.forEach(function (r) {
@@ -877,7 +981,7 @@
       g.fillText('#' + first.code, 690, FOOT1);
       g.fillStyle = INK2;
       g.font = '500 20px ' + F;
-      g.fillText('让他也测一个 · 对暗号 ', 690 - cw, FOOT1);
+      g.fillText('让朋友也测一个 · 对暗号 ', 690 - cw, FOOT1);
       g.textAlign = 'left';
     }
 

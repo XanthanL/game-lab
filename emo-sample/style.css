@@ -110,6 +110,13 @@ button:active{transform:scale(.985)}
 }
 .opt.picked{background:var(--blush);border-color:var(--coral);color:var(--ink)}
 .opt.picked .key{background:var(--coral);border-color:var(--coral);color:#fff}
+/* 第 5 个选项「这次我没被带走」（h:0）
+ * ---------------------------------------------------------------------------
+ * ⚠️ 这里刻意**不做任何视觉区分**——不加底色、不换字号、不改边框色。
+ * 一旦把它标成「绿色的一行」「不受管的那个选项」，用户立刻学会「选它就对了」，
+ * 测出来的就不是他真实的反应了——这种学习性会直接毁掉整个计分。
+ * `.opt-free` 目前只作为**语义锚点**留给 JS（和将来的 A/B 实验），
+ * 视觉上与其余四个完全一致。哪天想给它一点区分，先想清楚怎么藏住「这是出口」。 */
 
 /* 分析中 */
 .an-wrap{padding-top:64px;text-align:center}
@@ -147,6 +154,27 @@ button:active{transform:scale(.985)}
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   font-size:19px;font-weight:700;letter-spacing:.05em;color:var(--accent);margin-left:2px;
 }
+/* 「没被带走」正向指标（2026-10-04）
+ * ---------------------------------------------------------------------------
+ * 为什么必须有这一行：原来每题 4 个选项**全部**是「被某条思维惯性带走」的
+ * 读法，没有出口——60 题必答 60 次，总命中恒等于 60，10 条均分，
+ * 于是**无论谁怎么答，结果都必然长成负面**。这不是措辞问题，是结构问题。
+ * 加了第 5 个选项「这次我没被带走」（h:0）之后，用户才可能得出偏正向的结果，
+ * 这一行就是那个结果在页面上的落点。
+ *
+ * 配色纪律：它是**数据**，不是装饰 → 用数据层深蓝 --accent，
+ * 和「命中 n/m」同一套视觉语言，两行可以并排读。
+ * ⚠️ 绝不许改成 --coral / --blush：那会让「没被带走 = 好事」被读成
+ *    「负面情绪被标红」的镜像，恰好打穿「命中多 ≠ 更糟」这个核心口径。
+ *    靠下边框（而非底色）做区分，存在感低于命中行，不与英雄区的大字抢。 */
+.hero-kept{
+  margin-top:8px;font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:600;
+  padding:7px 0 0;border-top:1px dashed var(--line);
+}
+.hero-kept b{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:19px;font-weight:700;letter-spacing:.05em;color:var(--accent);margin-left:2px;
+}
 .hero-pair{margin-top:12px;font-size:12.5px;color:#A2553F;font-weight:600}
 .hero-pair b{
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -174,6 +202,13 @@ button:active{transform:scale(.985)}
 .cell.on{background:var(--accent);cursor:pointer}
 .mx-tip{font-size:11.5px;color:var(--muted);margin:8px 0 0}
 .mx-note{font-size:11.5px;color:#A98A7C;margin:8px 2px 0;line-height:1.6}
+/* 正向态下的空矩阵说明（2026-10-04）
+ * 一张几乎全灭的方块矩阵单看很像「加载失败了」，
+ * 这行把「空」翻译成结论本身。是解释，不是免责。 */
+.mx-kept{
+  font-size:12px;color:var(--ink2);font-weight:600;margin:10px 2px 0;
+  line-height:1.6;
+}
 
 /* 场景画像：答的是「想法发生在哪儿」。用暖调（界面层）——
    这里的命中数 n/m 是数据，仍走深蓝；卡片底色走暖色，不跟矩阵抢「统计表」的身份。
