@@ -546,7 +546,7 @@
     order.sort(function () { return Math.random() - 0.5; });
     // 60 题下命中格可达 60 个，步长要压住，否则「分析中」要等 4 秒以上
     var step = Math.max(28, Math.min(90, Math.floor(ANALYZE_MS / Math.max(1, order.length + 2))));
-    var msgs = ['正在比对 10 种想事情的方式', '正在找出现最多的那条', '快好了'];
+    var msgs = ['正在梳理那些纷乱的思绪…', '正在辨认纠缠你最深的那句低语…', '脑海的回声即将浮现…'];
     var mi = 0;
     $('an-msg').textContent = msgs[0];
     var mt = setInterval(function () {
@@ -623,58 +623,54 @@
     var r0 = top ? picks[0] : null;
     var kept = keptOf(), total = answered().length;
     var keptStrong = isKeptStrong();
-    /* 正向指标：「没被带走」N/M。放在 hero 代号卡里，与「命中 n/m」并列。
-       为什么不用百分比：命中用「n/机会数」，这里也用同一种口径，两行能直接对照读。
-       为什么不给它单独造一个代号：它是**次数**，不是第 11 条惯性——
-       塞进同一个排名就会变成「你在这一条上得分最高」，正好和我们的口径相反。 */
-    var keptHTML = '<p class="hero-kept"><b>' + kept + '/' + total + '</b> 题你没被带走</p>';
+
+    var keptHTML = '<p class="hero-kept"><b>' + kept + '/' + total + '</b> 个场景你未被低语裹挟</p>';
 
     $('res-say').innerHTML =
       '<div class="say">' +
       (artOn() ? deco('ui', D.art.ui.report, 72, 'say-comp') : '') +
       (top
-        ? '<b>评论区对暗号</b>' +
-          '<p>把 <b class="say-code">#' + esc(top.code) + '</b> 贴到评论区，顺便 @ 那个该来测的人。' +
-          '攒够了我出一期「哪种码最多」。</p></div>'
-        : '<b>隔几天再测一次</b>' +
-          '<p>出现最多的那条，就是你的码。评论区对暗号，等它成形再来。</p></div>');
+        ? '<b>找找同频的人</b>' +
+          '<p>把 <b class="say-code">#' + esc(top.code) + '</b> 留下来，看看有多少人和你听着同样的低语。<br>' +
+          '看清那句话，它就很难再悄悄拽着你走了。</p></div>'
+        : '<b>脑海清澈，风平浪静</b>' +
+          '<p>最近你没有被哪句固执的声音困住。把这份难得的清醒与松弛留住吧。</p></div>');
 
     if (!top || keptStrong) {
       $('res-hero').innerHTML =
         '<div class="hero">' +
         (artOn() ? deco('ui', D.art.ui.shrug, 116, 'hero-art') : '') +
-        '<p class="hero-kicker">这次的结果</p>' +
+        '<p class="hero-kicker">这次的回声探测</p>' +
         '<p class="hero-tag" style="font-size:28px">' +
-        (keptStrong ? '这批题基本没把你带走' : '十种都沾了一点') + '</p>' +
+        (keptStrong ? '脑海晴朗，未曾深陷内耗' : '思绪很散，没有沉溺某处') + '</p>' +
         keptHTML +
         '<p class="hero-line">' +
         (keptStrong
-          ? '这不代表你以后也不会被带走——只是这一次，这 ' + total + ' 句话里，你没被其中任何一条拽住。记住这个手感，它有名字，叫「我在」。'
-          : '没有被某一种带走，也是一种结果。真要用起来，先记具体那句话，别急着分类。') +
+          ? '这 ' + total + ' 个极易让人胡思乱想的场景，几乎都没在你心里勾起波澜。你没有顺着杂音往下演，也没有忙着给自己判罪。这种「事情归事情、我不受裹挟」的从容与钝感，是你极珍贵的护城河。'
+          : '面对生活里的波折，你的反应比较随性，没有被哪一句固执的声音死死拽住。保持这种呼吸感，不要急着给自己下任何结论。') +
         '</p>' +
         '</div>';
       return;
     }
+
     $('res-hero').innerHTML =
       '<div class="hero">' +
-      // 习惯小人大图压右上角（走 sprite，结果页零额外请求）；不挤压代号大字
       (artOn() ? deco('ip', top.id - 1, 116, 'hero-art') : '') +
-      '<p class="hero-kicker">' + (free ? '这 ' + D.freeIds.length + ' 题里，先出场的是' : '你最常出现的一条') + '</p>' +
+      '<p class="hero-kicker">' + (free ? '这 ' + D.freeIds.length + ' 个场景里，你耳边最常回响的是：' : '最常纠缠你头脑的那句低语：') + '</p>' +
       '<p class="hero-code">' + esc(top.code) + '</p>' +
       '<p class="hero-tag">' + esc(top.tag) + '</p>' +
-      '<p class="hero-line">' + esc(top.tagline) + '</p>' +
-      (top.hot ? '<p class="hero-hot">网友管这种想法叫 <b>' + esc(top.hot) + '</b></p>' : '') +
-      '<p class="hero-hit">命中 <b>' + r0.score + '/' + r0.opps + '</b></p>' +
+      '<p class="hero-line">“' + esc(top.tagline) + '”</p>' +
+      (top.hot ? '<p class="hero-hot">网友常把这种心绪唤作 <b>' + esc(top.hot) + '</b></p>' : '') +
+      '<p class="hero-hit">这句潜台词回响了 <b>' + r0.score + '/' + r0.opps + '</b> 次</p>' +
       keptHTML +
-      (top.post ? '<div class="hero-post"><i>如果它发朋友圈</i>' + esc(top.post) + '</div>' : '') +
-      '<p class="hero-pair">让朋友也测一个，评论区对暗号 <b>#' + esc(top.code) + '</b></p>' +
-      '<p class="hero-note">代号和热词都只是为了方便记住和搜索，不是给你盖章。</p>' +
+      (top.post ? '<div class="hero-post"><i>如果脑内的低语写成动态</i>' + esc(top.post) + '</div>' : '') +
+      '<p class="hero-pair">分享给懂你的人，对个暗号 <b>#' + esc(top.code) + '</b></p>' +
+      '<p class="hero-note">认出那句低语，只是觉察的开始；它只是个路过的念头，不是你的全部。</p>' +
       '</div>';
 
-    // 点 hero 复制「暗号 + 代号 + 自述」，去评论区直接贴
     $('res-hero').onclick = function () {
-      var text = '我来对暗号：#' + top.code + ' 「' + top.tag + '」' + top.tagline;
-      copyText(text) ? toast('复制好了，去评论区贴上就行') : toast(text);
+      var text = '我脑海里常回响的声音：#' + top.code + ' 「' + top.tag + '」——' + top.tagline;
+      copyText(text) ? toast('暗号已复制，快去评论区对号吧') : toast(text);
     };
   }
 
@@ -710,12 +706,12 @@
     var picks = selectPicks(sc, free, low);   // 取舍规则见 selectPicks 注释
 
     $('res-head').textContent = free
-      ? '这 ' + D.freeIds.length + ' 题里，你选到了这几条'
+      ? '这 ' + D.freeIds.length + ' 题里，常在你心头低语的声音'
       : (keptStrong
-        ? '这批题基本没把你带走'
-        : (low ? '十条里没有哪条特别突出' : (picks.length > 1 ? '你最常出现的是这两条' : '你最常出现的是这一条')));
+        ? '脑海清澈，未被低语裹挟'
+        : (low ? '心念如水，没有被某句低语困住' : (picks.length > 1 ? '这两句低语最常在你耳边作响' : '最常纠缠你的那句低语')));
     $('res-sub').textContent = free
-      ? D.freeIds.length + ' 题只覆盖感情和日常这两块。完整 ' + D.questions.length + ' 题还有职场、家里、一个人待着的时候。'
+      ? '快速版只取样了亲密关系与日常碎事。完整 60 题还包含了职场风浪、原生家庭与独处沉思。'
       : '';
 
     renderHero(picks, free, low);
@@ -733,24 +729,18 @@
 
     // 抽屉式结果：收件了解概览，点开看完整拆解。第一条默认展开，其余折叠。
     if (keptStrong) {
-      /* 正向态：不列惯性清单，改说「接下来怎么用」。
-         为什么不给「十大清单」当补充材料——那个入口的语义是
-         「看看哪条最像你」，用在正向态上等于把刚形成的正向结论立刻拽回分类游戏。 */
       $('res-cards').innerHTML =
         '<div class="card flat">' +
         (artOn() ? '<div class="flat-comp">' + deco('ui', D.art.ui.note, 100) + '</div>' : '') +
-        '<p class="what">这 ' + answered().length + ' 题里有 ' + keptOf() +
-        ' 题你没被带走——占了大头。说明这批场景当下踩不中你的开关。</p>' +
-        '<p class="what">接下来换个难一点的场景试试：越贴近你真实生活里反复出现的那件事，' +
-        '越可能看到平时看不到的那一句。</p>' +
-        '<p class="what">也留意另外那几题——它们不是「答错」，只是说明那一句你还在用。</p></div>';
+        '<p class="what">这 ' + answered().length + ' 道题里，有 ' + keptOf() +
+        ' 次你选择不纠缠、不内耗。说明这些预设的场景并未击中你的软肋。</p>' +
+        '<p class="what">生活里难免会有更具挑战性的时刻，但记住今天这种「不往心里去」的手感，它就是你对抗纷扰最坚实的底气。</p></div>';
     } else if (low) {
       $('res-cards').innerHTML =
         '<div class="card flat">' +
         (artOn() ? '<div class="flat-comp">' + deco('ui', D.art.ui.note, 100) + '</div>' : '') +
-        '<p class="what">你的反应比较分散，没有被某一种固定的模式带走。</p>' +
-        '<p class="what">这本身也是个结果。真想用起来的话，比起先记分类，不如先记具体那句话：' +
-        '下次心里冒出什么，把它原样写下来，比判断它属于哪一类更有用。</p></div>';
+        '<p class="what">你的反应很均衡，没有某一种固执的念头在反复折磨你。</p>' +
+        '<p class="what">这本身就是极好的状态。比起生硬地寻找归属，不如继续保持对具体当下的敏锐感知：念头起了又灭，别太把它当真就好。</p></div>';
     } else {
       $('res-cards').innerHTML =
         '<p class="list-hint">下面这几条点一下能展开，里面有具体的拆解。</p>' +
@@ -855,7 +845,7 @@
   function pickFirst() {
     var sc = score(), free = state.stage === 'free';
     var low = isLow(sc, free);
-    /* 正向态不返回代号：分享图的 hero 位置要留给「你没被带走 N/M」，
+    /* 正向态不返回代号：分享图的 hero 位置要留给「未受低语裹挟 N/M」，
        空出位置由 drawShare 的正向分支接管。 */
     if (isKeptStrong()) return null;
     var picks = selectPicks(sc, free, low);
@@ -877,7 +867,7 @@
     var low = isLow(sc, free);
     var keptStrong = isKeptStrong();
     // 矩阵画全部命中（不排序、不取舍），hero 只写第一条代号
-    /* 正向态下不给代号：截图上的主角应该是「你没被带走 N/M」，
+    /* 正向态下不给代号：截图上的主角应该是「未受低语裹挟 N/M」，
        硬塞一条最多 5/24 的惯性代号上去，等于把一张正向的图讲成负面的。 */
     var picks = keptStrong ? [] : selectPicks(sc, free, low);
     var first = picks[0] ? habit(picks[0].id) : null;
@@ -888,7 +878,7 @@
     // eyebrow：产品名 + 题量。产品名在前——转发出去别人第一眼看到的是名字，不是题量。
     g.fillStyle = CORAL;
     g.font = '700 20px ' + F;
-    g.fillText((D.brand ? D.brand + ' · ' : '') + NQ + ' 题 · 我的结果代号', 60, 92);
+    g.fillText((D.brand ? D.brand + ' · ' : '') + NQ + ' 题 · 听见我脑海里的低语', 60, 92);
 
     // 习惯小人大图压右上角；文字区已限宽到 MW，压不到字
     if (im) {
@@ -934,7 +924,7 @@
         wrap(g, first.post, 84, y + 42, MW - 40, 34);
         g.fillStyle = MUTED;
         g.font = '600 20px ' + F;
-        g.fillText('命中 ', 690 - nw - lw - 8, y + 42);
+        g.fillText('这句低语回响 ', 690 - nw - lw - 8, y + 42);
         g.fillStyle = ACCENT;
         g.font = '700 26px ' + MONO;
         g.fillText(hitNum, 690 - nw, y + 42);
@@ -942,7 +932,7 @@
       } else {
         g.fillStyle = MUTED;
         g.font = '600 20px ' + F;
-        g.fillText('命中 ', 60, y + 28);
+        g.fillText('这句低语回响 ', 60, y + 28);
         g.fillStyle = ACCENT;
         g.font = '700 26px ' + MONO;
         g.fillText(hitNum, 60 + lw, y + 28);
@@ -956,7 +946,7 @@
             否则会压到下面的矩阵卡（2026-10-04 修过一次同样的压字 bug）。 */
       g.fillStyle = MUTED;
       g.font = '600 20px ' + F;
-      var ktxt = '你没被带走 ';
+      var ktxt = '未受低语裹挟 ';
       g.fillText(ktxt, 60, y + 28);
       var kw = g.measureText(ktxt).width;
       g.fillStyle = ACCENT;
@@ -967,11 +957,11 @@
       g.fillStyle = INK;
       g.font = '800 40px ' + F;
       y = wrap(g, keptStrong ? '这批题基本没把我带走' : '十种都沾了一点', 60, y, 630, 52);
-      /* 空结果分支：没有代号，但「你没被带走」的数字必须印出来——
+      /* 空结果分支：没有代号，但「未受低语裹挟」的数字必须印出来——
          这个场景下它是图上唯一的数字，不印就成了一张纯负面图。 */
       g.fillStyle = MUTED;
       g.font = '600 20px ' + F;
-      var kt3 = '你没被带走 ';
+      var kt3 = '未受低语裹挟 ';
       g.fillText(kt3, 60, y + 26);
       var kw3 = g.measureText(kt3).width;
       g.fillStyle = ACCENT;

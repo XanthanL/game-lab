@@ -708,6 +708,58 @@ const MODULES = [
     //       再往上留，回溯会把玩家丢到一个他早就不认识的位置上。
     apply: (S, n) => { S.rewind = n; S.rewindCd = 26 - (n - 1) * 4; S.rewindBack = 3; },
     bloom: S => { S.rewind = 3; S.rewindCd = 12; S.rewindBack = 3; S.rewindGold = 1; } },
+
+  // ---- 第五批（2026-10-04）：英雄联盟主题装置能力 ----
+  // 第四批借了卡兹克 / 诺手 / 莫甘娜 / 艾克四个技能；这一批再补六张，覆盖亚索 / 劫 / 盖伦 /
+  // 卡特琳娜 / 金克丝 / 薇恩，让「英雄技能」这条线真正成体系。
+  // 全部 type:'ability'、max:3，与既有装置卡一致；数值不照抄英雄数值，按本作弹幕节奏重定。
+  // ⚠️ desc / descEn 硬宽度同上：中文每行 ≤ 9 字、英文每行 ≤ 19 半角，只能 3 行。
+  { id: 'windwall', name: '风之障壁', nameEn: 'WIND WALL', type: 'ability', glyph: '风', max: 3,
+    desc: '机首前方周期\n竖起风墙\n拦截敌弹',
+    descEn: 'Periodic wall\nahead of you\nblocks shots',
+    // 借亚索「风之障壁」：挡的是**弹**，不是人。竖在机首前 22px、横跨 84px，
+    //    持续 wwDur 秒 —— 正面弹幕被切成两段，等于白送一段喘息。
+    //    ⚠️ 只吃 ebullets（敌弹），不吃 enemies：撞墙的怪还是照撞，别让风墙变成无敌盾。
+    apply: (S, n) => { S.ww = n; S.wwCd = 9 - (n - 1) * 1.4; S.wwDur = 1.0 + n * 0.25; },
+    bloom: S => { S.ww = 3; S.wwCd = 5.2; S.wwDur = 2.0; S.wwGold = 1; } },
+  { id: 'shadow', name: '影奥义', nameEn: 'SHADOW SLASH', type: 'ability', glyph: '影', max: 3,
+    desc: '冷却就绪召出\n影分身\n镜像开火',
+    descEn: 'On cooldown, a\nshadow clone\nfires with you',
+    // 借劫「影奥义」：分身落在船体斜后方，存活 shDur 秒、每 0.5s 朝最近敌人射一发
+    //    半伤弹 —— 它补的是「多一个点输出」，不是「替你挡枪」。
+    apply: (S, n) => { S.sh = n; S.shCd = 11 - (n - 1) * 1.8; S.shDur = 3 + n; },
+    bloom: S => { S.sh = 3; S.shCd = 6.4; S.shDur = 6; S.shGold = 1; } },
+  { id: 'spin', name: '审判', nameEn: 'JUDGEMENT', type: 'ability', glyph: '判', max: 3,
+    desc: '移动时旋斩\n光环持续\n削伤近身敌人',
+    descEn: 'Spin-blade aura\nwhile moving\nscrapes nearby foes',
+    // 借盖伦「审判」：只有**在动**才转（靠 updatePlayer 里的 G.moving 判），站着不动不结算 ——
+    //    逼玩家保持走位，而不是站桩当 AOE 塔。每 0.22s 对 spinR 内敌人造成 spinDmg。
+    apply: (S, n) => { S.spin = n; S.spinR = 30 + n * 8; S.spinDmg = 6 + n * 3; },
+    bloom: S => { S.spin = 3; S.spinR = 60; S.spinDmg = 22; S.spinGold = 1; } },
+  { id: 'lotus', name: '死亡莲华', nameEn: 'DEATH LOTUS', type: 'ability', glyph: '莲', max: 3,
+    desc: '冷却就绪向\n四周绽放一圈\n刃雨',
+    descEn: 'On cooldown, burst\nblades in all\ndirections',
+    // 借卡特琳娜「死亡莲华」：触发即朝四面射出一圈 pBullet（走主炮同套派生，自动继承
+    //    穿甲 / 跳弹 / 制导 / 裂变），所以它是「一次性的全向齐射」，不是新弹种。
+    apply: (S, n) => { S.lotus = n; S.lotusCd = 8 - (n - 1) * 1.3; },
+    bloom: S => { S.lotus = 3; S.lotusCd = 4.2; S.lotusGold = 1; } },
+  { id: 'rampage', name: '杀戮狂热', nameEn: 'KILL RAMPAGE', type: 'ability', glyph: '狂', max: 3,
+    desc: '每次击杀获得\n短暂狂热\n射速移速飙升',
+    descEn: 'Each kill grants\na rampage:\nrate & speed surge',
+    // 借金克丝「罪恶快感」：击杀刷 G.rampageT（3s），期间射速与移速 ×rampageMul。
+    //    ⚠️ 倍率只作用在 updatePlayer 的两处消费点（fireT 间隔、ACC/MAXV），不进 S.rate/S.spd ——
+    //       进的话续档重放会把它叠进基础值，越打越快且不可逆。
+    apply: (S, n) => { S.rampage = n; },
+    bloom: S => { S.rampage = 3; S.rampageGold = 1; } },
+  { id: 'silver', name: '圣银弩箭', nameEn: 'SILVER BOLTS', type: 'ability', glyph: '银', max: 3,
+    desc: '连续命中叠加\n圣银印记\n三层触发真伤',
+    descEn: 'Consecutive hits\nstack Silver;\n3 stacks = true dmg',
+    // 借薇恩「圣银弩箭」：对同一目标每发直接命中 +1 层（e.silver，3s 不中清零），满 3 层
+    //    结算一次**真实伤害**（绕过护甲 / condMul，直接扣 e.hp），然后归零。
+    //    ⚠️ 只对「非 quiet 的直接命中」累加 —— 爆炸 / 电链这类范围伤害不该偷偷叠层。
+    //    ⚠️ Boss 也吃真伤，但层数判定里把银伤上限夹住（见 damageEnemy），别让它变成秒巨像。
+    apply: (S, n) => { S.silver = n; S.silverDmg = 10 + n * 8; },
+    bloom: S => { S.silver = 3; S.silverDmg = 40; S.silverGold = 1; } },
 ];
 // 卡牌类型名（数值 / 弹体 / 装置）现在走 i18n 的 'up.type.*'（up.typeName() 是唯一入口）
 const typeName = t => T('up.type.' + t);
@@ -1072,6 +1124,15 @@ function newGame(hullId) {
     stasis: 0, stasisR: 0, stasisSlow: 0.5,
     // 质变视觉标记（满级后点亮）
     goldTrail: 0, goldMuzzle: 0, goldHurt: 0, droneGold: 0, autoPull: 0, novaVoid: 0,
+    // 第五批（2026-10-04）：英雄联盟主题装置能力状态
+    // ⚠️ wwT/shT/spin(在 G 上)/lotusT 这类「冷却计时」一律在 newGame 归零，
+    //    续档是逐级重放 apply 的，漏了默认零值会在第一次触发前卡在「已就绪」之外的怪状态。
+    ww: 0, wwT: 0, wwCd: 0, wwDur: 0, wwGold: 0,        // 风之障壁
+    sh: 0, shT: 0, shCd: 0, shDur: 0, shGold: 0,        // 影分身
+    spin: 0, spinR: 0, spinDmg: 0, spinGold: 0,          // 审判（触发计时在 G.spinT）
+    lotus: 0, lotusT: 0, lotusCd: 0, lotusGold: 0,       // 死亡莲华
+    rampage: 0, rampageGold: 0,                          // 杀戮狂热（剩余时间在 G.rampageT / 倍率在 G.rampageMul）
+    silver: 0, silverDmg: 0, silverGold: 0,              // 圣银弩箭（层数在 e.silver / 衰减在 e.silverT）
   };
   // 船体自带的开局加成（蜂群带无人机之类）
   if (hull.drones) S.drones = hull.drones;
@@ -1097,6 +1158,10 @@ function newGame(hullId) {
     wakes: [], wakeT: 0,   // 死亡尾流留下的灼热带（updateWakes 消费）
     lances: [],   // 轨道长枪的瞬时贯穿光矛（纯视觉，伤害在 fireLance 里一次结算完）
     mines: [],    // 磁暴雷（场上至多 S.mineMax 枚）
+    walls: [],    // 风之障壁：机首前方的临时弹幕拦截线（G.walls，靠 t/life 自然消散）
+    clones: [],   // 影分身：镜像开火的短暂分身（G.clones，靠 t/life 自然消散）
+    spinT: 0,     // 审判：旋斩光环的脉冲计时（每 0.22s 结算一次近身伤害）
+    rampageT: 0, rampageMul: 1,   // 杀戮狂热：击杀后短暂抬升射速与移速
     boss: null, bossRef: null, bossWarn: 0, bossPending: null, bossT: 0,
     shake: 0, banners: [], toasts: [], hitFlashN: 0,
     hitstop: 0, heartT: 0, vign: 0,     // 打击感：命中凝滞 / 心跳计时 / 受击暗角
@@ -1519,6 +1584,18 @@ function damageEnemy(e, dmg, dx, dy, crit, kb = 1, quiet = false) {
     }
   } else if (!quiet && G.hitFlashN < 90) { addNum(e.x + rand(-4, 4), e.y - e.r - 2, dmg, crit); G.hitFlashN++; }
   if (kb) { e.x += dx * kb * 1.5; e.y += dy * kb * 1.5; }
+  // 圣银弩箭（借薇恩「圣银弩箭」）：直接命中（非 quiet）对同一目标叠层，满 3 层结算一次
+  // **真实伤害**（绕过护甲 / condMul，直接扣血），然后归零。Boss 也吃，但真伤上限夹到 25% 血，
+  // 免得它变成秒巨像。quiet 的范围伤害（爆炸 / 电链）不叠层 —— 见 silver 卡那段注释。
+  if (S.silver > 0 && !quiet && !e.boss) {
+    e.silverT = 3; e.silver = (e.silver || 0) + 1;
+    if (e.silver >= 3) {
+      const td = Math.min(S.silverDmg * S.dmg, e.maxHp * 0.25);
+      e.hp -= td; e.silver = 0;
+      if (G.hitFlashN < 90) { addNum(e.x, e.y - e.r - 10, td, true); G.hitFlashN++; }
+      floatText(e.x, e.y - e.r - 4, T('float.silver'), S.silverGold ? '#ffcd75' : '#cfe8ff', .55);
+    }
+  }
   // 普通命中不加凝滞（每发都冻会变幻灯片），只在暴击时给一记顿挫
   if (crit && e.hp > 0) { freeze(0.028); addShake(SHAKE.crit); }
   if (e.hp <= 0) killEnemy(e);
@@ -1574,6 +1651,9 @@ function killEnemy(e) {
   // 噬能回收：以战养战。按**最大**船体的百分比回血，所以它和「装甲板」是乘法关系 ——
   // 堆血同时买生存和续航。放在最后，让同一帧的击杀结算完再回。
   if (G.S.leech > 0) healPlayer(G.S.leech / 100 * G.S.maxHp * (synOn('fieldMedic') ? 1.5 : 1));
+  // 杀戮狂热（借金克丝「罪恶快感」）：每次击杀刷新 3 秒狂热，期间射速与移速飙升。
+  // 挂在最后，等同一帧的伤害结算完再给，免得「这一发击杀」同时享受它自己的加成。
+  if (G.S.rampage > 0) G.rampageT = 3;
 }
 
 // 统一回血入口。噬能回收 / 撞击汲取 / 战地回收都走这里 —— 免得三处各写一遍浮字、封顶
@@ -1981,6 +2061,8 @@ function updateEnemies(dt) {
     //      分支很多，改成逐个判 ```stunned``` 会把这个文件改坏。
     const stunned = e.root > 0 && !e.boss;
     if (stunned) { e.root -= dt; e.vx *= 0.82; e.vy *= 0.82; }
+    // 圣银弩箭：印记 3 秒不补刀就清空（连续命中才有意义，否则平 A 也能触发）
+    if (e.silverT > 0) { e.silverT -= dt; if (e.silverT <= 0) e.silver = 0; }
     // 静止场的减速由 updateAbilities 每帧挂上，这里用完就衰减，出圈立刻恢复
     // spdMul 是生成时按深渊档位定死的（见 spawnEnemy），这里只乘上去
     const spd = stunned ? 0
@@ -2355,12 +2437,17 @@ function updatePlayer(dt) {
   const slow = webSlowAt(G.px, G.py);
   G.webSlow = slow;
   const slowMul = 1 - slow;
-  const ACC = ACC_BASE * S.spd * slowMul;
-  const MAXV = MAXV_BASE * S.spd * slowMul;          // 推进能到的满速
+  // 杀戮狂热：击杀后短暂抬升推进与极速。倍率只作用在**消费点**，不进 S.spd（避免被续档重放叠死）。
+  if (G.rampageT > 0) G.rampageT -= dt;
+  const rm = G.rampageT > 0 ? (1.18 + S.rampage * 0.07) : 1;   // 1.25 / 1.32 / 1.39
+  G.rampageMul = rm;
+  const ACC = ACC_BASE * S.spd * slowMul * rm;
+  const MAXV = MAXV_BASE * S.spd * slowMul * rm;          // 推进能到的满速
   const MAXV_CAP = MAXV * DASH_TOP;                  // 速度硬上限（留给冲刺 / 被撞开）
   // ⚠️ 到了满速就不再加推力 —— 高于满速的部分（冲刺余速）必须交给线性刹车去收，
   //    否则 300px/s 的冲刺冲量会在下一帧被硬夹回 168，冲刺等于白按。
   const vmPre = Math.hypot(G.vx, G.vy);
+  G.moving = vmPre > 14;   // 审判光环只在「真的在动」时结算（站着不动不转）
   if (thrusting && vmPre < MAXV) {
     G.vx += Math.cos(G.ang) * ACC * dt;
     G.vy += Math.sin(G.ang) * ACC * dt;
@@ -2431,7 +2518,7 @@ function updatePlayer(dt) {
     G.heatMul = HEAT_COLD + (HEAT_HOT - HEAT_COLD) * (G.heat / HEAT_MAX);
   }
   if (canFire && G.fireT <= 0) {
-    const iv = 0.17 / S.rate / (G.odT > 0 ? 2 : 1);
+    const iv = 0.17 / (S.rate * rm) / (G.odT > 0 ? 2 : 1);
     G.fireT = iv;
     fireMain(G.aim, G.odT > 0 ? 1.35 : 1);
   }
@@ -2576,6 +2663,111 @@ function updateAbilities(dt) {
       });
       ring(bx, by, 10, S.mineGold ? '#ffcd75' : '#c070f0', .22, 1);
       Sound.sfx.mine();
+    }
+  }
+  // --- 风之障壁：周期性在机首前方竖起拦截线 ---
+  if (S.ww > 0) {
+    S.wwT -= dt;
+    if (S.wwT <= 0) {
+      S.wwT = S.wwCd;
+      const fx = G.px + Math.cos(G.ang) * 22, fy = G.py + Math.sin(G.ang) * 22;
+      G.walls.push({ x: fx, y: fy, a: G.ang, half: 44, t: 0, life: S.wwDur, gold: S.wwGold ? 1 : 0 });
+      ring(fx, fy, 14, S.wwGold ? '#ffcd75' : '#73eff7', .25, 2);
+      Sound.sfx.ready();
+    }
+  }
+  // --- 影分身：冷却就绪召出镜像分身 ---
+  if (S.sh > 0) {
+    S.shT -= dt;
+    if (S.shT <= 0) {
+      S.shT = S.shCd;
+      const ox = G.px - Math.cos(G.ang) * 20, oy = G.py - Math.sin(G.ang) * 20;
+      G.clones.push({ x: ox, y: oy, a: G.ang, t: 0, life: S.shDur, fireT: 0, gold: S.shGold ? 1 : 0 });
+      ring(ox, oy, 12, S.shGold ? '#ffcd75' : '#a06cf0', .25, 2);
+      Sound.sfx.ready();
+    }
+  }
+  // --- 审判：移动时旋斩光环（脉冲计时在 G.spinT，避免每帧重复结算）---
+  if (S.spin > 0 && G.moving) {
+    G.spinT -= dt;
+    if (G.spinT <= 0) {
+      G.spinT = 0.22;
+      buildGrid();
+      let hit = false;
+      forNear(G.px, G.py, S.spinR + 6, e => {
+        if (e.dead || e.hp <= 0 || e.boss) return;
+        const d = Math.hypot(e.x - G.px, e.y - G.py);
+        if (d > S.spinR + e.r) return;
+        damageEnemy(e, S.spinDmg * S.dmg, (e.x - G.px) / (d || 1), (e.y - G.py) / (d || 1), false, 2, true);
+        hit = true;
+      });
+      if (hit) { part({ x: G.px + rand(-S.spinR, S.spinR), y: G.py + rand(-S.spinR, S.spinR), vx: 0, vy: 0, life: .18, max: .18, col: S.spinGold ? '#ffcd75' : '#73eff7', size: 2, drag: 2 }); }
+    }
+  } else G.spinT = 0;
+  // --- 死亡莲华：冷却就绪向四周绽放刃雨 ---
+  if (S.lotus > 0) {
+    S.lotusT -= dt;
+    if (S.lotusT <= 0) {
+      S.lotusT = S.lotusCd;
+      const n = 10 + S.lotus * 4, off = rand(TAU);
+      const mz = hullNose();
+      for (let i = 0; i < n; i++) {
+        const a = off + i / n * TAU;
+        pBullet(G.px + Math.cos(a) * mz, G.py + Math.sin(a) * mz, a, 300 * S.bspd, (16 + S.lotus * 10) * S.dmg, { kind: 'lotus', decel: true });
+      }
+      ring(G.px, G.py, 26, S.lotusGold ? '#ffcd75' : '#ef7d57', .4, 3);
+      Sound.sfx.shoot(); addShake(2);
+    }
+  }
+}
+
+/* 风之障壁：把 G.walls 里还活着的拦截线逐帧推进，并吞掉穿过它的敌弹。
+   ⚠️ 用「点到线段距离」判定，不是「上一帧在左、这一帧在右」的穿越检测 ——
+      后者在子弹很快（>10px/帧）时会漏判；点到线段距离对单帧位移鲁棒。
+   线段以 (w.x,w.y) 为中点、沿 w.a 方向半长 w.half；垂直距离 < 8px 且投影落在半长内即算撞墙。 */
+function updateWalls(dt) {
+  if (!G.walls.length) return;
+  for (let i = G.walls.length - 1; i >= 0; i--) {
+    const w = G.walls[i];
+    w.t += dt;
+    if (w.t >= w.life) { G.walls.splice(i, 1); continue; }
+  }
+  for (const w of G.walls) {
+    const ca = Math.cos(w.a), sa = Math.sin(w.a);
+    const px = -sa, py = ca;   // 墙方向（垂直朝向）
+    for (let j = G.ebullets.length - 1; j >= 0; j--) {
+      const b = G.ebullets[j];
+      const dx = b.x - w.x, dy = b.y - w.y;
+      const along = dx * ca + dy * sa;          // 沿墙轴投影
+      const off = Math.abs(dx * px + dy * py);  // 垂直墙距离
+      if (off < 8 && along > -w.half - 6 && along < w.half + 6) {
+        if (Math.random() < 0.5) part({ x: b.x, y: b.y, vx: -b.vx * 0.2, vy: -b.vy * 0.2, life: .2, max: .2, col: w.gold ? '#ffcd75' : '#73eff7', size: 2, drag: 4 });
+        G.ebullets.splice(j, 1);
+      }
+    }
+  }
+}
+/* 影分身：把 G.clones 里还活着的影分身推进，并让它朝最近敌人周期射出半伤弹。
+   ⚠️ 分身只补输出、不替玩家挡枪 —— 它打出的弹走 pBullet 同一套派生，所以穿甲 / 制导 / 裂变
+      会自动继承（和玩家主炮同源），但单发伤害只有 55%（shMul）。 */
+function updateClones(dt) {
+  if (!G.clones.length) return;
+  const S = G.S, mz = hullNose(), shMul = 0.55;
+  for (let i = G.clones.length - 1; i >= 0; i--) {
+    const c = G.clones[i];
+    c.t += dt;
+    if (c.t >= c.life) { G.clones.splice(i, 1); continue; }
+    // 分身贴着船体斜后方漂，保持「伴飞」观感而不是飘走
+    const tx = G.px - Math.cos(G.ang) * 18, ty = G.py - Math.sin(G.ang) * 18;
+    c.x += (tx - c.x) * Math.min(1, dt * 6);
+    c.y += (ty - c.y) * Math.min(1, dt * 6);
+    c.fireT -= dt;
+    if (c.fireT <= 0) {
+      c.fireT = 0.5;
+      const tgt = nearestN(c.x, c.y, 260, 1)[0];
+      const a = tgt ? Math.atan2(tgt.y - c.y, tgt.x - c.x) : G.ang + Math.PI;
+      pBullet(c.x + Math.cos(a) * mz, c.y + Math.sin(a) * mz, a, 300 * S.bspd,
+        (10 * S.dmg) * shMul, { kind: 'clone', decel: true });
     }
   }
 }
@@ -3190,6 +3382,8 @@ function step(dt) {
   //    排到后面就变成「先被弹打到、再把弹清掉」，玩家会觉得这模块根本没生效。
   updateWakes(dt);
   updateMines(dt);
+  updateWalls(dt);
+  updateClones(dt);
   updateEBullets(dt);
   updatePickups(dt);
   updateParts(dt);

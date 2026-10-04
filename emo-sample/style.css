@@ -34,6 +34,12 @@ body{
 .wrap{max-width:480px;margin:0 auto;padding:26px 20px 44px}
 .view{display:none}
 .view.on{display:block;animation:rise .34s cubic-bezier(.22,.68,.4,1)}
+.lead {
+  margin-top: 14px;
+  color: var(--ink2);
+  font-size: 15px;
+  line-height: 1.85;
+}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 h1{font-size:26px;font-weight:800;line-height:1.38;letter-spacing:-.02em}

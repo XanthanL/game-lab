@@ -220,6 +220,7 @@ const UI = {
     'toast.allMax': '模块已全部满级',
     'toast.allMaxSub': '本段奖励折算为分数 · 船体已修复',
     'float.block': '格挡',
+    'float.silver': '圣银',
 
     // ---- 其他 ----
     'vol.music': '音乐',
@@ -422,6 +423,7 @@ const UI = {
     'toast.allMax': 'ALL MODULES MAXED',
     'toast.allMaxSub': 'Reward converted to score · hull repaired',
     'float.block': 'BLOCK',
+    'float.silver': 'SILVER',
 
     // ---- Misc ----
     'vol.music': 'MUSIC',
