@@ -1062,6 +1062,49 @@ const ATTACH_ART = (function () {
       ['kkkkk', 'kCCCk', 'kCCCk', 'kkkkk'],
       ['kkkkk', 'kyyyk', 'kCyCk', 'kyyyk', 'kkkkk'],
     ][lv])],
+    // ---------- 第五批（2026-10-04，英雄联盟技能主题）----------
+    // 风之障壁：机首前方的青色风幕发射条——等级越高风幕越宽、镶白边。
+    windwall: lv => [C(11, [
+      null,
+      ['kCk'],
+      ['kCCk', 'kCwk'],
+      ['kCCCk', 'kCwwCk', 'kCCCk'],
+    ][lv])],
+    // 影奥义：船尾的紫色镜像核心——等级越高棱面越多、泛品红。
+    shadow: lv => [A(-11, -2, [
+      null,
+      ['kpk'],
+      ['kpqk', 'kpk'],
+      ['kppk', 'kqPk', 'kpk'],
+    ][lv])],
+    // 审判：两舷的旋斩刃盘——等级越高刃环越亮、镶白芯。
+    spin: lv => BOTH(A(2, -5, [
+      null,
+      ['kcCk'],
+      ['kcCCk', 'kCwCk'],
+      ['kcCCk', 'kCwwCk', 'kcCCk'],
+    ][lv])),
+    // 死亡莲华：机首下方的橙色刃雨喷口——等级越高花瓣瓣数越多。
+    lotus: lv => [A(7, 3, [
+      null,
+      ['kok'],
+      ['kok', 'kook'],
+      ['koook', 'koyok', 'kok'],
+    ][lv])],
+    // 杀戮狂热：背脊的赤红狂热核心——等级越高红芯越烧越亮。
+    rampage: lv => [A(-4, -3, [
+      null,
+      ['kRk'],
+      ['kRRk', 'kRrRk'],
+      ['kRRRk', 'kRrrRk', 'kRRRk'],
+    ][lv])],
+    // 圣银弩箭：机首前端的银色弩臂——等级越高镀金弦。
+    silver: lv => [C(13, [
+      null,
+      ['ksk'],
+      ['ksssk', 'ksksk'],
+      ['kssssk', 'ksyssk', 'ksksk'],
+    ][lv])],
   };
 })();
 

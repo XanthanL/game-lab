@@ -128,6 +128,9 @@ const UI = {
     'up.type.stat': '数值',
     'up.type.weapon': '弹体',
     'up.type.ability': '装置',
+    // 能力选择上限显示（借鉴 echo：只能选 6 个能力型 / 6 个数值型）
+    'up.capAbil': ' · 能力 {0}/{1}',
+    'up.capStat': ' · 数值 {0}/{1}',
 
     // ---- 暂停 ----
     'pause.title': '暂停',
@@ -332,6 +335,9 @@ const UI = {
     'up.type.stat': 'STAT',
     'up.type.weapon': 'WEAPON',
     'up.type.ability': 'DEVICE',
+    // 能力选择上限显示（借鉴 echo：只能选 6 个能力型 / 6 个数值型）
+    'up.capAbil': ' · ABIL {0}/{1}',
+    'up.capStat': ' · STAT {0}/{1}',
 
     // ---- Pause ----
     'pause.title': 'PAUSED',

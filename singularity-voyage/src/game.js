@@ -1587,13 +1587,13 @@ function damageEnemy(e, dmg, dx, dy, crit, kb = 1, quiet = false) {
   // 圣银弩箭（借薇恩「圣银弩箭」）：直接命中（非 quiet）对同一目标叠层，满 3 层结算一次
   // **真实伤害**（绕过护甲 / condMul，直接扣血），然后归零。Boss 也吃，但真伤上限夹到 25% 血，
   // 免得它变成秒巨像。quiet 的范围伤害（爆炸 / 电链）不叠层 —— 见 silver 卡那段注释。
-  if (S.silver > 0 && !quiet && !e.boss) {
+  if (G.S.silver > 0 && !quiet && !e.boss) {
     e.silverT = 3; e.silver = (e.silver || 0) + 1;
     if (e.silver >= 3) {
-      const td = Math.min(S.silverDmg * S.dmg, e.maxHp * 0.25);
+      const td = Math.min(G.S.silverDmg * G.S.dmg, e.maxHp * 0.25);
       e.hp -= td; e.silver = 0;
       if (G.hitFlashN < 90) { addNum(e.x, e.y - e.r - 10, td, true); G.hitFlashN++; }
-      floatText(e.x, e.y - e.r - 4, T('float.silver'), S.silverGold ? '#ffcd75' : '#cfe8ff', .55);
+      floatText(e.x, e.y - e.r - 4, T('float.silver'), G.S.silverGold ? '#ffcd75' : '#cfe8ff', .55);
     }
   }
   // 普通命中不加凝滞（每发都冻会变幻灯片），只在暴击时给一记顿挫
@@ -4828,8 +4828,24 @@ function openUpgrade() {
   showOverlay('upgrade');
   syncRerollBtn();
 }
+// 能力选择上限（借鉴 singularity-echo 的「只能选 6 个能力型 / 6 个数值型」）。
+// ⚠️ 按「**不同模块种类**」计数，不是按总等级 —— 一个模块升到 3 级只占 1 个坑位。
+//    weapon 也并入「能力型」（与 ability 共用 6 个坑），stat 单列「数值型」6 个坑。
+const TYPE_CAP = { ability: 6, stat: 6 };
+function superType(t) { return t === 'stat' ? 'stat' : 'ability'; }
+function countType(t) {
+  const st = superType(t);
+  let n = 0;
+  for (const m of MODULES) if (G.mods[m.id] && superType(m.type) === st) n++;
+  return n;
+}
 function rollChoices() {
-  const pool = MODULES.filter(m => (G.mods[m.id] || 0) < m.max);
+  const pool = MODULES.filter(m => {
+    const lv = G.mods[m.id] || 0;
+    if (lv >= m.max) return false;            // 已满级，不再出现
+    if (lv > 0) return true;                  // 已持有 → 允许继续升级（不受坑位上限约束）
+    return countType(m.type) < (TYPE_CAP[superType(m.type)] || 99);  // 新模块受坑位上限约束
+  });
   // 洗牌取三
   const a = pool.slice();
   for (let i = a.length - 1; i > 0; i--) { const j = irand(0, i); [a[i], a[j]] = [a[j], a[i]]; }
@@ -4903,15 +4919,20 @@ function renderCards() {
     if (ic) cv.getContext('2d').drawImage(ic, 0, 0);
   }
   const synCount = Object.keys(G.syn).length;
+  const abilN = countType('ability'), statN = countType('stat');
   $('up-sub').textContent = T('up.sub', G.level, Object.keys(G.mods).length)
-    + (synCount ? T('up.subSyn', synCount) : '');
+    + (synCount ? T('up.subSyn', synCount) : '')
+    + T('up.capAbil', abilN, TYPE_CAP.ability) + T('up.capStat', statN, TYPE_CAP.stat);
   syncRerollBtn();
 }
 function choose(i, viaPointer) {
   if (state !== 'upgrade') return;
   if (viaPointer && performance.now() - G.upOpen < UP_ARM) return;
   const m = choices[i]; if (!m) return;
-  const lv = G.mods[m.id] = (G.mods[m.id] || 0) + 1;
+  const lv = G.mods[m.id] || 0;
+  // 防御：新模块不能超出 能力型/数值型 坑位上限（rollChoices 已挡，这里双保险）
+  if (lv === 0 && countType(m.type) >= (TYPE_CAP[superType(m.type)] || 99)) return;
+  G.mods[m.id] = lv + 1;
   markSeen(m.id);        // 图鉴：模块名录
   // ⚠️ 第二个参数是本卡当前等级。绝大多数卡用不到，但「冲角装甲」的首级惩罚
   //    （射速 -30%）必须只在 n === 1 时结算一次 —— 少了它续档重放会把惩罚叠三次。
@@ -5433,6 +5454,11 @@ function boot() {
     hit: (e, dmg, dx, dy) => damageEnemy(e, dmg, dx, dy, false, 0),
     setMods: m => { G.mods = Object.assign({}, m); recalcSynergies(); },
     clearMods: () => { G.mods = {}; G.syn = {}; },
+    // 探针专用：能力选择上限验证（借鉴 echo 的 6 能力型 / 6 数值型）
+    countType: t => countType(t),
+    TYPE_CAP: () => ({ ...TYPE_CAP }),
+    // 直接重算卡池并回传（不碰状态机，纯测过滤逻辑）
+    rollPool: () => { rollChoices(); return choices.map(m => ({ id: m.id, type: m.type, lv: G.mods[m.id] || 0 })); },
     // 探针专用：把属性表恢复成「刚开局」的样子。
     // ⚠️ apply() 是就地改数值的，clearMods() 只清 mods 表 —— 不同时重置属性的话，
     //    前一组用例给射速打的 0.7 会一直留在后面的用例里，测出来的数全是错的。
