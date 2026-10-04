@@ -881,208 +881,337 @@ function renderHero(picks, free, low) {
     };
     show('result');
   }
-  /* ---------- 分享长图（Canvas 手绘 750×1000） ----------
-     配色与 style.css 同一套：界面暖白 / 数据层深蓝。
-     ⚠️ 格子（数据层）不许用暖色，否则等于说「红＝不好」，与核心口径冲突。
+  /* ---------- 黄金合体版分享长图引擎（750×1160 紧凑海报版） ----------
+     完美结合图 1 的丰富体检报告质感（粘土小人 + 朋友圈气泡 + 10行方块打点大白卡 + 换一句粉卡）
+     与新版的精神底色超能力（#CHILL 舒服者耍起），绝无大面积空挡！
   */
   function makeShare() {
-    // 分享图里的小人异步加载：先起加载，回来再画；失败就画纯文字版。
-    // 不弹窗、不让用户干等——没图也要立刻拿到一张能发的图。
-    var first = pickFirst();
-    var src = (first && artOn()) ? habitImg(first.id) : '';
-    if (!src) { drawShare(null); return; }
+    var imObj = pickShareArt();
+    if (!imObj || !artOn()) { drawShare(null); return; }
     var im = new Image();
     im.onload = function () { drawShare(im); };
     im.onerror = function () { drawShare(null); };
-    im.src = src;
+    im.src = imObj.src;
   }
+
+  // 保证无论何时都有小人（即使全未受裹挟也绝不丢小人）
+  function pickShareArt() {
+    var sc = score(), free = state.stage === 'free';
+    var low = isLow(sc, free);
+    var picks = selectPicks(sc, free, low);
+    var hid = picks[0] ? picks[0].id : (sc[0] ? sc[0].id : 4); // 兜底显示可爱小人
+    return { hid: hid, src: habitImg(hid) };
+  }
+
   function pickFirst() {
     var sc = score(), free = state.stage === 'free';
     var low = isLow(sc, free);
-    /* 正向态不返回代号：分享图的 hero 位置要留给「未受低语裹挟 N/M」，
-       空出位置由 drawShare 的正向分支接管。 */
     if (isKeptStrong()) return null;
     var picks = selectPicks(sc, free, low);
     return picks[0] ? habit(picks[0].id) : null;
   }
+
+  /* ---------- 分享长图（750×1160 体检报告 / 情绪底片版）----------
+     版面纪律（吃过两次亏之后写死在这里，改前先读）：
+
+     1. **自下而上排版。** 页脚先落位（FOOT1 / FOOT2），BOTTOM = 页脚上沿；
+        换一句卡底边贴 BOTTOM，再往上倒推矩阵卡、Hero。
+        自顶向下累加 y 的写法必然出问题——内容少了底部一大块空洞（用户反馈的
+        「大面积空旷留白」就是这么来的），内容多了又压到页脚上。
+     2. 富余空间分给两块之间的 gap（每边最多 +34），不够用时先压 gap 再让 Hero 上移。
+        所以任何文案长度下都刚好填满：不留白、不溢出。
+     3. ⚠️ wrapLines **必须在设置字体之后**调用。它用 g.measureText 折行，
+        绘制用同一个 g.font，两者字号不一致就是「按小字号折行、按大字号绘制」
+        → 该折的行没折 → 文字捅出卡片（30 字文案溢出 12px，7 项 FAIL）。
+     4. 粘土小人任何情况下都要在：pickShareArt() 有兜底（没命中就用得分最高那条，
+        都没命中用 ip-04），这里只要 im 在就画。Hero 文字宽度要感知小人占位，
+        否则长代号会压到小人头上。 */
   function drawShare(im) {
-    var W = 750, H = 1120, c = document.createElement('canvas');
+    var W = 750, H = 1160, c = document.createElement('canvas');
     c.width = W; c.height = H;
     var g = c.getContext('2d');
-    var F = '"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
-    var ACCENT = '#2557A7', CELL = '#EDE2D8', INK = '#2B2320', INK2 = '#4A403A';
-    var MUTED = '#8B7C72', CORAL = '#D9705A', CARD = '#FFFFFF', BLUSH = '#FBE9E1';
-    var MW = im ? 570 : 630;   // 有小人图时，文字区让出右上角
 
-    g.fillStyle = '#FDF7F2'; g.fillRect(0, 0, W, H);
+    var F = '"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif';
+    var MONO = '"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace';
+
+    /* 色彩系统：界面层（奶油/珊瑚/浅粉）与数据层（深蓝）严格分色，不得互串。
+       数据层一旦变红变粉，视觉上等于说「命中＝不好」，会打穿「命中多 ≠ 更糟」的口径。 */
+    var COLOR_BG = '#FDF7F2';        // 温润暖米
+    var CARD_WHITE = '#FFFFFF';      // 白卡
+    var INK = '#2B2320';             // 主字
+    var INK2 = '#4A403A';            // 正文深灰
+    var MUTED = '#8B7C72';           // 标签浅灰
+    var DIM = '#B4A79E';             // 零命中灰
+    var ACCENT = '#2557A7';          // 数据层深蓝
+    var CORAL = '#D9705A';           // 珊瑚红（装饰点缀）
+    var BLUSH = '#FBE9E1';           // 气泡浅粉
+    var CELL = '#EDE2D8';            // 未命中方格
+    var STR_COLOR = '#245C4B';       // 精神底色森林绿
+    var STR_BG = '#F0F6F2';
+    var STR_BORDER = '#D2E5DA';
+
+    // ---- 版面几何 ----
+    var LEFT = 60, RIGHT = 690, CW = RIGHT - LEFT;   // 内容左右边界，宽 630
+    var HERO_TOP_MIN = 118;                          // Hero 最高只能到这儿（eyebrow 下方）
+    var FOOT1 = H - 64, FOOT2 = H - 36;              // 两行页脚基线
+    var BOTTOM = FOOT1 - 30;                         // 内容区最低边（页脚之上）
+    var SWAP_TXT_W = 540;                            // 换一句正文可用宽（卡内 630 - 左右内边距）
+
+    g.fillStyle = COLOR_BG;
+    g.fillRect(0, 0, W, H);
 
     var sc = score();
     var free = state.stage === 'free';
     var low = isLow(sc, free);
     var keptStrong = isKeptStrong();
-    // 矩阵画全部命中（不排序、不取舍），hero 只写第一条代号
-    /* 正向态下不给代号：截图上的主角应该是「未受低语裹挟 N/M」，
-       硬塞一条最多 5/24 的惯性代号上去，等于把一张正向的图讲成负面的。 */
-    var picks = keptStrong ? [] : selectPicks(sc, free, low);
+    var picks = selectPicks(sc, free, low);
     var first = picks[0] ? habit(picks[0].id) : null;
-
-    var MONO = '"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace';
+    var str = strengthProfile(sc);              // 正向精神底色（永远有值，函数内自带兜底）
     var NQ = free ? D.freeIds.length : D.questions.length;
+    var keptNum = keptOf() + '/' + answered().length;
+    var rows = sc.filter(function (r) { return r.opps; });
+    var spS = sceneProfile(picks);
 
-    // eyebrow：产品名 + 题量。产品名在前——转发出去别人第一眼看到的是名字，不是题量。
+    /* ============ 顶部：eyebrow + 粘土小人 ============ */
     g.fillStyle = CORAL;
     g.font = '700 20px ' + F;
-    g.fillText((D.brand ? D.brand + ' · ' : '') + NQ + ' 题 · 听见我脑海里的低语', 60, 92);
+    g.fillText((D.brand ? D.brand + ' · ' : '') + NQ + ' 题 · 听见我脑海里的低语', LEFT, 80);
 
-    // 习惯小人大图压右上角；文字区已限宽到 MW，压不到字
+    var imBottom = 0;
     if (im) {
-      var iw = 110, ih = Math.round(iw * im.naturalHeight / im.naturalWidth);
-      g.drawImage(im, 640, 56, iw, ih);
+      var iw = 116, ih = Math.round(iw * im.naturalHeight / im.naturalWidth);
+      g.drawImage(im, RIGHT - iw, 40, iw, ih);
+      imBottom = 40 + ih;
     }
+    /* Hero 某一行的顶部若还与小人同高，就得让开它的宽度，不然长文案会压到小人上。 */
+    function heroW(yTop) { return (im && yTop < imBottom) ? 548 : CW; }
 
-    // hero：英文码大字承载传播，中文代号负责解释（与页面 hero 同一分工）
-    var y = 148;
-    if (first) {
-      g.fillStyle = ACCENT;
-      g.font = '700 64px ' + MONO;
-      if ('letterSpacing' in g) g.letterSpacing = '5px';
-      g.fillText(first.code, 58, y + 54);
-      if ('letterSpacing' in g) g.letterSpacing = '0px';
-      y += 84;
-      g.fillStyle = INK;
-      g.font = '800 30px ' + F;
-      var tw = g.measureText(first.tag).width;
-      g.fillText(first.tag, 60, y + 26);
-      // 热词跟在代号后面（同一行，不额外占高）：只标这一句想法，不标这个人
-      if (first.hot) {
-        g.fillStyle = MUTED;
-        g.font = '500 18px ' + F;
-        g.fillText('网友管这叫 ' + first.hot, 60 + tw + 16, y + 24);
-      }
-      y += 42;
-      g.fillStyle = INK2;
-      g.font = '500 26px ' + F;
-      y = wrap(g, first.tagline, 60, y + 32, MW, 38);
-      // 命中 n/m：等宽深蓝。有朋友圈气泡就跟气泡同行右侧，不另占一行
-      var hitNum = picks[0].score + '/' + picks[0].opps;
-      var keptNum = keptOf() + '/' + answered().length;
-      g.font = '700 26px ' + MONO;
-      var nw = g.measureText(hitNum).width;
-      g.font = '600 20px ' + F;
-      var lw = g.measureText('命中 ').width;
-      if (first.post) {
-        var pw = g.measureText(first.post).width;
-        rr(g, 60, y + 2, Math.min(MW, pw + 48), 64, 16, BLUSH);
-        g.fillStyle = INK2;
-        g.font = '400 24px ' + F;
-        wrap(g, first.post, 84, y + 42, MW - 40, 34);
-        g.fillStyle = MUTED;
-        g.font = '600 20px ' + F;
-        g.fillText('这句低语回响 ', 690 - nw - lw - 8, y + 42);
+    /* ============ Hero 区：先量高，不画 ============
+       自下而上需要总高，所以把每一行攒成 {h, pad, draw}，最后统一排布。
+       h 是「自然内容高」，pad 是定位阶段按剩余空间补给它的弹性，
+       draw 拿到的 y 已经是该行垂直居中后的内容顶部。 */
+    var heroRows = [];
+    function mkRow(contentH, drawFn) { heroRows.push({ h: contentH, pad: 0, draw: drawFn }); }
+    var hitNum = picks[0] ? picks[0].score + '/' + picks[0].opps : '0/0';
+    var chill = first && !keptStrong;   // true = 有主打低语；false = 全场松弛态
+
+    // 行 1：大号深蓝等宽码
+    mkRow(76, function (y) {
         g.fillStyle = ACCENT;
-        g.font = '700 26px ' + MONO;
-        g.fillText(hitNum, 690 - nw, y + 42);
-        y += 78;
-      } else {
-        g.fillStyle = MUTED;
-        g.font = '600 20px ' + F;
-        g.fillText('这句低语回响 ', 60, y + 28);
-        g.fillStyle = ACCENT;
-        g.font = '700 26px ' + MONO;
-        g.fillText(hitNum, 60 + lw, y + 28);
-        y += 48;
+        g.font = '800 62px ' + MONO;
+        g.fillText(clipText(g, (chill ? '' : '#') + (chill ? first.code : str.code), heroW(y) ), LEFT, y + 48);
       }
-      /* 「没被带走」正向指标（2026-10-04）：
-         截图会被转发到评论区/朋友圈，所以正向口径必须**印在图上**，
-         不能只在网页里——不然发出去的图还是只有「命中」这一条负面数字。
-         写法上和「命中」对齐：等宽深蓝的 n/m + 灰字标签。
-         ⚠️ 本区块属于「自下而上排版」的内容，必须参与上面 y 的推进，
-            否则会压到下面的矩阵卡（2026-10-04 修过一次同样的压字 bug）。 */
-      g.fillStyle = MUTED;
-      g.font = '600 20px ' + F;
-      var ktxt = '未受低语裹挟 ';
-      g.fillText(ktxt, 60, y + 28);
+    );
+
+    // 行 2：中文代号 + 网友热词
+    mkRow(38, function (y) {
+        var W0 = heroW(y);
+        g.fillStyle = INK;
+        g.font = '800 26px ' + F;
+        var nm = chill ? first.tag : ('精神底色 · ' + str.tag);
+        g.fillText(clipText(g, nm, W0 * 0.72), LEFT, y + 24);
+        var nw = g.measureText(clipText(g, nm, W0 * 0.72)).width;
+        if (chill && first.hot) {
+          g.fillStyle = MUTED;
+          g.font = '500 16px ' + F;
+          g.fillText(clipText(g, '网友管这叫 ' + first.hot, W0 - nw - 18), LEFT + nw + 16, y + 23);
+        }
+      }
+    );
+
+    // 行 3：自述金句（按行数据行，高度可变）
+    (function () {
+      g.font = '500 22px ' + F;
+      var t = chill ? first.tagline : ('“' + str.slogan + '”');
+      var lines = wrapLines(g, t, 548);
+      mkRow(lines.length * 32 + 6, function (y) {
+          g.fillStyle = INK2;
+          g.font = '500 22px ' + F;      // ⚠️ 与上面折行同一个字号，别改
+          var yy = y + 24;
+          lines.forEach(function (ln) { g.fillText(ln, LEFT, yy); yy += 32; });
+        }
+      );
+    })();
+
+    // 行 4：朋友圈气泡（粉底圆角 + 同行右侧回响次数）
+    (function () {
+      var postText = chill
+        ? (first.post || first.one)
+        : '面对外界的波折，我不接茬也不内耗，自己舒服最重要！';
+      g.font = '400 20px ' + F;
+      /* ⚠️ 回响数字只在「有主打低语」时才成立——松弛态没有"这句低语"，
+         硬写「这句低语回响 20/60」语义是错的（20/60 是全场未裹挟数，
+         下一行已经印了）。此时让气泡占满整行宽，反而更饱满。 */
+      var label = '这句低语回响 ';
+      var rightW = 0, lw = 0, nw = 0;
+      if (chill) {
+        g.font = '600 17px ' + F;
+        lw = g.measureText(label).width;
+        g.font = '700 22px ' + MONO;
+        nw = g.measureText(hitNum).width;
+        rightW = lw + nw + 12;
+      }
+      var maxBubble = CW - rightW - 14;
+      g.font = '400 20px ' + F;
+      var bw = Math.max(180, Math.min(maxBubble, g.measureText(postText).width + 40));
+
+      mkRow(68, function (y) {
+          rr(g, LEFT, y + 4, bw, 54, 14, BLUSH);
+          g.fillStyle = INK2;
+          g.font = '400 20px ' + F;
+          /* 基线 y+36 不是 y+38：行盒 1.06em 会往下伸 21px，38 就捅出气泡底 1px
+             （layout 的「文字突出卡片底边」抓的，肉眼根本看不出来但确实出了）。 */
+          g.fillText(clipText(g, postText, bw - 32), LEFT + 16, y + 36);
+
+          if (chill) {
+            g.fillStyle = MUTED;
+            g.font = '600 17px ' + F;
+            g.fillText(label, RIGHT - nw - lw, y + 37);
+            g.fillStyle = ACCENT;
+            g.font = '700 22px ' + MONO;
+            g.fillText(hitNum, RIGHT - nw, y + 37);
+          }
+        }
+      );
+    })();
+
+    // 行 5：未受裹挟计数 + 浅绿精神底色勋章
+    (function () {
+      var ktxt = (chill ? '未受低语裹挟 ' : '全场未受裹挟 ');
+      g.font = '600 18px ' + F;
       var kw = g.measureText(ktxt).width;
-      g.fillStyle = ACCENT;
-      g.font = '700 26px ' + MONO;
-      g.fillText(keptNum, 60 + kw, y + 28);
-      y += 48;
-    } else {
-      g.fillStyle = INK;
-      g.font = '800 40px ' + F;
-      y = wrap(g, keptStrong ? '这批题基本没把我带走' : '十种都沾了一点', 60, y, 630, 52);
-      /* 空结果分支：没有代号，但「未受低语裹挟」的数字必须印出来——
-         这个场景下它是图上唯一的数字，不印就成了一张纯负面图。 */
-      g.fillStyle = MUTED;
-      g.font = '600 20px ' + F;
-      var kt3 = '未受低语裹挟 ';
-      g.fillText(kt3, 60, y + 26);
-      var kw3 = g.measureText(kt3).width;
-      g.fillStyle = ACCENT;
-      g.font = '700 26px ' + MONO;
-      g.fillText(keptNum, 60 + kw3, y + 26);
-      y += 48;
+      g.font = '700 22px ' + MONO;
+      var knw = g.measureText(keptNum).width;
+      /* ⚠️ 勋章文案必须跟数据一致（mix 情形抓到的语义 bug）：
+         分散态（keptStrong=false）也走松弛分支，但那时明明有一堆惯性命中，
+         说「松弛达成 · 无惯性上榜」是在对用户撒谎。两种情形分开说：
+           - 真松弛（keptStrong）→ 松弛达成 · 无惯性上榜
+           - 只是分散（isLow）→ 没有哪条特别重（这是事实：最高命中率低） */
+      var badgeText = '✦ ' + (chill
+        ? '精神底色 · #' + str.code + ' ' + str.tag
+        : (keptStrong ? '松弛达成 · 无惯性上榜'
+                      : '没有哪条特别重 · 十种都沾了一点'));
+      g.font = '700 13px ' + F;
+      var bwanted = g.measureText(badgeText).width + 24;
+      var bmax = RIGHT - (LEFT + kw + knw + 18);
+      var bw = Math.max(0, Math.min(bwanted, bmax));
+
+      mkRow(40, function (y) {
+          g.fillStyle = MUTED;
+          g.font = '600 18px ' + F;
+          g.fillText(ktxt, LEFT, y + 22);
+          g.fillStyle = ACCENT;
+          g.font = '700 22px ' + MONO;
+          g.fillText(keptNum, LEFT + kw, y + 22);
+
+          /* 勋章：宽度是被右侧剩余空间算出来的，不是拍脑袋。
+             放不下时 clipText 截断，绝不让胶囊捅出右边界。 */
+          if (bw > 90) {
+            rr(g, RIGHT - bw, y + 2, bw, 30, 8, STR_BG);
+            g.strokeStyle = STR_BORDER; g.lineWidth = 1; g.stroke();
+            g.fillStyle = STR_COLOR;
+            g.font = '700 13px ' + F;
+            g.fillText(clipText(g, badgeText, bw - 20), RIGHT - bw + 12, y + 21);
+          }
+        }
+      );
+    })();
+
+    var heroH = 0;
+    heroRows.forEach(function (r) { heroH += r.h; });
+
+    /* ============ 矩阵白卡 / 换一句卡：先算高度 ============ */
+    var step = rows.length > 10 ? 26 : 28;
+    var spH = spS ? 54 : 0;
+    var mh = 24 + rows.length * step + spH + 10;
+
+    var swapText = (chill && first && first.swap)
+      ? first.swap
+      : (str.slogan + '——累了就歇，别跟自己较劲。');
+    g.font = '600 20px ' + F;                        // ⚠️ 折行与绘制必须是同一个字号
+    var swapLines = wrapLines(g, swapText, SWAP_TXT_W);
+    var swapH = 46 + swapLines.length * 30;
+
+    /* ============ 自下而上定位 ============
+       ⚠️ 核心恒等式：heroTop + heroH + gap + mh + gap + swapH === BOTTOM
+       换一句卡的底边因此**恒等于**页脚上沿，底部一个像素都不留白。
+       富余空间全部浮到顶部（那里有粘土小人占位，浮上去视觉不空），
+       ⚠️ 不能反过来让 heroTop 居中、swapTop 钉底 —— 两者只在恰好填满时才重合，
+          其他情况不是底部空洞就是压到页脚（第一版就是这个 bug，空了 134px）。
+
+       装不下时的压缩顺序不能反：先压块间距，再压矩阵行距。
+       先压行距会让字挤在一起，那是比留白更糟的问题。 */
+    var MIN_GAP = 14, MAX_GAP = 56, MAX_ROW_PAD = 8;
+    var availH = BOTTOM - HERO_TOP_MIN;
+    var heroH0 = 0;
+    heroRows.forEach(function (r) { heroH0 += r.h; });
+
+    var needMin = heroH0 + swapH + mh + MIN_GAP * 2;
+    if (needMin > availH) {
+      /* 只有矩阵能安全收窄：10 行 × step，每行省一点就能腾出几十 px */
+      var over = needMin - availH;
+      var per = Math.ceil(over / Math.max(1, rows.length));
+      step = Math.max(22, step - per);
+      mh = 24 + rows.length * step + spH + 10;
     }
 
-    // 矩阵（白卡）：格子数随题量变，24 格时自动缩成 10px + 2px 间距的密度条
-    var rows = sc.filter(function (r) { return r.opps; });
+    var gap = Math.max(MIN_GAP, Math.min(MAX_GAP, (availH - heroH0 - mh - swapH) / 2));
 
-    // ⚠️ 底部区自下而上排版（2026-10-04 修）：
-    //    原来页脚钉在 H-96、换一句卡自适应高度往上顶 —— 内容一变多就压页脚，
-    //    场景行还骑在矩阵卡边框上（用户截图里「突破了背景框」就是这两处）。
-    //    现在先把页脚量出来当基准，再从页脚往上倒推每块高度。
-    var FOOT1 = H - 96;          // 页脚第一行（@品牌 + 互测暗号）基线
-    var FOOT2 = H - 60;          // 免责基线
-    var BOTTOM = FOOT1 - 34;     // 页脚区上沿：往上所有内容不得越过这条线
+    /* 还剩富余 → 按「最能吸收的人先吃」分配：矩阵 10 行 > Hero 5 行 > 浮到顶部。
+       为什么是这个顺序：10 行每行多 6px 就是 60px，肉眼只是「行距更舒服」；
+       浮到顶部却会变成 eyebrow 与 Hero 之间的一大块空 —— 那是事故不是留白。
+       最后一档落在 eyebrow 与 Hero 之间，右上角有粘土小人占着所以不算太空，
+       但绝不能剩太多：_layout.js 有「顶部无大片留白（≤170px）」的断言守着。 */
+    var remaining = availH - (heroH0 + mh + swapH + gap * 2);
 
-    // 场景画像：两行，写在矩阵卡**内部**下方（跟着矩阵走，不另占版位）
-    // spH 必须 ≥ 场景块实际高度（第二行基线 my+50，行高 20，底部留白 14）= 84，
-    // 否则文字会溢出白卡底边 —— 这就是用户截图里「突出背景框」那处。
-    var spS = first ? sceneProfile(picks) : null;
-    var spH = spS ? 86 : 0;
+    var stepPad = 0;
+    if (remaining > 0 && rows.length) {
+      stepPad = Math.min(8, Math.floor(remaining / rows.length));
+      if (stepPad > 0) {
+        step += stepPad;
+        mh = 24 + rows.length * step + spH + 10;
+        remaining -= stepPad * rows.length;
+      }
+    }
 
-    // 换一句试试：高度由实际折行数决定。
-    // 卡片高度 = 上内边距32 + 标题19 + 间隔23 + 正文行数×34 + 下内边距。
-    // ⚠️ 下内边距给 22px：正文行盒是1.06em，24px 字≈25.4px，字形还会下伸一点，
-    //    只留 12px 会出现「文字压在卡片底边上」（用户 2026-10-04 截图）。
-    var swapLines = first ? wrapLines(g, first.swap, 578) : [];
-    var swapH = first ? (74 + swapLines.length * 34 + 22) : 0;
+    var rowPad = Math.min(MAX_ROW_PAD, Math.max(0, remaining / Math.max(1, heroRows.length)));
+    var heroH = 0;
+    heroRows.forEach(function (r) { r.pad = rowPad; r.h += rowPad; heroH += r.h; });
 
-    // 行距自适应：把 hero 到页脚之间的余量分给矩阵行，行距夹在 26..30。
-    // 30 是最好看的（格子 20px 时上下各留 10）；不够就往下压，够了也不贪。
-    var avail = (BOTTOM - (swapH ? swapH + 16 : 0) - y - 20 - 26 - 8 - spH) / rows.length;
-    var step = Math.max(26, Math.min(30, Math.floor(avail)));
+    var usedH = heroH + mh + swapH + gap * 2;
+    var heroTop = HERO_TOP_MIN + Math.max(0, availH - usedH);
+    var mCardTop = heroTop + heroH + gap;
+    var swapTop = mCardTop + mh + gap;      // 由恒等式保证：swapTop + swapH === BOTTOM
 
-    var mh = 26 + rows.length * step + 8 + spH;
-    var mCardTop = BOTTOM - (swapH ? swapH + 16 : 0) - mh;
-    /* ⚠️ 2026-10-04：这里曾经加过一条「矩阵卡顶不许压到 hero 末行」的钳制
-     *    （Math.min(mCardTop, heroBottom + 22)）。实测 9 种情形后确认它是**死代码**——
-     *    矩阵卡顶由 BOTTOM 往上倒推（swapH + mh），跟 hero 占多高无关；
-     *    正向态下 rows 为空、mh≈34，卡片根本不画（实测 mCardTop 恒为 464/492，
-     *    距 hero 末行还有富余）。注入变异把它去掉，_layout.js 27 项断言全过——
-     *    即「没有它也不会坏」。留着它只会让人误以为这里有保护。
-     *    真正防压字的是：① 自下而上从 BOTTOM 倒推；② swapH 按实际折行数算；
-     *    ③ _layout.js 验 9 种情形（含正向态、惯性占多数、3/4 边界）。
-     *    若日后 hero 再加内容，先跑 _layout.js，再考虑要不要真正的钳制。 */
-    rr(g, 60, mCardTop, 630, mh, 22, CARD);
-    var my = mCardTop + 26;
+    // ---- 画 Hero（每行在自己那格里垂直居中）----
+    var hy = heroTop;
+    heroRows.forEach(function (r) { r.draw(hy + r.pad / 2); hy += r.h; });
+
+    // ---- 画矩阵大白卡（10 行方块打点，深蓝命中 vs 浅灰未命中）----
+    rr(g, LEFT, mCardTop, CW, mh, 20, CARD_WHITE);
+    g.strokeStyle = '#F0E5DC'; g.lineWidth = 1; g.stroke();
+
+    var my = mCardTop + 24;
     rows.forEach(function (r) {
       var h = habit(r.id);
-      g.fillStyle = r.score ? INK : MUTED;
+      g.fillStyle = r.score ? INK : DIM;
       g.font = (r.score ? '600 ' : '400 ') + '16px ' + F;
-      g.fillText(clipText(g, h.name, 208), 76, my + 15);
+      g.fillText(clipText(g, h.name, 210), LEFT + 18, my + 15);
+
       var opps = oppsOf(r.id);
       var big = opps.length <= 12;
-      var cell = big ? 20 : 10, gap = big ? 8 : 2;
-      var strip = opps.length * cell + (opps.length - 1) * gap;
-      var x = 600 - strip;   // 右对齐到 600，左侧留给名字
+      var cell = big ? 20 : 10, gp = big ? 8 : 2;
+      var strip = opps.length * cell + (opps.length - 1) * gp;
+      var x = 600 - strip;
+
       opps.forEach(function (qid) {
         var on = answered().some(function (a) { return a.q === qid && a.h === r.id; });
         g.fillStyle = on ? ACCENT : CELL;
         g.fillRect(x, my + 1, cell, cell);
-        x += cell + gap;
+        x += cell + gp;
       });
-      g.fillStyle = r.score ? ACCENT : CELL;
+
+      g.fillStyle = r.score ? ACCENT : DIM;
       g.font = '700 16px ' + F;
       g.textAlign = 'right';
       g.fillText(r.score + '/' + r.opps, 660, my + 15);
@@ -1090,54 +1219,58 @@ function renderHero(picks, free, low) {
       my += step;
     });
 
-    // 场景画像：一行写完（不另画卡），随图一起转——「恋爱脑」这类梗在图上也带得走
+    // 场景画像内嵌条
     if (spS) {
+      my += 4;
+      var spLine = clipText(g, spS.line + ' · ' + spS.hit + '/' + spS.total, 380);
       g.fillStyle = INK2;
-      g.font = '500 19px ' + F;
-      g.fillText(clipText(g, spS.line + ' ' + spS.hit + '/' + spS.total, 600), 76, my + 24);
+      g.font = '500 17px ' + F;
+      g.fillText(spLine, LEFT + 18, my + 22);
+      var slw = g.measureText(spLine).width;
       g.fillStyle = CORAL;
-      g.font = '700 19px ' + F;
-      g.fillText('· 网友管这种状态叫 ' + spS.hot, 76, my + 50);
+      g.font = '700 17px ' + F;
+      g.fillText(clipText(g, '· 网友管这叫 ' + spS.hot, CW - 36 - slw - 10), LEFT + 18 + slw + 8, my + 22);
     }
 
-    // 换一句试试：底边钉在 BOTTOM（页脚上方 34px），高度按实际行数
-    if (first) {
-      var sy = BOTTOM - swapH;
-      rr(g, 60, sy, 630, swapH, 20, BLUSH);
-      g.fillStyle = CORAL;
-      g.font = '700 18px ' + F;
-      g.fillText('换一句试试', 84, sy + 32);
-      g.fillStyle = INK;
-      g.font = '600 24px ' + F;
-      var syy = sy + 74;
-      swapLines.forEach(function (line) {
-        g.fillText(line, 84, syy); syy += 34;
-      });
-    }
+    // ---- 画换一句卡（swapTop 由上面的恒等式算出，底边必然贴着 BOTTOM）----
+    rr(g, LEFT, swapTop, CW, swapH, 18, BLUSH);
+    g.fillStyle = CORAL;
+    g.font = '700 16px ' + F;
+    g.fillText(chill ? '换一句试试' : '给生活的松弛解法', LEFT + 22, swapTop + 28);
 
+    g.fillStyle = INK;
+    g.font = '600 20px ' + F;                        // ⚠️ 与上面 wrapLines 同一个字号
+    var syy = swapTop + 54;
+    swapLines.forEach(function (line) {
+      g.fillText(line, LEFT + 22, syy);
+      syy += 30;
+    });
+
+    // ---- 页脚：双暗号对线货币 ----
     g.fillStyle = MUTED;
-    g.font = '400 20px ' + F;
-    if (D.brand) g.fillText('@' + D.brand, 60, FOOT1);
-    g.fillText(D.disclaimer, 60, FOOT2);
-    // 互测引导：右下角，随图转发——裂变入口印在图上
-    if (first) {
-      g.font = '700 24px ' + MONO;
-      var cw = g.measureText('#' + first.code).width;
-      g.textAlign = 'right';
-      g.fillStyle = ACCENT;
-      g.fillText('#' + first.code, 690, FOOT1);
-      g.fillStyle = INK2;
-      g.font = '500 20px ' + F;
-      g.fillText('让朋友也测一个 · 对暗号 ', 690 - cw, FOOT1);
-      g.textAlign = 'left';
-    }
+    g.font = '400 16px ' + F;
+    if (D.brand) g.fillText('@' + D.brand, LEFT, FOOT1);
+    g.fillText(D.disclaimer, LEFT, FOOT2);
 
+    var dualCode = (chill ? '#' + first.code + ' ' : '') + '× #' + str.code;
+    g.font = '700 20px ' + MONO;
+    var cw = g.measureText(dualCode).width;
+    g.textAlign = 'right';
+    g.fillStyle = ACCENT;
+    g.fillText(dualCode, RIGHT, FOOT1);
+    g.fillStyle = INK2;
+    g.font = '500 16px ' + F;
+    g.fillText('让朋友也测一个 · 对暗号 ', RIGHT - cw - 6, FOOT1);
+    g.textAlign = 'left';
+
+    // 导出高清图片
     var url = c.toDataURL('image/png');
     $('share-img').src = url;
     $('share-link').href = url;
-    $('share-link').download = 'result.png';
+    $('share-link').download = '情绪取样_心智档案卡.png';
     $('share').classList.add('on');
   }
+
   function rr(g, x, y, w, h, r, fill) {
     g.beginPath();
     g.moveTo(x + r, y);
@@ -1146,32 +1279,36 @@ function renderHero(picks, free, low) {
     g.arcTo(x, y + h, x, y, r);
     g.arcTo(x, y, x + w, y, r);
     g.closePath();
-    g.fillStyle = fill; g.fill();
+    g.fillStyle = fill;
+    g.fill();
   }
-  /* 按像素宽度截断，超出加省略号。
-     ⚠️ 习惯名最长 14 字（「满屏好评，我只看见那一条差评」），固定 slice(0,9)
-     会把话说一半；按像素裁才不会在 24 格模式下把名字撑到格子上。 */
+
   function clipText(g, text, maxW) {
     if (g.measureText(text).width <= maxW) return text;
     var s = text;
     while (s.length && g.measureText(s + '…').width > maxW) s = s.slice(0, -1);
     return s + '…';
   }
+
   function wrap(g, text, x, y, maxW, lh) {
     var yy = y;
     wrapLines(g, text, maxW, lh).forEach(function (line) {
-      g.fillText(line, x, yy); yy += lh;
+      g.fillText(line, x, yy);
+      yy += lh;
     });
     return yy;
   }
-  /* 先算折行结果再决定画在哪 —— 卡片高度必须由实际行数决定，
-     不能先画卡再往上溢出（这是排版 bug 的根源：高度猜的，内容是实的）。 */
+
   function wrapLines(g, text, maxW) {
     var out = [], line = '';
     for (var i = 0; i < text.length; i++) {
       var t = line + text[i];
-      if (g.measureText(t).width > maxW && line) { out.push(line); line = text[i]; }
-      else { line = t; }
+      if (g.measureText(t).width > maxW && line) {
+        out.push(line);
+        line = text[i];
+      } else {
+        line = t;
+      }
     }
     if (line) out.push(line);
     return out;
@@ -1181,7 +1318,7 @@ function renderHero(picks, free, low) {
   function boot() {
     load();
     applyArtClasses();
-    probeArt();   // 图不在就降级成纯文字版，不等它
+    probeArt();
     var k = (new URLSearchParams(location.search).get('k') || '').toUpperCase();
     if (k) {
       if (validKey(k)) {
