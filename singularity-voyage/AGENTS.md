@@ -643,6 +643,16 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 | 暂停 `.tb-pause` | left 207 / top 36 | 34×28 | 工具键（2026-10-03 从 30×24 放宽：手机上只有 43×35 CSS px，点空率很高） |
 | 全屏 `.tb-full` | left 247 / top 36 | 34×28 | 工具键（左边不能越过 x=124，所以只能往右挪；两键间距保持 8px） |
 
+- ⚠️ **触屏按钮一律「像素轮廓」，不许用平滑圆角/圆弧**（作者 2026-10-04，嫌 `border-radius` 的
+  反锯齿弧线和像素 HUD「打架」）：
+  - 圆钮（开火 60px / 冲刺 46px）→ **像素圆 `clip-path`**：脚本生成的 staircase 多边形
+    （只有横/竖边，直角台阶 = 像素圆）。生成器见 probes 笔记，改尺寸要重新生成，别手抄。
+  - 方钮（燃标外壳 / 暂停 / 全屏）→ **2px 切角 `clip-path`**（polygon 12 点模板），删 `border-radius`。
+  - ⚠️ **`clip-path` 会裁掉元素自身的外扩 `box-shadow`** → 描边一律写 `inset`；
+    外发光（开火「开」态青光 / 燃标就绪金光）改 `filter: drop-shadow()` —— 它顺着被裁出的像素轮廓发光。
+  - 这些样式只作用于 `#touch`（手机端），桌面端 `display:none` 不受影响。
+  - 验证：`probes/sv-touch-style-check.js`（横屏大视口 + `getBoundingClientRect` 自算 clip 裁图 ——
+    ⚠️ Playwright 对带 clip-path 的旋转元素会误判「不可见」，element.screenshot 会超时，别用）。
 - ⚠️ **开火按钮不许再用红色**（作者 2026-09-26 明确）。本作里红色只留给「受击 / 危险」这类真报警，
   开火是常态动作 → 用青蓝色系；开 / 关两态**共用同一色相**，只靠「填充透明度 + 描边亮度 + 文字色」区分
   （关 `rgba(115,239,247,.16)` + 细描边；开 `rgba(140,244,255,.42)` + `0 0 0 2px #9df3fa` 双描边）。
@@ -978,6 +988,7 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-dash-dir.js` | **冲刺只沿机头**：13 组按键 × 朝向组合，位移与速度方向相对 `G.ang` 偏差全 0° | `tryDash` / `updatePlayer` / 输入模型 |
 | `sv-move-check.js` | 推进加速时间 / 稳态速度 / 制动 / 滑行距离 / 吸附 / 爆炸 | `updatePlayer` / `aBoom` |
 | `sv-touch-check.js` | 移动端触屏按钮命中与射击 | `#touch` / `setTouchMode` / `.tbtn` |
+| `sv-touch-style-check.js` | 触屏按钮**像素轮廓**：开火/冲刺像素圆、燃标/暂停/全屏切角、开火「开」态与燃标就绪态的 drop-shadow 发光，单键高清截图 | `.tb-fire` / `.tb-dash` / `.odbatt` / `clip-path` / `drop-shadow` |
 | `sv-orientation-check.js` | 移动端直接横屏：竖屏视口 `#wrap` 含 `rotate(90deg)` / 横屏不转 / `#rotate` 已移除 / 不调 `screen.orientation.lock` / `toGame` 逆变换误差 <1px，双截图 | `fit()` / `rot` / `toGame` |
 | `sv-bulletskin-check.js` | 子弹外观：家族矩阵 / 逐级 tier / 配色优先级 / 协同+单卡装饰 / 缓存封顶 / 90 帧零 JS 错误，产出 `bullet-overview.png` | `bulletskin.js` / `BSPEC_FAMILY` / `BKIND` / `BDECO_BY_*` / `drawPBullets` |
 | `sv-touch-turn-check.js` | **摇杆「推向哪转向哪」**：满舵 180°/90° 耗时（≤0.2s / ≤0.1s）/ 轻推档 / 死区不转不漂 / 满速掉头时速度方向跟上 / 松手不转，阈值 0.2s+0.35s+0° | `TURN_TOUCH` / `updatePlayer` 转向分支 / `__dbg.setJoy` |
