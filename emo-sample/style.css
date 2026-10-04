@@ -42,7 +42,12 @@ body{
 }
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-h1{font-size:26px;font-weight:800;line-height:1.38;letter-spacing:-.02em}
+h1 {
+  font-size: 24.5px; 
+  font-weight: 800;
+  line-height: 1.48;          /* 稍微舒展行距，两行长句读起来不压抑 */
+  letter-spacing: -0.01em;
+}
 h1 .hi{color:var(--coral)}
 .lead{margin-top:12px;color:var(--ink2);font-size:15px}
 .eyebrow{font-size:12px;letter-spacing:.18em;color:var(--coral);font-weight:700;margin-bottom:10px}
@@ -73,23 +78,59 @@ button:active{transform:scale(.985)}
 /* 落地页：结果样张预览
  * 直接把"测完长什么样"摆出来——比任何自我介绍都管用。
  * 码用等宽 + 数据层深蓝（它属于数据，不属于装饰），中文是解释。 */
-.peek-h{margin-top:26px;font-size:11.5px;letter-spacing:.16em;color:var(--muted)}
-.peek{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
-.peek span{
-  background:#fff;border:1px solid var(--line);border-radius:12px;
-  padding:8px 10px;display:flex;align-items:baseline;gap:6px;
-  font-size:12.5px;color:var(--ink2);box-shadow:var(--shadow);
-  transform:rotate(-1deg);
+/* 预览区域：压紧上下间距，更贴合上方的提示语 */
+.peek-h {
+  margin-top: 14px;            /* 原来 26px 太散，收拢到 14px */
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
-.peek span:nth-child(even){transform:rotate(1.4deg)}
-.peek span b{
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:13.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);
+.peek {
+  margin-top: 8px;             /* 紧跟小标题 */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
-/* 「还有 7 种」：不给码、不参与 rotate 的随机感，做成一个安静的余量提示 */
-.peek span.peek-more{
-  background:transparent;border-style:dashed;box-shadow:none;transform:none;
-  color:var(--muted);font-size:12px;padding:8px 12px;
+.peek span {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink2);
+  box-shadow: var(--shadow);
+  transform: rotate(-0.8deg);  /* 减弱微小歪斜感，更平稳耐看 */
+}
+.peek span:nth-child(even) {
+  transform: rotate(0.8deg);
+}
+.peek span b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.peek span.peek-more {
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+  transform: none;
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 7px 10px;
+}
+
+/* 按钮与上次结果区域间距联动优化 */
+#resume {
+  margin-top: 10px !important; /* 压缩“看上次结果”上方的距离 */
+}
+.acts {
+  margin-top: 16px;            /* 从 24px 收紧到 16px，让主按钮更饱满地留在首屏中央 */
 }
 
 /* 答题 */
@@ -413,4 +454,172 @@ body.in-result{padding-bottom:0}
 @media (prefers-reduced-motion:reduce){
   .view.on{animation:none}
   *{transition-duration:.01ms !important}
+}
+
+/* ---------- 灵光寄语与闪光底色样式 ---------- */
+
+/* 落地页随机名言条 */
+.quote-bar {
+  margin-top: 24px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  text-align: center;
+}
+.quote-bar span {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.68;
+  color: var(--ink2);
+  font-style: italic;
+}
+.quote-bar i {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-style: normal;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* 结果卡片 Hero 底部的名言引用 */
+.hero-quote {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(217, 112, 90, 0.25);
+  text-align: center;
+}
+.hero-quote span {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+  font-style: italic;
+  opacity: 0.88;
+}
+.hero-quote i {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: normal;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* ---------- 正向超能力卡片（明面底色） ---------- */
+.strength-card {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #FDF9F5 100%);
+  border: 1.5px solid #EEDBCE;
+  border-radius: var(--r);
+  padding: 22px 20px 20px;
+  box-shadow: 0 6px 24px rgba(122, 82, 52, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 顶部小标与独立暗号 */
+.str-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.str-kicker {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--coral);
+  font-weight: 700;
+}
+.str-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #2F6F5E;             /* 舒缓的松弛森绿，与上面的数据深蓝形成情绪区隔 */
+  background: #EAF4EE;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* 核心正向大标题 */
+.str-tag {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+
+/* 态度宣言金句 */
+.str-slogan {
+  font-size: 14.5px;
+  line-height: 1.68;
+  color: #8C533E;
+  font-weight: 600;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* 深度解读段落 */
+.str-what {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink2);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+/* ---------- 优雅名言与轻巧导语 ---------- */
+
+/* 名言卡片：压紧下边距，微调内衬让字更聚焦 */
+.quote-lead {
+  margin-top: 14px;
+  margin-bottom: 10px;        /* 原来是 20px，收紧它，消除断层感 */
+  padding: 18px 20px 16px;
+  background: rgba(255, 255, 255, 0.85);
+  border-left: 4px solid var(--coral);
+  border-radius: 0 16px 16px 0;
+  box-shadow: 0 4px 20px rgba(122, 82, 52, 0.06);
+}
+
+/* 名言正文：加大、加粗，使用更有质感的字重与字体回退 */
+.quote-lead .ql-t {
+  display: block;
+  font-family: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", STSong, "PingFang SC", Georgia, serif;
+  font-size: 17.5px;          /* 从 15.5px 明显放大，视觉焦点一秒锁定 */
+  font-weight: 700;           /* 从 500 改为 700 粗体，不再发虚发飘 */
+  line-height: 1.65;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+/* 作者出处：保持精致对比，不喧宾夺主 */
+.quote-lead .ql-a {
+  display: block;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  font-style: normal;
+  margin-top: 8px;
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+/* 提示气泡：收紧上下 margin，与名言卡片形成呼应的组块 */
+.intro-tip {
+  margin: 0 0 16px;           /* 顶部 margin 归零，贴近名言；底部留 16px 呼吸感 */
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+  background: var(--soft);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: block;
+  width: 100%;
 }

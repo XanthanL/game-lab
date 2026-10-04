@@ -21,6 +21,77 @@
   var ANALYZE_MS = 1800;
   var EVIDENCE_CLIP = 24;             // 证据行里原话的最大字数
 
+  // 灵光寄语池：刷新随机出现
+  var QUOTES = [
+    { t: '你不是那个在头脑中喋喋不休的声音，你是听见那个声音的觉察者。', a: '埃克哈特·托利' },
+    { t: '人不是被事情本身所困扰，而是被他们对事情的看法所困扰。', a: '爱比克泰德' },
+    { t: '在刺激与回应之间，存在着一段距离。在那段距离里，藏着我们的选择与自由。', a: '维克多·弗兰克尔' },
+    { t: '世事本无好坏，全在念头之间。', a: '莎士比亚' }
+  ];
+  function randomQuote() {
+    return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  }
+
+  // 挖掘用户的闪光面与稳定内核（支持 h: -1 耍起原则与 6 选项体系）
+  function strengthProfile(sc) {
+    var slist = (D.strengths && D.strengths.length) ? D.strengths : [];
+    // 完备兜底：即使数据层未配齐，也自带 code 属性，绝不报错卡死
+    if (!slist.length) {
+      return { k: 'chill', tag: '舒服者耍起', code: 'CHILL', slogan: '天大地大，我自己呆得舒服最大；生活本就是用来耍的。', what: '你骨子里有一股极珍贵的野生生命力。规矩和人情是别人的，只有「自己舒不舒服」是真真切切的。遇到内耗不接茬，遇到扫兴不强求，能玩就尽兴耍，累了就痛快躺。' };
+    }
+
+    var ans = answered();
+    var zeros = sc.filter(function (r) { return r.score === 0; }).map(function (r) { return r.id; });
+    var keptAnswers = ans.filter(function (a) { return a.h <= 0; });
+
+    // 1. 先安全初始化 5 种特质的累积分数对象
+    var scores = {
+      chill: 0,   // 舒服者耍起
+      praise: 0,  // 好评收集器
+      bound: 0,   // 课题绝缘体
+      flow: 0,    // 允许一切发生
+      rest: 0     // 心安理得歇着
+    };
+
+    // 2. 凡是主动选了 h: -1（舒服者耍起），直接给 chill 强力加分！
+    var chillPicks = ans.filter(function (a) { return a.h === -1; }).length;
+    scores.chill += chillPicks * 4;
+
+    // 3. 根据具体题目里的松弛选择（h: 0）进行特征倾向加分
+    keptAnswers.forEach(function (a) {
+      var qid = a.q;
+      // 玩乐、约会、随性生活相关
+      if ([1, 8, 9, 13, 21, 23, 26, 36, 41, 57].indexOf(qid) >= 0) scores.chill += 2;
+      // 评价、称赞、反馈相关
+      if ([3, 4, 14, 19, 24, 31, 35, 44, 46, 49].indexOf(qid) >= 0) scores.praise += 2;
+      // 人际、背锅、气氛相关
+      if ([5, 7, 10, 11, 20, 22, 28, 34, 38, 40, 48, 52, 55].indexOf(qid) >= 0) scores.bound += 2;
+      // 搞砸、预期落空、变故相关
+      if ([2, 6, 12, 16, 17, 27, 32, 33, 42, 43, 47, 50, 51, 56, 59].indexOf(qid) >= 0) scores.flow += 2;
+      // 躺平、独处、休息相关
+      if ([15, 25, 30, 39, 45, 54, 58, 60].indexOf(qid) >= 0) scores.rest += 2;
+    });
+
+    // 4. 根据完全避开的负向低语加分（反向印证正向能力）
+    if (zeros.indexOf(8) >= 0) { scores.rest += 3; scores.chill += 2; }
+    if (zeros.indexOf(10) >= 0) { scores.bound += 3; scores.chill += 1; }
+    if (zeros.indexOf(3) >= 0) { scores.praise += 3; }
+    if (zeros.indexOf(1) >= 0 || zeros.indexOf(2) >= 0) { scores.flow += 2; }
+    if (zeros.indexOf(6) >= 0) { scores.chill += 2; }
+
+    // 5. 选出得分最高的那项正向特质
+    var bestKey = 'chill';
+    var maxScore = -1;
+    ['chill', 'praise', 'bound', 'flow', 'rest'].forEach(function (k) {
+      if (scores[k] > maxScore) {
+        maxScore = scores[k];
+        bestKey = k;
+      }
+    });
+
+    var result = slist.filter(function (s) { return s.k === bestKey; })[0];
+    return result || slist[0];
+  }
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -178,7 +249,8 @@
         keptOf() 统计「没被带走」的次数，它是一个**正向指标**，
         不是第 11 条惯性（那样会把它塞进同一个排名里，变成「你得分最高」）。 */
   function keptOf() {
-    return answered().filter(function (a) { return !a.h; }).length;
+    // 凡是 <= 0 的（0为辩证，-1为耍起），均算作未被内耗裹挟
+    return answered().filter(function (a) { return a.h <= 0; }).length;
   }
   function score() {
     var out = [];
@@ -223,20 +295,16 @@
        最多 3 条——15 题样本下排前三是合理的，再多就变成十条的平铺清单，
        而「完整版看全图谱」这个钩子就没了。
   */
-  function selectPicks(sc, free, low) {
+ function selectPicks(sc, free, low) {
     if (low || !sc.length) return [];
-    if (free) {
-      var g2 = sc.filter(function (r) { return r.score >= 2; });
-      var base = g2.length ? g2 : sc.filter(function (r) { return r.score >= 1; });
-      return base.slice(0, 3);
-    }
+    // 无论是免费还是完整版，都只看最高分；如果最高分都是0，则没有有效命中
     var top = sc[0].score;
+    if (top <= 0) return [];
+    // 找出所有命中数并列第一的卡片（不展示次高的项）
     var tied = sc.filter(function (r) { return r.score === top; })
       .sort(function (a, b) { return a.id - b.id; });
-    if (tied.length >= 2) return tied.slice(0, 2);      // 并列 ≥2：id 升序取前 2
-    var second = sc.filter(function (r) { return r.id !== tied[0].id && r.score === top - 1; })
-      .sort(function (a, b) { return a.id - b.id; })[0];
-    return second ? [tied[0], second] : [tied[0]];
+    // 如果并列过多（比如选得很散），最多并列展示前 2 个，否则只展示绝对第 1
+    return tied.slice(0, 2);
   }
 
   /* ---------- 场景画像（「想法发生在哪儿」）----------
@@ -308,7 +376,7 @@
       var d = t[A.dims[q.id % A.dims.length].k];
       if (!d) return;
       d.total++;
-      if (a.h) { d.hit++; d.qs.push(a); }   // h=0 是「没被带走」，不计入任何维度的命中
+      if (a.h > 0) { d.hit++; d.qs.push(a); }   // 严格限定 a.h > 0 才算负向卡点，0 和 -1 不计入
     });
     var out = A.dims.map(function (dim) {
       var r = t[dim.k];
@@ -429,9 +497,6 @@
     }
 
     // 落地页上的题量一律从 data.js 读，改题库不用再改 HTML（避免数字漂移）
-    $('h1-n').textContent = D.freeIds.length;
-    $('chip-free').textContent = D.freeIds.length + ' 题 · 免费';
-    $('chip-full').textContent = '完整 ' + D.questions.length + ' 题 · 全场景';
     $('btn-free').textContent = '先试 ' + D.freeIds.length + ' 题（免费）';
 
     $('btn-free').style.display = (full || partial) ? 'none' : '';
@@ -448,9 +513,10 @@
       var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
     }
     $('peek-n').textContent = D.habits.length;
-    $('peek').innerHTML = pool.slice(0, 3).map(function (h) {
+    // 只取 2 个展示，视觉平衡对称，不拥挤折行
+    $('peek').innerHTML = pool.slice(0, 2).map(function (h) {
       return '<span><b>' + esc(h.code) + '</b> ' + esc(h.tag) + '</span>';
-    }).join('') + '<span class="peek-more">还有 ' + (D.habits.length - 3) + ' 种</span>';
+    }).join('') + '<span class="peek-more">还有 ' + (D.habits.length - 2) + ' 种声音</span>';
     $('btn-full').className = full ? 'primary' : 'secondary';
 
     var u = '';
@@ -458,6 +524,12 @@
       u = '<p class="unlock-note">本链接由订单 #' + esc(state.unlocked.slice(0, 2)) + ' 解锁</p>';
     }
     $('unlock-note').innerHTML = u;
+    // 落地页直接把随机名言填在标题下方
+    var q = randomQuote();
+    var quoteBox = $('land-quote');
+    if (quoteBox) {
+      quoteBox.innerHTML = '<span class="ql-t">“' + esc(q.t) + '”</span><span class="ql-a">—— ' + esc(q.a) + '</span>';
+    }
     show('land');
   }
 
@@ -486,11 +558,8 @@
     // 缺格 / 越界自动回退「想想」陪伴小人（sceneDeco 内部处理）
     $('q-comp').innerHTML = sceneDeco(q, 76);
     $('q-opts').innerHTML = q.opts.map(function (o, i) {
-      /* 选项从 4 个变成 5 个（第 5 个是「这次我没被带走」），字母表跟着扩到 ABCDE。
-         h:0 那个选项在视觉上不标出来——它是出口，不是「正确答案」，
-         标出来等于告诉用户「选这个就对了」，测的就不是真东西了。 */
-      return '<button class="opt' + (o.h ? '' : ' opt-free') + '" data-i="' + i + '">' +
-        '<span class="key">' + 'ABCDE'[i] + '</span><span>' + esc(o.t) + '</span></button>';
+      return '<button class="opt' + (o.h > 0 ? '' : ' opt-free') + '" data-i="' + i + '">' +
+        '<span class="key">' + 'ABCDEF'[i] + '</span><span>' + esc(o.t) + '</span></button>';
     }).join('');
 
     Array.prototype.forEach.call($('q-opts').children, function (btn) {
@@ -566,7 +635,11 @@
   /* ---------- 方块矩阵 ----------
      机会数随题量变（免费 6 / 完整 24），格子区单独占一行，名字不被挤成省略号。 */
   function matrixHTML(interactive) {
-    var rows = score().map(function (r) {
+    // 只展示命中次数大于 0 的低语，0 次的直接隐藏，不给用户添堵
+    var hitRows = score().filter(function (r) { return r.score > 0; });
+    if (!hitRows.length) return '';
+
+    var rows = hitRows.map(function (r) {
       var h = habit(r.id);
       var opps = oppsOf(r.id);
       var cells = opps.map(function (qid) {
@@ -580,10 +653,7 @@
         '<span class="mx-num">' + r.score + '/' + r.opps + '</span>' +
         '<span class="mx-cells">' + cells + '</span></div>';
     }).join('');
-    var wx = interactive
-      ? '<p class="mx-tip">点实心格子，可以看是哪道题选的</p>'
-      : '';
-    return '<div class="mx">' + rows + '</div>' + wx;
+    return '<div class="mx">' + rows + '</div>';
   }
   function bindMatrix(el) {
     Array.prototype.forEach.call(el.querySelectorAll('.cell'), function (c) {
@@ -618,13 +688,20 @@
      热词（hot）只标这一句想法，不标这个人——落在代号下面，不落在人身上。
      NOTE 那句是刻意的——我们整套方法论反对给人盖章，玩梗越强这句越不能删。
   */
-  function renderHero(picks, free, low) {
+function renderHero(picks, free, low) {
     var top = (!low && picks.length) ? habit(picks[0].id) : null;
     var r0 = top ? picks[0] : null;
     var kept = keptOf(), total = answered().length;
     var keptStrong = isKeptStrong();
+    var q = randomQuote(); // 每次进入结果页随机抽一句名言
 
     var keptHTML = '<p class="hero-kept"><b>' + kept + '/' + total + '</b> 个场景你未被低语裹挟</p>';
+
+    var quoteHTML =
+      '<div class="hero-quote">' +
+        '<span>“' + esc(q.t) + '”</span>' +
+        '<i>—— ' + esc(q.a) + '</i>' +
+      '</div>';
 
     $('res-say').innerHTML =
       '<div class="say">' +
@@ -646,9 +723,10 @@
         keptHTML +
         '<p class="hero-line">' +
         (keptStrong
-          ? '这 ' + total + ' 个极易让人胡思乱想的场景，几乎都没在你心里勾起波澜。你没有顺着杂音往下演，也没有忙着给自己判罪。这种「事情归事情、我不受裹挟」的从容与钝感，是你极珍贵的护城河。'
+          ? '这 ' + total + ' 个极易让人内耗的场景，几乎都没在你心里勾起波澜。你没有顺着杂音往下演，也没有忙着给自己判罪。这种「事情归事情、我不受裹挟」的从容与钝感，是你极珍贵的护城河。'
           : '面对生活里的波折，你的反应比较随性，没有被哪一句固执的声音死死拽住。保持这种呼吸感，不要急着给自己下任何结论。') +
         '</p>' +
+        quoteHTML +
         '</div>';
       return;
     }
@@ -656,16 +734,15 @@
     $('res-hero').innerHTML =
       '<div class="hero">' +
       (artOn() ? deco('ip', top.id - 1, 116, 'hero-art') : '') +
-      '<p class="hero-kicker">' + (free ? '这 ' + D.freeIds.length + ' 个场景里，你耳边最常回响的是：' : '最常纠缠你头脑的那句低语：') + '</p>' +
+      '<p class="hero-kicker">你脑海中最频繁的那句低语</p>' +
       '<p class="hero-code">' + esc(top.code) + '</p>' +
       '<p class="hero-tag">' + esc(top.tag) + '</p>' +
       '<p class="hero-line">“' + esc(top.tagline) + '”</p>' +
-      (top.hot ? '<p class="hero-hot">网友常把这种心绪唤作 <b>' + esc(top.hot) + '</b></p>' : '') +
-      '<p class="hero-hit">这句潜台词回响了 <b>' + r0.score + '/' + r0.opps + '</b> 次</p>' +
+      (top.hot ? '<p class="hero-hot"><b>' + esc(top.hot) + '</b></p>' : '') +
+      '<p class="hero-hit">回响 <b>' + r0.score + '/' + r0.opps + '</b> 次</p>' +
       keptHTML +
       (top.post ? '<div class="hero-post"><i>如果脑内的低语写成动态</i>' + esc(top.post) + '</div>' : '') +
-      '<p class="hero-pair">分享给懂你的人，对个暗号 <b>#' + esc(top.code) + '</b></p>' +
-      '<p class="hero-note">认出那句低语，只是觉察的开始；它只是个路过的念头，不是你的全部。</p>' +
+      quoteHTML +
       '</div>';
 
     $('res-hero').onclick = function () {
@@ -673,7 +750,6 @@
       copyText(text) ? toast('暗号已复制，快去评论区对号吧') : toast(text);
     };
   }
-
   /* 抽屉开合：用显式 id 绑定，不依赖 querySelectorAll（旧机型/简单环境也能跑） */
   function bindAcc(i) { bindAccEl('acc-h-' + i, 'acc-b-' + i, 'acc-w-' + i); }
   function bindAccEl(headId, bodyId, wrapId) {
@@ -695,7 +771,7 @@
     return false;
   }
 
-  /* ---------- 结果页 ---------- */
+ /* ---------- 结果页 ---------- */
   function renderResult() {
     var sc = score();
     var top = sc[0];
@@ -705,29 +781,31 @@
 
     var picks = selectPicks(sc, free, low);   // 取舍规则见 selectPicks 注释
 
-    $('res-head').textContent = free
-      ? '这 ' + D.freeIds.length + ' 题里，常在你心头低语的声音'
-      : (keptStrong
-        ? '脑海清澈，未被低语裹挟'
-        : (low ? '心念如水，没有被某句低语困住' : (picks.length > 1 ? '这两句低语最常在你耳边作响' : '最常纠缠你的那句低语')));
-    $('res-sub').textContent = free
-      ? '快速版只取样了亲密关系与日常碎事。完整 60 题还包含了职场风浪、原生家庭与独处沉思。'
-      : '';
+    // 彻底清空定头标题和副标题，界面更纯粹利落
+    $('res-head').textContent = '';
+    $('res-sub').textContent = '';
 
     renderHero(picks, free, low);
 
     var sp = sceneProfile(picks);
-    $('res-chart').innerHTML = matrixHTML(true) +
-      sceneHTML(sp) +
-      /* 正向态下矩阵几乎全空（这正是「基本没被带走」的图形含义），
-         但空矩阵看起来像加载失败，补一句说明把它变成结论的一部分。 */
-      (keptStrong
-        ? '<p class="mx-kept">上面这 10 行基本没亮 —— 那就是这题的答案。</p>'
-        : '') +
-      '<p class="mx-note">' + esc(D.resNote) + '</p>';
+    var str = strengthProfile(sc);
+
+    // 正向超能力卡片（明火·精神底色）
+    var strengthHTML =
+      '<div class="card strength-card">' +
+      '<div class="str-header">' +
+        '<span class="str-kicker">精神底色 · 隐藏超能力</span>' +
+        '<span class="str-code">#' + esc(str.code) + '</span>' +
+      '</div>' +
+      '<h3 class="str-tag">' + esc(str.tag) + '</h3>' +
+      '<p class="str-slogan">“' + esc(str.slogan) + '”</p>' +
+      '<p class="str-what">' + esc(str.what) + '</p>' +
+      '</div>';
+
+    // 将超能力卡片置于矩阵上方，形成【暗色低语 + 明亮底色】的绝佳呼应
+    $('res-chart').innerHTML = strengthHTML + matrixHTML(true) + sceneHTML(sp);
     bindMatrix($('res-chart'));
 
-    // 抽屉式结果：收件了解概览，点开看完整拆解。第一条默认展开，其余折叠。
     if (keptStrong) {
       $('res-cards').innerHTML =
         '<div class="card flat">' +
@@ -739,41 +817,28 @@
       $('res-cards').innerHTML =
         '<div class="card flat">' +
         (artOn() ? '<div class="flat-comp">' + deco('ui', D.art.ui.note, 100) + '</div>' : '') +
-        '<p class="what">你的反应很均衡，没有某一种固执的念头在反复折磨你。</p>' +
-        '<p class="what">这本身就是极好的状态。比起生硬地寻找归属，不如继续保持对具体当下的敏锐感知：念头起了又灭，别太把它当真就好。</p></div>';
+        '<p class="what">你的反应很均衡，没有某一种固执的念头在反复折磨你。保持这种呼吸感，遇到事顺其自然就好。</p></div>';
     } else {
-      $('res-cards').innerHTML =
-        '<p class="list-hint">下面这几条点一下能展开，里面有具体的拆解。</p>' +
-        picks.map(function (r, i) {
+      // 抽屉只展示最高项（在 selectPicks 里已过滤），默认展开，删去“点一下能展开”的废话提示
+      $('res-cards').innerHTML = picks.map(function (r, i) {
           var h = habit(r.id);
-          // 第一层：通用反问（任何命中者都认）＋ 第二层：动态证据（这就是我）
           var inner = '<p class="ropen">' + esc(h.open) + '</p>' + evidenceHTML(r.id) +
-            '<p class="what">' + esc(h.what) + '</p>';
-          inner += free
-            ? '<div class="swap"><p class="rlabel">换一句试试</p><p class="swap-t">' + esc(h.swap) + '</p></div>'
-            : '<p class="rlabel">你大概在哪些时候见过它</p>' +
-              '<ul class="signs">' + h.signs.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
-              '<div class="swap"><p class="rlabel">换一句试试</p><p class="swap-t">' + esc(h.swap) + '</p></div>' +
-              '<p class="contrast">' + esc(h.contrast) + '</p>';
-          return '<div class="acc' + (i === 0 ? ' open' : '') + '" id="acc-w-' + i + '">' +
+            '<p class="what">' + esc(h.what) + '</p>' +
+            '<div class="swap"><p class="rlabel">换一句试试</p><p class="swap-t">' + esc(h.swap) + '</p></div>' +
+            '<p class="contrast">' + esc(h.contrast) + '</p>';
+          return '<div class="acc open" id="acc-w-' + i + '">' +
             '<button class="acc-head" id="acc-h-' + i + '">' +
               '<span class="acc-tag">' + esc(h.tag) + '</span>' +
               '<span class="acc-title">' + esc(h.name) + '</span>' +
-              '<span class="acc-one">' + esc(h.one) + ' 网友管这叫：' + esc(h.hot) + '</span>' +
+              '<span class="acc-one">' + esc(h.one) + (h.hot ? ' · ' + esc(h.hot) : '') + '</span>' +
               '<i class="acc-arrow" aria-hidden="true"></i>' +
             '</button>' +
-            '<div class="acc-body' + (i === 0 ? ' open' : '') + '" id="acc-b-' + i + '">' + inner + '</div>' +
+            '<div class="acc-body open" id="acc-b-' + i + '">' + inner + '</div>' +
             '</div>';
         }).join('');
       for (var i = 0; i < picks.length; i++) bindAcc(i);
     }
 
-    // 高集中提示：只在完整层触发（按 DENSE 比例）。免费层关闭。
-    // 理由：免费层每条只有 6 次机会，「几乎每次都出现」统计上不成立；
-    //       且这是未付费用户的第一印象，在这里推「找专业的人聊聊」会掉转化。
-    //       合规风险集中在完整层；免费层题量少 + 只有一句话，风险低。
-    // ⚠️ 正向态下一律不弹：刚说完「这批题基本没把你带走」，紧跟一句
-    //    「可以找专业的人聊聊」是自相矛盾的自伤。
     var concentrated = (free || keptStrong) ? [] : sc.filter(function (r) {
       return r.score >= Math.ceil(r.opps * DENSE);
     });
@@ -782,9 +847,6 @@
         '<p class="what">先停一下。也可以找专业的人聊聊 —— 这不是什么大事，只是效率问题。</p></div>'
       : '';
 
-    /* 关系敏感度轴（第二个抽屉）。装在 res-flag 之后：
-       「哪句想法」→「哪条惯性几乎每次都出现」→「关系里容易卡在哪」，
-       是一条从内到外的顺序，不打断。 */
     $('res-rel').innerHTML = relHTML();
     bindAccEl('rel-h', 'rel-b', 'rel-acc-w');
 
@@ -811,14 +873,7 @@
       $('res-upgrade').innerHTML = '';
     }
 
-    $('res-next').innerHTML =
-      '<div class="card"><p class="rlabel">接下来</p>' +
-      '<ol class="next"><li>把这张图存下来。下次它冒头的时候，对着看一眼就够了。</li>' +
-      '<li>把「换一句试试」那句话记进备忘录。它比整页都有用。</li>' +
-      (D.packUrl
-        ? '<li>练习包：10 条完整拆解 + 30 天记录表。<a href="' + esc(D.packUrl) + '" target="_blank" rel="noopener">在这里</a></li>'
-        : '<li>练习包：10 条完整拆解 + 30 天记录表，还在做。</li>') +
-      '</ol></div>';
+    $('res-next').innerHTML = '';
 
     $('btn-share').onclick = makeShare;
     $('btn-again').onclick = function () {
@@ -826,7 +881,6 @@
     };
     show('result');
   }
-
   /* ---------- 分享长图（Canvas 手绘 750×1000） ----------
      配色与 style.css 同一套：界面暖白 / 数据层深蓝。
      ⚠️ 格子（数据层）不许用暖色，否则等于说「红＝不好」，与核心口径冲突。
