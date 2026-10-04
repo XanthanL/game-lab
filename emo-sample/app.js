@@ -284,6 +284,103 @@
       '</div>';
   }
 
+  /* ---------- 关系敏感度轴（第二个抽屉） ----------
+     与 10 条惯性**完全正交**：那边答「哪句想法」，这边答「在关系里容易在哪一步卡住」。
+     ⚠️ 口径纪律（与 sceneTags / SPREAD / DENSE 同一套）：
+        一律用比例，命中数 = 该维里「选了带 h 的惯性选项」的题数，
+        分母 = 该维**已答**题数。分母用已答而不是全题库，
+        因为免费层只答了 15 题，用 10 当分母会凭空把比例压低 6 倍。 */
+  /* 小样本门槛：某一维已答题数 < MIN_HIT 时，**不许**拿它的比例下结论。
+     为什么必需：免费层每维只有 2~3 题，2/2 就是 100%，
+     六维会一起冲过 HOT 线，「6 条几乎是常态」——统计上完全站不住，
+     而且这句话会直接盖在结果页第一屏。
+     这与 10 条那边 DENSE 只在完整层启用（每条 24 次机会）是同一个道理：
+     **机会数不够，就不判定。** */
+  var REL_MIN_HIT = 4;
+  function relScore() {
+    var A = D.relAxis;
+    if (!A || !A.dims || !A.dims.length) return [];
+    var t = {};
+    A.dims.forEach(function (d) { t[d.k] = { k: d.k, hit: 0, total: 0, qs: [] }; });
+    answered().forEach(function (a) {
+      var q = question(a.q);
+      if (!q) return;
+      var d = t[A.dims[q.id % A.dims.length].k];
+      if (!d) return;
+      d.total++;
+      if (a.h) { d.hit++; d.qs.push(a); }   // h=0 是「没被带走」，不计入任何维度的命中
+    });
+    var out = A.dims.map(function (dim) {
+      var r = t[dim.k];
+      return {
+        k: dim.k, name: dim.name, hot: dim.hot, one: dim.one,
+        what: dim.what, acts: dim.acts || [],
+        hit: r.hit, total: r.total,
+        rate: r.total ? r.hit / r.total : 0,
+        /* 够不够格下结论。与分数一起算，别在渲染时才判断——
+           否则「6 条几乎是常态」这种话会在样本不足时被算出来。 */
+        solid: r.total >= REL_MIN_HIT
+      };
+    });
+    // 展示顺序：命中多的在前，同命中按维度原序（稳定排序，别让每次刷新跳动）
+    out.sort(function (x, y) {
+      if (y.hit !== x.hit) return y.hit - x.hit;
+      return A.dims.findIndex(function (d) { return d.k === x.k; }) -
+             A.dims.findIndex(function (d) { return d.k === y.k; });
+    });
+    return out;
+  }
+  function relHTML() {
+    var A = D.relAxis;
+    if (!A) return '';
+    var rows = relScore();
+    if (!rows.length) return '';
+    var anyHit = rows.some(function (r) { return r.hit > 0; });
+    // ⚠️ 正向态下**不抽这一轴**：「这批题基本没把你带走」已经说完结论，
+    //    紧跟一句「你关系敏感度如何」等于把结论拽回分类游戏。
+    if (!anyHit) return '';
+    var hot = rows.filter(function (r) { return r.solid && r.rate >= A.HOT; });
+    var main = rows.filter(function (r) { return r.solid && r.rate >= A.GRID && r.hit > 0; });
+    /* 摘要行分三种说法，别混用：
+       够样本 + 有超 HOT 的 → 说「N 条几乎是常态」；
+       够样本 + 没有       → 说「主区 N 条」；
+       **不够样本**（免费层每维只 2~3 题）→ 只报「这批题里中了几条」，
+         绝不说「几乎是常态」：2/2 = 100% 在统计上站不住，
+         而这句话会直接盖在结果页上，比不说更糟。 */
+    var thin = !rows.some(function (r) { return r.solid; });
+    var hits = rows.filter(function (r) { return r.hit > 0; }).length;
+    var sum = thin
+      ? '这批题里中了 <b>' + hits + '</b> 条'
+      : (hot.length
+        ? '<b>' + hot.length + '</b> 条几乎是常态'
+        : '主区 ' + main.length + ' 条');
+    var body = rows.map(function (r) {
+      var pctTxt = r.total ? Math.round(r.rate * 100) + '%' : '—';
+      return '<div class="rl' + (r.hit ? ' on' : '') + '">' +
+        '<div class="rl-h"><span class="rl-n">' + esc(r.name) + '</span>' +
+        '<span class="rl-v"><b>' + r.hit + '</b>/' + r.total + ' · ' + pctTxt +
+        (r.solid ? '' : ' <i>题少</i>') + '</span></div>' +
+        '<div class="rl-bar"><i style="width:' + Math.round(r.rate * 100) + '%"></i></div>' +
+        '<p class="rl-one">' + esc(r.one) + ' 网友管这叫 <b>' + esc(r.hot) + '</b></p>' +
+        (r.hit ? '<p class="rl-what">' + esc(r.what) + '</p>' +
+          '<ul class="rl-acts">' + r.acts.map(function (s) {
+            return '<li>' + esc(s) + '</li>';
+          }).join('') + '</ul>' : '') +
+        '</div>';
+    }).join('');
+    return '<div class="rel" id="rel-acc-w">' +
+      '<button class="rel-h" id="rel-h" aria-expanded="false">' +
+      '<span class="rel-t">' + esc(A.title) + '</span>' +
+      '<span class="rel-s">' + sum + '</span>' +
+      '<i class="acc-arrow" aria-hidden="true"></i>' +
+      '</button>' +
+      '<div class="rel-b" id="rel-b">' +
+      '<p class="rel-lead">' + esc(A.lead) + '</p>' + body +
+      (hot.length ? '<p class="rel-flag">' + esc(A.flag) + '</p>' : '') +
+      '<p class="rel-note">' + esc(A.note) + '</p>' +
+      '</div></div>';
+  }
+
   /* ---------- 动态证据（结果页第二层开场） ---------- */
   function hitQuestion(hid) {
     var a = answered().filter(function (x) { return x.h === hid; })
@@ -694,6 +791,12 @@
       ? '<div class="card flag"><p class="what">这一条几乎每次都出现了。说明它已经很熟练，靠自己硬拧通常拧不动。</p>' +
         '<p class="what">先停一下。也可以找专业的人聊聊 —— 这不是什么大事，只是效率问题。</p></div>'
       : '';
+
+    /* 关系敏感度轴（第二个抽屉）。装在 res-flag 之后：
+       「哪句想法」→「哪条惯性几乎每次都出现」→「关系里容易卡在哪」，
+       是一条从内到外的顺序，不打断。 */
+    $('res-rel').innerHTML = relHTML();
+    bindAccEl('rel-h', 'rel-b', 'rel-acc-w');
 
     if (free) {
       $('res-upgrade').innerHTML = overviewHTML() +

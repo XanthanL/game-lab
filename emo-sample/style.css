@@ -221,6 +221,41 @@ button:active{transform:scale(.985)}
 .where-hot b{font-weight:700}
 .where-note{margin:8px 0 0;font-size:11px;color:#A98A7C;line-height:1.6}
 
+/* ---------- 关系敏感度轴（第二个抽屉） ----------
+   配色纪律：进度条与命中数走**数据层深蓝** var(--accent)，绝不用 --coral/--blush。
+   理由与 10 条矩阵同款——这一轴的「命中多」也**不等于更糟**，
+   它的口径是「你容易卡在哪」，不是「你有问题」。改成珊瑚色就等于在说
+   「敏感度高＝不好」，直接打穿这一轴的立意。 */
+.rel{border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);margin-top:14px;overflow:hidden}
+.rel-h{display:block;width:100%;text-align:left;background:none;border:none;box-shadow:none;padding:15px 46px 14px 16px;position:relative}
+.rel-h:active{transform:none}
+.rel-t{display:block;font-size:16px;font-weight:800;line-height:1.5;letter-spacing:-.01em}
+.rel-s{display:block;margin-top:3px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.rel-s b{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-size:14px}
+.rel-b{display:none;padding:2px 16px 16px;border-top:1px solid var(--line)}
+.rel-b.open{display:block}
+.rel.open .acc-arrow{transform:rotate(-135deg)}
+.rel-lead{margin:12px 0 12px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+.rl{padding:11px 0;border-bottom:1px dashed var(--line)}
+.rl:last-child{border-bottom:none}
+.rl-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rl-n{font-size:14.5px;font-weight:700;line-height:1.5}
+.rl-v{font-size:11.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
+.rl-v b{font-size:15px;color:var(--accent);font-weight:800}
+/* 「题少」角标：免费层每维只 2~3 题，比例不足以判定。
+   摆在数字后面提示「这个百分比别当真」，而不是藏起来。 */
+.rl-v i{font-style:normal;font-family:var(--font-sans);font-size:10.5px;color:#A98A7C;border:1px solid var(--line);border-radius:999px;padding:0 5px;margin-left:2px}
+.rl-bar{height:6px;border-radius:999px;background:var(--soft);margin:7px 0 0;overflow:hidden}
+.rl-bar i{display:block;height:100%;border-radius:999px;background:var(--accent)}
+.rl:not(.on) .rl-bar i{background:#C6BCB2}   /* 零命中时压成中性灰，不占强调色 */
+.rl-one{margin:8px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.65}
+.rl-one b{color:var(--accent);font-weight:700}
+.rl-what{margin:6px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.7}
+.rl-acts{margin:7px 0 0;padding-left:17px}
+.rl-acts li{font-size:12px;color:var(--muted);line-height:1.7}
+.rel-flag{margin:12px 0 0;padding:11px 13px;border-radius:var(--r);background:var(--soft);font-size:12.5px;color:var(--ink2);line-height:1.7}
+.rel-note{margin:10px 0 0;font-size:11px;color:#A98A7C;line-height:1.65}
+
 /* 卡片 */
 .card{border:1px solid var(--line);border-radius:var(--r);padding:20px 18px;margin-bottom:14px;background:var(--card);box-shadow:var(--shadow)}
 .card.flat,.card.flag{background:var(--soft)}
