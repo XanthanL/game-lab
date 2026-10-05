@@ -188,6 +188,13 @@ button:active{transform:scale(.985)}
   border-color: var(--coral);
   color: #fff;
 }
+/* 答题是全程最高频的动作（15~60 次），反馈必须短促：
+   按压 160ms 到位、圆点弹 180ms 收尾，加起来也不拖慢下一题。
+   全局 button:active 的 scale(.985) 在 48px 高的卡片上等于没有，这里单独给足。 */
+.opt{transition:transform .16s ease-out,background .16s,border-color .16s,box-shadow .16s}
+.opt:active{transform:scale(.96)}
+.opt.picked .key{animation:keypop .18s cubic-bezier(.22,.68,.4,1)}
+@keyframes keypop{0%{transform:scale(1)}50%{transform:scale(1.22)}100%{transform:scale(1)}}
 /* 第 5 个选项「这次我没被带走」（h:0）
  * ---------------------------------------------------------------------------
  * ⚠️ 这里刻意**不做任何视觉区分**——不加底色、不换字号、不改边框色。
@@ -201,8 +208,13 @@ button:active{transform:scale(.985)}
 /* 60 题下每行 24 格，格子必须缩到 12px / 间距 3px，否则一行装不下（440 - 40 = 400px） */
 .an-grid{display:inline-flex;flex-direction:column;gap:6px;margin-bottom:26px}
 .an-row{display:flex;gap:3px;justify-content:flex-start}
-.acell{width:12px;height:12px;border-radius:3px;background:var(--cell);display:block}
-.acell.on{background:var(--accent)}
+/* 格子点亮是全程唯一一次「看着自己的答案被算出来」的时刻，硬切太亏。
+   transition 负责颜色渐变，animation 负责点亮那一下的弹跳（只在 .on 加上时播一次）。
+   两者都只动 background / transform，不触发布局，60 格同时跑也不卡。 */
+.acell{width:12px;height:12px;border-radius:3px;background:var(--cell);display:block;
+  transition:background .18s ease-out}
+.acell.on{background:var(--accent);animation:cellpop .22s cubic-bezier(.22,.68,.4,1)}
+@keyframes cellpop{0%{transform:scale(1)}45%{transform:scale(1.38)}100%{transform:scale(1)}}
 .an-msg{font-size:14px;color:var(--muted)}
 
 /* 结果页 */
@@ -213,7 +225,11 @@ button:active{transform:scale(.985)}
 .hero{
   background:linear-gradient(160deg,var(--blush) 0%,#FFF3EC 100%);
   border-radius:26px;padding:26px 22px 22px;margin-bottom:16px;box-shadow:var(--shadow);
+  /* 结果页的情绪顶点：整页 rise 之外再给 hero 一个单独的揭示，
+     它比周围晚一点到位，视线才会先落在代号上。 */
+  animation:heroin .28s cubic-bezier(.22,.68,.4,1) both;
 }
+@keyframes heroin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 .hero-kicker{font-size:12px;letter-spacing:.2em;color:var(--coral);font-weight:700}
 /* 英文码：传播货币，评论区暗号。等宽 + 数据层深蓝（它属于数据，不属于装饰） */
 .hero-code{
@@ -270,7 +286,16 @@ button:active{transform:scale(.985)}
  * 机会数随题量变（免费 6 / 完整 24 格）：格子区独占一行并允许换行，
  * 名字那一行的宽度就不被格子吃掉——60 题下也不会把习惯名挤成省略号。 */
 .mx{margin-bottom:8px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 12px;box-shadow:var(--shadow)}
-.mx-row{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap}
+/* 矩阵行错峰入场：40ms 一行，最多 5 档（200ms）封顶，再多就成拖延了。
+   both 保证延迟期间保持起始态，不会先闪一下再退回去。 */
+.mx-row{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap;
+  animation:rowin .26s cubic-bezier(.22,.68,.4,1) both}
+.mx-row:nth-child(2){animation-delay:40ms}
+.mx-row:nth-child(3){animation-delay:80ms}
+.mx-row:nth-child(4){animation-delay:120ms}
+.mx-row:nth-child(5){animation-delay:160ms}
+.mx-row:nth-child(n+6){animation-delay:200ms}
+@keyframes rowin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .mx-name{flex:1;min-width:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mx-row.hit .mx-name{color:var(--ink);font-weight:600}
 .mx-num{width:40px;text-align:right;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -519,7 +544,9 @@ body.in-result{padding-bottom:0}
 
 @media (prefers-reduced-motion:reduce){
   .view.on{animation:none}
-  *{transition-duration:.01ms !important}
+  /* 新增的 cellpop / keypop / heroin / rowin 一并压到瞬间完成：
+     减弱动效不等于关掉——保留状态变化的可读性，只去掉位移和弹跳。 */
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
 }
 
 /* ---------- 灵光寄语与闪光底色样式 ---------- */

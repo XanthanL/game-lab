@@ -569,7 +569,10 @@
         state.answers = state.answers.filter(function (a) { return a.q !== q.id; });
         state.answers.push({ q: q.id, i: i, h: q.opts[i].h });
         save();
-        setTimeout(next, 140);
+        // 240ms：按压 160ms + 圆点弹 180ms 里的大半，够看清「选上了」再翻页。
+        // 原来 140ms 时选中态几乎是一闪而过，反馈等于没给。
+        // ⚠️ 产出/_smoke.js 里答题间隔是 200ms，改这个值必须同步调大，否则点空。
+        setTimeout(next, 240);
       };
     });
 
