@@ -534,11 +534,39 @@
   }
 
   /* ---------- 答题页 ---------- */
+  /* 题干框锁高：题干 24~42 字长短不一，不锁高时选项区会随行数上下跳。
+     为什么不在 CSS 里写死「3 行」：每行能装几个字取决于屏宽 + 右侧让出的留白，
+     360px 窄屏上 42 字的题能折到 4~5 行，写死必然要么裁字要么留缝。
+     所以拿一个隐藏的同款探针把本次会遇到的题目逐条量一遍，取最大值锁死。
+     一次性开销（60 次测量在同一帧内、探针 visibility:hidden 不可见，不闪）。 */
+  function lockSceneHeight() {
+    var box = $('q-scene');
+    if (!box) return;
+    // 无布局环境（_smoke/_layout 的元素桩没有 getBoundingClientRect）直接跳过：
+    // 锁高是纯视觉行为，数据层校验不需要它，桩也不必为此补布局 API。
+    if (!box.getBoundingClientRect || typeof box.offsetHeight !== 'number') return;
+    box.style.minHeight = '';
+    var w = box.getBoundingClientRect().width;
+    if (!w) return;
+    var probe = box.cloneNode(false);
+    probe.style.cssText += ';position:absolute;visibility:hidden;left:-9999px;' +
+      'min-height:0;width:' + w + 'px;margin:0';
+    box.parentNode.appendChild(probe);
+    var max = 0;
+    scope().forEach(function (id) {
+      probe.textContent = question(id).scene;
+      if (probe.offsetHeight > max) max = probe.offsetHeight;
+    });
+    box.parentNode.removeChild(probe);
+    if (max) box.style.minHeight = max + 'px';
+  }
+
   function startQuiz() {
     var p = pending();
     if (!p.length) { finish(); return; }
     state.cursor = p[0];
     renderQuiz();
+    lockSceneHeight();   // 首题就按最终高度渲染，全程零跳动
   }
   function renderQuiz() {
     var q = question(state.cursor);
@@ -556,7 +584,9 @@
     $('q-scene').textContent = q.scene;
     // 题干卡右上角 = 该题的场景图（走 sc-sprite 一次加载，格位由 q.img 指定）；
     // 缺格 / 越界自动回退「想想」陪伴小人（sceneDeco 内部处理）
-    $('q-comp').innerHTML = sceneDeco(q, 76);
+    // 小人高度跟 style.css 的 padding-right 是绑定的（宽 = 0.8 × 高），
+    // 两个 media 档位必须对齐：宽屏 88 / 窄屏 68，改一个就要改另一个。
+    $('q-comp').innerHTML = sceneDeco(q, window.innerWidth <= 400 ? 68 : 88);
     $('q-opts').innerHTML = q.opts.map(function (o, i) {
       return '<button class="opt' + (o.h > 0 ? '' : ' opt-free') + '" data-i="' + i + '">' +
         '<span class="key">' + 'ABCDEF'[i] + '</span><span>' + esc(o.t) + '</span></button>';
@@ -1337,6 +1367,14 @@ function renderHero(picks, free, low) {
       else { toast(D.unlockHint); }
     };
     $('share-close').onclick = function () { $('share').classList.remove('on'); };
+    // 转屏 / 改窗宽后每行字数变了，锁的高度要跟着重算（200ms debounce，别抖一次算一次）
+    var rt = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () {
+        if ($('view-quiz').classList.contains('on')) lockSceneHeight();
+      }, 200);
+    });
     renderLand();
   }
 

@@ -144,6 +144,12 @@ button:active{transform:scale(.985)}
   font-size:19px;line-height:1.8;font-weight:700;margin-bottom:20px;
   padding:18px 18px 18px 20px;background:#fff;border-radius:var(--r);
   border-left:4px solid var(--coral);box-shadow:var(--shadow);
+  /* 题干长短不一（24~42 字），窄屏下会分岔成 2 行 / 3 行，选项区跟着上下跳。
+     高度由 app.js 的 lockSceneHeight() 把「全部题目实测的最大高度」写进 style 锁死，
+     一行 JS 都没跑时靠这里兜底（3 行 + 上下 padding），至少不会塌。
+     文本垂直居中：短题多出来的空白被上下均分，读起来是留白，不是缺一块。 */
+  min-height:calc(5.4em + 36px);
+  display:flex;align-items:center;
 }
 /* 答题选项：缩紧内边距与高度，确保 6 选项在一屏内舒适呈现 */
 .opts {
@@ -502,9 +508,20 @@ body.in-result{padding-bottom:0}
 
 /* 答题页：陪伴小人贴在题干卡右上角 */
 .scene-wrap{position:relative}
-.scene{padding-right:84px}
+/* 右侧留给陪伴小人：sprite 格位是 128×160（宽 = 0.8 × 高），
+   88px 高的小人宽 70px，加 right:12 的边距 → 占到 82px，留 14px 呼吸。 */
+.scene{padding-right:96px}
 .no-art .scene{padding-right:18px}
-.q-comp{position:absolute;right:14px;top:16px;pointer-events:none;line-height:0}
+/* 窄屏（≤400px）每行本来就装不下几个字，再让出 96px 会把 42 字的题逼到 4~5 行，
+   锁高后短题更空。这里把小人收小、留白收到 74px，换回两行字宽。 */
+@media (max-width:400px){
+  .scene{padding-right:74px}
+  .q-comp{right:8px}
+}
+/* 陪伴小人：题干框锁高后右侧会空出一竖条，让它垂直居中、放大到 92px 顶上这块空白，
+   同时它本来就是全程陪伴角色，大一点也更像主角。钉在 top:16px 会悬在框的上半部，
+   配合居中文本显得偏。 */
+.q-comp{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;line-height:0}
 
 /* 分析中：等待小人居中在格子上方 */
 .an-comp{margin-bottom:20px;line-height:0}
