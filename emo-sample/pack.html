@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>降噪练习本 · 情绪取样</title>
+<meta name="theme-color" content="#FDF7F2">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23FDF7F2'/><rect x='6' y='6' width='8' height='8' rx='2' fill='%232557A7'/><rect x='18' y='6' width='8' height='8' rx='2' fill='%23EDE2D8'/><rect x='6' y='18' width='8' height='8' rx='2' fill='%23EDE2D8'/><rect x='18' y='18' width='8' height='8' rx='2' fill='%232557A7'/></svg>">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="pack.css">
+</head>
+<body class="pk">
+
+<!-- 顶栏：与主站同一套语言，左上角回主页 -->
+<header class="pk-bar">
+  <a class="pk-back" href="./" aria-label="回主页">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>情绪取样</span>
+  </a>
+  <nav class="pk-nav" id="pk-nav" hidden>
+    <a href="#day">今日</a>
+    <a href="#log">记录</a>
+    <a href="#cards">卡片</a>
+    <a href="#given">底色</a>
+  </nav>
+</header>
+
+<!-- 未解锁：锁屏 -->
+<section class="pk-lock" id="pk-lock" hidden>
+  <div class="pk-lock-in">
+    <p class="pk-lock-k">只对拿到链接的人开放</p>
+    <h1>这一页是随商品一起发出的</h1>
+    <p class="pk-lock-p">从发货消息里那条链接点进来，会直接打开。手上只有一串码的话，粘到下面也认。</p>
+    <div class="pk-lock-row">
+      <input id="pk-code" type="text" inputmode="latin" autocapitalize="characters" autocomplete="off"
+             spellcheck="false" placeholder="粘贴解锁码" aria-label="解锁码">
+      <button class="pk-btn" id="pk-open" type="button">打开</button>
+    </div>
+    <p class="pk-lock-tip" id="pk-lock-tip">码在发货消息里，开头是四位，后面还有一截。</p>
+    <a class="pk-lock-home" href="./">先回主页测一次</a>
+  </div>
+</section>
+
+<!-- 已解锁：正文 -->
+<div class="pk-wrap" id="pk-main" hidden>
+
+  <!-- 封面 -->
+  <section class="pk-cover">
+    <p class="pk-kicker">已解锁 · 完整版</p>
+    <h1 class="pk-title" id="pk-title">降噪练习本</h1>
+    <p class="pk-sub" id="pk-sub">30 天 · 一天一条</p>
+    <p class="pk-lead" id="pk-lead"></p>
+    <ol class="pk-howto" id="pk-howto"></ol>
+    <div class="pk-cover-btns">
+      <a class="pk-btn pk-btn-lg" href="#day">开始今天的练习</a>
+      <a class="pk-btn pk-btn-ghost" href="#cards">先翻翻十张卡</a>
+    </div>
+  </section>
+
+  <!-- 今日练习 -->
+  <section class="pk-sec" id="day">
+    <div class="pk-sec-head">
+      <h2>今天这一条</h2>
+      <p class="pk-sec-note" id="pk-daytip"></p>
+    </div>
+
+    <div class="pk-pick" id="pk-pick" role="tablist" aria-label="挑一张卡"></div>
+
+    <article class="pk-day-card" id="pk-day-card"></article>
+
+    <div class="pk-submit">
+      <button class="pk-btn pk-btn-lg" id="pk-save" type="button">记下来</button>
+      <p class="pk-submit-note" id="pk-save-note"></p>
+    </div>
+  </section>
+
+  <!-- 30 天记录 -->
+  <section class="pk-sec" id="log">
+    <div class="pk-sec-head">
+      <h2>30 天记录</h2>
+      <p class="pk-sec-note" id="pk-keepnote"></p>
+    </div>
+
+    <div class="pk-strip" id="pk-strip" aria-hidden="true"></div>
+    <div class="pk-stat" id="pk-stat"></div>
+    <div class="pk-log" id="pk-log"></div>
+
+    <div class="pk-log-btns">
+      <button class="pk-btn pk-btn-ghost" id="pk-export" type="button">把这段复制走</button>
+      <button class="pk-btn pk-btn-quiet" id="pk-reset" type="button">清空</button>
+    </div>
+    <p class="pk-export-note" id="pk-export-note"></p>
+  </section>
+
+  <!-- 十张卡 -->
+  <section class="pk-sec" id="cards">
+    <div class="pk-sec-head">
+      <h2>十张换句卡</h2>
+      <p class="pk-sec-note">点开任意一张，里面有问自己的三句、换的那句、还有今天能做的一件小事。</p>
+    </div>
+    <div class="pk-cards" id="pk-cards"></div>
+  </section>
+
+  <!-- 五种底色 -->
+  <section class="pk-sec" id="given">
+    <div class="pk-sec-head">
+      <h2>你已经有的五样</h2>
+      <p class="pk-sec-note">这五样也在你身上，练习的时候顺手用。</p>
+    </div>
+    <div class="pk-given" id="pk-given"></div>
+  </section>
+
+  <footer class="pk-foot">
+    <p id="pk-fine"></p>
+    <a href="./">回主页</a>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script src="key.js"></script>
+<script src="pack.js"></script>
+</body>
+</html>
