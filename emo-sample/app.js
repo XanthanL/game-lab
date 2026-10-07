@@ -6,7 +6,9 @@
 
   var D = window.DATA;
   var KEY = 'cht.v1.';
-  var SALT = 'cht2026x';
+  /* 解锁用的三个 salt 不在这里，统一放在下面的解锁段（2026-10-07 起）。
+     分散在文件头反而容易漏改：它们必须和 产出/_keyissue.py 里的同名常量逐个对上，
+     写在一块儿才敢动。 */
   /* ---------- 两个比例阈值（都按「命中 / 机会」算，不写死绝对分） ----------
      题库从 10 题扩到 60 题后，每条的机会数从 4 变成 24，绝对分不再有意义，
      一切判定改为比例；以后再改题量，这两行不用动。
@@ -147,7 +149,34 @@
     });
   }
 
-  /* ---------- 解锁：fnv1a + salt，纯前端校验 ---------- */
+  /* ---------- 解锁：签发清单 + 单向指纹（v9 起） ----------
+   *
+   * 一个码长这样：body(10 位) + chk(2 位) = 12 位，字符取自 Crockford base32
+   * （0-9 + 22 个字母，不含 I / L / O / U，免得手抄时 1 和 I 分不清）。
+   *
+   *   chk = b32(fnv1a(SALT_C + body) % 32²)                       挡改字符、挡手滑打错
+   *   fp  = b32(fnv1a(SALT_A + body) % 32³) + b32(fnv1a(SALT_B + body) % 32³)
+   *
+   * 站点里只有 fp 这一个数组（data.js 的 keyfps），一个完整码都没有。
+   * 原文台账在 产出/keys.csv —— 那份绝不进公开仓，发货链接全从那儿取。
+   *
+   * 这层设计能挡什么、挡不了什么，写下来免得以后反复纠结：
+   *   挡得住：改一位字符、手滑打错、瞎猜一个码。要合法通过得先撞对一个 10 位 body，
+   *           概率约 1/32^10 ≈ 1/1.1e15，本地枚举得跑几个月。
+   *   挡不住：① 买家把链接转发给别人——这是交付方式自带的性质，跟码的强度无关；
+   *           ② 有人铁了心要把整个 body 空间枚举一遍，那要 1.1e15 次，不值得。
+   * 纯前端校验的物理上限就在这儿：校验逻辑必然公开。改造真正买到的是
+   * 「1296 个码全都能被算出来」变成「撞到一个码要几个月」。对这个客单价，够了。
+   *
+   * 补库存：python 产出/_keyissue.py 500 --append（会重写 data.js 的 KEYFPS 块）
+   */
+  var B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  var KEY_BODY = 10, KEY_CHK = 2, KEY_LEN = KEY_BODY + KEY_CHK;
+  var SALT_LEGACY = 'cht2026x';   // 旧 6 位码专用，别动：朋友手上那条链接还在用
+  var SALT_C = 'cht-check-v9';
+  var SALT_A = 'cht-fp-a-v9';
+  var SALT_B = 'cht-fp-b-v9';
+
   function fnv1a(s) {
     var h = 0x811c9dc5;
     for (var i = 0; i < s.length; i++) {
@@ -156,28 +185,48 @@
     }
     return h >>> 0;
   }
+  function b32(n, width) {
+    var out = '';
+    for (var i = 0; i < width; i++) { out = B32.charAt(n & 31) + out; n >>>= 5; }
+    return out;
+  }
+  /* 旧通道（6 位 = 2 位订单尾号 + 4 位签名）：已停止签发，只保留放行。 */
   function signature(body) {
-    return (fnv1a(body + SALT) % 1679616).toString(36).toUpperCase().padStart(4, '0');
+    return (fnv1a(body + SALT_LEGACY) % 1679616).toString(36).toUpperCase().padStart(4, '0');
+  }
+  function checksum(body) {
+    return b32(fnv1a(SALT_C + body) % 1024, KEY_CHK);
+  }
+  function fingerprint(body) {
+    return b32(fnv1a(SALT_A + body) % 32768, 3) + b32(fnv1a(SALT_B + body) % 32768, 3);
   }
   function validKey(k) {
-    if (!/^[0-9A-Z]{6}$/.test(k)) return false;
-    return signature(k.slice(0, 2)) === k.slice(2);
+    if (typeof k !== 'string') return false;
+    k = k.toUpperCase();
+    if (k.length === 6 && /^[0-9A-Z]{6}$/.test(k)) {
+      return signature(k.slice(0, 2)) === k.slice(2);        // 旧码，兼容通道
+    }
+    if (k.length !== KEY_LEN) return false;
+    for (var i = 0; i < KEY_LEN; i++) {
+      if (B32.indexOf(k.charAt(i)) < 0) return false;        // 字符集不含 I / L / O / U
+    }
+    var body = k.slice(0, KEY_BODY);
+    if (checksum(body) !== k.slice(KEY_BODY)) return false;
+    return ((D.keyfps || []).indexOf(fingerprint(body)) >= 0);
   }
-  function makeKey(tail) {
-    return (tail + signature(tail)).slice(0, 6).toUpperCase();
-  }
-  // 控制台里跑 CHT.makeKey('37') 生成解锁码。
+  // ⚠️ 这里刻意没有暴露「生成码」的函数：码必须由本地签发脚本产出并写进 keyfps，
+  //    前端一旦能自造，清单就失去意义了（那正是旧版 1296 个码可被整体算出的问题）。
   // __test 是给 产出/_smoke.js 和 产出/_layout.js 用的入口：
   // 分享长图的排版只能靠自动化断言守（手点截图看不过来），需要能在无头里直接驱动。
   // ⚠️ 这行在文件靠前位置执行，那时 state 还没声明——直接写 state 会存成 undefined 快照。
   //    所以一律用 getter 现取。
   window.CHT = {
-    makeKey: makeKey,
     __test: {
       startQuiz: function () { startQuiz(); },
       answer: function (i) { $('q-opts').children[i].click(); },
       makeShare: function () { makeShare(); },
       score: function () { return score(); },
+      validKey: function (k) { return validKey(k); },
       get state() { return state; },
       setState: function (o) { for (var k in o) state[k] = o[k]; }
     }
@@ -521,7 +570,9 @@
 
     var u = '';
     if (state.unlocked) {
-      u = '<p class="unlock-note">本链接由订单 #' + esc(state.unlocked.slice(0, 2)) + ' 解锁</p>';
+      // 旧码 6 位（订单尾号 2 位），新码 12 位。露一点前缀够核对，别整串甩在页面上。
+      var head = state.unlocked.length > 6 ? state.unlocked.slice(0, 4) + '…' : state.unlocked.slice(0, 2);
+      u = '<p class="unlock-note">完整版已解锁 · 码 ' + esc(head) + '</p>';
     }
     $('unlock-note').innerHTML = u;
     // 落地页直接把随机名言填在标题下方
