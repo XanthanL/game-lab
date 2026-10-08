@@ -938,7 +938,7 @@ function renderHero(picks, free, low) {
     im.src = imObj.src;
   }
 
-  // 保证无论何时都有小人（即使全未受裹挟也绝不丢小人）
+  // 无论何时都留一个小人（即使全未受裹挟也不丢）
   function pickShareArt() {
     var sc = score(), free = state.stage === 'free';
     var low = isLow(sc, free);
@@ -1225,7 +1225,7 @@ function renderHero(picks, free, low) {
     var usedH = heroH + mh + swapH + gap * 2;
     var heroTop = HERO_TOP_MIN + Math.max(0, availH - usedH);
     var mCardTop = heroTop + heroH + gap;
-    var swapTop = mCardTop + mh + gap;      // 由恒等式保证：swapTop + swapH === BOTTOM
+    var swapTop = mCardTop + mh + gap;      // 由恒等式推出：swapTop + swapH === BOTTOM
 
     // ---- 画 Hero（每行在自己那格里垂直居中）----
     var hy = heroTop;

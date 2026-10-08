@@ -293,7 +293,7 @@ button:active{transform:scale(.985)}
  * 名字那一行的宽度就不被格子吃掉——60 题下也不会把习惯名挤成省略号。 */
 .mx{margin-bottom:8px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 12px;box-shadow:var(--shadow)}
 /* 矩阵行错峰入场：40ms 一行，最多 5 档（200ms）封顶，再多就成拖延了。
-   both 保证延迟期间保持起始态，不会先闪一下再退回去。 */
+   both 让延迟期间保持起始态，不会先闪一下再退回去。 */
 .mx-row{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap;
   animation:rowin .26s cubic-bezier(.22,.68,.4,1) both}
 .mx-row:nth-child(2){animation-delay:40ms}
