@@ -760,6 +760,82 @@ const MODULES = [
     //    ⚠️ Boss 也吃真伤，但层数判定里把银伤上限夹住（见 damageEnemy），别让它变成秒巨像。
     apply: (S, n) => { S.silver = n; S.silverDmg = 10 + n * 8; },
     bloom: S => { S.silver = 3; S.silverDmg = 40; S.silverGold = 1; } },
+
+  // ---- 第六批（2026-10-09）：海克斯强化 / 英雄技能 ----
+  // 前五批给的是「输出源」「更大的数字」「判断」「装置」。这一批给的是**姿态与时机**：
+  //   crystal 给一条要瞄的线（冰箭），beam 给一个要停下来的窗口（站桩激光，与「审判」一动一静），
+  //   headshot 给一个可预期的节奏（每第 N 发），undying 给一次「不死的几秒」，
+  //   mark 给一段延迟结算的账（集火窗口），thorns 给一套「挨打也算输出」的反击。
+  // 参考对象是《英雄联盟》的招牌技能 / 海克斯大乱斗的强化思路：**改写玩法，不只是加数值**。
+  // ⚠️ desc / descEn 硬宽度同上：中文每行 ≤ 9 字、英文每行 ≤ 19 半角，只能 3 行。
+  { id: 'crystal', name: '冰封长箭', nameEn: 'CRYSTAL ARROW', type: 'ability', glyph: '冰', max: 3,
+    desc: '冷却就绪射出\n贯穿冰封长箭\n飞得越远越痛',
+    descEn: 'Piercing ice arrow\nfreezes its path;\nhurts more far out',
+    // 借艾希「魔法水晶箭」：一支**独立飞行体**（G.arrows），慢速、贯穿所有目标、
+    //    沿途冻结（复用 e.root，与「拘束立场」同一套硬控），伤害按**已飞里程**递增。
+    //    与「轨道长枪」的分工：长枪是「把你的一发主炮换成一瞬的直线」，
+    //    冰箭是「场上多一件会自己飞的东西」—— 它要瞄、会飞偏、也可能空掉。
+    //    ⚠️ 冻结对 Boss **不生效**（和 bind 一致）：巨像站定一秒不开火，机制会直接坏掉。
+    apply: (S, n) => { S.crystal = n; S.crystalCd = 10 - (n - 1) * 1.6; },
+    bloom: S => { S.crystal = 3; S.crystalCd = 4.8; S.crystalGold = 1; } },
+  { id: 'beam', name: '瓦解射线', nameEn: 'VOID RAY', type: 'ability', glyph: '析', max: 3,
+    desc: '站定蓄力射出\n瓦解射线\n一动就中断',
+    descEn: 'Stand still to\ncharge a beam;\nmoving cancels',
+    // 借维克兹「生命形态瓦解射线」：**站着不动**才蓄力，蓄满射出一条持续激光（每 0.12s 一跳）。
+    //    和第五批的「审判」正好是一对反义：审判要你动，射线要你停 ——
+    //    协同 `motionTwin` 把这两张卡咬成一套「动 / 静」节奏。
+    //    ⚠️ 中断条件是 `G.moving`（速度 > 14），不是「按了 W」—— 被撞飞也会断，这是故意的。
+    //    ⚠️ 质变（beamGold）才给「蒸发经过的敌弹」：站桩的回报必须够重，否则没人愿意停。
+    apply: (S, n) => {
+      S.beam = n; S.beamCd = 8 - (n - 1) * 1.4;
+      S.beamLen = 260 + n * 40; S.beamDmg = 7 + n * 4; S.beamDur = 1.1 + n * 0.25;
+    },
+    bloom: S => { S.beam = 3; S.beamCd = 3.6; S.beamLen = 460; S.beamDmg = 26; S.beamDur = 2.6; S.beamGold = 1; } },
+  { id: 'headshot', name: '爆头协议', nameEn: 'HEADSHOT', type: 'weapon', glyph: '头', max: 3,
+    desc: '每数发主炮\n必出一记爆头\n必暴且穿透',
+    descEn: 'Every few shots\none is a headshot:\ncrit and pierce',
+    // 借凯特琳「爆头」：**按发数**而不是按冷却 —— 每第 hsEvery 发主炮变成一发必暴、
+    //    多穿透一层的金色重弹。它给的是**可预期的节奏**（玩家能数出来），
+    //    和「轨道长枪」（按时间冷却）是两种不同的「什么时候该压上去」。
+    //    ⚠️ hsEvery / hsMul 一律覆盖式赋值：续档逐级重放 apply，累乘会把一级加成叠三次。
+    //    ⚠️ 只有**第一根枪管**变爆头弹 —— 多联机炮不该一次齐射喷出三发重弹。
+    apply: (S, n) => { S.headshot = n; S.hsEvery = 7 - n; S.hsMul = 2.2 + (n - 1) * 0.5; },
+    bloom: S => { S.headshot = 3; S.hsEvery = 3; S.hsMul = 4.6; S.hsGold = 1; } },
+  { id: 'undying', name: '无尽怒火', nameEn: 'UNDYING RAGE', type: 'ability', glyph: '怒', max: 3,
+    desc: '致命伤不致死\n进入数秒怒火\n射速移速飙升',
+    descEn: 'Lethal damage\nwon\'t kill you:\nbrief rampage',
+    // 借泰达米尔「无尽怒火」：这一击本该致死 → 血锁 1，进入数秒怒火（免死 + 射速 / 移速飙升），
+    //    怒火结束才重新变得会死。与「相位折跃 / 时滞回溯」的分工是**态度**：
+    //    那两张是把失误**抹掉**（脱险 / 倒带），这一张是要你**站在原地扛完这一波**。
+    //    ⚠️ 倍率只落在 updatePlayer 的两处消费点，绝不写进 S.rate / S.spd ——
+    //       写进去会被续档重放叠进基础值（和杀戮狂热是同一个坑）。
+    //    ⚠️ 冷却必须非常长（40~28 秒）：它是「整局只有几次」的按钮，不是常规生存卡。
+    apply: (S, n) => { S.undying = n; S.undyingCd = 40 - (n - 1) * 6; S.undyingDur = 4 + n; },
+    bloom: S => { S.undying = 3; S.undyingCd = 18; S.undyingDur = 9; S.undyingGold = 1; } },
+  { id: 'mark', name: '死亡印记', nameEn: 'DEATH MARK', type: 'ability', glyph: '印', max: 3,
+    desc: '命中留下印记\n两秒后引爆\n结算期间伤害',
+    descEn: 'Marked foes take\nthe damage back\n2 seconds later',
+    // 借劫「死亡印记」：直接命中给目标挂账（e.markAcc 累加期间承受的伤害），
+    //    计时到期引爆一次真伤 —— **打得多爆得狠**，所以它奖励的是集火与爆发窗口，
+    //    而不是「多打一枪」。与「圣银弩箭」的分工：圣银是「满 3 层固定真伤」（看层数），
+    //    印记是「一段窗口内的总账按比例返还」（看总额）。
+    //    ⚠️ 只有**非 quiet 的直接命中**记账 —— 爆炸 / 电链这类范围伤害不该偷记。
+    //    ⚠️ 引爆伤害夹 `e.maxHp * 0.5`：否则叠满一套爆发能把巨像一击带走。
+    apply: (S, n) => { S.mark = n; S.markT = 2; S.markPct = 0.30 + (n - 1) * 0.12; },
+    bloom: S => { S.mark = 3; S.markT = 2; S.markPct = 0.75; S.markGold = 1; } },
+  { id: 'thorns', name: '荆棘甲壳', nameEn: 'THORN PLATE', type: 'ability', glyph: '棘', max: 3,
+    desc: '受击向周身\n弹回部分伤害\n满级附带减速',
+    descEn: 'Taking damage\nspits it back at\nnearby foes',
+    // 借拉莫斯「尖刺防御」/「荆棘之甲」：把**挨打**变成输出 —— 受击时按 thornPct
+    //    把这部分伤害弹给周身的敌人（至多 4 个）。它和「冲角装甲」是一对：
+    //    冲角要你**贴上去**，荆棘是**被贴上来**时的回敬。
+    //    ⚠️ 反的是**实际扣掉的血**（护盾结算之后），不是原始伤害 —— 有盾时荆棘就该变弱，
+    //       否则「护盾 + 荆棘」会变成同一份伤害吃两遍收益。
+    //    ⚠️ 必须有节流（G.thornCd 0.2s）：受击自带无敌帧，但范围伤害同帧来多次会炸成刷屏。
+    //    ⚠️ 质变给「附带减速」而不是「转成护盾」—— 后者依赖 shieldMax，
+    //       没装护盾卡的局里这一条会静默失效。
+    apply: (S, n) => { S.thorns = n; S.thornPct = 0.35 + (n - 1) * 0.2; S.thornR = 96 + n * 18; },
+    bloom: S => { S.thorns = 3; S.thornPct = 1.1; S.thornR = 200; S.thornGold = 1; } },
 ];
 // 卡牌类型名（数值 / 弹体 / 装置）现在走 i18n 的 'up.type.*'（up.typeName() 是唯一入口）
 const typeName = t => T('up.type.' + t);
@@ -816,6 +892,18 @@ const SYNERGIES = [
   { id: 'harvest',      name: '收割放牧', nameEn: 'HARVEST', a: 'execute', b: 'leech',    desc: '每一次斩杀额外回复 3% 船体', descEn: 'Each execute also heals 3% hull' },
   { id: 'staticBind',   name: '静滞钳制', nameEn: 'STATIC GRIP', a: 'bind',    b: 'nova',     desc: '冲击波必定把范围内的敌人定住', descEn: 'Shockwave always roots its victims' },
   { id: 'echoPhase',    name: '回溯残响', nameEn: 'ECHO PHASE', a: 'rewind',  b: 'phasehull',desc: '回溯后的无敌时间翻倍', descEn: 'Post-rewind invuln doubled' },
+
+  // ---- 第六批的配对协同（2026-10-09）----
+  // 规则同前五批：desc 是**横幅副标题**，画布上只有一行 12px、居中 → 英文 ≤78 半角字符。
+  // 这一批里 `motionTwin` 是刻意设计的**反义配对**（一动一静），其余五条是「新卡咬旧卡」：
+  //   冰箭咬拘束（都是硬控）、爆头咬暴击（都是致命一击）、怒火咬湮灭（都是残血）、
+  //   印记咬高爆（都是延迟的炸）、荆棘咬装甲（都是挨打这件事）。
+  { id: 'iceBind',      name: '冰封钳制', nameEn: 'ICE GRIP', a: 'crystal', b: 'bind',     desc: '冰箭的冻结时间 ×1.6', descEn: 'Ice arrow freezes 1.6x longer' },
+  { id: 'motionTwin',   name: '一动一静', nameEn: 'STILL & STORM', a: 'beam', b: 'spin',   desc: '站定时射线 ×1.5，移动时旋斩更广', descEn: 'Still: ray x1.5. Moving: wider spin' },
+  { id: 'headshotCrit', name: '致命一击', nameEn: 'LETHAL SHOT', a: 'headshot', b: 'critcap', desc: '爆头弹的暴击倍率 ×1.5', descEn: 'Headshot crit multiplier x1.5' },
+  { id: 'lastStand',    name: '背水一战', nameEn: 'LAST STAND', a: 'undying', b: 'execute', desc: '怒火期间斩杀线翻倍', descEn: 'Execute threshold doubled while raging' },
+  { id: 'markBurst',    name: '印记爆破', nameEn: 'MARK BLAST', a: 'mark',  b: 'hesh',     desc: '印记引爆时炸开一圈', descEn: 'Mark detonation also blasts' },
+  { id: 'thornPlate',   name: '重装荆棘', nameEn: 'PLATED THORNS', a: 'thorns', b: 'armor', desc: '荆棘反伤 +60%', descEn: 'Thorn reflect +60%' },
 ];
 const synOn = id => !!G.syn[id];
 function recalcSynergies() {
@@ -1058,6 +1146,85 @@ function drawLances() {
   }
 }
 
+/* ===== 第六批（2026-10-09）的绘制 ===== */
+
+/* 冰封长箭：一支**看得见的箭**，不是一条拖影。
+   ⚠️ 越飞越疼是它的机制（伤害按里程递增），所以箭体本身要随里程变亮 ——
+      玩家得能从画面上读出「这支箭现在很疼」，否则那条递增曲线等于不存在。 */
+function drawArrows() {
+  if (!G.arrows.length) return;
+  for (const a of G.arrows) {
+    if (!onScreen(a.x, a.y, 30)) continue;
+    const heat = Math.min(1, a.trav / 320);   // 与 updateArrows 的伤害递增同一条曲线
+    const col = a.gold ? '#ffcd75' : '#cfe8ff';
+    ctx.save();
+    ctx.translate(Math.round(a.x), Math.round(a.y)); ctx.rotate(a.a);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.14 + heat * 0.26; ctx.fillRect(-16, -3.2, 20, 6.4);   // 外辉光
+    ctx.globalAlpha = 0.85;                 ctx.fillRect(-15, -1.1, 18, 2.2); // 箭杆
+    ctx.fillStyle = '#f4f4f4';
+    ctx.globalAlpha = 0.9;                  ctx.fillRect(1, -2.6, 5, 5.2);    // 箭镞
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.5;                                                    // 冰晶尾羽
+    ctx.fillRect(-16, -5, 3, 3); ctx.fillRect(-16, 2, 3, 3);
+    ctx.restore();
+  }
+}
+/* 瓦解射线：蓄力 = 玩家脚下一圈**收拢**的紫环；发射 = 三层叠加的光柱 + 过曝枪口。
+   ⚠️ 蓄力提示画在**船身上**而不是 HUD 角落：站桩这件事发生在战场上，
+      玩家的眼睛在船上，把它挪到角落等于没有提示。 */
+function drawBeam() {
+  const S = G.S;
+  if (S.beam <= 0 || G.dead) return;
+  const col = S.beamGold ? '#ffcd75' : '#c070f0';
+  if (G.beamFire > 0) {
+    const len = S.beamLen;
+    const puls = 0.82 + Math.sin(G.t * 40) * 0.18;
+    ctx.save();
+    ctx.translate(Math.round(G.px), Math.round(G.py)); ctx.rotate(G.beamAng);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.16 * puls; ctx.fillRect(0, -BEAM_HALF * 2.2, len, BEAM_HALF * 4.4);
+    ctx.globalAlpha = 0.46 * puls; ctx.fillRect(0, -BEAM_HALF, len, BEAM_HALF * 2);
+    ctx.fillStyle = '#f4f4f4';
+    ctx.globalAlpha = 0.9 * puls;  ctx.fillRect(0, -2.2, len, 4.4);
+    ctx.restore();
+    // 枪口过曝核心（画在世界坐标，不跟着旋转）
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = S.beamGold ? '#ffe9a8' : '#e6c8ff';
+    ctx.globalAlpha = 0.85 * puls;
+    disc(G.px, G.py, 6 + puls * 3);
+    ctx.restore();
+    return;
+  }
+  if (G.beamCh > 0) {
+    const k = Math.min(1, G.beamCh / BEAM_CHARGE);
+    const R = 34 - k * 22;                  // 收满即发射：环越小 = 越接近发射
+    ctx.save();
+    ctx.strokeStyle = col; ctx.lineWidth = 1 + k;
+    ctx.globalAlpha = 0.25 + k * 0.5; ringPx(G.px, G.py, R, 1 + k);
+    ctx.globalAlpha = 0.12 + k * 0.2; ringPx(G.px, G.py, R + 6, 1);
+    ctx.restore();
+  }
+}
+/* 无尽怒火：整船裹一层暗红怒焰 + 两圈高频脉动的裂环。
+   ⚠️ 必须和「低血量红色暗角」区分开：暗角是**警告**（慢呼吸），怒火是**我很强**（快脉动）。
+      两者撞色会让人在真的快死时误以为自己开了大。 */
+function drawUndying() {
+  if (G.undyingT <= 0 || G.dead) return;
+  const S = G.S;
+  const puls = 0.72 + Math.sin(G.t * 22) * 0.28;
+  drawGlow(ctx, '#e04060', 26 * (S.undyingGold ? 1.25 : 1), 0.34 * puls, G.px, G.py);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = S.undyingGold ? '#ffcd75' : '#ef7d57';
+  ctx.globalAlpha = 0.5 * puls;  ringPx(G.px, G.py, 20, 2);
+  ctx.globalAlpha = 0.28 * puls; ringPx(G.px, G.py, 27, 1);
+  ctx.restore();
+}
+
 function drawMines() {
   if (!G.mines.length) return;
   for (const m of G.mines) {
@@ -1133,6 +1300,15 @@ function newGame(hullId) {
     lotus: 0, lotusT: 0, lotusCd: 0, lotusGold: 0,       // 死亡莲华
     rampage: 0, rampageGold: 0,                          // 杀戮狂热（剩余时间在 G.rampageT / 倍率在 G.rampageMul）
     silver: 0, silverDmg: 0, silverGold: 0,              // 圣银弩箭（层数在 e.silver / 衰减在 e.silverT）
+    // 第六批（2026-10-09）：冰封长箭 / 瓦解射线 / 爆头协议 / 无尽怒火 / 死亡印记 / 荆棘甲壳
+    // ⚠️ 计时类字段（crystalT / beamT / hsEvery 派生）一律在 newGame 归零 —— 续档是逐级重放
+    //    apply 的，漏了默认零值会在第一次触发前卡在「已就绪」之外的怪状态。
+    crystal: 0, crystalT: 0, crystalCd: 0, crystalGold: 0,
+    beam: 0, beamT: 0, beamCd: 0, beamLen: 0, beamDmg: 0, beamDur: 0, beamGold: 0,
+    headshot: 0, hsEvery: 0, hsMul: 1, hsGold: 0,
+    undying: 0, undyingCd: 0, undyingDur: 0, undyingGold: 0,
+    mark: 0, markT: 0, markPct: 0, markGold: 0,
+    thorns: 0, thornPct: 0, thornR: 0, thornGold: 0,
   };
   // 船体自带的开局加成（蜂群带无人机之类）
   if (hull.drones) S.drones = hull.drones;
@@ -1147,6 +1323,7 @@ function newGame(hullId) {
     // 出生在世界正中心 —— 四个方向都留着等长的退路（世界是视口的 3 倍）
     px: WORLD.w / 2, py: WORLD.h / 2, vx: 0, vy: 0, ang: 0, aim: 0,
     fireT: 0, inv: 0, dashT: 0, dashCd: 0, hurtFlash: 0,
+    moving: false,   // 「真的在动」（速度 > 14px/s）：审判光环与瓦解射线的中断判据都读它
     energy: 0, odT: 0, grazeT: 0,
     // 过热膛线（熔炉专属，2026-09-26 从《奇点回响》搬过来）。
     // ⚠️ 非熔炉船体 heatOn=false、heatMul 恒 1 —— 逐船断言「零溢出」靠的就是这两个默认值。
@@ -1162,6 +1339,12 @@ function newGame(hullId) {
     clones: [],   // 影分身：镜像开火的短暂分身（G.clones，靠 t/life 自然消散）
     spinT: 0,     // 审判：旋斩光环的脉冲计时（每 0.22s 结算一次近身伤害）
     rampageT: 0, rampageMul: 1,   // 杀戮狂热：击杀后短暂抬升射速与移速
+    // 第六批的新状态（2026-10-09）
+    arrows: [],   // 冰封长箭：场上独立飞行的冰箭（靠 t/life 与里程上限自然消散）
+    beamCh: 0, beamFire: 0, beamAng: 0, beamTick: 0,   // 瓦解射线：蓄力秒数 / 剩余发射 / 锁定方向 / 伤害跳计时
+    shotN: 0,     // 爆头协议：主炮齐射计数（每第 hsEvery 次齐射出一发爆头弹）
+    undyingT: 0, undyingCdT: 0,   // 无尽怒火：怒火剩余秒数 / 冷却剩余秒数
+    thornCd: 0,   // 荆棘甲壳：反伤节流（秒）
     boss: null, bossRef: null, bossWarn: 0, bossPending: null, bossT: 0,
     shake: 0, banners: [], toasts: [], hitFlashN: 0,
     hitstop: 0, heartT: 0, vign: 0,     // 打击感：命中凝滞 / 心跳计时 / 受击暗角
@@ -1311,6 +1494,9 @@ function pBullet(x, y, ang, spd, dmg, o = {}) {
     x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, dmg,
     r: o.r || (G.S.bulletR + extraR),
     life: life0, life0,
+    // 爆头协议：这一发**必定**暴击（o.crit 显式给定）。默认 undefined，走命中时的随机判定。
+    // ⚠️ 用 `?? null` 而不是 `|| false` 无所谓，关键是别让它变成 0 之后又被 `b.crit ||` 吞掉。
+    crit: o.crit,
     // 初速（decel 分支按剩余寿命把它往 BDECEL_S 收，营造「出膛快、临终慢」的手感）
     sp0: spd,
     // 普通子弹（主炮 / 散射 / 尾炮）的基础特性：临近消失时减速。制导 / 弹片 / 无人机不减速。
@@ -1436,13 +1622,29 @@ function fireMain(ang, dmgMul = 1) {
   // 多管在主炮口沿「舷向」略微错开，看起来像一排炮管齐射，而不是全挤在一个点。
   const mz = hullNose(), tl = hullTail();
   const spd = 320 * S.bspd;      // 口径校准：弹速是全局弹丸参数，尾炮 / 扇形弹一起吃
+  // 爆头协议：计数在**齐射**这一层（不是每根枪管一次），并且只让**第一根枪管**变重弹 ——
+  //    多联机炮一次齐射喷出三发必暴重弹就变成纯数值膨胀了。
+  G.shotN++;
+  const hsOn = S.headshot > 0 && S.hsEvery > 0 && G.shotN % S.hsEvery === 0;
   for (let i = 0; i < n; i++) {
     const spread = n === 1 ? 0 : (i - (n - 1) / 2) * 0.13;
     const a = ang + spread;
     const perp = (i - (n - 1) / 2) * 3;   // 舷向错开
     const ox = G.px + Math.cos(a) * mz - Math.sin(a) * perp;
     const oy = G.py + Math.sin(a) * mz + Math.cos(a) * perp;
-    pBullet(ox, oy, a, spd, base, { decel: true });
+    if (hsOn && i === 0) {
+      // ⚠️ pierce / r 要在这里**显式**算出来再传：pBullet 里是 `o.pierce ?? S.pierce + …`，
+      //    传了就走传入值，所以协同的加成必须自己带上，不能指望它再补一次。
+      const extraR = synOn('heavyBore') ? 1.5 : 0;
+      pBullet(ox, oy, a, spd * 1.15, base * S.hsMul, {
+        decel: true, kind: 'headshot', crit: true,
+        pierce: S.pierce + 1 + (synOn('volley') ? S.barrels : 0) + (synOn('heavyBore') ? 1 : 0),
+        r: S.bulletR + 2.5 + extraR,
+      });
+      Sound.sfx.lock();
+    } else {
+      pBullet(ox, oy, a, spd, base, { decel: true });
+    }
   }
   // 散射喷嘴：用「弹丸数量」换「单发威力」，把「命中」变成「覆盖」。
   // ⚠️ 扇形弹走同一套 pBullet，所以穿甲 / 跳弹 / 制导 / 裂变会**全部自动继承**。
@@ -1596,10 +1798,43 @@ function damageEnemy(e, dmg, dx, dy, crit, kb = 1, quiet = false) {
       floatText(e.x, e.y - e.r - 4, T('float.silver'), G.S.silverGold ? '#ffcd75' : '#cfe8ff', .55);
     }
   }
+  // 死亡印记（借劫「死亡印记」）：直接命中给目标**记账**，计时到期引爆（见 detonateMark）。
+  //    ⚠️ 只记**非 quiet 的直接命中** —— 爆炸 / 电链这类范围伤害不该偷记，
+  //       否则一发高爆就能把整场都挂上账，玩家根本看不懂钱是哪来的。
+  //    ⚠️ 记的是**扣完血之后的实际伤害**（已被铁壁 / condMul 处理过），
+  //       所以「打在装甲上」的那部分不会算进账里 —— 这才叫「打得多爆得狠」。
+  if (G.S.mark > 0 && !quiet) {
+    e.markT = G.S.markT;
+    e.markAcc = (e.markAcc || 0) + dmg;
+  }
   // 普通命中不加凝滞（每发都冻会变幻灯片），只在暴击时给一记顿挫
   if (crit && e.hp > 0) { freeze(0.028); addShake(SHAKE.crit); }
   if (e.hp <= 0) killEnemy(e);
   else if (!quiet) Sound.sfx.hit();
+}
+
+/* 死亡印记的引爆（2026-10-09）
+   把「这段时间里它挨了多少」按 markPct 结算成一次**真实伤害**（直接扣血，不吃 condMul）。
+   ⚠️ 上限夹 `e.maxHp * 0.5`：不夹的话，一套爆发叠满能把巨像一击带走，
+      这张卡会从「集火窗口」变成「核按钮」。
+   ⚠️ 引爆**不再**走 damageEnemy —— 那会让它再次触发记账 / 圣银叠层 / 暴击判定，
+      形成「引爆 → 记账 → 再引爆」的循环（见 mark 卡那段注释）。 */
+function detonateMark(e) {
+  const S = G.S;
+  const acc = e.markAcc || 0;
+  e.markAcc = 0; e.markT = 0;
+  if (acc <= 0 || e.hp <= 0) return;
+  const dmg = Math.min(acc * S.markPct, e.maxHp * 0.5);
+  const x = e.x, y = e.y;
+  ring(x, y, 24, S.markGold ? '#ffcd75' : '#c070f0', .32, 2);
+  burst(x, y, 14, S.markGold ? ['#ffcd75', '#f4f4f4'] : ['#c070f0', '#f4f4f4'], 140, .45, 2, true);
+  Sound.sfx.boom();
+  if (G.hitFlashN < 90) { addNum(x, y - e.r - 10, dmg, true); G.hitFlashN++; }
+  floatText(x, y - e.r - 4, T('float.mark'), S.markGold ? '#ffcd75' : '#c070f0', .6);
+  e.hp -= dmg;
+  // 「印记爆破」协同（印记 × 高爆）：引爆同时炸开一圈
+  if (synOn('markBurst')) explode(x, y, 46, dmg * 0.5, true);
+  if (e.hp <= 0) killEnemy(e);
 }
 
 function dropPickup(type, x, y, v = 1) {
@@ -1782,7 +2017,62 @@ function hurtPlayer(dmg) {
   buzz(22);   // 手机上受击给一下短震（桌面上恒为空操作）
   G.vign = 1;   // 受击暗角，随时间衰减
   burst(G.px, G.py, 14, ['#e04060', '#ffcd75'], 110, .5, 2, true);
-  if (S.hp <= 0) { S.hp = 0; die(); }
+  // 荆棘甲壳：把这一下**实际扣掉的血**按比例弹回周身（护盾挡掉的那部分不算 ——
+  //    有盾时荆棘就该弱，否则同一份伤害吃两遍收益）。
+  if (S.thorns > 0 && G.thornCd <= 0) { G.thornCd = 0.2; thornBurst(dmg); }
+  if (S.hp <= 0) {
+    // 无尽怒火：这一击本该致死 → 血锁 1 并进入数秒怒火（免死 + 射速 / 移速飙升）
+    if (tryUndying()) return;
+    // ⚠️ 怒火**仍在持续**时也必须锁 1，不能走到 die()。
+    //    少了这一句，怒火期间的第二次致死伤会直接把人打死 —— 那这张卡就只剩
+    //    「挡一下」而不是「这几秒你不会死」，和卡面写的不一样。
+    if (G.undyingT > 0) { S.hp = 1; return; }
+    S.hp = 0; die();
+  }
+}
+/* 荆棘甲壳（借拉莫斯「尖刺防御」/「荆棘之甲」，2026-10-09）
+   ⚠️ 至多弹 4 个目标：不设上限的话，一波十只杂兵贴上来时一次受击就是全场 AOE，
+      它从「反击」变成「清屏」，和「脉冲核心」的定位撞车。
+   ⚠️ 质变给的是**附带减速**而不是「转成护盾」—— 后者依赖 S.shieldMax，
+      没装护盾卡的局里这一条会静默失效（看着像质变没生效）。 */
+function thornBurst(dmg) {
+  const S = G.S;
+  const R = S.thornR;
+  const back = dmg * S.thornPct * (synOn('thornPlate') ? 1.6 : 1);
+  if (back <= 0) return;
+  ring(G.px, G.py, R, S.thornGold ? '#ffcd75' : '#ef7d57', .3, 2);
+  burst(G.px, G.py, 10, S.thornGold ? ['#ffcd75', '#f4f4f4'] : ['#ef7d57', '#ffcd75'], 130, .35, 2, true);
+  Sound.sfx.zap();
+  buildGrid();
+  let n = 0;
+  forNear(G.px, G.py, R, e => {
+    if (e.dead || e.hp <= 0 || n >= 4) return;
+    const d = Math.hypot(e.x - G.px, e.y - G.py);
+    if (d > R + e.r) return;
+    n++;
+    damageEnemy(e, back, (e.x - G.px) / (d || 1), (e.y - G.py) / (d || 1), false, 1.5, true);
+    if (S.thornGold) e.slow = Math.max(e.slow || 0, 0.35);
+  });
+}
+/* 无尽怒火（借泰达米尔「无尽怒火」，2026-10-09）
+   ⚠️ 判定必须在 `S.hp` 已经扣成负数/零**之后**、`die()` 之前 —— 它要的就是「这一击会致死」。
+   ⚠️ 怒火期间血**锁 1**（updatePlayer 里每帧兜底），不是无敌：该吃的伤害照吃，
+      只是不会死 —— 怒火一结束如果还站在弹幕里，那是真的会死。
+   ⚠️ 冷却极长（40~28 秒，质变 18）：它是「整局只有几次」的按钮，不是常规生存卡。 */
+function tryUndying() {
+  const S = G.S;
+  if (!S.undying || G.undyingT > 0 || G.undyingCdT > 0) return false;
+  S.hp = 1;
+  G.undyingT = S.undyingDur;
+  G.undyingCdT = S.undyingCd;
+  G.inv = 0.6;
+  G.vx *= 0.3; G.vy *= 0.3;
+  ring(G.px, G.py, 40, '#e04060', .45, 3);
+  ring(G.px, G.py, 78, S.undyingGold ? '#ffcd75' : '#ef7d57', .6, 2);
+  burst(G.px, G.py, 26, ['#e04060', '#ffcd75', '#f4f4f4'], 180, .6, 2, true);
+  Sound.sfx.rage(); addShake(6); freeze(0.1);
+  banner(T('bn.undying'), T('bn.undyingSub'), '#e04060', 2.4);
+  return true;
 }
 
 function die() {
@@ -2063,6 +2353,8 @@ function updateEnemies(dt) {
     if (stunned) { e.root -= dt; e.vx *= 0.82; e.vy *= 0.82; }
     // 圣银弩箭：印记 3 秒不补刀就清空（连续命中才有意义，否则平 A 也能触发）
     if (e.silverT > 0) { e.silverT -= dt; if (e.silverT <= 0) e.silver = 0; }
+    // 死亡印记：倒计时在这里走（**在 boss 的 continue 之前**，巨像也吃这一套）
+    if (e.markT > 0) { e.markT -= dt; if (e.markT <= 0) detonateMark(e); }
     // 静止场的减速由 updateAbilities 每帧挂上，这里用完就衰减，出圈立刻恢复
     // spdMul 是生成时按深渊档位定死的（见 spawnEnemy），这里只乘上去
     const spd = stunned ? 0
@@ -2439,7 +2731,20 @@ function updatePlayer(dt) {
   const slowMul = 1 - slow;
   // 杀戮狂热：击杀后短暂抬升推进与极速。倍率只作用在**消费点**，不进 S.spd（避免被续档重放叠死）。
   if (G.rampageT > 0) G.rampageT -= dt;
-  const rm = G.rampageT > 0 ? (1.18 + S.rampage * 0.07) : 1;   // 1.25 / 1.32 / 1.39
+  // 无尽怒火：怒火期间血锁 1（不是无敌，该吃的伤害照吃），射速与机动飙升。
+  //    ⚠️ 同样只作用在消费点 —— 写进 S.rate / S.spd 会被续档重放叠死。
+  let um = 1;
+  if (G.undyingT > 0) {
+    G.undyingT -= dt;
+    um = 1.5 + S.undying * 0.15;                    // 1.65 / 1.80 / 1.95
+    if (S.hp < 1) S.hp = 1;
+    if (G.undyingT <= 0) {
+      G.undyingT = 0;
+      ring(G.px, G.py, 54, '#e04060', .45, 2);      // 怒火退去：收一圈，提醒「现在会死了」
+      Sound.sfx.fizzle();
+    }
+  }
+  const rm = (G.rampageT > 0 ? (1.18 + S.rampage * 0.07) : 1) * um;   // 狂热 1.25/1.32/1.39 × 怒火
   G.rampageMul = rm;
   const ACC = ACC_BASE * S.spd * slowMul * rm;
   const MAXV = MAXV_BASE * S.spd * slowMul * rm;          // 推进能到的满速
@@ -2719,6 +3024,131 @@ function updateAbilities(dt) {
       Sound.sfx.shoot(); addShake(2);
     }
   }
+  // --- 冰封长箭：冷却就绪朝最近敌人射出一支贯穿冰箭 ---
+  if (S.crystal > 0) {
+    S.crystalT -= dt;
+    if (S.crystalT <= 0) { S.crystalT = S.crystalCd; fireArrow(); }
+  }
+  // --- 瓦解射线：站定蓄力，蓄满射出一条持续激光；一动就断 ---
+  updateBeam(dt);
+  // --- 荆棘甲壳 / 无尽怒火：冷却计时 ---
+  if (G.thornCd > 0) G.thornCd -= dt;
+  if (G.undyingCdT > 0) G.undyingCdT -= dt;
+}
+
+// ============ 第六批（2026-10-09）：海克斯强化 / 英雄技能 ============
+const ARROW_SPD = 190, ARROW_TRAV = 560, ARROW_LIFE = 3.2;
+const BEAM_CHARGE = 0.55, BEAM_TICK = 0.12, BEAM_HALF = 9;
+/* 冰封长箭（借艾希「魔法水晶箭」）
+   一支**独立飞行体**：慢速、贯穿所有目标、沿途冻结，伤害按**已飞里程**递增。
+   ⚠️ 用「已命中列表」而不是「命中即消失」—— 它是贯穿弹，同一个目标不该每帧被结算一次
+      （箭速只有 190px/s，一个目标会被覆盖好几帧）。
+   ⚠️ 冻结对 Boss 不生效（和拘束立场一致）：巨像站定一秒不开火，机制会直接坏掉。 */
+function fireArrow() {
+  const S = G.S;
+  const tgt = nearestN(G.px, G.py, 460, 1)[0];
+  const a = tgt ? Math.atan2(tgt.y - G.py, tgt.x - G.px) : G.aim;
+  const mz = hullNose();
+  G.arrows.push({
+    x: G.px + Math.cos(a) * mz, y: G.py + Math.sin(a) * mz,
+    a, spd: ARROW_SPD, trav: 0, t: 0, life: ARROW_LIFE,
+    dmg: (20 + S.crystal * 14) * S.dmg,
+    freeze: 0.5 + S.crystal * 0.25,
+    gold: S.crystalGold ? 1 : 0, hit: [],
+  });
+  Sound.sfx.lance();
+  ring(G.px, G.py, 16, S.crystalGold ? '#ffcd75' : '#73eff7', .24, 2);
+}
+function updateArrows(dt) {
+  if (!G.arrows.length) return;
+  const S = G.S;
+  for (let i = G.arrows.length - 1; i >= 0; i--) {
+    const a = G.arrows[i];
+    a.t += dt;
+    const step = a.spd * dt;
+    a.x += Math.cos(a.a) * step; a.y += Math.sin(a.a) * step;
+    a.trav += step;
+    if (a.t >= a.life || a.trav > ARROW_TRAV) { G.arrows.splice(i, 1); continue; }
+    // 冰屑拖尾（每 ~10px 撒一粒，密了会糊成一条白线）
+    if ((a.trav | 0) % 10 === 0) {
+      part({ x: a.x, y: a.y, vx: rand(-8, 8), vy: rand(-8, 8), life: .26, max: .26,
+             col: a.gold ? '#ffcd75' : '#cfe8ff', size: 1, drag: 3 });
+    }
+    buildGrid();
+    forNear(a.x, a.y, 26, e => {
+      if (e.dead || e.hp <= 0) return;
+      if (a.hit.indexOf(e) >= 0) return;
+      if ((e.x - a.x) ** 2 + (e.y - a.y) ** 2 > (e.r + 6) ** 2) return;
+      a.hit.push(e);
+      // 越飞越疼：飞满 320px 时 2.2 倍（上限夹 1.2 的加成，别让它变成无限增长）
+      const mul = 1 + Math.min(1.2, a.trav / 320);
+      damageEnemy(e, a.dmg * mul, Math.cos(a.a), Math.sin(a.a), false, 0.8);
+      if (!e.boss) e.root = Math.max(e.root || 0, a.freeze * (synOn('iceBind') ? 1.6 : 1));
+      ring(e.x, e.y, e.r + 6, a.gold ? '#ffcd75' : '#73eff7', .22, 1);
+      part({ x: e.x, y: e.y, vx: 0, vy: 0, life: .2, max: .2, col: '#cfe8ff', size: 2, drag: 4 });
+    });
+  }
+}
+/* 瓦解射线（借维克兹「生命形态瓦解射线」）
+   三段状态机：待机 →（`!G.moving` 时）蓄力 → 发射 → 冷却。
+   ⚠️ 中断判据是 `G.moving`（速度 > 14px/s），不是「玩家按了 W」—— 被撞飞也会断，
+      这是故意的：站桩就是站桩，被打退了就得重新来。
+   ⚠️ 倍率（motionTwin 的静止加成）只在**发射那一刻**读方向、在**每跳结算**读倍率，
+      不写进 S.dmg —— 写进去会被续档重放叠死。 */
+function updateBeam(dt) {
+  const S = G.S;
+  if (S.beam <= 0) return;
+  if (G.beamFire > 0) {
+    G.beamFire -= dt;
+    if (G.moving || G.dead) {                       // 一动就断，蓄力清零、冷却减半
+      G.beamFire = 0; G.beamCh = 0; G.beamT = S.beamCd * 0.5;
+      Sound.sfx.fizzle();
+      return;
+    }
+    G.beamTick -= dt;
+    if (G.beamTick <= 0) { G.beamTick = BEAM_TICK; beamTick(); }
+    if (G.beamFire <= 0) G.beamT = S.beamCd;
+    return;
+  }
+  if (G.beamT > 0) { G.beamT -= dt; G.beamCh = 0; return; }
+  if (G.moving || G.dead) { G.beamCh = Math.max(0, G.beamCh - dt * 2); return; }
+  G.beamCh += dt;
+  if (G.beamCh >= BEAM_CHARGE) {
+    G.beamCh = 0; G.beamFire = S.beamDur; G.beamAng = G.aim; G.beamTick = 0;
+    Sound.sfx.laser(); addShake(2.4);
+  }
+}
+function beamTick() {
+  const S = G.S;
+  const ca = Math.cos(G.beamAng), sa = Math.sin(G.beamAng);
+  const len = S.beamLen;
+  const mul = synOn('motionTwin') ? 1.5 : 1;
+  const dmg = S.beamDmg * S.dmg * mul;
+  for (const e of G.enemies) {
+    if (e.dead || e.hp <= 0) continue;
+    const dx = e.x - G.px, dy = e.y - G.py;
+    const along = dx * ca + dy * sa;
+    if (along < 0 || along > len) continue;
+    const off = Math.abs(-dx * sa + dy * ca);
+    if (off > BEAM_HALF + e.r) continue;
+    damageEnemy(e, dmg, ca, sa, false, 0.3, true);
+  }
+  // 质变：站桩的回报 —— 射线经过的敌弹被蒸发。不给这个，没人愿意为它停下来。
+  if (S.beamGold) {
+    for (let i = G.ebullets.length - 1; i >= 0; i--) {
+      const b = G.ebullets[i];
+      const dx = b.x - G.px, dy = b.y - G.py;
+      const along = dx * ca + dy * sa;
+      if (along < 0 || along > len) continue;
+      if (Math.abs(-dx * sa + dy * ca) > BEAM_HALF + 4) continue;
+      burst(b.x, b.y, 3, ['#c070f0', '#f4f4f4'], 60, .2, 1);
+      G.ebullets.splice(i, 1);
+    }
+  }
+  // 每跳一小撮等离子屑，激光才像在「烧」
+  const gx = G.px + ca * (40 + rand(0, len - 40)), gy = G.py + sa * (40 + rand(0, len - 40));
+  part({ x: gx, y: gy, vx: rand(-20, 20), vy: rand(-20, 20), life: .22, max: .22,
+         col: S.beamGold ? '#ffcd75' : '#c070f0', size: 1, drag: 3 });
 }
 
 /* 风之障壁：把 G.walls 里还活着的拦截线逐帧推进，并吞掉穿过它的敌弹。
@@ -2998,7 +3428,8 @@ function updateBullets(dt) {
     });
     if (!hit) continue;
     const S = G.S;
-    const crit = Math.random() < S.crit;
+    // 爆头协议：b.crit 为 true 时**必定**暴击，绕开随机判定（见 pBullet 的 o.crit）
+    const crit = b.crit === true ? true : Math.random() < S.crit;
     // 跳弹的回报（2026-10-03 加强）：弹过一次 +bounceBoost，按**已弹次数**累加。
     // ⚠️ 用独立的 bounceN 计数，不要拿 b.bounce 反推 —— 那是「还剩几次」，
     //    而且中途拿卡会让剩余次数变化，反推出来的伤害会莫名其妙地涨。
@@ -3384,6 +3815,7 @@ function step(dt) {
   updateMines(dt);
   updateWalls(dt);
   updateClones(dt);
+  updateArrows(dt);
   updateEBullets(dt);
   updatePickups(dt);
   updateParts(dt);
@@ -3497,6 +3929,27 @@ function drawEnemies() {
         ctx.strokeStyle = '#f4f4f4'; ringPx(e.x, e.y, e.r + 5, 1);
         ctx.globalAlpha = 1;
       }
+    }
+    // 死亡印记：头顶一枚符文 + 一条倒计时条。
+    //    ⚠️ 必须画出来 —— 印记是**延迟结算**的账，看不见倒计时的话玩家只会觉得
+    //       「它怎么突然掉了一大截血」，而不是「我刚才那一轮打得多狠」。
+    //    ⚠️ 放在 if/else **之外**：Boss 也会被挂账（且夹在 maxHp×0.5，更需要看见）。
+    if (e.markT > 0 && e.markAcc > 0) {
+      const k = Math.max(0, Math.min(1, e.markT / (G.S.markT || 1)));
+      const col = G.S.markGold ? '#ffcd75' : '#c070f0';
+      const y0 = Math.round(e.y - e.r - 9);
+      ctx.save();
+      ctx.globalAlpha = 0.55 + Math.sin(e.t * 16) * 0.2;
+      ctx.fillStyle = col;
+      ctx.beginPath();                                   // 菱形符文
+      ctx.moveTo(e.x, y0 - 4); ctx.lineTo(e.x + 3.5, y0);
+      ctx.lineTo(e.x, y0 + 4); ctx.lineTo(e.x - 3.5, y0);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 0.8;                             // 已走完的部分（越短 = 越快爆）
+      ctx.fillRect(Math.round(e.x - 8), y0 + 7, Math.round(16 * k), 2);
+      ctx.globalAlpha = 0.22;
+      ctx.fillRect(Math.round(e.x - 8 + 16 * k), y0 + 7, Math.max(0, Math.round(16 * (1 - k))), 2);
+      ctx.restore();
     }
   }
 }
@@ -3705,6 +4158,9 @@ const BKIND = {
   // 弹片 / 无人机有自己的家族，不跟着主炮的装配长 —— 它们是「别的东西」，不是主炮的缩小版
   shard: { fam: 'frag', by: 'fission', tint: S => S.fissionGold ? 'gold' : 'amber' },
   drone: { fam: 'nub', by: 'drone', tint: () => 'gold' },
+  // 爆头弹：跟着主炮的家族长（fam: true），但整发大一号、**恒金**。
+  //    它出现的频率是「每第 N 发」，在没有别的提示的情况下，金色是「这一发很重」唯一可读的信号。
+  headshot: { fam: true, size: true, sizeAdj: 1, tint: () => 'gold' },
 };
 // ③ 卡带来的配色覆盖（低优先级：质变金 > 卡 > 来源默认）
 //    只放「叙事上真的改写了弹药」的卡，别每张卡都给一份颜色，那样颜色就贬值了。
@@ -3800,6 +4256,7 @@ function drawPBullets() {
   const Lspray = BulletSkin.make(bulletLookSpec('spray'));
   const Lshard = BulletSkin.make(bulletLookSpec('shard'));
   const Ldrone = BulletSkin.make(bulletLookSpec('drone'));
+  const Lhead = G.S.headshot > 0 ? BulletSkin.make(bulletLookSpec('headshot')) : null;
   // 已经弹过的那几发：可能同时存在，所以 multi-hotmirror 也只解析一次
   let Lhot = null, LhotB = null;
   if (G.S.bounce > 0) {
@@ -3815,6 +4272,7 @@ function drawPBullets() {
       case 'spray': look = Lspray; break;
       case 'shard': look = Lshard; break;
       case 'drone': look = Ldrone; break;
+      case 'headshot': if (Lhead) look = Lhead; break;
     }
     if (Lhot && (b.bounceN | 0) > 0 && (b.kind === 'main' || b.kind === 'rear')) {
       look = b.kind === 'rear' ? LhotB : Lhot;
@@ -4285,9 +4743,12 @@ function render() {
   drawMines();
   drawPickups();
   drawPBullets();
+  drawArrows();     // 冰封长箭与弹丸同层（它是慢速飞行体，不该盖住敌机）
   drawEnemies();
   drawDrones();
   drawPlayer();
+  drawUndying();    // 怒火裹在船身之上：这几秒「打不死」必须是画面上最响的信息
+  drawBeam();       // 射线压在船身之上：它是从炮口喷出去的，必须盖住被烧的敌机
   if (touchMode && !BOT && state === 'play' && G && !G.dead) drawAimMark();   // 手机版悬浮瞄准标
   drawLances();     // 光矛压在船身之上：它是「刚打出去」的一击，必须盖住一切
   drawEBullets();

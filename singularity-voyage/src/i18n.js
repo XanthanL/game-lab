@@ -217,6 +217,9 @@ const UI = {
     // 第四批（2026-10-03）
     'bn.rewind': '时空回溯',
     'bn.rewindSub': '回到三秒前 · 船体部分修复',
+    // 第六批（2026-10-09）
+    'bn.undying': '无尽怒火',
+    'bn.undyingSub': '这几秒你不会死 · 火力与机动飙升',
     'toast.mute': '静音',
     'toast.unmute': '声音开',
     'toast.fitLv': '装配等级 {0}',
@@ -224,6 +227,7 @@ const UI = {
     'toast.allMaxSub': '本段奖励折算为分数 · 船体已修复',
     'float.block': '格挡',
     'float.silver': '圣银',
+    'float.mark': '印记引爆',
 
     // ---- 其他 ----
     'vol.music': '音乐',
@@ -423,6 +427,8 @@ const UI = {
     'bn.unlock': 'HULL UNLOCKED · {0}',
     'bn.rewind': 'CHRONO REWIND',
     'bn.rewindSub': 'Back 3s · hull partly restored',
+    'bn.undying': 'UNDYING RAGE',
+    'bn.undyingSub': 'You cannot die · firepower and speed surge',
     'toast.mute': 'MUTED',
     'toast.unmute': 'SOUND ON',
     'toast.fitLv': 'FITTED LV {0}',
@@ -430,6 +436,7 @@ const UI = {
     'toast.allMaxSub': 'Reward converted to score · hull repaired',
     'float.block': 'BLOCK',
     'float.silver': 'SILVER',
+    'float.mark': 'MARK',
 
     // ---- Misc ----
     'vol.music': 'MUSIC',

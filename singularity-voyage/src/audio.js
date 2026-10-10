@@ -90,6 +90,8 @@ const Sound = (() => {
     // Boss 大激光：长下扫 + 低频冲击
     laser() { tone({ f: 2000, f2: 70, d: 0.9, type: 'sawtooth', v: 0.2 }); noise({ d: 1.0, v: 0.55, f: 3200, f2: 55 }); tone({ f: 52, f2: 24, d: 1.0, type: 'sine', v: 0.9 }); },
     lock() { tone({ f: 1760, d: 0.06, v: 0.06 }); tone({ f: 1760, d: 0.06, v: 0.06, t0: 0.12 }); },
+    // 无尽怒火：一次低频怒吼 + 上行咆哮，要「这一下没死成」的分量
+    rage() { tone({ f: 58, f2: 34, d: 0.85, type: 'sine', v: 0.95 }); tone({ f: 140, f2: 420, d: 0.5, type: 'sawtooth', v: 0.18 }); noise({ d: 0.7, v: 0.4, f: 2200, f2: 260 }); tone({ f: 300, f2: 900, d: 0.34, type: 'square', v: 0.09, t0: 0.06 }); },
     graze() { if (!thr('graze', 70)) return; tone({ f: 2600, f2: 3200, d: 0.03, v: 0.03, type: 'triangle' }); },
     eshot() { if (!thr('eshot', 110)) return; tone({ f: 320, f2: 150, d: 0.06, v: 0.032 }); },
     nova() { noise({ d: 0.4, v: 0.24, f: 7000, f2: 380, type: 'bandpass', q: 1.5 }); tone({ f: 1300, f2: 320, d: 0.3, type: 'triangle', v: 0.12 }); },
