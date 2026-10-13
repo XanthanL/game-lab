@@ -7,7 +7,10 @@
 <meta name="theme-color" content="#05060d">
 <title>奇点旅途 · SINGULARITY VOYAGE</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%231a1c2c'/><rect x='5' y='3' width='3' height='2' fill='%2373eff7'/><rect x='2' y='3' width='2' height='2' fill='%233b5dc9'/><rect x='0' y='3' width='2' height='2' fill='%23ffcd75'/></svg>">
-<link rel="preload" href="assets/fusion-pixel-12.woff2" as="font" type="font/woff2" crossorigin>
+<!-- ⚠️ 这里**故意不 preload 字体**（2026-10-13）：
+     preload 是 High 优先级，会和下面的 game.js 抢带宽。手机上实测（120 kbps 限速）
+     首屏 22.4s 里有 9s 是字体吃掉的。现在字体走 CSS 发现 + font-display:swap，
+     先用 monospace 顶上、到了自动换成像素字，不占关键路径。 -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -224,6 +227,12 @@
   var msgs = ['校准导航阵列…', '装载弹道数据库…', '点亮星图航段…', '注入反应堆燃料…', '跃迁引擎预热…'];
   var i = 0;
   setInterval(function () { i = (i + 1) % msgs.length; st.textContent = msgs[i]; }, 520);
+  // 慢网兜底提示：脚本还在路上时别让人以为死了。
+  // game.js 一旦 boot 起来就会切走 #loading，这条只是「超过 9s 还没动静」时的说明文字。
+  setTimeout(function () {
+    if (!st.isConnected) return;
+    st.textContent = '仍在装载…（网络较慢，请稍候）';
+  }, 9000);
 })();
 </script>
 

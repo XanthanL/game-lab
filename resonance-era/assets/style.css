@@ -688,6 +688,411 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.9;
 }
 
+/* 拓片辑里挂在这一章前面的那条：接在原引文后面，更小、更淡。
+   它不是这一章自己的引文 —— 那一句的字数跟正文绑死，动不得。这张是后来贴上去的。 */
+.ch-epigraph-2 {
+  margin: -14px 0 30px;
+  padding-top: 14px;
+  padding-left: 1.15em;
+  border-left: 1px solid var(--line);
+}
+.ch-epigraph-2 .epi-k {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-indent: 0;
+}
+.ch-epigraph-2 .epi-q {
+  font-size: calc(var(--reader-fs) * 0.86);
+  line-height: 1.8;
+  color: var(--ink-3);
+}
+.ch-epigraph-2 .epi-s { font-size: 10px; }
+.ch-epigraph-2 .epi-link {
+  display: inline-block;
+  margin-top: .5em;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--ink-3);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-2);
+  text-indent: 0;
+}
+.ch-epigraph-2 .epi-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* 谚语页上「挂在第几章前面」的那条回路 */
+.pv-goto {
+  display: inline-block;
+  margin: 12px 0 0 1.15em;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--ink-3);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-2);
+  transition: color .15s ease, border-color .15s ease;
+}
+.pv-goto b { font-weight: 600; letter-spacing: .06em; }
+.pv-goto:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---------- 8.5 古泰拉谚语 ----------
+   与章首引文同一套语言：左边一条发丝线，serif 正文 + mono 出处，不加装饰。
+   只有一版，没有折叠 —— 2026-10-13 起页面上不许再出现替换前的句子。 */
+.pv-cover { margin-bottom: 26px; }
+
+.pv-note {
+  margin: 0 0 24px;
+  padding: 2px 0 2px 1.15em;
+  border-left: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.85;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+
+.pv-list { list-style: none; margin: 0; padding: 0; }
+.pv-item { padding: 28px 0 26px; border-bottom: 1px solid var(--line); }
+
+.pv-head {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  margin-bottom: 13px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pv-head .pv-n {
+  font-size: 13px;
+  letter-spacing: .12em;
+  color: var(--accent);
+}
+
+.pv-quote {
+  margin: 0 0 13px;
+  padding: 2px 0 2px 1.15em;
+  border-left: 1px solid var(--line-2);
+}
+.pv-quote .l {
+  display: block;
+  font-family: var(--serif);
+  font-size: calc(var(--reader-fs) * 1.02);
+  line-height: 1.92;
+  letter-spacing: .03em;
+  color: var(--ink);
+}
+.pv-quote .l + .l { margin-top: .4em; }
+
+.pv-src {
+  margin: 0;
+  padding-left: 1.15em;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.8;
+  letter-spacing: .03em;
+  color: var(--ink-3);
+}
+
+/* 目录页上的附录入口 */
+.pv-entry {
+  display: block;
+  margin-bottom: 26px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: border-color .15s ease, transform .15s ease;
+}
+.pv-entry:hover { border-color: var(--accent); transform: translateY(-1px); }
+.pv-e-k {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 7px;
+}
+.pv-e-t {
+  display: block;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  margin-bottom: 5px;
+}
+.pv-e-n {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--ink-3);
+}
+
+/* 侧栏附录条目：跟 .chapter-list 长得一样，只是它不在任何一卷里 */
+.rail-extra {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.rail-extra a {
+  display: flex;
+  gap: 10px;
+  padding: 7px 9px;
+  text-decoration: none;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  border-left: 2px solid transparent;
+  transition: background-color .15s ease, color .15s ease;
+}
+.rail-extra a:hover { background: rgba(0, 47, 167, 0.06); color: var(--ink); }
+.rail-extra a .n {
+  flex: none;
+  width: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  padding-top: 2px;
+}
+.rail-extra a em {
+  display: block;
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.rail-extra a.active {
+  background: var(--mark);
+  color: var(--mark-ink);
+  font-weight: 600;
+  border-left-color: var(--accent);
+}
+.rail-extra a.active .n,
+.rail-extra a.active em { color: var(--mark-ink); }
+
+/* ---------- 8.6 厥初 ----------
+   与拓片辑同一个考古层（拓片是墙上的字，厥初是册子上的人型），
+   所以共用 .pv-cover / .pv-note 那套：serif 正文 + mono 读数，不加装饰。
+   多出来的只有两样：九轴读数条、成/积两栏。 */
+.jc-dims { margin: 0 0 30px; }
+.jc-dims h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 10px;
+}
+.jc-dims dl { margin: 0; display: grid; gap: 4px; }
+.jc-dims dl > div {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 6px 0 6px 1.15em;
+  border-left: 1px solid var(--line);
+}
+.jc-dims dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--accent);
+  padding-top: 2px;
+}
+.jc-dims dd {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.jc-dims dd b { font-weight: 600; letter-spacing: .04em; }
+.jc-dims dd span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+
+.jc-grp { margin-bottom: 34px; }
+.jc-grp > h2 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  margin: 0 0 6px;
+}
+.jc-grp > h2 span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .2em;
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+.jc-g-note {
+  margin: 0 0 16px;
+  padding-left: 1.15em;
+  border-left: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.8;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+
+.jc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.jc-item {
+  padding: 20px 20px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.jc-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--line);
+}
+.jc-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .16em;
+  color: var(--accent);
+}
+.jc-num.is-none { color: var(--ink-3); }
+.jc-name {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--ink);
+}
+.jc-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  color: var(--ink-3);
+}
+.jc-zai {
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--ink-2);
+}
+.jc-zai.is-off { border-color: var(--line); color: var(--ink-3); text-decoration: line-through; }
+
+.jc-core {
+  margin: 0 0 10px;
+  padding-left: 1.15em;
+  border-left: 2px solid var(--line-2);
+  font-family: var(--serif);
+  font-size: calc(var(--reader-fs) * 1.04);
+  line-height: 1.85;
+  letter-spacing: .03em;
+  color: var(--ink);
+}
+.jc-quote {
+  margin: 0 0 14px;
+  padding-left: 1.15em;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.85;
+  letter-spacing: .04em;
+  color: var(--ink-2);
+}
+.jc-quote::before { content: '「'; }
+.jc-quote::after  { content: '」'; }
+
+/* 九轴读数：一格一轴，基线在中线。正值往上，负值往下。 */
+.jc-vec {
+  display: flex;
+  gap: 3px;
+  height: 26px;
+  margin: 0 0 15px;
+  padding: 3px 0;
+}
+.jc-v {
+  position: relative;
+  flex: 1;
+  background: linear-gradient(to bottom, transparent 49.6%, var(--line) 49.6%, var(--line) 50.4%, transparent 50.4%);
+}
+.jc-v b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  min-height: 1px;
+  background: var(--accent);
+  opacity: .78;
+}
+.jc-v b:only-child { opacity: .78; }
+
+.jc-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 13px; }
+.jc-side { min-width: 0; }
+.jc-side .k {
+  display: block;
+  margin-bottom: 5px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .24em;
+  color: var(--ink-3);
+}
+.jc-side p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.82;
+  letter-spacing: .01em;
+  color: var(--ink-2);
+  text-align: justify;
+}
+/* 积（shadow）是翻刀：不换颜色，只把左边那条线换成实线 —— 它是同一段话的后半截 */
+.jc-side.is-shadow p {
+  padding-left: 11px;
+  border-left: 1px solid var(--line-2);
+  color: var(--ink);
+}
+
+.jc-trace,
+.jc-meta {
+  margin: 0;
+  padding-left: 1.15em;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.8;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+}
+.jc-trace { margin-bottom: 5px; }
+.jc-trace .k { color: var(--ink-2); margin-right: 6px; }
+
+@media (max-width: 680px) {
+  .jc-sides { grid-template-columns: 1fr; gap: 12px; }
+  .jc-item { padding: 17px 16px 15px; }
+  .jc-vec { height: 22px; }
+}
+
 /* ---------- 9. 加载 / 出错 ---------- */
 .notice {
   font-family: var(--sans);
@@ -828,9 +1233,13 @@ body.drawer-open .scrim { opacity: 1; visibility: visible; }
   .stage { padding: 18px 15px calc(84px + env(safe-area-inset-bottom, 0px)); }
 }
 
-/* 目录页不需要翻章按钮 */
-body[data-view="catalog"] .mobilebar .jump { display: none; }
-body[data-view="catalog"] .mobilebar .toc-btn { flex: 3; }
+/* 目录页 / 谚语页不需要翻章按钮 */
+body[data-view="catalog"] .mobilebar .jump,
+body[data-view="proverbs"] .mobilebar .jump,
+body[data-view="juechu"] .mobilebar .jump { display: none; }
+body[data-view="catalog"] .mobilebar .toc-btn,
+body[data-view="proverbs"] .mobilebar .toc-btn,
+body[data-view="juechu"] .mobilebar .toc-btn { flex: 3; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

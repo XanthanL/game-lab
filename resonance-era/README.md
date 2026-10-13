@@ -2,7 +2,7 @@
 
 ## 长篇科幻小说在线阅读平台
 
-硬科幻 / 反乌托邦 / 革命叙事。底层集群里的一群人，和系统记账的方式。
+硬科幻 / 反乌托邦 / 共振叙事。底层集群里的一群人，和系统记账的方式。
 
 ---
 
@@ -154,7 +154,7 @@ python -m http.server 8000
 window.NOVEL_DATA = {
   title: "共振纪元",
   titleEn: "RESONANCE ERA",
-  subtitle: "硬科幻 / 反乌托邦 / 革命叙事",
+  subtitle: "硬科幻 / 反乌托邦 / 共振叙事",
   manuscriptDir: "03_manuscript",
   volumes: [
     { id: 1, title: "第一卷", subtitle: "世界观奠基篇", range: [1, 12] },

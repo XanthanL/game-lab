@@ -28,7 +28,7 @@
 window.NOVEL_DATA = {
   title: "共振纪元",
   titleEn: "RESONANCE ERA",
-  subtitle: "硬科幻 / 反乌托邦 / 革命叙事",
+  subtitle: "硬科幻 / 反乌托邦 / 共振叙事",
   manuscriptDir: "03_manuscript",
   volumes: [
     { id: 1, title: "第一卷", subtitle: "众生", range: [1, 12] },

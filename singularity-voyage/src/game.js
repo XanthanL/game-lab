@@ -293,38 +293,104 @@ const formForWave = w => w <= WAVES
   ? (MAIN_FORMS[w] || 'purge')
   : ENDLESS_FORM_CYCLE[(w - ENDLESS_FROM) % ENDLESS_FORM_CYCLE.length];
 
-// 7 只巨像。**每只都必须改变玩家的决策**（和「敌型设计原则」同一条铁律），
-// 不能只是换个血条和配色：
-//   母岩   冲撞 —— 要绕侧后方，不能站正面
-//   狱卒   三套弹幕轮转 —— 读缝穿过去
-//   之门   含激光 —— 拼续航
-//   蜂巢   持续产兵 —— 必须顶着弹幕优先点掉母体，否则被小怪淹没
-//   磁暴   引力井 —— 一直把你往里拽，得靠冲刺 / 制动对抗拉力
-//   锻炉   一路留火场 —— 场地被逐渐切割，别往它去过的地方飞
-//   棱镜   分光激光扇 —— 光束之间有缝，要贴着缝站
+/* ============ 三形态系统（2026-10-11）============
+   老版本只有一条「45% 血 → enraged」的判定，八只巨像**共用同一份变强脚本**：
+   血掉一半之后只是冷却快了、走得快了、撒一波相同的小怪 —— 玩家说出来叫「它红了」，
+   说不出任何一个巨像「变了什么」。这一版把「阶段」从**开关**改成**表**：
+
+     forms: [{ p, pats, cd, spd, ... }, ...]     // p = 剩余血量比例，低于它就切到这一档
+
+   每只巨像的三个形态各自决定：用哪几套弹幕（pats）、开火间隔（cd）、机动（spd）、
+   以及一个**专属的场地 / 行为改动**（mods）。第三条最重要 ——
+   换弹幕顺序只是「变难」，换行为才是「变了」：
+
+     x: 1         第三阶段**换模型**（spr 从 'hive' 变 'hive_x'）
+     vuln: 1.35   这一形态的易伤倍率（露出弱点了，就该打得动）
+     aura         'pull' 引力井 / 'push' 反极推开 / 'fire' 拖火 /
+                  'web' 织网 —— 把「它在改造场地」这件事显式化
+     turrets: 2   进形态时架两座可击破的炮塔（它真的长出炮台了）
+     phantoms: 2  分裂出两个会一起开火的幻影
+     leaks: 1     每个开火 tick 额外漏一只虫（巢破了）
+   
+   ⚠️ `pats` 要按「这一形态的节奏」重排，不是在原数组尾部追加 ——
+      阶段二/三应该是**新的循环**，最凶的那套前置，而不是把它塞在轮转的最后。
+   ⚠️ `cd` 越低越难，但要留给玩家喘息：阶段三一律不低于 1.0s。 */
 const BOSSES = {
-  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 860, r: 21, pats: ['charge', 'spread'], color: '#c070f0',
+  motherrock: { name: '母岩', en: 'MOTHER ROCK', spr: 'motherrock', hp: 860, r: 21, color: '#c070f0',
                 trait: '冲撞 + 扇形弹幕，冲撞前有蓄力 —— 绕侧后方输出',
-                traitEn: 'Rams and fires spreads; it winds up before ramming — flank it' },
-  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 900, r: 22, pats: ['ring', 'spiral', 'fan'], color: '#ff5577',
+                traitEn: 'Rams and fires spreads; it winds up before ramming — flank it',
+                forms: [
+                  { p: 1.00, pats: ['charge', 'spread'], cd: 1.9, spd: 1.0 },
+                  { p: 0.60, pats: ['charge', 'spread', 'ring'], cd: 1.5, spd: 1.2, label: '裂壳', labelEn: 'CRACKED' },
+                  // 熔核暴露 = 它不再有壳：**打得动得多**（vuln），但也撞得更凶
+                  { p: 0.25, pats: ['charge', 'ring', 'charge', 'spread'], cd: 1.05, spd: 1.45, x: 1, vuln: 1.35, label: '熔核', labelEn: 'MOLTEN CORE' },
+                ] },
+  warden:     { name: '环带狱卒', en: 'ORBITAL WARDEN', spr: 'warden', hp: 900, r: 22, color: '#ff5577',
                 trait: '环形 / 螺旋 / 扇形三套弹幕轮转，找缝穿过去',
-                traitEn: 'Rotates ring, spiral and fan patterns — thread the gaps' },
-  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 940, r: 23, pats: ['spiral', 'fan', 'ring', 'laser'], color: '#73eff7',
+                traitEn: 'Rotates ring, spiral and fan patterns — thread the gaps',
+                forms: [
+                  { p: 1.00, pats: ['ring', 'spiral', 'fan'], cd: 1.9, spd: 1.0 },
+                  { p: 0.60, pats: ['ring', 'fan', 'spiral', 'ring'], cd: 1.45, spd: 1.2, label: '加压', labelEn: 'PRESSURISED' },
+                  // 炮臂展开：真的会架上两座能打掉的炮塔，和它自己对射
+                  { p: 0.25, pats: ['crossLaser', 'ring', 'fan'], cd: 1.1, spd: 1.3, x: 1, turrets: 2, label: '展开', labelEn: 'UNFOLDED' },
+                ] },
+  gate:       { name: '奇点之门', en: 'THE GATE', spr: 'gate', hp: 940, r: 23, color: '#73eff7',
                 trait: '四套弹幕含一道激光，血最厚 —— 拼的是续航',
-                traitEn: 'Four patterns including a laser, and the most HP — an endurance test' },
+                traitEn: 'Four patterns including a laser, and the most HP — an endurance test',
+                forms: [
+                  { p: 1.00, pats: ['spiral', 'fan', 'ring', 'laser'], cd: 1.9, spd: 1.0 },
+                  { p: 0.60, pats: ['laser', 'fan', 'spiral', 'ring'], cd: 1.5, spd: 1.2, label: '半开', labelEn: 'AJAR' },
+                  { p: 0.25, pats: ['crossLaser', 'ring', 'laser'], cd: 1.15, spd: 1.4, x: 1, label: '洞开', labelEn: 'OPENED' },
+                ] },
   // ---- 第二批（2026-10-03）：四只新机制 ----
-  hive:       { name: '蜂巢母体', en: 'HIVE MATRIARCH', spr: 'hive', hp: 880, r: 22, pats: ['summon', 'spread', 'ring'], color: '#a7f070',
+  hive:       { name: '蜂巢母体', en: 'HIVE MATRIARCH', spr: 'hive', hp: 880, r: 22, color: '#a7f070',
                 trait: '持续产出虫群 —— 不管它的话小怪会淹没你，优先拆巢',
-                traitEn: 'Keeps birthing swarms — ignore it and you drown; kill the hive first' },
-  tempest:    { name: '磁暴核心', en: 'TEMPEST CORE', spr: 'tempest', hp: 900, r: 21, pats: ['pull', 'ring', 'spiral'], color: '#41a6f6',
+                traitEn: 'Keeps birthing swarms — ignore it and you drown; kill the hive first',
+                forms: [
+                  { p: 1.00, pats: ['summon', 'spread', 'ring'], cd: 2.0, spd: 1.0 },
+                  { p: 0.60, pats: ['summon', 'summon', 'ring', 'spread'], cd: 1.6, spd: 1.2, label: '孵化', labelEn: 'BROODING' },
+                  // 巢破了：不再主动产兵，改成**每个 tick 都在漏** —— 看起来是破口在淌
+                  { p: 0.25, pats: ['summon', 'ring', 'fan'], cd: 1.2, spd: 1.35, x: 1, leaks: 1, label: '破裂', labelEn: 'RUPTURED' },
+                ] },
+  tempest:    { name: '磁暴核心', en: 'TEMPEST CORE', spr: 'tempest', hp: 900, r: 21, color: '#41a6f6',
                 trait: '引力井一直把你往核心拽 —— 靠冲刺和制动顶住，别被拖进弹幕里',
-                traitEn: 'Its gravity well drags you in — dash or brake out, do not get pulled into the fire' },
-  forge:      { name: '熔渣锻炉', en: 'SLAG FORGE', spr: 'forge', hp: 920, r: 22, pats: ['burn', 'fan', 'charge'], color: '#ef7d57',
+                traitEn: 'Its gravity well drags you in — dash or brake out, do not get pulled into the fire',
+                forms: [
+                  { p: 1.00, pats: ['pull', 'ring', 'spiral'], cd: 1.9, spd: 1.0, aura: 'pull' },
+                  { p: 0.60, pats: ['pull', 'ring', 'pull', 'spiral'], cd: 1.5, spd: 1.2, aura: 'pull', label: '过载', labelEn: 'OVERCHARGED' },
+                  // 反极：**引力翻转**。前 80% 局练出来的「往侧后方挣」在这里是错的，
+                  //        现在它把你往外推 —— 一直在它脸上的打法要整个换掉。
+                  { p: 0.25, pats: ['pull', 'ring', 'homing'], cd: 1.1, spd: 1.35, x: 1, aura: 'push', label: '反极', labelEn: 'REVERSED' },
+                ] },
+  forge:      { name: '熔渣锻炉', en: 'SLAG FORGE', spr: 'forge', hp: 920, r: 22, color: '#ef7d57',
                 trait: '飞过的地方留下火场 —— 场地会被它一点点切碎，别往它去过的地方飞',
-                traitEn: 'Leaves burning ground behind it — the arena gets carved up; never fly where it has been' },
-  prism:      { name: '棱镜之眼', en: 'PRISM EYE', spr: 'prism', hp: 900, r: 20, pats: ['beamFan', 'fan', 'ring'], color: '#ffe9a8',
+                traitEn: 'Leaves burning ground behind it — the arena gets carved up; never fly where it has been',
+                forms: [
+                  { p: 1.00, pats: ['burn', 'fan', 'charge'], cd: 2.0, spd: 1.0, aura: 'fire' },
+                  { p: 0.60, pats: ['burn', 'charge', 'fan', 'burn'], cd: 1.55, spd: 1.2, aura: 'fire', label: '升温', labelEn: 'HEATING' },
+                  // 不再是「路过留火」，改成**一路烧成火海**：回头的路被真正封死了
+                  { p: 0.25, pats: ['burn', 'charge', 'ring', 'burn'], cd: 1.15, spd: 1.4, x: 1, aura: 'firestorm', label: '过载', labelEn: 'OVERLOAD' },
+                ] },
+  prism:      { name: '棱镜之眼', en: 'PRISM EYE', spr: 'prism', hp: 900, r: 20, color: '#ffe9a8',
                 trait: '放出分光的激光扇，光束之间留着缝 —— 贴着缝站，别乱窜',
-                traitEn: 'Fires a fan of split beams with gaps between them — stand in a gap, do not scramble' },
+                traitEn: 'Fires a fan of split beams with gaps between them — stand in a gap, do not scramble',
+                forms: [
+                  { p: 1.00, pats: ['beamFan', 'fan', 'ring'], cd: 2.0, spd: 1.0 },
+                  { p: 0.60, pats: ['beamFan', 'ring', 'beamFan'], cd: 1.55, spd: 1.2, label: '聚光', labelEn: 'FOCUSED' },
+                  // 裂相：分出两个幻影一起射。**先打真的那个** —— 幻影打不死本体，
+                  //       但站错位置会被三面夹住。
+                  { p: 0.25, pats: ['beamFan', 'homing', 'ring'], cd: 1.15, spd: 1.3, x: 1, phantoms: 2, label: '裂相', labelEn: 'SPLIT' },
+                ] },
+  // ---- 第三批（2026-10-11）：第八只 ----
+  eclipse:    { name: '星蚀', en: 'ECLIPSE', spr: 'eclipse', hp: 960, r: 22, color: '#ffcd75',
+                trait: '周期性熄灭战场 —— 天黑下来的时候只有它身边看得见，先记住自己在哪',
+                traitEn: 'Blanks the field periodically — when it goes dark only its vicinity stays lit; learn your bearings first',
+                forms: [
+                  { p: 1.00, pats: ['blackout', 'ring', 'fan'], cd: 2.1, spd: 1.0 },
+                  { p: 0.60, pats: ['blackout', 'ring', 'blackout', 'spiral'], cd: 1.6, spd: 1.2, label: '半影', labelEn: 'PENUMBRA' },
+                  // 全蚀：熄得更久更深 —— 这时候你已经没有「看」这个选项了
+                  { p: 0.25, pats: ['blackout', 'crossLaser', 'ring'], cd: 1.2, spd: 1.4, x: 1, esoMul: 1.6, label: '全蚀', labelEn: 'TOTALITY' },
+                ] },
 };
 
 /* ============ 无尽航程 & 深渊强度（搬运自《奇点回响》的 ETIER_* 档位） ============
@@ -1225,6 +1291,76 @@ function drawUndying() {
   ctx.restore();
 }
 
+/* 棱镜·裂相的幻影。
+   ⚠️ 用**同一个精灵**（SPR[p.spr]）而不是另画一张：玩家第一眼要把它认成「第二个它」，
+      而不是「出来个新的东西」。区别只在这个半透明 + 单色描边的处理。
+   ⚠️ 必须闪：不闪的话和本体一样实，玩家会去打它。 */
+function drawPhantoms() {
+  if (!G.phantoms.length) return;
+  const b = G.boss;
+  for (const p of G.phantoms) {
+    const set = SPR[p.spr];
+    if (!set || !onScreen(p.x, p.y, 40)) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.42 + Math.sin(G.t * 7 + p.i * 2.1) * 0.10;
+    ctx.drawImage(set.r[0], Math.round(p.x - set.w / 2), Math.round(p.y - set.h / 2));
+    ctx.restore();
+    // 一圈标明它是假的相位环：不画的话玩家只会觉得本体在闪
+    ctx.save();
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = '#f4f4f4';
+    ringPx(p.x, p.y, set.w / 2 + 3, 1);
+    ctx.restore();
+    if (b) {   // 和本体之间的能量索：说明**它从哪来**
+      ctx.save();
+      ctx.globalAlpha = 0.18; ctx.strokeStyle = b.color;
+      pline(p.x, p.y, b.x, b.y, 2);
+      ctx.restore();
+    }
+  }
+}
+/* 星蚀的熄灭战场（2026-10-11）
+   ⚠️ 做成一个**离屏遮罩**再贴回主画布，而不是直接在主画布上叠 radial gradient：
+      直叠做不到「挖两个洞」（本体周围一圈 + 你自己脚下那一小圈），只能整体变暗；
+      而只留本体一个圈的话，玩家在远处连自己的船都看不见 —— 那不是难度，那是瞎。
+   ⚠️ 遮罩 canvas 复用一张（每帧只清 + 重画），不每帧新建 —— 新建 canvas 会稳定吃掉几毫秒。 */
+let MSK = null;
+function drawBlackout() {
+  if (G.blackout <= 0) return;
+  const L = viewL(), T = viewT();
+  if (!MSK || MSK.width !== W || MSK.height !== H) {
+    MSK = document.createElement('canvas'); MSK.width = W; MSK.height = H;
+  }
+  const m = MSK.getContext('2d');
+  // 淡入淡出：首尾各 0.45s 渐变，中间保持满黑
+  const k = Math.min(1, G.blackout / 0.45, (G.blackoutMax - G.blackout) / 0.45 + 0.15);
+  const peak = 0.93 * Math.max(0, Math.min(1, k));
+  if (peak <= 0.01) return;
+  m.setTransform(1, 0, 0, 1, 0, 0);
+  m.clearRect(0, 0, W, H);
+  m.fillStyle = '#05060d';
+  m.globalAlpha = peak;
+  m.fillRect(0, 0, W, H);
+  // 挖洞：这一层已经铺满了黑，用 destination-out 按径向渐变把「亮度」减掉。
+  m.globalCompositeOperation = 'destination-out';
+  m.globalAlpha = 1;
+  const hole = (wx, wy, R, soft) => {
+    const sx = wx - L, sy = wy - T;
+    const g = m.createRadialGradient(sx, sy, 0, sx, sy, R);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(Math.max(0.01, soft), 'rgba(0,0,0,0.85)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    m.fillStyle = g;
+    m.beginPath(); m.arc(sx, sy, R, 0, TAU); m.fill();
+  };
+  // ① 巨像周围一圈（它的日冕就是唯一光源）
+  const b = G.boss;
+  if (b) hole(b.x, b.y, 210, 0.55);
+  // ② 你自己脚下那一小圈 —— 必须给，否则玩家连自己在哪都不知道
+  if (!G.dead) hole(G.px, G.py, 96, 0.4);
+  m.globalCompositeOperation = 'source-over';
+  ctx.drawImage(MSK, L, T);
+}
+
 function drawMines() {
   if (!G.mines.length) return;
   for (const m of G.mines) {
@@ -1337,6 +1473,8 @@ function newGame(hullId) {
     mines: [],    // 磁暴雷（场上至多 S.mineMax 枚）
     walls: [],    // 风之障壁：机首前方的临时弹幕拦截线（G.walls，靠 t/life 自然消散）
     clones: [],   // 影分身：镜像开火的短暂分身（G.clones，靠 t/life 自然消散）
+    phantoms: [], // 棱镜·裂相的幻影（绕本体转的**武器**，不是敌人 —— 打不死也不掉东西）
+    blackout: 0, blackoutMax: 0,   // 星蚀的熄灭战场：剩余秒 / 本次总时长（渲染算淡入淡出用）
     spinT: 0,     // 审判：旋斩光环的脉冲计时（每 0.22s 结算一次近身伤害）
     rampageT: 0, rampageMul: 1,   // 杀戮狂热：击杀后短暂抬升射速与移速
     // 第六批的新状态（2026-10-09）
@@ -1536,6 +1674,11 @@ function eShot(x, y, ang, spd, r, color, o = {}) {
   G.ebullets.push({
     x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r, color,
     dmg: (o.dmg || 9) * eTierDmg(G.wave), life: o.life || 6, t: 0,
+    // 追命弹（2026-10-11，星蚀/棱镜/磁暴用）：缓慢转向玩家。
+    //   ⚠️ rad/s 单位，敌我一致 —— 玩家的制导弹是 0.62/级，这里给 0.9 看着高，
+    //   但它的初速只有 0.55 倍、且转向有 0.6s 的启动延迟（见 updateEBullets），
+    //   实际手感比玩家自己的制导迟钝得多。
+    homing: o.homing || 0,
   });
 }
 const HOSTILE = { red: '#ff3355', pink: '#ff66cc', purple: '#c070f0', amber: '#ffcd75' };
@@ -1746,6 +1889,10 @@ function condMul(e, quiet) {
   }
   // 狂热：斩杀后的短时全局加成（见 killEnemy 里的挂载点）
   if (G.furyT > 0 && S.exec > 0) m *= 1 + 0.08 * S.exec;
+  // 巨像的形态易伤（2026-10-11）：壳掉了就该打得动。
+  //   ⚠️ 只在条件倍率里乘一次，**不写回任何字段** —— 它是在 damageEnemy 内部消费的临时量，
+  //      落回实体会让续档重放把同一个易伤叠好几遍。
+  if (e.vuln && e.vuln !== 1) m *= e.vuln;
   // 拘束立场：只有「非 quiet」的直接命中才有机会定住目标
   // ⚠️ 敌人身上的字段叫 **e.root**（剩余定身秒数），别和 `S.bind`（卡等级）混 —— updateEnemies 里
   //    读的是 e.root，写错成 e.bind 的话敌人永远不会被解冻，场上会出现一排活的雕像。
@@ -2191,7 +2338,7 @@ function spawnBoss(id) {
   // 无尽里巨像会重复出场（轮换袋），所以它必须真的跟着档位变硬，否则第 3 轮就是纸糊的。
   const hp = b.hp * bossSlotMul(G.wave) * eTierHp(G.wave);
   const e = {
-    type: 'boss', boss: id, name: b.name, en: b.en, spr: b.spr, color: b.color,
+    type: 'boss', boss: id, name: b.name, en: b.en, spr: b.spr, spr0: b.spr, color: b.color,
     // 巨像从**视口正上方**入场、悬停在视口上半区（相机锁在玩家身上，所以它永远在玩家眼前）。
     // 世界大了 3 倍之后如果还按世界中心算，玩家在世界边缘打的时候巨像会在屏幕外。
     x: cam.x, y: viewT() - 40, vx: 0, vy: 0, hp, maxHp: hp, r: b.r * BOSS_SCALE,
@@ -2199,7 +2346,12 @@ function spawnBoss(id) {
     // 同样必须显式给，否则又是 undefined → NaN。
     xp: 6,
     t: 0, flash: 0, cd: 1.6, touchCd: 0, alpha: 1, st: 0, ang: Math.PI / 2,
-    pats: b.pats, patI: 0, patT: 2, phase: 1, enraged: false, entering: true,
+    // form = 当前形态下标（0/1/2）。pats / cd / spd 全部**从 form 里读**，
+    //   不在实体上另存副本 —— 存在副本的话，切形态那一刻忘了同步副本就是「变了但又没变」。
+    forms: b.forms, form: 0, patI: 0,
+    // enraged 保留给 HUD 血条 / 旧逻辑当布尔用（= form > 0）
+    phase: 1, enraged: false, entering: true,
+    vuln: 1, cmp: 0,   // vuln：本体易伤倍率（形态给）；cmp：形态过渡期的镜头/演出计时
   };
   G.enemies.push(e);
   G.boss = e; G.bossRef = b;
@@ -2208,12 +2360,16 @@ function spawnBoss(id) {
   Sound.setMode('boss');
 }
 
+// 当前形态配置。实体上**不存副本**（pats/cd/spd 全在这里读），避免「切了形态忘了同步」。
+function bossForm(e) { return e.forms[e.form] || e.forms[0]; }
+
 function bossFire(e, dx, dy) {
   const R = Math.hypot(dx, dy) || 1; dx /= R; dy /= R;
-  const pat = e.pats[e.patI % e.pats.length];
+  const F = bossForm(e);
+  const pat = F.pats[e.patI % F.pats.length];
   // 主线 +3/段，到 WAVES 封顶；无尽里交给档位速度倍率（它自己也有 1.5 的上限）
   const spd = (92 + Math.min(G.wave, WAVES) * 3) * eTierSpd(G.wave);
-  const fast = e.enraged ? 1.25 : 1;
+  const fast = F.spd || 1;   // 形态的机动倍率同时抬弹速：三形态不只是「更密」，是「更快」
   if (pat === 'charge') {
     e.vx += dx * 260; e.vy += dy * 260;
     Sound.sfx.dash();
@@ -2240,7 +2396,7 @@ function bossFire(e, dx, dy) {
   } else if (pat === 'summon') {
     // 蜂巢：产兵。⚠️ 必须有数量上限 —— 它每 1.9 秒就来一次，不封顶的话
     //   玩家一旦决定先躲不先打，场上会在十几秒内堆到上百只，直接卡死。
-    const n = e.enraged ? 4 : 2;
+    const n = e.form >= 1 ? 4 : 2;
     for (let i = 0; i < n && G.enemies.length < 34; i++) {
       spawnEnemy('reaver', e.x + rand(-26, 26), e.y + rand(-18, 18));
     }
@@ -2268,6 +2424,44 @@ function bossFire(e, dx, dy) {
       G.fx.push({ type: 'laser', x: e.x, y: e.y, ang: base + (i - 2.5) * 0.3, t: 0, life: 1.4, len: 460, w: 6, color: e.color });
     }
     Sound.sfx.laser(); addShake(4);
+  // ---- 第三批（2026-10-11）：三形态系统带来的四套新弹幕 ----
+  } else if (pat === 'blackout') {
+    // 星蚀：熄灭战场。⚠️ 这是全场**唯一一个改变「你能看见多少」的技能**，
+    //   所以它必须有明确的预警（收缩的日冕环）+ 明确的出口（esp Towards boss 那圈始终亮着）。
+    //   持续时长随形态走（esoMul），全蚀时几乎占了整个开火循环的一半。
+    const dur = 2.2 * (F.esoMul || 1);
+    G.blackout = dur; G.blackoutMax = dur;
+    ring(e.x, e.y, 60, '#ffcd75', .5, 2);
+    ring(e.x, e.y, 200, '#b13e53', .7, 2);
+    Sound.sfx.warp(); addShake(3);
+  } else if (pat === 'crossLaser') {
+    // 狱卒/之门/星蚀：四道成十字的**缓慢自转**激光。
+    //   ⚠️ 转是刻意的：静态十字只要站在一个象限就永远安全，转起来才有人味。
+    //   ⚠️ 预警段 (0.5s) 里也要跟着转，否则玩家按预警线的方向站位、开火时却已经转开了。
+    const base = Math.atan2(dy, dx);
+    for (let i = 0; i < 4; i++) {
+      G.fx.push({ type: 'laser', x: e.x, y: e.y, ang: base + i * Math.PI / 2,
+                  t: 0, life: 1.6, len: 460, w: 6, color: e.color, spin: 0.55, host: true });
+    }
+    Sound.sfx.laser(); addShake(4);
+  } else if (pat === 'webbing') {
+    // 网缚：在你**可能要去的地方**（你和 boss 之间）撒减速网，压缩走位而不是直接扣血。
+    //   ⚠️ 撒在自己脚下没意义 —— 目的从来是「让你换路的时候付出代价」。
+    const n = 7;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 1) / (n + 1);
+      addWeb(e.x - dx * R * t + rand(-26, 26), e.y - dy * R * t + rand(-26, 26));
+    }
+    ring(e.x, e.y, 40, '#c070f0', .4, 2);
+    Sound.sfx.dust();
+  } else if (pat === 'homing') {
+    // 追命弹：慢但会拐的重弹。转向率刻意压低 —— 它是「必须主动绕开」而不是
+    //   「永远躲不掉」：直线拉开一段就能把它甩掉，被它咬住是因为你一直在绕圈。
+    const off = rand(TAU);
+    for (let i = 0; i < 3; i++) {
+      eShot(e.x, e.y, off + i / 3 * TAU, spd * 0.55, 4, HOSTILE.amber, { homing: 0.9 });
+    }
+    Sound.sfx.eshot();
   }
 }
 
@@ -2278,44 +2472,146 @@ function updateBoss(e, dt, dx, dy, d) {
     if (e.y > viewT() + 62) { e.entering = false; e.vy = 0; }
     return;
   }
-  if (!e.enraged && e.hp < e.maxHp * 0.45) {
-    e.enraged = true; e.phase = 2;
-    banner(T('bn.enrage'), T('bn.enrageSub', bossName(e)), '#ff5577', 2);
-    Sound.sfx.warn(); addShake(6);
+  // --- 形态推进：找最高一档「血量已经跌破它的阈值」的形态 ---
+  //    从后往前扫，命中就停 —— 玩家一发大伤害跨过两档时应该直接落到最后一档，
+  //    而不是「先演一遍阶段二、再演阶段三」（那会把一次精彩的爆发切成两段过场）。
+  let want = e.form;
+  for (let i = e.forms.length - 1; i > e.form; i--) {
+    if (e.hp < e.maxHp * e.forms[i].p) { want = i; break; }
   }
+  if (want > e.form) bossShiftForm(e, want);
+  const F = bossForm(e);
+
+  // 形态过渡演出期间不开火、不结算接触伤害：这段时间玩家要做的是「看清它变成什么样了」，
+  // 不是被一套连招秒掉。1.1 秒是刻意压到「刚好看清换皮」的长度。
+  if (e.cmpT > 0) { e.cmpT -= dt; updatePhantoms(dt); return; }
+
   // 悬停机动：绕**视口**中心做 8 字（不是世界中心 —— 那样玩家跑到世界另一头就打不着它了），
-  // 狂暴后逼近。
+  // 形态越后越逼近。
+  const mv = F.spd || 1;
   const tx = cam.x + Math.cos(e.t * 0.55) * 128;
-  const ty = viewT() + 78 + Math.sin(e.t * 1.1) * 34 - (e.enraged ? 20 : 0);
-  e.vx += (tx - e.x) * 1.4 * dt * (e.enraged ? 1.5 : 1);
-  e.vy += (ty - e.y) * 1.4 * dt * (e.enraged ? 1.5 : 1);
+  const ty = viewT() + 78 + Math.sin(e.t * 1.1) * 34 - (e.form >= 1 ? 20 : 0);
+  e.vx += (tx - e.x) * 1.4 * dt * mv;
+  e.vy += (ty - e.y) * 1.4 * dt * mv;
   e.vx *= 0.97; e.vy *= 0.97;
   e.x = clamp(e.x + e.vx * dt, e.r, WORLD.w - e.r);
   e.y = clamp(e.y + e.vy * dt, e.r, WORLD.h - e.r);
   e.ang = Math.atan2(dy, dx);
-  // 磁暴核心的**持续**引力井：只在 fire tick 上拽一下的话，玩家会把它当成
-  // 「偶尔被推一把」，而不是「这整片场地都在往里塌」。持续拉力才是它的身份。
-  // ⚠️ 按距离衰减：贴脸时反而松，否则一旦被拽到核心就再也出不来（必死循环）。
-  if (e.pats.indexOf('pull') >= 0) {
-    const pull = (e.enraged ? 132 : 96) * clamp(1 - d / 520, 0.15, 1);
-    G.vx -= (dx / d) * pull * dt;
-    G.vy -= (dy / d) * pull * dt;
+
+  // --- 形态的场地效果（aura）---
+  //    ⚠️ aura 有两种，别混：
+  //       'pull' / 'push' 是**施加在玩家身上的**，在 fieldDrift() 里以位移形式结算
+  //         —— 放在这里改成加速度会被 updatePlayer 的线性刹车整帧吃掉（见 fieldDrift 注释）。
+  //       'fire' / 'firestorm' 是**巨像自己的行为**（路过留火），属于这一侧。
+  if (F.aura === 'fire' || F.aura === 'firestorm') {
+    // 锻炉：路过留火。firestorm 是「一路烧过去」—— 间隔更短、灼面更大，
+    //       它走过的走廊会真的封死，而不是「踩一下会疼」。
+    e.fireT = (e.fireT || 0) - dt;
+    const iv = F.aura === 'firestorm' ? 0.22 : 0.55;
+    if (e.fireT <= 0 && Math.hypot(e.vx, e.vy) > 30) {
+      e.fireT = iv;
+      addFire(e.x - Math.cos(e.ang) * 18, e.y - Math.sin(e.ang) * 18,
+              F.aura === 'firestorm' ? 30 : 22);
+    }
   }
-  e.cd -= dt * (e.enraged ? 1.5 : 1);
+  updatePhantoms(dt);
+
+  e.cd -= dt;
   if (e.cd <= 0) {
     bossFire(e, dx, dy);
     e.patI++;
-    e.cd = (e.enraged ? 1.1 : 1.9) + rand(0.3);
+    e.cd = F.cd + rand(0.3);
+    // 蜂巢·破裂：巢破了就不再「主动产兵」，改成每个 tick 都在从破口漏。
+    //   ⚠️ 和 summon 的区别是它在**每一发之外**额外漏，所以看着像淌而不是吐。
+    if (F.leaks && G.enemies.length < 30) spawnEnemy('reaver', e.x + rand(-22, 22), e.y + rand(-14, 14));
   }
-  // 阶段转换时撒一波小怪
-  if (e.enraged && !e.spawnedAdds) {
+  // 首次进入第二形态时撒一波小怪（保留老行为，玩家已经习惯这个节奏）
+  if (e.form >= 1 && !e.spawnedAdds) {
     e.spawnedAdds = true;
     for (let i = 0; i < 4; i++) spawnEnemy('reaver', e.x + rand(-30, 30), e.y + rand(-20, 20));
   }
 }
 
+/* 切换形态（2026-10-11）
+   ⚠️ 三个动作必须**同时**发生，缺任何一个玩家都读不出「它变了」：
+      ① 换模型（spr → spr_x）   ② 清屏敌弹（给出喘息，也划开两个回合）
+      ③ banner + 一圈碎裂演出
+   只做 ① 的话，玩家在专心躲弹幕的时候根本不会注意到模型换了。 */
+function bossShiftForm(e, fi) {
+  const F = e.forms[fi];
+  e.form = fi; e.phase = fi + 1; e.enraged = true;
+  e.patI = 0; e.cd = 1.0; e.cmpT = 1.1;
+  e.vuln = F.vuln || 1;
+  if (F.x) e.spr = (e.spr0 || e.spr) + '_x';
+  // 清本金場的敌弹：每一发都化成一小撮灰 —— 直接 splice 会显得「弹幕被偷走了」
+  for (const b of G.ebullets) burst(b.x, b.y, 3, ['#f4f4f4', e.color], 60, .3, 1);
+  G.ebullets.length = 0;
+  ring(e.x, e.y, 56, e.color, .6, 3);
+  ring(e.x, e.y, 116, '#f4f4f4', .5, 2);
+  burst(e.x, e.y, 30, ['#f4f4f4', e.color, '#ffcd75'], 190, .7, 3, true);
+  addShake(8); Sound.sfx.warn(); Sound.sfx.bigKill(); freeze(0.06);
+  // 形态名随界面语言走（和 name1 同一条规则：英文模式显示英文，否则显示中文）
+  banner(T('bn.form'), T('bn.formSub', bossName(e), (isEn() && F.labelEn) ? F.labelEn : (F.label || '')), e.color, 2.4);
+  if (F.turrets) for (let i = 0; i < F.turrets; i++) spawnBossTurret(e, i, F.turrets);
+  if (F.phantoms) spawnBossPhantoms(e, F.phantoms);
+}
+
+/* 狱卒·展开架的炮塔：**可击破**，打掉就少一路火力 —— 这是给玩家的新决策：
+   顶着九路输出强拆本体，还是先花几秒拆掉两座塔换一个舒服的输出环境。
+   ⚠️ 用已有的敌型 'bastion'（几乎不动、火力极密）当壳子，不新增敌型：
+      它的 AI 已经是「站着的那应该是炮台」，改最少的代码拿到「能被打的东西」。
+   ⚠️ 必须打 turret 标记：它是**巨像的一部分**，本体死后要跟着走，不能留在场上刷经验。 */
+function spawnBossTurret(e, i, n) {
+  const a = Math.PI / 2 + (i - (n - 1) / 2) * 0.9;
+  const t = spawnEnemy('bastion', e.x + Math.cos(a) * 62, e.y + Math.sin(a) * 62);
+  if (!t) return null;
+  t.turret = 1; t.maxHp = t.hp = 130 * hpScale();
+  ring(t.x, t.y, 20, e.color, .4, 2);
+  return t;
+}
+/* 棱镜·裂相的幻影：**不是敌人**（不进 G.enemies，打不死也不掉东西）——
+   它只是绕着本体转的一件武器。做成敌人的话，玩家会去打它、发现打不动、
+   以为是 bug —— 那种挫败感没换来任何有趣的决策。 */
+function spawnBossPhantoms(e, n) {
+  for (let i = 0; i < n; i++) {
+    G.phantoms.push({ i, a: i / n * TAU, dist: 74, cd: 1.2 + i * 0.4, x: e.x, y: e.y, spr: e.spr0 || e.spr });
+  }
+  Sound.sfx.warp();
+}
+function updatePhantoms(dt) {
+  if (!G.phantoms.length) return;
+  const boss = G.boss;
+  for (const p of G.phantoms) {
+    p.a += dt * 0.85;
+    if (boss) {
+      p.x = boss.x + Math.cos(p.a) * p.dist;
+      p.y = boss.y + Math.sin(p.a) * p.dist;
+    }
+    p.cd -= dt;
+    if (p.cd <= 0 && boss && !G.dead) {
+      p.cd = 1.5;
+      const a = Math.atan2(G.py - p.y, G.px - p.x);
+      eShot(p.x, p.y, a, 150, 4, boss.color);
+      Sound.sfx.eshot();
+    }
+  }
+}
+
 function bossDeath(e) {
   G.boss = null; G.bossRef = null;
+  // 本体没了，它带出来的一切都要跟着走：幻影、熄灭、**还有它架的炮塔**。
+  //   炮塔是可击破的独立敌人，不清的话本段会卡在「还有活着的敌人」永远不结束 ——
+  //   那种 bug 看起来像游戏卡住，但控制台一行错都没有。
+  //   ⚠️ 这里**不**走 killEnemy：那条路会计 kill / 连击 / 掉落，玩家白拿一轮奖励，
+  //      而且会长出一堆本该属于boss的星尘。塔就是关掉了，不是被打掉的。
+  for (let i = G.enemies.length - 1; i >= 0; i--) {
+    const t = G.enemies[i];
+    if (!t.turret) continue;
+    burst(t.x, t.y, 12, ['#ff5577', '#f4f4f4'], 100, .4, 2);
+    ring(t.x, t.y, 22, t.color, .3, 2);
+    G.enemies.splice(i, 1);
+  }
+  G.phantoms.length = 0; G.blackout = 0;
   Sound.setMode('cruise');
   addShake(11);
   for (let i = 0; i < 5; i++) {
@@ -2643,6 +2939,31 @@ const TURN_BASE = 3.2;
 //    看眼里是「闪转 / 不听指挥」，反而更不像操控。留 0.14s 转过去才有手感。
 //    （20 rad/s = 每帧 19°，正好对齐 24 向烘焙船体的 15°/帧，不会看出跳帧。）
 const TURN_TOUCH = 20;
+/* 场地力（引力井 / 反极）—— 以**位移**而不是加速度的形式施加（2026-10-14 修）
+   ⚠️ 曾经的写法是 `G.vx -= ux * pull * dt`（每帧约 1.4 px/s）。这个游戏的运动模型是
+      **线性刹车**：松手时按 940 px/s² 的**固定速率**扣速度（见 DECEL_COAST），
+      每帧扣掉约 15.7 px/s。比它小的力在刹车段被整帧吃掉，净效果是零 ——
+      磁暴核心的引力井从上线起就没有真的拽动过玩家一次（探针量出位移恒为 0）。
+   ⚠️ 而且在固定速率刹车下「加速度」根本没有稳态：力小于刹车就归零、大于刹车就无限加速。
+      所以这里改成**水流**：直接位移，推进可以顶着走但站不住 —— 这才是引力井的手感。
+   ⚠️ 近距离衰减（d/380）：贴到核心时反而松，否则被拽进去一次就再也出不来（必死循环）。 */
+function fieldDrift() {
+  const e = G.boss;
+  if (!e || e.hp <= 0 || e.entering || (e.cmpT || 0) > 0) return null;
+  const a = bossForm(e).aura;
+  if (a !== 'pull' && a !== 'push') return null;
+  const dx = e.x - G.px, dy = e.y - G.py;
+  const d = Math.hypot(dx, dy) || 1;
+  // 引力井：越靠近越松（下限 0.2）—— 被拽到核心边上还能挣出来。
+  // 反极：越靠近越猛，但**上限锁 1.0**（120 px/s < 玩家满速 168）：
+  //   ⚠️ 上限一旦超过 168，本体的「推开」就强过玩家的全部推力 —— 那不是难，是根本贴不上去。
+  //      正确难度是「贴脸要付出代价」，不是「贴不上去」。
+  const k = a === 'pull' ? clamp(d / 380, 0.2, 1) : clamp(1.2 - d / 500, 0.35, 1);
+  const base = a === 'pull' ? (e.form >= 1 ? 108 : 78) : 120;
+  const s = base * k * (G.dashT > 0 ? 0.35 : 1);   // 冲刺期间能挣脱大部分（冲刺是解场手段）
+  return { x: dx / d * s * (a === 'push' ? -1 : 1), y: dy / d * s * (a === 'push' ? -1 : 1) };
+}
+
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
@@ -2771,8 +3092,10 @@ function updatePlayer(dt) {
     else { const f = nv / vm; G.vx *= f; G.vy *= f; vm = nv; }
   }
   if (vm > MAXV_CAP) { G.vx = G.vx / vm * MAXV_CAP; G.vy = G.vy / vm * MAXV_CAP; }
-  G.px = clamp(G.px + G.vx * dt, 10, WORLD.w - 10);
-  G.py = clamp(G.py + G.vy * dt, 10, WORLD.h - 10);
+  // 场地力（引力井 / 反极）：**在夹取之前**叠加，否则贴着世界边缘时被吃掉
+  const fd = fieldDrift();
+  G.px = clamp(G.px + G.vx * dt + (fd ? fd.x * dt : 0), 10, WORLD.w - 10);
+  G.py = clamp(G.py + G.vy * dt + (fd ? fd.y * dt : 0), 10, WORLD.h - 10);
   if (G.px <= 10 || G.px >= WORLD.w - 10) G.vx *= 0.4;
   if (G.py <= 10 || G.py >= WORLD.h - 10) G.vy *= 0.4;
   // 冲角装甲
@@ -3473,6 +3796,20 @@ function updateEBullets(dt) {
   for (let i = G.ebullets.length - 1; i >= 0; i--) {
     const b = G.ebullets[i];
     b.t += dt; b.life -= dt;
+    // 追命弹：出生 0.6s 内直线飞行（**必须先给它一段「看得出它在追谁」的窗口**），
+    //   之后才开始拐。一开始就在拐的话，玩家只觉得自己被锁定了却不知道该往哪跑。
+    if (b.homing && b.t > 0.6) {
+      const want = Math.atan2(G.py - b.y, G.px - b.x);
+      let da = want - Math.atan2(b.vy, b.vx);
+      while (da > Math.PI) da -= TAU;
+      while (da < -Math.PI) da += TAU;
+      const step = clamp(da, -b.homing * dt, b.homing * dt);
+      const cs = Math.cos(step), sn = Math.sin(step);
+      const nvx = b.vx * cs - b.vy * sn, nvy = b.vx * sn + b.vy * cs;
+      b.vx = nvx; b.vy = nvy;
+      // 转向时掉一点速度：拐弯总要付出代价，也让它不至于越改越快
+      b.vx *= 1 - 0.35 * dt; b.vy *= 1 - 0.35 * dt;
+    }
     b.x += b.vx * dt; b.y += b.vy * dt;
     // 敌弹按**视口**回收（外扩 80）：玩家永远在视口里，敌弹也都是从视口内打出来的，
     // 出画之后再飞没有任何意义，反而白占 900 发的上限。
@@ -3578,6 +3915,9 @@ function updateFx(dt) {
     if (f.type === 'laser') {
       // 蓄力 0.5s 后开火 0.35s，沿线判定
       const fireAt = 0.5;
+      // 旋转激光（巨像的「十字扫射」）：预警段也要跟着转 ——
+      //   玩家是按预警线的方向站位的，只让开火后旋转等于骗了他。
+      if (f.spin) f.ang += f.spin * dt;
       if (!f.fired && f.t >= fireAt) {
         f.fired = true;
         const dx = Math.cos(f.ang), dy = Math.sin(f.ang);
@@ -3786,6 +4126,13 @@ function step(dt) {
   //    被冻住的那些帧也不该让 buff 偷偷偷跑。
   if (G.furyT > 0) G.furyT = Math.max(0, G.furyT - dt);
   if (G.rewindT > 0) G.rewindT = Math.max(0, G.rewindT - dt);
+  // 星蚀的熄灭战场：全局遮暗。**连 hitstop 期间也要走** ——
+  //   否则一次命中凝滞会把天黑的时间白白拉长，玩家会觉得它「赖着不走」。
+  if (G.blackout > 0) G.blackout = Math.max(0, G.blackout - dt);
+  // ⚠️ 清尽同源：本体一死，它的幻影 / 熄灭必须立刻跟着消失。
+  //    少了这句会出现「boss 已经炸完了，屏幕上还挂着两个假身在开火」的鬼畜。
+  if (!G.boss && G.phantoms.length) G.phantoms.length = 0;
+  if (!G.boss && G.blackout > 0) G.blackout = 0;
   if (G.S.rewind > 0) pushSnap(dt);
   // 命中凝滞：实体全冻，只让粒子慢放 —— 顿挫感就来自这里
   if (G.hitstop > 0) {
@@ -4746,6 +5093,7 @@ function render() {
   drawArrows();     // 冰封长箭与弹丸同层（它是慢速飞行体，不该盖住敌机）
   drawEnemies();
   drawDrones();
+  drawPhantoms();   // 棱镜的幻影跟本体同层 —— 它「看起来就是第二个它」才成立
   drawPlayer();
   drawUndying();    // 怒火裹在船身之上：这几秒「打不死」必须是画面上最响的信息
   drawBeam();       // 射线压在船身之上：它是从炮口喷出去的，必须盖住被烧的敌机
@@ -4763,6 +5111,7 @@ function render() {
     drawToasts();
   }
   if (state === 'play' && !G.dead) { drawCrosshair(); drawOffscreenMarkers(); }
+  drawBlackout();   // 星蚀的熄灭战场：压在世界层之上、HUD **之下**
   // 红色暗角：低血量常驻脉动 + 受击时的一记重闪（取两者较强的一个）
   const S = G.S;
   const lowA = (S.hp / S.maxHp < 0.3 && !G.dead) ? 0.18 + Math.sin(G.t * 6) * 0.06 : 0;
@@ -6280,6 +6629,13 @@ function boot() {
     else if (state === 'over') renderOver();
     // play / help / loading：画布上的 HUD 每帧重画、help 全是静态 DOM，都不用管
   };
+
+  // 像素字体是 font-display:swap **异步**到位的（见 style.css 的首屏关键路径注释）：
+  // 到位之前 fit() / 卡面排版是用 monospace 量出来的，字体一换宽度就变了。
+  // 所以字体 ready 后重跑一次 fit + 当前面板重画，别把错误宽度留着。
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { try { fit(); langRefresh(); } catch (e) {} });
+  }
 
   // 主题化加载动画：本地资源同步加载、boot 一瞬间跑完，不延时的话动画根本看不到。
   // 2.2s 必须和 style.css 里 .ld-bar i 的 ldfill 时长一致（否则进度条没满就切标题）。

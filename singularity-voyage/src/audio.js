@@ -30,8 +30,8 @@ const Sound = (() => {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol();
     setInterval(schedule, 25);
-    // 首次用户手势后恢复被自动播放策略拦下的成品曲（music(true) 可能已在标题页先跑过）
-    if (musOn && fileBgmOn) startFileCur();
+    // 首次用户手势：这时才允许开始下载成品曲（4 首合计 ~19MB，绝不能进首屏关键路径）
+    if (musOn) armFileBgm(FILE_BGM_DELAY);
   }
 
   function thr(name, ms) {
@@ -186,7 +186,7 @@ const Sound = (() => {
     if (!ac || !musOn) return;
     // 成品曲在播时压住合成 BGM：两层音乐叠一起只会糊成噪音。
     // curBgm.paused 在「还没开始播 / 已被拦」时为 true → 这时合成 BGM 照常兜底。
-    if (fileBgmOn && curBgm && !curBgm.paused) return;
+    if (filePlaying()) return;   // 见下：必须「真的出声」才算数，光 play() 成功不算
     const bpm = BPM[mode] || 132;
     if (nextT < ac.currentTime) nextT = ac.currentTime + 0.05;
     while (nextT < ac.currentTime + 0.12) {
@@ -198,50 +198,93 @@ const Sound = (() => {
   // ---------------- 文件 BGM（来自 singularity-echo/bgms 的成品曲）----------------
   // 合成 BGM 是「状态响应」的芯片乐，成品曲更耐听，这里用 <audio> 播成品曲，
   // 按游戏模式（title/cruise/battle/boss）切换对应曲子并循环。
-  // ⚠️ 与合成 BGM **互斥**：成品曲在播时由 schedule() 压住合成 BGM（见上）；
-  //    成品曲加载/播放失败（如本地无文件、自动播放被拦后未恢复）则合成 BGM 自然兜底。
-  let fileBgm = {}, curBgm = null, fileBgmOn = false, fileBgmReady = false;
+  //
+  // ⚠️⚠️ 加载纪律（2026-10-13 重写，改之前先看这段）：
+  //   4 首成品曲合计 ~19MB，**绝不许出现在首屏关键路径上**。
+  //   旧实现在 music(true) 里直接 ensureBgm()——标题页一到就 new 4 个 Audio 并挂 src，
+  //   慢网手机上等于让 19MB 和 game.js 抢带宽，表现就是「卡在加载页一分钟」。
+  //   现在：
+  //     ① 标题页只播 WebAudio 合成 BGM（0 字节），一个 mp3 字节都不下；
+  //     ② 成品曲要等「首次用户手势」之后、再延迟 FILE_BGM_DELAY 才开始下载；
+  //     ③ 一次只建当前需要的那一首（setMode 切到哪首才建哪首），其余空闲时逐首补；
+  //     ④ 没就绪 / 下载中 / 播放失败 —— 合成 BGM 全程兜底，永远不静默等待；
+  //     ⑤ 省流量模式 / 2G 直接放弃成品曲，只跑合成 BGM。
+  //
+  // ⚠️ 与合成 BGM **互斥**：成品曲「真的出声」时由 schedule() 压住合成 BGM（见 filePlaying）；
+  //    只是 play() 调用成功、数据还在路上时**不算**——那段时间必须继续合成 BGM，否则是死寂。
   const BGM_MAP = {
     title:  'assets/bgm/Afterglow.mp3',
     cruise: 'assets/bgm/Endless_Drift_1.mp3',
     battle: 'assets/bgm/Comet_Trail_1.mp3',
     boss:   'assets/bgm/Colossus.mp3',
   };
-  function ensureBgm() {
-    if (fileBgmOn || fileBgmReady) return;
-    if (typeof Audio === 'undefined') return;   // 无 Audio（极个别环境）静默退化到合成 BGM
-    let n = 0;
-    for (const k in BGM_MAP) {
-      const a = new Audio();
-      a.src = BGM_MAP[k]; a.loop = true; a.preload = 'none'; a.volume = muted ? 0 : volBgm * 0.7;
-      a.addEventListener('canplaythrough', () => { fileBgmReady = true; }, { once: true });
-      a.addEventListener('error', () => {}, { once: true });
-      fileBgm[k] = a; n++;
+  const FILE_BGM_DELAY = 1200;   // 首次手势后延后多久开始拉第一首（ms）
+  let fileBgm = {}, curBgm = null, fileBgmOn = false, armTimer = 0;
+
+  // 省流量 / 2G：别拿用户的流量开玩笑，直接退回合成 BGM
+  function connOk() {
+    const c = navigator.connection || navigator.webkitConnection;
+    if (!c) return true;
+    if (c.saveData) return false;
+    return !(c.effectiveType && /^(slow-)?2g$/.test(c.effectiveType));
+  }
+  // 「真的在响」：play() 成功只代表调用被接受，数据没到时 paused 已经是 false 了。
+  // readyState >= HAVE_FUTURE_DATA 才说明有东西可播。
+  function filePlaying() {
+    return !!(fileBgmOn && curBgm && !curBgm.paused && curBgm.readyState >= 3);
+  }
+  function ensureTrack(m) {
+    const src = BGM_MAP[m];
+    if (!src || typeof Audio === 'undefined') return null;   // 无 Audio：静默退化到合成 BGM
+    let a = fileBgm[m];
+    if (!a) {
+      a = new Audio();
+      a.loop = true; a.preload = 'auto'; a.src = src;
+      a.volume = muted ? 0 : volBgm * 0.7;
+      // 拉不动就把这一首摘掉，别让 schedule() 一直等一个永远不来的音源
+      a.addEventListener('error', () => { if (fileBgm[m] === a) fileBgm[m] = null; if (curBgm === a) curBgm = null; }, { once: true });
+      fileBgm[m] = a;
     }
-    fileBgmOn = n > 0;
+    return a;
   }
   function applyFileVol() {
     const v = muted ? 0 : volBgm * 0.7;
     for (const k in fileBgm) if (fileBgm[k]) fileBgm[k].volume = v;
   }
   function startFileCur() {
-    if (!fileBgmOn || !BGM_MAP[mode]) return;
-    const a = fileBgm[mode]; if (!a) return;
+    if (!fileBgmOn || !musOn || !BGM_MAP[mode]) return;
+    const a = ensureTrack(mode); if (!a) return;
     if (curBgm && curBgm !== a) { try { curBgm.pause(); } catch (e) {} }
     curBgm = a;
     applyFileVol();
     const p = a.play();
-    if (p && p.catch) p.catch(() => {});   // 自动播放被拦：等首次手势后 init() 里再 resume
+    if (p && p.catch) p.catch(() => {});   // 自动播放被拦：等首次手势后 init() 里再来
   }
   function stopFile() {
+    clearTimeout(armTimer);
     if (curBgm) { try { curBgm.pause(); } catch (e) {} curBgm = null; }
+  }
+  // ⚠️ 故意**不做**预取：4 首合计 19MB，一口气拉完正好是这次要治的病。
+  //    哪首需要（setMode 切到 battle/boss）才拉哪首，没到位就由合成 BGM 顶着。
+  //    代价是切模式时可能有几秒还是芯片乐 —— 比 19MB 卡首屏划算得多。
+  // 只有这里允许「开始下载成品曲」：首次用户手势之后，且再延后 FILE_BGM_DELAY
+  function armFileBgm(delay) {
+    if (!musOn || fileBgmOn || !connOk()) return;
+    clearTimeout(armTimer);
+    armTimer = setTimeout(() => {
+      if (!musOn) return;
+      fileBgmOn = true;
+      startFileCur();
+    }, delay || 0);
   }
 
   return {
     init, sfx,
     music(on) {
       musOn = on;
-      if (on) { step = 0; ensureBgm(); if (fileBgmOn) startFileCur(); }
+      // ⚠️ 这里**不要**建 Audio / 挂 src —— 标题页一到就拉 19MB 会把首屏拖死。
+      //    合成 BGM 立刻响（0 字节）；成品曲等首次手势（init → armFileBgm）再开始下。
+      if (on) { step = 0; if (fileBgmOn) startFileCur(); }
       else { stopFile(); }
     },
     setMode(m) {

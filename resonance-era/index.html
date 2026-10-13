@@ -54,6 +54,8 @@
   </a>
   <div class="topbar-right">
     <a class="home" href="../index.html">GAME LAB</a>
+    <a class="icon-btn" id="proverbsBtn" href="#/proverbs">谚语</a>
+    <a class="icon-btn" id="juechuBtn" href="#/juechu">厥初</a>
     <button class="icon-btn" id="themeBtn" type="button" aria-label="切换日间 / 夜间">夜间</button>
   </div>
 </header>
@@ -69,6 +71,16 @@
 
     <h2 class="rail-h"><span>目录 / Contents</span><span id="railCount">25 章</span></h2>
     <div id="toc"></div>
+
+    <!-- 附录：不是章节，不进目录列表，单独一条 -->
+    <ul class="rail-extra">
+      <li><a href="#/proverbs" data-appendix="proverbs">
+        <span class="n">附</span><span>古泰拉谚语 <em>Gutaira Proverbs</em></span>
+      </a></li>
+      <li><a href="#/juechu" data-appendix="juechu">
+        <span class="n">附</span><span>厥初 <em>Juechu · 三十六型</em></span>
+      </a></li>
+    </ul>
 
     <div class="panel">
       <div class="field">
@@ -103,6 +115,8 @@
 </nav>
 
 <script src="./chapters.js"></script>
+<script src="./proverbs.js"></script>
+<script src="./juechu.js"></script>
 <script src="./reader.js"></script>
 </body>
 </html>

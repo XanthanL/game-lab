@@ -468,21 +468,117 @@ const SPR_SRC = {
 };
 // ============ Boss（单帧，放大 2x） ============
 const BOSS_SRC = {
+  // 星蚀：暗盘 + 日冕 + 一道横贯的蚀带。它的机制是「周期性熄灭战场」，
+    //   所以本体必须看起来就是个**遮光的东西**，而不是又一个发光球。
+  eclipse: [[
+    '.......kkkkkk.......',
+    '....kkyyyyyyyykk....',
+    '...kyyYYYYYYYYyyk...',
+    '..kyyYYooooooYYyyk..',
+    '.kyyYYoooSSoooYYyyk.',
+    '.kyYYooSSSSSSooYYyk.',
+    '.yyYooSSSkkSSSooYyy.',
+    '.SSSSSSSkkkkSSSSSSS.',
+    '.SSSSSSSkkkkSSSSSSS.',
+    '.SSSSSSSSkkSSSSSSSS.',
+    '.kSSSSSSSSSSSSSSSSk.',
+    '.kyyYYoooSSoooYYyyk.',
+    '..kyyYYooooooYYyyk..',
+    '...kyyYYYYYYYYyyk...',
+    '....kkyyyyyyyykk....',
+    '.......kkkkkk.......'
+  ]],
+  // 星蚀·全蚀：日面彻底黑掉，只剩一圈血红日冕（第三阶段它熄得更狠）。
+  eclipse_x: [[
+    '.......kkkkkk.......',
+    '....kkooooooookk....',
+    '...koooRRRRRRoook...',
+    '..kooRkkkSSkkkRook..',
+    '.kkoRkSSSSSSSSkRokk.',
+    '.koRkSSSSSSSSSSkRok.',
+    '.koRkSSSSSSSSSSkRok.',
+    '.ooRkSSSSSSSSSSkRoo.',
+    '.ooRkSSSSSSSSSSkRoo.',
+    '.koRkSSSSSSSSSSkRok.',
+    '.koRkSSSSSSSSSSkRok.',
+    '.kkoRkSSSSSSSSkRokk.',
+    '..kooRkkkSSkkkRook..',
+    '...koooRRRRRRoook...',
+    '....kkooooooookk....',
+    '.......kkkkkk.......'
+  ]],
+  // 磁暴核心：同心环 + 中心的「眼」—— 玩家要能一眼看出**自己正被往哪儿拽**。
+  tempest: [[
+    '.......kbbbbk.......',
+    '....kbbWWWWWWbbk....',
+    '...kbWWccccccWWbk...',
+    '..kWWccCCCCCCccWWk..',
+    '.kbWcCCbbbbbbCCcWbk.',
+    '.bWcCCbwwwwwwbCCcWb.',
+    '.bWcCbwwCkkCwwbCcWb.',
+    'kbWcCbwCCkkCCwbCcWbk',
+    '.bWcCbwwCkkCwwbCcWb.',
+    '.bWcCCbwwwwwwbCCcWb.',
+    '.kbWcCCbbbbbbCCcWbk.',
+    '..kWWccCCCCCCccWWk..',
+    '...kbWWccccccWWbk...',
+    '....kbbWWWWWWbbk....',
+    '.......kbbbbk.......'
+  ]],
+  // 磁暴·反极：红黑双层反向环，极性来回翻（第三阶段拉/推会互换）。
+  tempest_x: [[
+    '.......kkkkkk.......',
+    '....kkWWWccWWWkk....',
+    '...kWWccCCCCccWWk...',
+    '..kWccCCwwwwCCccWk..',
+    '.kWccCwRRRRRRwCccWk.',
+    '.kWcCwRkkkkkkRwCcWk.',
+    '.WcCwRRkRkkRkRRwCcW.',
+    '.WcCwRkRkwwkRkRwCcW.',
+    '.WcCwRkRkwwkRkRwCcW.',
+    '.WcCwRRkRkkRkRRwCcW.',
+    '.kWcCwRkkkkkkRwCcWk.',
+    '.kWccCwRRRRRRwCccWk.',
+    '..kWccCCwwwwCCccWk..',
+    '...kWWccCCCCccWWk...',
+    '....kkWWWccWWWkk....',
+    '.......kkkkkk.......'
+  ]],
+  // 母岩：不规则巨岩 + 两只橙红熔眼。
+    //   ⚠️ 别用大片亮灰铺 —— 整块糊成一块白砖，看不出体积。
   motherrock: [[
     '.....kkkkkkkkkk.....',
     '...kkWWWWWWWWWWkk...',
-    '..kWWWWggggWWWWWWk..',
-    '.kWWWgggggggggWWWWk.',
-    'kWgggggggggggggggWgk',
-    'kWgggdWWggggdWWggggk',
-    'kgggdRRRRgggdRRRRggk',
-    'kgggWRRRRgggWRRRRggk',
+    '..kWWWWggggggWWWWk..',
+    '.kWWWggggggggggWWWk.',
+    'kWggggggggggggggggWk',
+    'kWgggdWWggggWWdgggWk',
+    'kgggdRRRRggRRRRdgggk',
+    'kgggWRRRRggRRRRWgggk',
     'kggggggggggggggggggk',
     'kWggggggggggggggggWk',
     '.kWggggggggggggggWk.',
     '..kkWWggggggggWWkk..',
-    '...kkkWWWWWWWWkkk...',
+    '...kkkWWWWWWWWkkk...'
   ]],
+  // 母岩·熔核：外壳被敲开一道菱形裂口，白热熔核露出来 —— 它就是三阶段的**易伤口**，
+    //   玩家一眼能看出「该往哪儿打」。
+  motherrock_x: [[
+    '.....kkkkkkkkkk.....',
+    '...kkWWWWWWWWWWkk...',
+    '..kWWWWggggggWWWWk..',
+    '.kWWkkRRoYYoRRkkWWk.',
+    'kWgkRoYYwwwwYYoRkgWk',
+    'kWkRoYYwwWWwwYYoRkWk',
+    'kWkRoYYwwWWwwYYoRkWk',
+    'kWgkRoYYwwwwYYoRkgWk',
+    '.kWWkkRRoYYoRRkkWWk.',
+    '..kWWWWggggggWWWWk..',
+    '..kkWWggggggggWWkk..',
+    '...kkkWWWWWWWWkkk...',
+    '.....kkkkkkkkkk.....'
+  ]],
+  // 环带狱卒：沉重的环带监狱舱。
   warden: [[
     '....kkkkkkkkkkkk....',
     '..kkddddddddddddkk..',
@@ -497,8 +593,26 @@ const BOSS_SRC = {
     'kdWWWWkkkkkkkkWWWWdk',
     '.kddWWWWWWWWWWWWddk.',
     '..kkddddddddddddkk..',
-    '....kkkkkkkkkkkk....',
+    '....kkkkkkkkkkkk....'
   ]],
+  // 狱卒·展开：中央牢舱弹开露出红核，两侧炮臂就位 —— 第三阶段它真的会架炮台。
+  warden_x: [[
+    '....kkkkkkkkkkkk....',
+    '..kkddddddddddddkk..',
+    '.kddWWWWWWWWWWWWddk.',
+    'kdWWWRkkkkkkkkRWWWdk',
+    'kdWWkbbbbbbbbbbkWWdk',
+    'kdkkbbCRRRRRRCbbkkdk',
+    'kdkbbCRRRooRRRCbbkdk',
+    'kdkbbCRRRooRRRCbbkdk',
+    'kdkbbCRRRwwRRRCbbkdk',
+    'kdkkbbbbbbbbbbbbkkdk',
+    'kdWWWRkkkkkkkkRWWWdk',
+    '.kddWWWWWWWWWWWWddk.',
+    '..kkddddddddddddkk..',
+    '....kkkkkkkkkkkk....'
+  ]],
+  // 奇点之门：闭合的门环。
   gate: [[
     '.....kkkkkkkkkk.....',
     '...kkppppppppppkk...',
@@ -514,44 +628,60 @@ const BOSS_SRC = {
     '.kpPPqqqqqqqqqqPPpk.',
     '..kppPPPPPPPPPPppk..',
     '...kkppppppppppkk...',
-    '.....kkkkkkkkkk.....',
+    '.....kkkkkkkkkk.....'
   ]],
-  // ---- 第二批巨像（2026-10-03）：每只都是一个**新的场地机制**，不是换个血条 ----
-  // 蜂巢母体：蜂窝状虫巢，持续产兵 —— 视觉上要「看得出它是一坨能吐东西的巢」
+  // 之门·洞开：门扇退到两侧，中间露出整片青色通道
+    //   （第三阶段从这里放出两道交叉扫描激光）。
+  gate_x: [[
+    '.....kkkkkkkkkk.....',
+    '...kkppppppppppkk...',
+    '..kppPPPPPPPPPPppk..',
+    '.kpPwwwwwwwwwwwwPpk.',
+    'kppPwCCCCCCCCCCwPppk',
+    'kpPPwCCwwwwwwCCwPPpk',
+    'kpPwwCwwwwwwwwCwwPpk',
+    'kpPwwCwwwwwwwwCwwPpk',
+    'kpPwwCwwwwwwwwCwwPpk',
+    'kpPPwCCwwwwwwCCwPPpk',
+    'kppPwCCCCCCCCCCwPppk',
+    '.kpPwwwwwwwwwwwwPpk.',
+    '..kppPPPPPPPPPPppk..',
+    '...kkppppppppppkk...',
+    '.....kkkkkkkkkk.....'
+  ]],
+  // 蜂巢母体：六边形蜂窝单元 —— 要「看得出它是一坨能吐东西的巢」。
   hive: [[
     '.....kkkkkkkkkk.....',
     '...kkGGGGGGGGGGkk...',
     '..kGGLLLLLLLLLLGGk..',
-    '.kGLLLllLLllLLLGGGk.',
-    'kGLLlLLlLLLLlLLlLGGk',
-    'kGLlLLLlLLLlLLLlLLGk',
-    'kGLLlLLlLLLlLLlLLLGk',
-    'kGLlLLLlLLLlLLLlLLGk',
-    'kGLLlLLlLLLlLLlLLLGk',
-    '.kGLLLllLLLllLLLGGk.',
+    '.kGLLLllLLLLllLLLGk.',
+    'kGLLlLLlLLLLlLLlLLGk',
+    'kGLlLLLlLLLLlLLLlLGk',
+    'kGLLlLLlLLLLlLLlLLGk',
+    'kGLlLLLlLLLLlLLLlLGk',
+    'kGLLlLLlLLLLlLLlLLGk',
+    '.kGLLLllLLLLllLLLGk.',
     '..kGGLLLLLLLLLLGGk..',
     '...kkGGGGGGGGGGkk...',
+    '.....kkkkkkkkkk.....'
+  ]],
+  // 母体·破裂：巢壁缺口 + 黄绿内腔外翻（它开始漏虫了）。
+  hive_x: [[
     '.....kkkkkkkkkk.....',
+    '...kkGGGGGGGGGGkk...',
+    '..kGGLLyyLLyyLLGGk..',
+    '.kGLkyyllllllyykLGk.',
+    'kGLkyyllllllllyykLGk',
+    'kGkyllllllllllllykGk',
+    'kGLkyyllllllllyykLGk',
+    '.kGLkyyllllllyykLGk.',
+    '..kGGLLyyLLyyLLGGk..',
+    '...kkGGGGGGGGGGkk...',
+    '..kGGLLLLLLLLLLGGk..',
+    '...kkGGGGGGGGGGkk...',
+    '.....kkkkkkkkkk.....'
   ]],
-  // 磁暴核心：同心环 + 中心的「眼」，把「引力井」画出来（玩家要能看出往哪被拽）
-  tempest: [[
-    '......kkkkkkkk......',
-    '....kkbbbbbbbbkk....',
-    '..kbbWWccccccWWbbk..',
-    '.kbWccCCCCCCCCccWbk.',
-    'kbWcCCwwwwwwwwCCcWbk',
-    'kbWcCwWbbbbbbWwCCcWk',
-    'kbWcCwWbkkkkbWwCCcWk',
-    'kbWcCwWbkCCkbWwCCcWk',
-    'kbWcCwWbkkkkbWwCCcWk',
-    'kbWcCwWbbbbbbWwCCcWk',
-    'kbWcCCwwwwwwwwCCcWbk',
-    '.kbWccCCCCCCCCccWbk.',
-    '..kbbWWccccccWWbbk..',
-    '....kkbbbbbbbbkk....',
-    '......kkkkkkkk......',
-  ]],
-  // 熔渣锻炉：工业炉体 + 两个白热的出渣口（它一路留下火场，所以本体要像「烧着的」）
+  // 熔渣锻炉：方形工业炉体 + 两个白热出渣口。
   forge: [[
     '....kkkkkkkkkkkk....',
     '..kkddddddddddddkk..',
@@ -565,9 +695,25 @@ const BOSS_SRC = {
     'kdrrRooooooooooRrrdk',
     '.kdrrRRRRRRRRRRrrdk.',
     '..kkddddddddddddkk..',
-    '....kkkkkkkkkkkk....',
+    '....kkkkkkkkkkkk....'
   ]],
-  // 棱镜之眼：菱形棱晶 + 中央红瞳（它放的是分光激光扇，所以本体要「像在折射」）
+  // 锻炉·过载：炉体通红，火舌从底部喷出（第三阶段不再留火，改成一路烧穿）。
+  forge_x: [[
+    '....kkkkkkkkkkkk....',
+    '..kkddddddddddddkk..',
+    '.kdrrRRRRRRRRRRrrdk.',
+    'kdrrRooooooooooRrrdk',
+    'kdRooooooooooooooRdk',
+    'kdRoYYooooooooYYoRdk',
+    'kdRoYYYYooooYYYYoRdk',
+    'kdRoYYooooooooYYoRdk',
+    'kdRooooooooooooooRdk',
+    'kdrrRooooooooooRrrdk',
+    '.kdrrRRRRRRRRRRrrdk.',
+    '..kkddYkkkkkkYddkk..',
+    '...kkYkkkkkkkkYkk...'
+  ]],
+  // 棱镜之眼：菱形棱晶 + 中央红瞳 —— 本体要「像在折射」它放出去的分光激光扇。
   prism: [[
     '.........kk.........',
     '........kCCk........',
@@ -583,174 +729,28 @@ const BOSS_SRC = {
     '......kCwWWwCk......',
     '.......kCwwCk.......',
     '........kCCk........',
-    '.........kk.........',
+    '.........kk.........'
   ]],
-
-  // ---- 第八只巨像 & 七只终形态（2026-10-10）----
-  // ⚠️ 终形态是**换模型**，不是换配色：进第三阶段时 e.spr 直接换成 `<id>_x`，
-  //    玩家一眼就能看出「它变了」，而不是「它红了」。
-  // ⚠️ 每张图的**行宽必须一致**（否则 spriteFrom 按最长行取宽、短行右侧留空 → 图形偏心），
-  //    改完跑 `probes/_sprite-width-check.js` 校验。
-  // 星蚀：暗盘 + 日冕 + 一道横贯的蚀带（它的机制是「周期性熄灭战场」，
-  //   本体必须看起来就是个**遮光的东西**，而不是又一个发光球）
-  eclipse: [[
-    '.........kk.........',
-    '.......kyyyyk.......',
-    '......kyYYYYyk......',
-    '.....kyYooooYyk.....',
-    '....kyYooooooYyk....',
-    '...kyYooooooooYyk...',
-    '..kyYooooooooooYyk..',
-    '.kYooooooooooooooYk.',
-    '.kYoSSSSSSSSSSSSoYk.',
-    '.kYoSkkkkkkkkkkSoYk.',
-    '.kYoSkkkkkkkkkkSoYk.',
-    '..kyYoSSSSSSSSoYyk..',
-    '...kyYooooooooYyk...',
-    '....kyYooooooYyk....',
-    '.....kyYooooYyk.....',
-    '......kyYYYYyk......',
-    '.......kyyyyk.......',
-    '.........kk.........',
-  ]],
-  // 星蚀·全蚀：日冕炸成红环，日面彻底变黑只剩一圈血边（第三阶段它熄得更狠）
-  eclipse_x: [[
-    '.........kk.........',
-    '.......kRRRRk.......',
-    '......kRRoRRooRRk...',
-    '.....kRoRRooRRooRRk.',
-    '....kRoRRoSSSSoRRoRk',
-    '...kRoRRooSSSSooRRoR',
-    '..kRoRRoSSkkSSoRRoRk',
-    '..kRoRRoSkkkkSoRRoRk',
-    '..kRoRRoSkRRkSoRRoRk',
-    '..kRoRRoSkkkkSoRRoRk',
-    '..kRoRRoSSkkSSoRRoRk',
-    '...kRoRRooSSSSooRRoR',
-    '....kRoRRoSSSSoRRoRk',
-    '.....kRoRRooRRooRRk.',
-    '......kRRoRRooRRk...',
-    '.......kRRRRk.......',
-    '.........kk.........',
-  ]],
-  // 母岩·熔核：外壳被打开的裂口，露出橙红熔核（易伤的来源）
-  motherrock_x: [[
-    '.....kkkkkkkkkkk.....',
-    '...kkWWWWWWWWWWWkk...',
-    '..kWWWgggggggggWWWk..',
-    '.kWWgggggggggggggWWk.',
-    'kWgggkkRRRRRRRkkgggWk',
-    'kWggkRRooYYooRRkgggWk',
-    'kWgkRooYYwwYYooRkggWk',
-    'kWgkRoYYwwwwYYoRkggWk',
-    'kWgkRoYYwwwwYYoRkggWk',
-    'kWgkRooYYwwYYooRkggWk',
-    'kWggkRRooYYooRRkgggWk',
-    'kWgggkkRRRRRRRkkgggWk',
-    '.kWWgggggggggggggWWk.',
-    '..kWWWgggggggggWWWk..',
-    '...kkWWWWWWWWWWWkk...',
-    '.....kkkkkkkkkkk.....',
-  ]],
-  // 环带狱卒·展开：两侧炮臂张开（炮台是它第二阶段的身份）
-  warden_x: [[
-    '.......kkkkkkk.......',
-    '.....kkdddddddkk.....',
-    '....kddWWWWWWWddk....',
-    'dddkddWbbbbbbbWddkddd',
-    'kRkkdWbbCCCCCbbWdkkRk',
-    'kkkkdWbCCwwwCCbWdkkkk',
-    'kkkkdWbCwwRRRwwCbWdkk',
-    'kkkkdWbCwwRRRwwCbWdkk',
-    'kkkkdWbCCwwwCCbWdkkkk',
-    'kRkkdWbbCCCCCbbWdkkRk',
-    'dddkddWbbbbbbbWddkddd',
-    '....kddWWWWWWWddk....',
-    '.....kkdddddddkk.....',
-    '.......kkkkkkk.......',
-  ]],
-  // 奇点之门·双开：两扇门并排同时开着（第三阶段两道激光交叉扫）
-  gate_x: [[
-    '..kkkkkkkk.kkkkkkkk..',
-    '..kppppppk.kppppppk..',
-    '..kpPPPPpk.kpPPPPpk..',
-    '..kpPwwPpk.kpPwwPpk..',
-    '..kpPCCPpk.kpPCCPpk..',
-    '..kpPwwPpk.kpPwwPpk..',
-    '..kpPPPPpk.kpPPPPpk..',
-    '..kppppppk.kppppppk..',
-    '..kkkkkkkk.kkkkkkkk..',
-  ]],
-  // 蜂巢母体·破裂：巢壁裂开，内腔黄绿外翻（它开始漏虫）
-  hive_x: [[
-    '.....kkGGkkGGkk......',
-    '...kkGGLLGGLLGGkk....',
-    '..kGGLLLLLLLLLLGGk...',
-    '.kGLLkkLLyyLLkkLLGk..',
-    'kGLLkLLyylllyyLLkLLGk',
-    'kGLkLLlylllllyllLkLGk',
-    'kGLLkLLyylllyyLLkLLGk',
-    '.kGLLkkLLyyLLkkLLGk..',
-    '..kGGLLLLLLLLLLGGk...',
-    '...kkGGLLGGLLGGkk....',
-    '.....kkGGkkGGkk......',
-  ]],
-  // 磁暴核心·反极：双层反向环 + 中心黑白瞳（极性会来回翻，所以画成「正负两色」）
-  tempest_x: [[
-    '......kkkkkkkk......',
-    '....kkbbbbbbbbkk....',
-    '..kbbWWccccccWWbbk..',
-    '.kbWccCCCCCCCCccWbk.',
-    'kbWcCCwwwwwwwwCCcWbk',
-    'kbWcCwwRRwwRRwwCCcWk',
-    'kbWcCwRkkRRkkRwCCcWk',
-    'kbWcCwRkwwwwkRwCCcWk',
-    'kbWcCwRkwwwwkRwCCcWk',
-    'kbWcCwRkkRRkkRwCCcWk',
-    'kbWcCwwRRwwRRwwCCcWk',
-    'kbWcCCwwwwwwwwCCcWbk',
-    '.kbWccCCCCCCCCccWbk.',
-    '..kbbWWccccccWWbbk..',
-    '....kkbbbbbbbbkk....',
-    '......kkkkkkkk......',
-  ]],
-  // 熔渣锻炉·过载：炉体通红，两个白热喷口正在喷火舌
-  forge_x: [[
-    '....kkkkkkkkkkkk....',
-    '..kkddddddddddddkk..',
-    '.kdrrRRRRRRRRRRrrdk.',
-    'kdrrRooooooooooRrrdk',
-    'kdRooooooooooooooRdk',
-    'kdRoYYooooooYYoooRdk',
-    'kdRoYYYYoooYYYYYoRdk',
-    'kdRoYYooooooYYoooRdk',
-    'kdRooooooooooooooRdk',
-    'kdrrRooooooooooRrrdk',
-    '.kdrrRRRRRRRRRRrrdk.',
-    '..kkddddddddddddkk..',
-    '....kkkkkkkkkkkk....',
-    '....kYk......kYk....',
-    '.....Y........Y.....',
-  ]],
-  // 棱镜之眼·裂相：棱镜裂成三片，中央红瞳涨到最大（它分裂出幻影了）
+  // 棱镜·裂相：棱镜裂开，红瞳涨到最大（第三阶段它开始分裂幻影）。
   prism_x: [[
     '.........kk.........',
     '........kCCk........',
     '.......kCwwCk.......',
     '......kCwWWwCk......',
-    '.....kCwWqqWwCk.....',
-    '....kCwWqPPqWwCk....',
-    '...kCwWqPkkPqWwCk...',
-    '..kCwWqPkRRkPqWwCk..',
-    '..kCwWqPkRRkPqWwCk..',
-    '...kCwWqPkkPqWwCk...',
-    '....kCwWqPPqWwCk....',
-    '.....kCwWqqWwCk.....',
+    '.....kCwWkkWwCk.....',
+    '....kCwWkPPkWwCk....',
+    '...kCwWkPkkPkWwCk...',
+    '..kCwWkPkRRkPkWwCk..',
+    '..kCwWkPkRRkPkWwCk..',
+    '...kCwWkPkkPkWwCk...',
+    '....kCwWkPPkWwCk....',
+    '.....kCwWkkWwCk.....',
     '......kCwWWwCk......',
     '.......kCwwCk.......',
     '........kCCk........',
-    '.........kk.........',
+    '.........kk.........'
   ]],
+
 };
 
 // ============ 拾取物 & 杂项 ============

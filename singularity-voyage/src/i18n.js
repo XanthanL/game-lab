@@ -210,6 +210,9 @@ const UI = {
     'bn.bossDead': '巨像 · 已击碎',
     'bn.enrage': '狂暴',
     'bn.enrageSub': '{0} · 第二阶段',
+    // 巨像形态切换（2026-10-11）：三形态系统
+    'bn.form': '形态转换',
+    'bn.formSub': '{0} · {1}',
     'bn.bloom': '质变 · {0}',
     'bn.bloomSub': '已升至满级',
     'bn.syn': '协同 · {0}',
@@ -421,6 +424,8 @@ const UI = {
     'bn.bossDead': 'COLOSSUS · DESTROYED',
     'bn.enrage': 'ENRAGED',
     'bn.enrageSub': '{0} · PHASE 2',
+    'bn.form': 'FORM SHIFT',
+    'bn.formSub': '{0} · {1}',
     'bn.bloom': 'BLOOM · {0}',
     'bn.bloomSub': 'MAX LEVEL REACHED',
     'bn.syn': 'SYNERGY · {0}',

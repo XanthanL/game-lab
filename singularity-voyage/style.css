@@ -1,4 +1,9 @@
-@font-face { font-family: FP; src: url(assets/fusion-pixel-12.woff2) format('woff2'); font-display: block; }
+/* ⚠️ 首屏关键路径（2026-10-13）：
+   · 用子集版（50 KB，完整版 588 KB）—— 由 tools/subset_font.py 生成，新增 UI 文案后要重跑。
+   · font-display 必须是 swap，不能是 block：block 会让文字等到字体到位才画，
+     慢网手机上等于把「进游戏」押在字体下载上。swap 先用 monospace 顶上，字体到了自动换。
+   · 不要给它加 <link rel=preload>：preload 是 High 优先级，会和 game.js 抢带宽。 */
+@font-face { font-family: FP; src: url(assets/fusion-pixel-12.subset.woff2) format('woff2'); font-display: swap; }
 /* 安全区：fit() 会把 innerWidth/Height 减去这四个值再算缩放，
    否则刘海屏横屏时左上角的血条会压到摄像头下面 */
 :root {

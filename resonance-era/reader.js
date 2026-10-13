@@ -151,6 +151,16 @@
       if (on) links[i].setAttribute('aria-current', 'true');
       else links[i].removeAttribute('aria-current');
     }
+    /* 侧栏里的附录页（拓片辑 / 厥初）不是章节，单独判：只有正停在这一页时才亮。
+       用 data-appendix 的值跟 body[data-view] 对，加新附录页不用再来改这里。 */
+    var apps = document.querySelectorAll('[data-appendix]');
+    for (var j = 0; j < apps.length; j++) {
+      var a = apps[j];
+      var on = n === 0 && el.body.getAttribute('data-view') === a.getAttribute('data-appendix');
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    }
   }
 
   /* ---------- 目录页 ---------- */
@@ -200,12 +210,224 @@
       html += '</div></section>';
     });
 
+    /* 附录入口：不是章节，不放进 ch-grid，单独一条满行 */
+    var pvCount = proverbsData().items.length;
+    if (pvCount) {
+      html += '<a class="pv-entry" href="#/proverbs">' +
+        '<span class="pv-e-k">附 · Appendix</span>' +
+        '<span class="pv-e-t">古泰拉谚语</span>' +
+        '<span class="pv-e-n">' + pvCount + ' 条拓片 · Gutaira Proverbs</span>' +
+      '</a>';
+    }
+    var jcCount = juechuData().items.length;
+    if (jcCount) {
+      html += '<a class="pv-entry" href="#/juechu">' +
+        '<span class="pv-e-k">附 II · Appendix</span>' +
+        '<span class="pv-e-t">厥初</span>' +
+        '<span class="pv-e-n">' + jcCount + ' 型 · Juechu · 缺 II 与 XI</span>' +
+      '</a>';
+    }
+
     html += '<div class="colophon">© 2026 ' + esc(DATA.title) + ' | ' + esc(DATA.titleEn) +
       ' BY XANTHANL<br>正文以 Markdown 手稿原样渲染 · 托管于 GitHub Pages</div>';
 
     el.view.innerHTML = html;
     document.title = DATA.title + ' | ' + DATA.titleEn;
     window.scrollTo(0, 0);
+  }
+
+  /* ---------- 古泰拉谚语（作者收藏） ----------
+   * 与章首引文是两套东西：那边为某一章服务，这边是私人的句子收藏。
+   *
+   * ⚠️ 只有一版，就是这个世界的那一版。2026-10-13 删掉了「原版 / 原型」折叠 ——
+   *   页面上不再出现替换前的句子，proverbs.js 里也没有 origin 字段了。
+   *   不要再往这里加折叠开关、不要再给 KEY 加 origin。
+   */
+  function proverbsData() {
+    var p = window.PROVERBS;
+    return p && p.items ? p : { intro: {}, items: [] };
+  }
+
+  /* 挂到某一章前面的那条谚语。chapter 只在 proverbs.js 里写一次，
+     章节页和谚语页双向都从这一个字段读，不要两边各配一份表。 */
+  function pvForChapter(n) {
+    var items = proverbsData().items;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].chapter === n) return items[i];
+    }
+    return null;
+  }
+
+  function renderProverbs() {
+    var P = proverbsData();
+    if (!P.items.length) { go('catalog'); return; }
+
+    /* 离开上一章之前，把它的位置存下来 */
+    if (current) savePos();
+
+    current = 0;
+    el.body.setAttribute('data-view', 'proverbs');
+    el.root.setAttribute('data-view', 'proverbs');
+    markActive(0);
+    updateMobileBar();
+
+    var intro = P.intro || {};
+
+    var html =
+      '<section class="cover pv-cover">' +
+        '<div class="kicker">Gutaira Proverbs · 拓片辑</div>' +
+        '<h1>古泰拉谚语</h1>' +
+        '<div class="en">Collected Inscriptions</div>' +
+        '<p class="lede">' + esc(intro.lead || '') + '</p>' +
+        '<div class="stats">' +
+          '<div><b>' + P.items.length + '</b><span>条拓片</span></div>' +
+          '<div><b>' + DATA.totalChapters + '</b><span>章引文</span></div>' +
+          '<div><b>1018</b><span>宇宙纪元</span></div>' +
+        '</div>' +
+      '</section>' +
+      '<p class="pv-note">' + esc(intro.note || '') + '</p>';
+
+    html += '<ol class="pv-list">';
+
+    P.items.forEach(function (it) {
+      var n = pad(it.id);
+      html += '<li class="pv-item">' +
+        '<div class="pv-head">' +
+          '<span class="pv-n">' + n + '</span>' +
+          '<span class="pv-tags">' + (it.tags || []).map(esc).join(' · ') + '</span>' +
+        '</div>' +
+        '<blockquote class="pv-quote">' +
+          (it.lines || []).map(function (l) {
+            return '<span class="l">' + esc(l) + '</span>';
+          }).join('') +
+        '</blockquote>' +
+        '<p class="pv-src">' + esc(it.source || '') + '</p>';
+
+      /* 挂了章节的，给一条回去的路 */
+      var ch = it.chapter && DATA.byNumber[it.chapter];
+      if (ch) {
+        html += '<a class="pv-goto" href="#/' + ch.number + '">' +
+                  '挂在 <b>第 ' + pad(ch.number) + ' 章</b> ' + esc(ch.title) + ' 前面' +
+                '</a>';
+      }
+      html += '</li>';
+    });
+
+    html += '</ol><a class="back-catalog" href="#/catalog">返回目录</a>';
+
+    el.view.innerHTML = html;
+    document.title = '古泰拉谚语 · ' + DATA.title;
+    window.scrollTo(0, 0);
+    afterLayout(onScroll);
+  }
+
+  /* ---------- 厥初 ----------
+   * 古泰拉铸的三十六个初型。与拓片辑是同一个考古层：
+   * 拓片是古泰拉墙上的字，厥初是古泰拉册子上的人型。
+   *
+   * ⚠️ 名字、称号、归口、原籍、四件套全部一字不动地照搬 —— 作者定的（04_editing/juechu.md）。
+   *   不要「翻译成泰拉语汇」：它是出土物，泰拉人照抄，并不知道那是什么。
+   *   本书自己写的只有 trace（它在泰拉落在哪）。
+   */
+  function juechuData() {
+    var j = window.JUECHU;
+    return j && j.items ? j : { intro: {}, dims: [], groups: [], items: [] };
+  }
+
+  /* 九轴读数：一格一轴，基线在中线，正值往上、负值往下。
+     刻度 -3 ~ +3，只问方向不问强度。 */
+  function vecBar(vec, dims) {
+    var h = '';
+    for (var i = 0; i < dims.length; i++) {
+      var d = dims[i], v = vec && typeof vec[i] === 'number' ? vec[i] : 0;
+      var pct = Math.abs(v) / 3 * 50;
+      var up = v >= 0;
+      var side = v === 0 ? '中线' : (up ? d.pos : d.neg);
+      h += '<i class="jc-v" title="' + esc(d.k + ' ' + side + ' ' + (v > 0 ? '+' : '') + v) + '">' +
+             '<b style="' + (up ? 'bottom:50%;' : 'top:50%;') + 'height:' + pct.toFixed(1) + '%"></b>' +
+           '</i>';
+    }
+    return '<div class="jc-vec" aria-hidden="true">' + h + '</div>';
+  }
+
+  function renderJuechu() {
+    var J = juechuData();
+    if (!J.items.length) { go('catalog'); return; }
+
+    if (current) savePos();
+
+    current = 0;
+    el.body.setAttribute('data-view', 'juechu');
+    el.root.setAttribute('data-view', 'juechu');
+    markActive(0);
+    updateMobileBar();
+
+    var intro = J.intro || {};
+    var zheng = J.items.filter(function (it) { return it.grp === 'zheng'; }).length;
+
+    var html =
+      '<section class="cover pv-cover">' +
+        '<div class="kicker">Juechu · 厥初</div>' +
+        '<h1>厥初</h1>' +
+        '<div class="en">The First Cast</div>' +
+        '<p class="lede">' + esc(intro.lead || '') + '</p>' +
+        '<div class="stats">' +
+          '<div><b>' + J.items.length + '</b><span>型</span></div>' +
+          '<div><b>' + zheng + '</b><span>正型</span></div>' +
+          '<div><b>缺 II · XI</b><span>编号</span></div>' +
+        '</div>' +
+      '</section>' +
+      '<p class="pv-note">' + esc(intro.note || '') + '</p>';
+
+    /* 九轴读法只列一次，条目里不再重复标签 */
+    if (J.dims.length) {
+      html += '<section class="jc-dims"><h2>九轴读法</h2><dl>';
+      J.dims.forEach(function (d) {
+        html += '<div><dt>' + esc(d.k) + '</dt>' +
+                  '<dd><b>' + esc(d.pos) + '</b> ↔ <b>' + esc(d.neg) + '</b>' +
+                  '<span>' + esc(d.ask || '') + '</span></dd></div>';
+      });
+      html += '</dl></section>';
+    }
+
+    J.groups.forEach(function (g) {
+      var list = J.items.filter(function (it) { return it.grp === g.key; });
+      if (!list.length) return;
+      html += '<section class="jc-grp">' +
+                '<h2>' + esc(g.name) + ' <span>' + list.length + '</span></h2>' +
+                '<p class="jc-g-note">' + esc(g.note || '') + '</p>' +
+                '<ol class="jc-list">';
+
+      list.forEach(function (it) {
+        html += '<li class="jc-item">' +
+          '<div class="jc-head">' +
+            '<span class="jc-num' + (it.num ? '' : ' is-none') + '">' + esc(it.num || '—') + '</span>' +
+            '<span class="jc-name">' + esc(it.name) + '</span>' +
+            '<span class="jc-title">' + esc(it.title) + '</span>' +
+            (it.zai ? '<span class="jc-zai is-' + (it.zai === '在册' ? 'on' : 'off') + '">' +
+                        esc(it.zai) + '</span>' : '') +
+          '</div>' +
+          '<p class="jc-core">' + esc(it.core) + '</p>' +
+          '<blockquote class="jc-quote">' + esc(it.quote) + '</blockquote>' +
+          vecBar(it.vec, J.dims) +
+          '<div class="jc-sides">' +
+            '<div class="jc-side is-light"><span class="k">成</span><p>' + esc(it.light) + '</p></div>' +
+            '<div class="jc-side is-shadow"><span class="k">积</span><p>' + esc(it.shadow) + '</p></div>' +
+          '</div>' +
+          '<p class="jc-trace"><span class="k">在泰拉</span>' + esc(it.trace) + '</p>' +
+          '<p class="jc-meta">归口 ' + esc(it.gui) + ' · 原籍 ' + esc(it.yuan) + '</p>' +
+        '</li>';
+      });
+
+      html += '</ol></section>';
+    });
+
+    html += '<a class="back-catalog" href="#/catalog">返回目录</a>';
+
+    el.view.innerHTML = html;
+    document.title = '厥初 · ' + DATA.title;
+    window.scrollTo(0, 0);
+    afterLayout(onScroll);
   }
 
   /* ---------- 章节页 ---------- */
@@ -275,6 +497,7 @@
           '</div>' +
         '</header>' +
         epigraphHtml(ch) +
+        pvEpigraphHtml(ch.number) +
         '<div class="prose">' + parsed.html + '</div>' +
         nav +
         '<a class="back-catalog" href="#/catalog">返回目录</a>' +
@@ -300,6 +523,20 @@
              '<p class="epi-q">' + esc(e.quote) + '</p>' +
              (e.source ? '<p class="epi-s">' + esc(e.source) + '</p>' : '') +
            '</blockquote>';
+  }
+
+  /* 拓片辑里挂在这一章前面的那条。
+     接在章节自己的引文后面，不替换它 —— 那一句的字数跟正文里「X 个字」是绑死的。 */
+  function pvEpigraphHtml(n) {
+    var it = pvForChapter(n);
+    if (!it) return '';
+    var html =
+      '<blockquote class="ch-epigraph ch-epigraph-2">' +
+        '<p class="epi-k">同页拓片 · 第 ' + pad(it.id) + ' 号</p>' +
+        '<p class="epi-q">' + (it.lines || []).map(esc).join('<br>') + '</p>' +
+        '<p class="epi-s">' + esc(it.source || '') + '</p>' +
+        '<a class="epi-link" href="#/proverbs">全部拓片 →</a>';
+    return html + '</blockquote>';
   }
 
   function paintError(ch, err) {
@@ -328,6 +565,8 @@
   function route() {
     var h = String(location.hash || '').replace(/^#\/?/, '').trim();
     if (h === '' || h === 'catalog' || h === '/') { renderCatalog(); return; }
+    if (h === 'proverbs') { renderProverbs(); return; }
+    if (h === 'juechu') { renderJuechu(); return; }
     var n = parseInt(h, 10);
     if (!isNaN(n) && DATA.byNumber[n]) renderChapter(n);
     else renderCatalog();
