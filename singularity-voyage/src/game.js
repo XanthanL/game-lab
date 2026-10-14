@@ -28,7 +28,15 @@ function updateCam() {
   cam.y = clamp(G.py, H / 2, WORLD.h - H / 2);
 }
 const $ = id => document.getElementById(id);
+// ⚠️ 主画布必须关掉图像平滑 —— 这是像素游戏，**而且它原来根本没关**
+//    （旁边的机库预览 / 图鉴图标都关了，就主画布漏了）。
+//    ① 画质：任何非整数落点或缩放的 drawImage 都会被插值糊掉，和 CSS 的
+//       image-rendering:pixelated 无关（那个只管画布**放大到屏幕**的那一层）。
+//    ② 性能：双线性插值的采样成本高于最近邻，profile 里 drawImage 是最大头（~28%）。
+//    已确认主画布上没有依赖插值的缩放绘制（全整数落点、原尺寸贴图），且画布尺寸全程不变
+//    （改 canvas.width 会把上下文状态整个重置，那时才需要重新设）。
 const cv = $('game'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 const wrap = $('wrap');
 const rand = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
 const irand = (a, b) => Math.floor(rand(a, b + 1));
@@ -75,7 +83,8 @@ const tcache = new Map();
 function textSpr(str, color, size, outline) {
   const key = str + '|' + color + '|' + size + '|' + (outline || '');
   let c = tcache.get(key); if (c) return c;
-  const m = document.createElement('canvas').getContext('2d');
+  // 测量复用同一个 context —— 见下面 measure() 那条注释
+  const m = _measureCtx();
   m.font = size + 'px FP, monospace';
   const w = Math.ceil(m.measureText(str).width) + 4;
   c = document.createElement('canvas'); c.width = w; c.height = size + 6;
@@ -87,7 +96,14 @@ function textSpr(str, color, size, outline) {
       x.fillText(str, 2 + dx, 2 + dy);
   }
   x.fillStyle = color; x.fillText(str, 2, 2);
-  if (tcache.size > 900) tcache.clear();
+  // ⚠️ 满了要**淘汰最旧的**，不能整表 clear。
+  //    HUD 上每帧都在变的东西（分数 / 血量 / 波次计时）会不断产生新 key，
+  //    整表清空 = 「刚缓存好就全扔掉、下一帧全部重建」，profile 里 measureText+fillText
+  //    那 ~5% 的抖动主要来自这里。Map 保持插入顺序，从头部删就是 FIFO。
+  if (tcache.size > 900) {
+    let n = 300;
+    for (const k of tcache.keys()) { if (n-- <= 0) break; tcache.delete(k); }
+  }
   tcache.set(key, c); return c;
 }
 function text(str, x, y, color = '#f4f4f4', align = 'l', size = 12, outline = '#1a1c2c') {
@@ -98,7 +114,16 @@ function text(str, x, y, color = '#f4f4f4', align = 'l', size = 12, outline = '#
   ctx.drawImage(c, Math.round(px), Math.round(y));
   return c.width;
 }
-const measure = (str, size = 12) => { const m = document.createElement('canvas').getContext('2d'); m.font = size + 'px FP, monospace'; return Math.ceil(m.measureText(str).width); };
+// ⚠️ 测量用的 2d context **只建一次**。旧版每次调用都 createElement('canvas') + getContext，
+//    HUD 一帧要量几十次 = 每帧几十个 canvas 元素白建白扔（profile 里 getContext 单独占一份）。
+//    文字缓存（textSpr）也复用它。
+let _mctx = null;
+const _measureCtx = () => (_mctx || (_mctx = document.createElement('canvas').getContext('2d')));
+const measure = (str, size = 12) => {
+  const m = _measureCtx();
+  m.font = size + 'px FP, monospace';
+  return Math.ceil(m.measureText(str).width);
+};
 
 /* ============ 中英显示小工具（文案表在 i18n.js，这里只做取词） ============
    ⚠️ 船体 / 巨像 / 星区这三张表本来就是「中文名 + 英文副标题」的双语结构
@@ -1579,13 +1604,39 @@ function forNear(x, y, r, fn) {
     for (const e of a) if (e.hp > 0) fn(e);
   }
 }
+// 命中判定专用：和 forNear 同样的格子遍历，但**不收闭包、不分配**。
+// ⚠️ 这是每帧最热的一处（220 发弹 × 60fps ≈ 1.3 万个箭头函数/秒），
+//    那个分配量会直接变成 GC 压力。只在 updateBullets 里用。
+function firstHit(x, y, gridR, pr) {
+  const c0 = ((x - gridR) / CELL) | 0, c1 = ((x + gridR) / CELL) | 0;
+  const r0 = ((y - gridR) / CELL) | 0, r1 = ((y + gridR) / CELL) | 0;
+  for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+    const a = grid.get(gkey(cx, cy)); if (!a) continue;
+    for (let i = 0; i < a.length; i++) {
+      const e = a[i];
+      if (e.dead || e.hp <= 0) continue;
+      const rr = e.r + pr;
+      if ((e.x - x) ** 2 + (e.y - y) ** 2 <= rr * rr) return e;
+    }
+  }
+  return null;
+}
+// 同 firstHit：把格子遍历内联进来，不接闭包、不分配。
+// ⚠️ nearest 是仅次于命中判定的第二热路径 —— 制导弹每 0.12s 重找一次目标、
+//    各种追踪/协同/无人机也调它，弹幕一密就是每秒几千次闭包分配。
 function nearest(x, y, R, excl) {
   let best = null, bd = R * R;
-  forNear(x, y, R, e => {
-    if (e === excl || e.dead) return;
-    const d = (e.x - x) ** 2 + (e.y - y) ** 2;
-    if (d < bd) { bd = d; best = e; }
-  });
+  const c0 = ((x - R) / CELL) | 0, c1 = ((x + R) / CELL) | 0;
+  const r0 = ((y - R) / CELL) | 0, r1 = ((y + R) / CELL) | 0;
+  for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {
+    const a = grid.get(gkey(cx, cy)); if (!a) continue;
+    for (let i = 0; i < a.length; i++) {
+      const e = a[i];
+      if (e === excl || e.dead || e.hp <= 0) continue;
+      const d = (e.x - x) ** 2 + (e.y - y) ** 2;
+      if (d < bd) { bd = d; best = e; }
+    }
+  }
   return best;
 }
 
@@ -2884,8 +2935,11 @@ function updateEnemies(dt) {
       G.vx += ux * 40; G.vy += uy * 40;
     }
   }
-  // 清理
-  for (let i = G.enemies.length - 1; i >= 0; i--) if (G.enemies[i].hp <= 0) G.enemies.splice(i, 1);
+  // 清理：保序压缩，一趟 O(n)。
+  // ⚠️ 旧版是倒序逐个 splice，团灭（一波几十只同时死）时会退化成 O(n²) 的数组搬移。
+  let w = 0;
+  for (let i = 0; i < G.enemies.length; i++) { const e = G.enemies[i]; if (e.hp > 0) G.enemies[w++] = e; }
+  G.enemies.length = w;
 }
 
 // ============ 玩家 ============
@@ -3743,12 +3797,8 @@ function updateBullets(dt) {
     } else if (b.x < -60 || b.x > WORLD.w + 60 || b.y < -60 || b.y > WORLD.h + 60) {
       G.bullets.splice(i, 1); continue;
     }
-    // 命中
-    let hit = null;
-    forNear(b.x, b.y, 14, e => {
-      if (hit || e.dead) return;
-      if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 <= (e.r + b.r) ** 2) hit = e;
-    });
+    // 命中（gridR 仍按 14 取格子，实际判定半径是 e.r + b.r —— 两件事分开，别合并）
+    const hit = firstHit(b.x, b.y, 14, b.r);
     if (!hit) continue;
     const S = G.S;
     // 爆头协议：b.crit 为 true 时**必定**暴击，绕开随机判定（见 pBullet 的 o.crit）
@@ -3901,7 +3951,10 @@ function updateParts(dt) {
   for (let i = G.parts.length - 1; i >= 0; i--) {
     const p = G.parts[i];
     p.life -= dt;
-    if (p.life <= 0) { G.parts.splice(i, 1); continue; }
+    // ⚠️ 粒子顺序无关 → 用「交换弹出」代替 splice。
+    //    splice 在接近上限（MAXP=1500）的数组上是 O(n) 整段搬移，一帧死掉上百个就是 O(n²)，
+    //    profile 里 updateParts 自身占到 11% 主要就是这个，不是那几行算术。
+    if (p.life <= 0) { const last = G.parts.pop(); if (i < G.parts.length) G.parts[i] = last; continue; }
     if (p.num !== undefined) { p.vy += 26 * dt; }
     p.vx *= 1 - Math.min(0.9, (p.drag || 3) * dt);
     p.vy *= 1 - Math.min(0.9, (p.drag || 3) * dt);
@@ -3926,7 +3979,8 @@ function updateFx(dt) {
         addShake(5);
       }
     }
-    if (f.t >= f.life) G.fx.splice(i, 1);
+    // 同上：特效之间也没有顺序依赖，交换弹出省掉 splice 的 O(n) 搬移
+    if (f.t >= f.life) { const last = G.fx.pop(); if (i < G.fx.length) G.fx[i] = last; }
   }
   for (let i = G.banners.length - 1; i >= 0; i--) { G.banners[i].t += dt; if (G.banners[i].t > G.banners[i].life) G.banners.splice(i, 1); }
   for (let i = G.toasts.length - 1; i >= 0; i--) { G.toasts[i].t += dt; if (G.toasts[i].t > G.toasts[i].life) G.toasts.splice(i, 1); }
@@ -4191,27 +4245,37 @@ function drawBackground() {
     //    但相机被世界边界夹住之后就会分叉 —— 那时只有用相机，背景才不会「跟着玩家漂」。
     //    `+64 %64` 是取正模：相机坐标恒为正，但这样写不依赖这个前提。
     const ox = L - ((cam.x * pf[i]) % 64 + 64) % 64, oy = T - ((cam.y * pf[i]) % 64 + 64) % 64;
-    for (let y = oy - 64; y < T + H + 64; y += 64)
-      for (let x = ox - 64; x < L + W + 64; x += 64)
-        ctx.drawImage(tile, Math.round(x), Math.round(y));
+    // ⚠️ 用 pattern 铺，不要逐块 drawImage：视口 480×270、tile 64px、三层，
+    //    旧写法是每帧 ~210 次 drawImage，而它们画的是同一张图的重复。
+    //    pattern + translate 之后一趟 fillRect 就够，profile 里 drawImage（最大头，~28%）
+    //    有约五分之一是这块白花的。
+    //    pattern 挂回 tile 上缓存 —— 每帧新建 pattern 只是把开销换个地方。
+    const pat = tile._pat || (tile._pat = ctx.createPattern(tile, 'repeat'));
+    ctx.save();
+    // ⚠️ translate 必须取整：旧写法是逐块 `drawImage(tile, Math.round(x), Math.round(y))`，
+    //    因为 ox 的小数部分对所有块是同一个值，round(ox + k*64) === round(ox) + k*64，
+    //    所以「取整后的原点 + 整数倍步长」和逐块取整**完全等价**。
+    //    不取整的话整片星野会相对原来偏 1px（实测 zone0 有 1.3% 像素不同，全是星星在挪位）。
+    ctx.translate(Math.round(ox), Math.round(oy));
+    ctx.fillStyle = pat;
+    ctx.fillRect(-64, -64, (L + W + 64) - (ox - 64), (T + H + 64) - (oy - 64));
+    ctx.restore();
   }
   // 漂浮岩石（同样锚在相机上，铺满视口）
   if (!G.decor) {
     G.decor = [];
     for (let i = 0; i < 12; i++) G.decor.push({ x: rand(W + 80), y: rand(H + 80), s: irand(0, 1), big: Math.random() < 0.3, a: rand(TAU), va: rand(-0.25, 0.25), p: rand(0.1, 0.3) });
   }
+  ctx.globalAlpha = 0.55;
   for (const d of G.decor) {
     d.a += d.va * DT;
     const rk = ROCKS[G.zone] || ROCKS[0];
-    const img = d.big ? rk.big : rk.s;
+    const flat = d.big ? rk.big : rk.s;          // 未旋转的那张，只用来取尺寸
+    const R = d.big ? rk.rotBig : rk.rot;        // 预烘焙的 24 向
     const px = ((d.x - cam.x * d.p) % (W + 80) + (W + 80)) % (W + 80) + L - 40;
     const py = ((d.y - cam.y * d.p) % (H + 80) + (H + 80)) % (H + 80) + T - 40;
-    ctx.save();
-    ctx.translate(px + img.width / 2, py + img.height / 2);
-    ctx.rotate(d.a);
-    ctx.globalAlpha = 0.55;
-    ctx.drawImage(img, -img.width / 2, -img.height / 2);
-    ctx.restore();
+    const cx = px + flat.width / 2, cy = py + flat.height / 2;
+    ctx.drawImage(R.imgs[dirIndex(d.a, R.n)], Math.round(cx - R.half), Math.round(cy - R.half));
   }
   ctx.globalAlpha = 1;
 }
@@ -4636,20 +4700,23 @@ function drawEBullets() {
 }
 
 function drawParts() {
+  // ⚠️ 只在透明度**真的变了**时才写 globalAlpha。粒子上限 1500，
+  //    旧版每颗都写两遍（设进去 + 立刻还原），一帧 3000 次 canvas 状态变更，
+  //    而其中大部分粒子的 f 还在 1.0（刚生成、还没开始淡）。
+  let ga = 1;
   for (const p of G.parts) {
     const f = p.life / p.max;
+    const a = Math.min(1, p.num !== undefined ? f * 1.6 : f * 1.4);
+    if (a !== ga) { ctx.globalAlpha = a; ga = a; }
     if (p.num !== undefined) {
-      ctx.globalAlpha = Math.min(1, f * 1.6);
       text(p.num, p.x, p.y, p.color, 'c', p.size === 0 ? 12 : p.size);
-      ctx.globalAlpha = 1;
       continue;
     }
-    ctx.globalAlpha = Math.min(1, f * 1.4);
     const s = Math.max(1, Math.round(p.size * (0.5 + f)));
     ctx.fillStyle = p.col;
     ctx.fillRect(Math.round(p.x), Math.round(p.y), s, s);
-    ctx.globalAlpha = 1;
   }
+  if (ga !== 1) ctx.globalAlpha = 1;
 }
 
 function drawFx() {

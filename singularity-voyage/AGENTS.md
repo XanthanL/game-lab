@@ -782,6 +782,38 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 ⚠️ 回归探针：`sv-boot-budget-check.js`（首屏预算）/ `sv-boot-runtime-check.js`（运行时）。
 
+## 渲染性能治理（2026-10-13，同一天）
+
+用 `sv-perf-profile.js` 量出来的（`CPU=4` 降速 + 压满 150 敌 / 220 弹 / 400 敌弹 /
+~1400 粒子，属于**远超实战**的压力口径）：**p50 帧时间 46.9ms → 31.1ms（21 → 32fps）**。
+
+改了六处，每处都有 profile 依据，不是顺手改的：
+
+| 位置 | 问题 | 处理 | 自身耗时变化 |
+|---|---|---|---|
+| `updateParts` | 粒子回收用 `splice`，在接近上限（1500）的数组上是 O(n) 搬移，一帧死上百个就是 O(n²) | 粒子顺序无关 → **交换弹出**（`pop()` 把末位填进空位）。`updateFx` 同理 | **11.6% → 2.3%** |
+| `drawBackground` | 三层视差星野逐块 `drawImage`，480×270 / 64px tile → 每帧 ~210 次，画的还是同一张图的重复 | 改 `createPattern` + 一趟 `fillRect`，pattern 挂回 tile 缓存 | `drawImage` 28.6% → 26.3% |
+| 主画布 `ctx` | **`imageSmoothingEnabled` 从来没关**（旁的机库预览/图鉴图标都关了，就主画布漏了） | 取 context 后立刻置 false | 见下 |
+| `measure()` | 每次调用都 `createElement('canvas') + getContext`，HUD 一帧量几十次 | 复用一个模块级 context（`textSpr` 也复用它） | `measureText` 掉出前 18 |
+| `textSpr` 缓存 | 满 900 就 `tcache.clear()` 整表清空；HUD 每帧变的分数/血量不断造新 key → 刚缓存好就全扔 | 改成淘汰最旧 300 条（Map 保持插入顺序，FIFO） | 抖动消失 |
+| `firstHit` / `nearest` | 每帧每发弹一个箭头函数（220 弹 × 60fps ≈ 1.3 万/秒的分配） | 格子遍历内联，不接闭包 | `forNear` 不再是热点 |
+
+⚠️⚠️ 两条**别回退**的硬约束：
+
+1. **`drawBackground` 的 `ctx.translate` 必须取整**（`Math.round(ox)`）。
+   旧写法是逐块 `Math.round(x)`，而 `round(ox + k*64) === round(ox) + k*64`，
+   所以「取整原点 + 整数步长」与逐块取整**完全等价**；不取整整片星野会偏 1px
+   （实测 zone0 有 1.3% 像素、zone1/2 有 6.2% 像素不同，全是星星和星云在挪位）。
+   `sv-bg-tiling-check.js` 就是守这条的。
+2. **背景装饰岩的旋转是预烘焙的**（`makeRocks` 里 `bakeRotation`，和船体同一套）。
+   原来每帧 `save/translate/rotate/drawImage/restore` ×12，而且主画布关掉平滑之后
+   任意角度的最近邻旋转会转成抖动的锯齿边 —— 固定 24 向不抖，也省掉 12 次 save/restore。
+
+⚠️ 顺带一条：**`probes/*.png` 已 gitignore**（一次清掉 2.8MB）。
+   要看图就重跑对应探针（`sv-ui-shots.js` / `sv-boss3-shot.js` / `sv-touch-style-check.js` …），别提交。
+   `probes/` 下的 `_*.js` 不是临时脚本 —— 那三个是 `BOSS_SRC` 的**生成/校验工具**，
+   2026-10-13 已移进 `tools/`（`boss-art.js` / `gen-boss-art.js` / `boss-sprite-check.js`）。
+
 ## 触屏操作区：右下三件套 + 顶栏工具键（2026-09-26）
 
 作者口径：「右边的按钮改为两个 —— 一个是大一点的控制开火的开关，另一个是稍微小一点的控制冲刺」，
@@ -1161,6 +1193,9 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-loading-check.js` | 主题化加载动画 + 手机端**首帧即横屏**（内联脚本先于 game.js 生效 / `fit()` 首帧就转 / 标题延后揭示），双截图 | `#loading` / `LOADING_MIN` / `fit()` / `boot()` |
 | `sv-boot-budget-check.js` | **首屏关键路径预算**（2026-10-13）：手势前 0 个 mp3 请求 / 手势后只拉当前那一首 / 只用子集字体且 <120KB / 中文字形真按 FP 栅格化（比像素，不是比宽度）/ 标题中文正常，截图 | `armFileBgm` / `filePlaying` / `tools/subset_font.py` / `@font-face` |
 | `sv-boot-runtime-check.js` | **运行时回归**（2026-10-13）：`?bot=1` 直接开局跑 12s，稳定在 play / 波次推进 / 12s 内 ≤2 首曲（不预取）/ 无 JS 错误 | `boot()` / `startGame` / `armFileBgm` |
+| `sv-perf-profile.js` | **性能剖析**（2026-10-13，无断言、出报告）：持续压到 150 敌 / 220 弹 / 400 敌弹并 `CPU=4` 降速，用 CDP profiler 抓 8s，按自身耗时排前 18 热函数 + 帧间隔 p50/p95/max | `step` / `render` / `updateParts` / `drawBackground` |
+| `sv-bg-tiling-check.js` | **背景视差画法等价**（2026-10-13）：pattern+fillRect 与旧的逐块 `drawImage(round(x))` 逐像素比对，3 星区 × 4 相机偏移差异须 <0.5% | `drawBackground` / `STARSETS` / `CELL=64` |
+| `sv-muzzle-decel.js` | 炮口出膛点 / 尾焰锚点 / 主炮临终减速 / 散射与尾炮的出生点，RESULT: PASS | `hullNose` / `hullTail` / `BDECEL_*` / `pBullet` |
 | `sv-boss-form-check.js` | **7 只巨像 + 4 种关卡形态**：逐只逐模式有可观测产物（弹/兵/火/激光/拽）/ 槽位倍率 1-2.2-4 / 轮换覆盖 7 只且一轮不重复 / 四形态都能完成 / 死斗全精锐 / 回收星尘够数 / 火场掉血·过期·场外安全 / HUD 目标文案，4 张新巨像截图 | `BOSSES` / `bossFire` / `rollMainBosses` / `bossSlotMul` / `FORMS` / `updateWave` / `addFire` |
 | `sv-ui-shots.js` | **UI 截图台**（无断言，改排版先拍再看）：标题 / 机库 / 图鉴 / 选卡 / HUD（满装配+巨像）/ 暂停 / 结算 / 手机端 HUD 八张进 `probes/ui-*.png` | `hudPanel` / `drawHUD` / `.pause-cols` / 遮罩底色 |
 

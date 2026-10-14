@@ -117,3 +117,9 @@ singularity-echo/test/phase*/
 #    就能把别的探针的结果打进新 server，表现为「断言集体 FAIL」甚至假 PASS。
 singularity-voyage/__*.html
 **/__probe.html
+
+# ============ 探针产出的截图（重生成即可，不进仓库）============
+# singularity-voyage/probes/ 下的 .js 是**回归探针**，要进；
+# 它们跑出来的 .png（UI 截图台 / 巨像截图 / 触屏按键截图 / 加载页双截图…）是过程产物，
+# 一次清理就清掉 2.8MB。要看图就重跑对应探针，不要提交。
+singularity-voyage/probes/*.png

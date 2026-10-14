@@ -1426,7 +1426,12 @@ function makeRocks() {
   ];
   for (const col of ['#566c86', '#6a5580', '#3a4468']) {
     const s = spriteFrom(rows);
-    out.push({ s: tinted(s, col), big: scaled(tinted(s, col), 2) });
+    const t = tinted(s, col), tb = scaled(tinted(s, col), 2);
+    // 旋转**预烘焙**（和船体同一套做法），不要每帧 rotate()：
+    //   ① 背景装饰岩有 12 块，每帧 12 次 save/translate/rotate/drawImage/restore；
+    //   ② 主画布关掉图像平滑之后（见 game.js 的 ctx.imageSmoothingEnabled），
+    //      逐帧任意角度的最近邻旋转会转成抖动的锯齿边 —— 预烘焙是固定 24 向，不抖。
+    out.push({ s: t, big: tb, rot: bakeRotation(t, 24), rotBig: bakeRotation(tb, 24) });
   }
   return out;
 }
