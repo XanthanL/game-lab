@@ -1,10 +1,11 @@
 // 第六批渲染验证：把冰箭 / 射线 / 怒火 / 印记 / 荆棘 同时弄到画面上，截一张图
 // 运行： node sv-lol6-shot.js
 const puppeteer = require('puppeteer-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
+const CHROME = require('./probe-lib').chrome;
+let BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
 
 (async () => {
+  BASE = await require('./probe-lib').ensureUrl(BASE);
   const browser = await puppeteer.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],

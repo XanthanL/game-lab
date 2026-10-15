@@ -1,13 +1,15 @@
 // singularity-voyage 改动验证：运动手感 / 吸附 / 爆炸不卡顿 / 转向
 // 运行： node sv-move-check.js
 const { chromium } = require('playwright-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const URL = process.env.SV_URL || 'http://127.0.0.1:8612/index.html?god=1';
+const CHROME = require('./probe-lib').chrome;
+let URL = process.env.SV_URL || 'http://127.0.0.1:8612/index.html?god=1';
 
 const out = [];
 const log = (...a) => { out.push(a.join(' ')); console.log(...a); };
 
 (async () => {
+  URL = await require('./probe-lib').ensureUrl(URL);
+  const BASEURL = URL.split('?')[0];   // 下面有处要换 query，得用不带 ? 的那份
   const browser = await chromium.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],
@@ -109,7 +111,7 @@ const log = (...a) => { out.push(a.join(' ')); console.log(...a); };
   log(' 15 次大爆炸后的屏抖      : ' + R.shakeAfter15Blasts.toFixed(2) + ' (上限 9)');
 
   // ---------- 实战压力：满级高爆组合连打，统计「被冻住的帧」占比 ----------
-  await page.goto((process.env.SV_URL || 'http://127.0.0.1:8612/index.html') + '?god=1&kit=all', { waitUntil: 'load' });
+  await page.goto(BASEURL + '?god=1&kit=all', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__dbg && window.__dbg.state !== 'loading', null, { timeout: 20000 });
   await page.evaluate(() => { startGame(); });
   await page.waitForFunction(() => window.__dbg.state === 'play', null, { timeout: 10000 });

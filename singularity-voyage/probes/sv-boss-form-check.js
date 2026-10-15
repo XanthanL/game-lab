@@ -8,7 +8,7 @@ const { chromium } = require('playwright-core');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = 8623;
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME = require('./probe-lib').chrome;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png' };
 
 const server = http.createServer((req, res) => {
@@ -60,7 +60,9 @@ const log = (...a) => console.log(...a);
       out.bossCount = ids.length;
       out.bossMeta = ids.map(id => {
         const b = tbl[id];
-        return { id, pats: (b && b.pats) || null, hasTraitEn: !!(b && b.traitEn), spr: (b && b.spr) || null };
+        // pats 在形态里：摊平成「这只巨像一共会用哪些招」
+        const pats = (b && b.forms) ? [...new Set(b.forms.flatMap(f => f.pats || []))] : ((b && b.pats) || null);
+        return { id, pats, hasTraitEn: !!(b && b.traitEn), spr: (b && b.spr) || null };
       });
 
       // ---------- ② 逐只巨像、逐个弹幕模式真的放得出来 ----------
@@ -69,29 +71,37 @@ const log = (...a) => console.log(...a);
       out.patResults = [];
       for (const id of ids) {
         const b = tbl[id];
-        for (let k = 0; k < b.pats.length; k++) {
-          const pat = b.pats[k];
-          clear();
-          d.setPos(G.px, G.py);
-          d.spawnBoss(id);
-          const bo = G.boss;
-          bo.entering = false;
-          bo.patI = k;      // 直接点名要测的那套
-          bo.cd = 0;        // 下一帧就开火
-          bo.spiralA = 0;
-          const vBefore = Math.hypot(bo.vx, bo.vy);
-          await frame(); await frame();
-          const lasers = G.fx.filter(f => f.type === 'laser').length;
-          out.patResults.push({
-            boss: id, pat,
-            ebullets: G.ebullets.length,
-            enemies: G.enemies.length,          // 1 = 只有 Boss 自己；>1 说明 summon 产兵了
-            fires: G.fires.length,
-            lasers,
-            rings: G.fx.filter(f => f.type === 'ring').length,
-            bossMoved: +(Math.hypot(bo.vx, bo.vy) - vBefore).toFixed(2),
-            pulled: +Math.hypot(G.vx, G.vy).toFixed(2),   // pull 会把玩家拽动
-          });
+        // ⚠️ `pats` 在**形态**里（b.forms[fi].pats），不在 boss 顶层。
+        //    以前写成 b.pats.length —— 一进来就 TypeError，internal catch 只记了个 fatal，
+        //    ③④⑤ 于是全变成 undefined，最后崩在探针侧 R.formPurge.finished。白红很久。
+        //    现在按形态 × 该形态的 pats 逐个点名，顺带把形态切换也测了（bo.form 直接指形态）。
+        for (let fi = 0; fi < (b.forms || []).length; fi++) {
+          const f = b.forms[fi];
+          for (let k = 0; k < f.pats.length; k++) {
+            const pat = f.pats[k];
+            clear();
+            d.setPos(G.px, G.py);
+            d.spawnBoss(id);
+            const bo = G.boss;
+            bo.entering = false;
+            bo.form = fi;      // bossForm(e) 读 e.forms[e.form]，指形态后再点名招式
+            bo.patI = k;       // 直接点名要测的那套
+            bo.cd = 0;         // 下一帧就开火
+            bo.spiralA = 0;
+            const vBefore = Math.hypot(bo.vx, bo.vy);
+            await frame(); await frame();
+            const lasers = G.fx.filter(f2 => f2.type === 'laser').length;
+            out.patResults.push({
+              boss: id, form: fi, pat,
+              ebullets: G.ebullets.length,
+              enemies: G.enemies.length,          // 1 = 只有 Boss 自己；>1 说明 summon 产兵了
+              fires: G.fires.length,
+              lasers,
+              rings: G.fx.filter(f2 => f2.type === 'ring').length,
+              bossMoved: +(Math.hypot(bo.vx, bo.vy) - vBefore).toFixed(2),
+              pulled: +Math.hypot(G.vx, G.vy).toFixed(2),   // pull 会把玩家拽动
+            });
+          }
         }
       }
 
@@ -202,15 +212,20 @@ const log = (...a) => console.log(...a);
       '环', String(p.rings).padStart(2),
       '拽', String(p.pulled).padStart(6));
   }
+  // ⚠️ evaluate 中途抛错时会返回「半截对象」（内部 catch 只记了 fatal）。
+  //    以前这里直接 R.xxx.yyy 取属性，一崩在探针侧，真正的错误反而看不见。
+  //    先报 fatal 和拿到的字段，再用 ?. 兜住，让探针把能测的测完。
+  if (R.fatal) log('⚠️ evaluate 内部错误 :', R.fatal);
+  if (!R.slotMul) log('⚠️ 只拿到这些字段 :', Object.keys(R).join(', ') || '(空)');
   log('③ 槽位倍率        :', JSON.stringify(R.slotMul));
   log('   实测血量        :', JSON.stringify(R.hpAt));
   log('④ 轮换覆盖        :', R.rotationCoversAll, '/ 7 只  一轮内重复次数:', R.rotationDupRuns, '(必须 0)');
   log('⑤ 主线形态编排     :', JSON.stringify(R.formMap));
   log('   无尽形态循环     :', JSON.stringify(R.formMapEndless));
-  log('   清剿完成        :', R.formPurge.finished, JSON.stringify(R.formPurge));
-  log('   潮涌完成        :', R.formSurge.finished, JSON.stringify(R.formSurge));
-  log('   回收完成        :', R.formSalvage.finished, JSON.stringify(R.formSalvage));
-  log('   死斗完成        :', R.formDuel.finished, JSON.stringify(R.formDuel));
+  log('   清剿完成        :', R.formPurge && R.formPurge.finished, JSON.stringify(R.formPurge));
+  log('   潮涌完成        :', R.formSurge && R.formSurge.finished, JSON.stringify(R.formSurge));
+  log('   回收完成        :', R.formSalvage && R.formSalvage.finished, JSON.stringify(R.formSalvage));
+  log('   死斗完成        :', R.formDuel && R.formDuel.finished, JSON.stringify(R.formDuel));
   log('   死斗全精锐      :', R.duelElite, '共', R.duelCount, '只');
   log('   回收地上星尘     :', R.salvageDustOnField, '需', R.salvageNeed);
   log('   HUD 目标文案     :', JSON.stringify(R.hudTexts));
@@ -254,18 +269,24 @@ const log = (...a) => console.log(...a);
   log('FATAL          :', R.fatal || 'none');
 
   // 每个新模式必须有可观测产物
+  // ⚠️ 每加一个新招式就要在这里补一条判据，否则会掉进 `?? r.ebullets > 0`
+  //    被当成「什么都没放出来」→ 假红。crossLaser / blackout 就是这样漏掉的：
+  //    它们本来就不产弹（前者走激光、后者走环），拿 ebullets 判等于必输。
   const patOk = r => ({
     summon: r.enemies > 1, burn: r.fires > 0, beamFan: r.lasers >= 5,
     pull: r.pulled > 1 || r.rings > 0, charge: Math.abs(r.bossMoved) > 1,
-    laser: r.lasers >= 1,
+    laser: r.lasers >= 1, crossLaser: r.lasers >= 1,
+    blackout: r.rings > 0,
   }[r.pat] ?? r.ebullets > 0);
   const badPats = (R.patResults || []).filter(r => !patOk(r));
 
-  const pass = R.bossCount === 7
+  // ⚠️ 巨像只数别写死：7 只是 2026-09 的数字，后来加到 8 只，写死的断言当场假红。
+  //    用 bossCount 自举 —— 它要的是「一轮能把所有巨像都覆盖到」，不是「必须是 7」。
+  const pass = R.bossCount >= 7
     && (R.bossMeta || []).every(m => m.pats && m.pats.length && m.hasTraitEn && m.spr)
     && badPats.length === 0
     && R.slotMul[4] === 1 && R.slotMul[8] === 2.2 && R.slotMul[12] === 4
-    && R.rotationCoversAll === 7 && R.rotationDupRuns === 0
+    && R.rotationCoversAll === R.bossCount && R.rotationDupRuns === 0
     && R.formPurge.finished && R.formSurge.finished && R.formSalvage.finished && R.formDuel.finished
     && R.duelElite === true && R.salvageDustOnField >= R.salvageNeed
     && Object.values(R.hudTexts).every(t => typeof t === 'string' && t.length > 0 && t.indexOf('⟪') < 0)

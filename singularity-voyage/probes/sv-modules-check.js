@@ -1,11 +1,12 @@
 // singularity-voyage 验证：制导削弱 + 第四批新模块（孤立 / 湮灭 / 拘束 / 回溯）
 // 运行： node sv-modules-check.js
 const { chromium } = require('playwright-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
+const CHROME = require('./probe-lib').chrome;
+let BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
 const log = (...a) => console.log(...a);
 
 (async () => {
+  BASE = await require('./probe-lib').ensureUrl(BASE);
   const browser = await chromium.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],

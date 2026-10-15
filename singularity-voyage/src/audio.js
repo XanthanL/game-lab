@@ -212,6 +212,14 @@ const Sound = (() => {
   //
   // ⚠️ 与合成 BGM **互斥**：成品曲「真的出声」时由 schedule() 压住合成 BGM（见 filePlaying）；
   //    只是 play() 调用成功、数据还在路上时**不算**——那段时间必须继续合成 BGM，否则是死寂。
+  //
+  // ⚠️⚠️ 切曲纪律（2026-10-16 改，改之前先看这段）：**已经开始播的曲子不许被打断**。
+  //   旧实现在 setMode 里直接 pause 旧的、play 新的 —— 波次一起一落、进 boss 又退出，
+  //   一首歌能被剁成几段，听感很碎。现在：
+  //     ① setMode 只改 `wantMode`（「下一首想要哪首」），当前这首照放完；
+  //     ② 曲子自然播到 ended，才在那一刻决定「续同一首」还是「换 wantMode 那首」；
+  //     ③ `loop` 因此必须关掉 —— 否则永远等不到 ended，换曲也就永远不会发生。
+  //   代价：进 boss 战的头一两分钟可能还是巡航曲，这是作者明确要的（「放完再切」）。
   const BGM_MAP = {
     title:  'assets/bgm/Afterglow.mp3',
     cruise: 'assets/bgm/Endless_Drift_1.mp3',
@@ -220,6 +228,7 @@ const Sound = (() => {
   };
   const FILE_BGM_DELAY = 1200;   // 首次手势后延后多久开始拉第一首（ms）
   let fileBgm = {}, curBgm = null, fileBgmOn = false, armTimer = 0;
+  let curMode = null, wantMode = null;   // 正在播的是哪首 / 播完之后该换哪首
 
   // 省流量 / 2G：别拿用户的流量开玩笑，直接退回合成 BGM
   function connOk() {
@@ -239,23 +248,48 @@ const Sound = (() => {
     let a = fileBgm[m];
     if (!a) {
       a = new Audio();
-      a.loop = true; a.preload = 'auto'; a.src = src;
+      // ⚠️ loop 必须为 false：换曲靠 ended 事件驱动，一循环就永远播不完、也就永远换不了。
+      //    「同一首反复听」由 onEnded 里 currentTime=0 重播实现，效果等价但留出了换曲的时机。
+      a.loop = false; a.preload = 'auto'; a.src = src;
       a.volume = muted ? 0 : volBgm * 0.7;
       // 拉不动就把这一首摘掉，别让 schedule() 一直等一个永远不来的音源
       a.addEventListener('error', () => { if (fileBgm[m] === a) fileBgm[m] = null; if (curBgm === a) curBgm = null; }, { once: true });
+      // 一首放完的那一刻 —— 全流程里唯一允许换曲的时机
+      a.addEventListener('ended', () => onEnded(a));
       fileBgm[m] = a;
     }
     return a;
+  }
+  // 「已经在放、并且没放完」：不要求 readyState（数据还在路上时也算数，
+  // 那段时间由合成 BGM 兜底出声，但曲目归属已经定了，不该被后来的 setMode 抢走）。
+  function fileStarted() {
+    return !!(fileBgmOn && curBgm && !curBgm.paused && !curBgm.ended);
+  }
+  // 曲子自然播完 → 换到 wantMode（若还是同一首就续播）
+  function onEnded(a) {
+    if (!fileBgmOn || !musOn || curBgm !== a) return;
+    const want = (wantMode && BGM_MAP[wantMode]) ? wantMode : null;
+    if (want && want !== curMode) { startFileCur(want); return; }
+    // 还是同一首：倒回去重播（就是旧实现 loop=true 的效果）
+    try { a.currentTime = 0; } catch (e) {}
+    const p = a.play(); if (p && p.catch) p.catch(() => {});
   }
   function applyFileVol() {
     const v = muted ? 0 : volBgm * 0.7;
     for (const k in fileBgm) if (fileBgm[k]) fileBgm[k].volume = v;
   }
-  function startFileCur() {
-    if (!fileBgmOn || !musOn || !BGM_MAP[mode]) return;
-    const a = ensureTrack(mode); if (!a) return;
+  function startFileCur(m) {
+    m = m || mode;
+    if (!fileBgmOn || !musOn || !BGM_MAP[m]) return;
+    // ⚠️ 已经在放的这首不许打断：只记下「放完之后该换哪首」，由 onEnded 接手。
+    //    旧实现在这里直接 pause 旧的 —— 那正是「音乐被切得七零八落」的根因。
+    //    ⚠️ 连 Audio 都不要建：ensureTrack 一挂 src 就开始下载，
+    //       在「还没轮到它播」的时候就建，等于把下一首提前 19MB/4 拉下来 ——
+    //       进 boss 退 boss 来回两次就把「一次只拉一首」的纪律破了。
+    if (curBgm && fileStarted() && m !== curMode) { wantMode = m; return; }
+    const a = ensureTrack(m); if (!a) return;
     if (curBgm && curBgm !== a) { try { curBgm.pause(); } catch (e) {} }
-    curBgm = a;
+    curBgm = a; curMode = m; wantMode = m;
     applyFileVol();
     const p = a.play();
     if (p && p.catch) p.catch(() => {});   // 自动播放被拦：等首次手势后 init() 里再来
@@ -263,6 +297,7 @@ const Sound = (() => {
   function stopFile() {
     clearTimeout(armTimer);
     if (curBgm) { try { curBgm.pause(); } catch (e) {} curBgm = null; }
+    curMode = null; wantMode = null;
   }
   // ⚠️ 故意**不做**预取：4 首合计 19MB，一口气拉完正好是这次要治的病。
   //    哪首需要（setMode 切到 battle/boss）才拉哪首，没到位就由合成 BGM 顶着。
@@ -301,5 +336,9 @@ const Sound = (() => {
       applyVol(); applyFileVol();
     },
     get vol() { return { bgm: volBgm, sfx: volSfx }; },
+    // 探针专用只读快照：谁在播 / 播完之后想换谁 / 元素本身。
+    // 「播完再换」这条纪律全在 IIFE 内部，不露出来就一个字都验不了
+    // （sv-bgm-nocut.js 靠它断言 setMode 之后 src 没变）。
+    get dbg() { return { curMode, wantMode, src: curBgm && curBgm.src, cur: curBgm }; },
   };
 })();

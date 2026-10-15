@@ -1,9 +1,10 @@
 // 手机端验证：虚拟摇杆转向 / 松开即停 / 触屏按钮尺寸 /   smoke
 const { chromium } = require('playwright-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const URL = process.env.SV_URL || 'http://127.0.0.1:8612/index.html?god=1';
+const CHROME = require('./probe-lib').chrome;
+let URL = process.env.SV_URL || 'http://127.0.0.1:8612/index.html?god=1';
 
 (async () => {
+  URL = await require('./probe-lib').ensureUrl(URL);
   const browser = await chromium.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],

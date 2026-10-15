@@ -6356,6 +6356,18 @@ function boot() {
       return { mods: Object.assign({}, G.mods), syn: Object.keys(G.syn) };
     },
     setPos: (x, y) => { G.px = x; G.py = y; G.vx = 0; G.vy = 0; updateCam(); },
+    // 探针专用：冻结升级，并且顺手把已经弹出的三选一面板关掉。
+    // 为什么需要它：任何「跑几百帧再量一个数」的探针（冲刺方向 / 移动手感 / 后坐…）
+    //    都会在这几秒里靠拾取的星尘升上 1~2 级 —— 一旦 `openUpgrade()` 把 state 推到
+    //    'upgrade'，主循环整体停摆，玩家再也动不了，量出来的位移是 0，探针就假红。
+    //    踩到过：sv-dash-dir 12 个用例里后 4 个全是 0px，报「方向偏 90°」，其实是升级面板。
+    // 冻结的是「门槛」不是「经验」：xp 照常攒，只是永远够不着 xpNext。
+    freezeLevel: () => {
+      G.xp = 0; G.xpNext = Infinity;
+      // 已经弹出的那个直接收掉（showOverlay(null) = 全部 .ov 隐藏 + wrap 回到 playing）。
+      // ⚠️ 不要走 choose() —— 那会真发一张卡、改到 G.S，探针的基线就被污染了。
+      if (state === 'upgrade') { showOverlay(null); state = 'play'; }
+    },
     // 探针专用：直接开一枪 / 按住某个键 / 塞一发敌弹。
     // 这三种都是「不给探针开口就只能靠合成事件碰运气」的路径，直接暴露函数最稳。
     fire: (ang) => fireMain(ang === undefined ? G.aim : ang, 1),

@@ -727,8 +727,27 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 互斥规则：**成品曲在播时 `schedule()` 直接 return，压住合成 BGM**；成品曲加载/播放失败则合成 BGM 自然兜底
 （`startFileCur()` 的 `play()` catch 吞掉自动播放被拦错误，`init()` 末尾在首次手势后补播）。
-`setMode(m)` 切模式时若 `fileBgmOn && musOn && BGM_MAP[m]` 就切曲；`music(on)` 开关、`toggleMute()`、
-`setVolumes()` 都同步 `applyFileVol()`（成品曲音量 = `volBgm × 0.7`）。
+`music(on)` 开关、`toggleMute()`、`setVolumes()` 都同步 `applyFileVol()`（成品曲音量 = `volBgm × 0.7`）。
+
+### 切曲纪律：**播完再换，绝不打断**（2026-10-16 作者定）
+
+旧实现 `setMode(m)` 一被调用就 `pause` 旧的、`play` 新的 —— 波次一起一落、进 boss 又退出，
+一首歌能被剁成几段，听感很碎。**已经开始播的这首必须放完，才允许开始播下一首。**
+
+实现要点（`audio.js` 文件 BGM 段，改之前先读那里的整段注释）：
+
+1. `setMode(m)` 只改 `wantMode`，当前这首照放；换曲发生在 `ended` 事件里（`onEnded`）
+2. `a.loop` **必须为 `false`** —— 一循环就永远播不完，换曲也就永远不会发生。
+   「同一首反复听」由 `onEnded` 里 `currentTime=0` 重播实现，效果等价但留出了换曲时机
+3. `startFileCur(m)` 里「已经在放」的判断用 `fileStarted()`（不要求 `readyState`：
+   数据还在路上时曲目归属也已经定了，不该被后来的 `setMode` 抢走；那段时间由合成 BGM 兜底出声）
+4. ⚠️ 已经在放时**连 `ensureTrack` 都不要调**：一挂 `src` 就开始下载，
+   在「还没轮到它播」的时候建等于偷偷预取下一首，进 boss 退 boss 来回两次就把「一次只拉一首」破了
+5. 代价（已知、接受）：进 boss 战的头一两分钟可能还在放巡航曲 —— 这正是作者要的
+
+⚠️ 验证 `sv-bgm-nocut.js` 里有个坑：合成的 `dispatchEvent('ended')` **不会**把 `audio.ended` 置真，
+而 `startFileCur` 的「不许打断」判据看的就是 `ended`/`paused` —— 不先 `pause()` 会被它当成「还在播」
+直接挡回去，换曲永远不发生。真实播放到结尾时 `ended` 本来就是 `true`，所以这只影响探针。
 
 ⚠️ **这 4 首是复用 `singularity-echo/bgms/` 里已 git 跟踪的成品，复制到 `assets/bgm/`（ASCII 文件名）。**
 `singularity-echo/bgms/` 下另有 5 首**未跟踪的 WIP**（Ember Cradle / Tidewalk 1&2 / Crimson Bloom / Still Idol），
@@ -1167,18 +1186,39 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
 
 ### 现存的可跑探针：`probes/*.js`（Node + playwright-core，随仓库入库）
 
-`.py` 那批丢了以后，这几份是唯一还能跑的端到端验证。它们依赖 `playwright-core` 和本机 Chrome，
-所以**从 Node managed workspace 里跑**，全局名一律带前缀（见「三条硬纪律」第 1 条的 `__dbg` 撞车事故）：
+`.py` 那批丢了以后，这几份是唯一还能跑的端到端验证。
+
+**跑法（2026-10-16 起，一条命令，不用再手工起服务、不用再传 `CHROME_EXE`）**：
 
 ```bash
-# CWD = singularity-voyage 项目根目录（脚本按相对路径起静态服务，别在别的目录跑）
-WS=/c/Users/www27/.workbuddy/binaries/node
-export NODE_PATH=$WS/workspace/node_modules     # playwright-core 装在这儿
-export CHROME_EXE='C:/Program Files/Google/Chrome/Application/chrome.exe'
-$WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
+node probes/run-all.js            # 全套（23 个，约 6 分钟，末尾汇总 PASS/FAIL）
+node probes/run-all.js touch      # 只跑名字里含 touch 的（参数按子串匹配，可给多个）
 ```
-⚠️ **`sv-bulletskin-check.js` 与 `sv-orientation-check.js` 自己起静态服务**；其余几份依赖 `http://127.0.0.1:8612`
-（`SV_URL` 可覆盖）—— 先在项目根起 `python -m http.server 8612 --bind 127.0.0.1` 再跑。
+
+以前每个探针各自写死 `CHROME_EXE` 默认值（指向本机**根本没装**的
+`C:\Program Files\Google\Chrome\...`）和 `http://127.0.0.1:8612`（没人常驻），
+于是「直接 node 一个探针」必挂，得先起 python http server 再手工传两个变量 —— 全靠人肉记住。
+现在这些都收进 `probes/probe-lib.js`：
+
+- `chrome`：`CHROME_EXE` → playwright 缓存里的 chromium（扫 `ms-playwright/chromium-*` 取版本号最大的）
+  → 系统装的 Chrome/Edge → 都没有就报错提示 `npx playwright install chromium`
+- `ensureUrl(url)`：端口上有人在听就复用（手工起的 python 服务照样работа），没人听就**自己起一个**
+  （端口 0 让系统分配，避开几个探针抢同一个 8612；`server.unref()` 保证跑完能退出）
+- `serve(port, root)`：新探针直接用它
+
+⚠️ `run-all.js` 里子进程的 **cwd 必须是项目根**，不是 `probes/` —— 好几个探针往 `'probes/xxx.png'`
+写截图，在 `probes/` 里起会写成 `probes/probes/xxx.png` 直接 ENOENT。
+⚠️ `serve()` 里比较路径前必须 `path.resolve(root)`：Windows 上 `path.join` 一律吐反斜杠，
+拿调用方传的正斜杠 root 做 `startsWith` 会**全部失配 → 整个页面返回 404**（页面
+`readyState=complete`、只是 body 里写着 404，极难查）。
+
+⚠️ **任何「跑几百帧再量一个数」的探针，开局必须 `__dbg.freezeLevel()`**（2026-10-16）。
+不然跑着跑着就会靠拾取的星尘升 1~2 级 → `openUpgrade()` 把 state 推到 `'upgrade'`
+→ **主循环整体停摆**，玩家再也动不了，量出来的位移是 0。
+踩到过：`sv-dash-dir` 13 个用例里后 4 个全是 0px，报「方向偏 90°」，跟 dash 一毛钱关系没有，
+而且是**间歇性**的（跑 4 遍里 1 遍过），差点被当成 flaky 放过。
+`freezeLevel()` 冻结的是**门槛**（`xpNext = Infinity`）不是经验，xp 照攒，只是永远升不了级；
+已经弹出的三选一面板它会直接收掉（走 `showOverlay(null)`，**不**走 `choose()` —— 那会真发一张卡改到 `G.S`）。
 
 | 脚本 | 验什么 | 改了什么之后跑 |
 |---|---|---|
@@ -1196,7 +1236,8 @@ $WS/versions/22.22.2-3/node.exe probes/sv-modules-check.js
 | `sv-perf-profile.js` | **性能剖析**（2026-10-13，无断言、出报告）：持续压到 150 敌 / 220 弹 / 400 敌弹并 `CPU=4` 降速，用 CDP profiler 抓 8s，按自身耗时排前 18 热函数 + 帧间隔 p50/p95/max | `step` / `render` / `updateParts` / `drawBackground` |
 | `sv-bg-tiling-check.js` | **背景视差画法等价**（2026-10-13）：pattern+fillRect 与旧的逐块 `drawImage(round(x))` 逐像素比对，3 星区 × 4 相机偏移差异须 <0.5% | `drawBackground` / `STARSETS` / `CELL=64` |
 | `sv-muzzle-decel.js` | 炮口出膛点 / 尾焰锚点 / 主炮临终减速 / 散射与尾炮的出生点，RESULT: PASS | `hullNose` / `hullTail` / `BDECEL_*` / `pBullet` |
-| `sv-boss-form-check.js` | **7 只巨像 + 4 种关卡形态**：逐只逐模式有可观测产物（弹/兵/火/激光/拽）/ 槽位倍率 1-2.2-4 / 轮换覆盖 7 只且一轮不重复 / 四形态都能完成 / 死斗全精锐 / 回收星尘够数 / 火场掉血·过期·场外安全 / HUD 目标文案，4 张新巨像截图 | `BOSSES` / `bossFire` / `rollMainBosses` / `bossSlotMul` / `FORMS` / `updateWave` / `addFire` |
+| `sv-boss-form-check.js` | **巨像 + 4 种关卡形态**：按**形态 × 该形态的 pats** 逐级点名，每种都要有可观测产物（弹/兵/火/激光/环/拽）/ 槽位倍率 1-2.2-4 / 轮换覆盖全部巨像且一轮不重复 / 四形态都能完成 / 死斗全精锐 / 回收星尘够数 / 火场掉血·过期·场外安全 / HUD 目标文案，4 张新巨像截图 | `BOSSES` / `bossFire` / `rollMainBosses` / `bossSlotMul` / `FORMS` / `updateWave` / `addFire` |
+| `sv-bgm-nocut.js` | **成品曲「播完再换」**（2026-10-16）：setMode 之后当前这首 src/播放位置一个字节都没动 / 只把 wantMode 记下 / 那一刻连新曲都不许开始下载 / `loop===false` / ended 之后才真的换曲 / 同一首 ended 后续播不停 / 全程 ≤3 个 mp3 请求 | `audio.js` 的 `startFileCur` / `onEnded` / `fileStarted` / `ensureTrack` |
 | `sv-ui-shots.js` | **UI 截图台**（无断言，改排版先拍再看）：标题 / 机库 / 图鉴 / 选卡 / HUD（满装配+巨像）/ 暂停 / 结算 / 手机端 HUD 八张进 `probes/ui-*.png` | `hudPanel` / `drawHUD` / `.pause-cols` / 遮罩底色 |
 
 ⚠️ `sv-dash-dir.js` 每个用例开头必须 `d.clearEnemies(); G.spawnQueue.length = 0;` ——

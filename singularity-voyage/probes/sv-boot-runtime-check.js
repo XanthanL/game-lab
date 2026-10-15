@@ -8,7 +8,7 @@ const puppeteer = require('puppeteer-core');
 
 const ROOT = path.resolve(__dirname, '..');
 const PORT = 8633;
-const CHROME = process.env.CHROME_EXE || 'C:\\Users\\www27\\AppData\\Local\\ms-playwright\\chromium-1228\\chrome-win64\\chrome.exe';
+const CHROME = require('./probe-lib').chrome;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);

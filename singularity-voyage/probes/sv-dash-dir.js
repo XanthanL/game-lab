@@ -1,10 +1,11 @@
 // singularity-voyage 冲刺方向验证：冲刺只沿机头 G.ang
 // 运行： node sv-dash-dir.js
 const { chromium } = require('playwright-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
+const CHROME = require('./probe-lib').chrome;
+let BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
 
 (async () => {
+  BASE = await require('./probe-lib').ensureUrl(BASE);
   const browser = await chromium.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],
@@ -26,6 +27,9 @@ const BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
     const norm = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     const rows = [];
 
+    // ⚠️ 不冻结升级的话，跑到后半段就会因为拾取星尘升级 → state 变 'upgrade' →
+    //    主循环整个停摆 → 后几个用例位移全是 0 → 报「方向偏 90°」的假红（既有 flaky）。
+    d.freezeLevel();
     d.clearEnemies(); d.clearMods(); d.resetStats(); G.hitstop = 0;
 
     // 一次冲刺：给定机头角 ang、初速 (vx,vy)、按住的键 held

@@ -7,7 +7,7 @@ const { chromium } = require('playwright-core');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = 8624;
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME = require('./probe-lib').chrome;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg' };
 
 const server = http.createServer((req, res) => {

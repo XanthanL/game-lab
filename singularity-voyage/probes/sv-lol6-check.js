@@ -4,11 +4,12 @@
 // 运行： 起服务（python -m http.server 8612）后 node sv-lol6-check.js
 // ⚠️ 不开 ?god —— god 模式下 hurtPlayer 第一行就 return，荆棘 / 怒火根本测不到。
 const puppeteer = require('puppeteer-core');
-const CHROME = process.env.CHROME_EXE || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
+const CHROME = require('./probe-lib').chrome;
+let BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
 const log = (...a) => console.log(...a);
 
 (async () => {
+  BASE = await require('./probe-lib').ensureUrl(BASE);
   const browser = await puppeteer.launch({
     executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--disable-gpu', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],
