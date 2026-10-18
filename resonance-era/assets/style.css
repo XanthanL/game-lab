@@ -1093,6 +1093,179 @@ input[type="range"]::-moz-range-thumb {
   .jc-vec { height: 22px; }
 }
 
+/* ---------- 8.6 角色卡（cast） ----------
+   与厥初同源：发丝线 + mono 读数 + serif 正文。多出一个「与配型之分」和「九轴依据」。
+   .cast-sides 复用 .jc-sides 的观感，这里单独写以便分开调。 */
+.cast-card {
+  margin: 0 0 30px;
+  padding: 22px 24px 24px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.cast-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.cast-name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--ink);
+}
+.cast-hao {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--ink-3);
+}
+.cast-jc {
+  display: inline-block;
+  margin: 0 0 16px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 2px;
+}
+.cast-jc:hover { color: var(--accent); border-color: var(--accent); }
+.cast-jc .k,
+.cast-qsrc .k,
+.cast-gap .k,
+.cast-side .k { color: var(--ink-3); }
+.cast-jc .arr { margin-left: 4px; }
+
+.cast-core {
+  margin: 0 0 14px;
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.85;
+  letter-spacing: .015em;
+  color: var(--ink);
+  text-align: justify;
+}
+.cast-quote {
+  margin: 0 0 4px;
+  padding-left: 14px;
+  border-left: 2px solid var(--line-2);
+  font-family: var(--serif);
+  font-size: 14.5px;
+  font-style: italic;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+.cast-qsrc {
+  margin: 6px 0 18px;
+  padding-left: 16px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.7;
+  letter-spacing: .02em;
+  color: var(--ink-3);
+}
+.cast-qsrc .k,
+.cast-gap .k,
+.cast-jc .k,
+.cast-side .k { margin-right: 8px; letter-spacing: .16em; text-transform: uppercase; }
+
+.cast-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 4px 0 16px;
+}
+.cast-side {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.cast-side p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.82;
+  color: var(--ink-2);
+  text-align: justify;
+}
+.cast-side.is-shadow { background: transparent; }
+
+.cast-gap {
+  margin: 0 0 16px;
+  padding: 13px 15px;
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-2);
+  text-align: justify;
+}
+
+.cast-basis {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.cast-basis summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  list-style: none;
+}
+.cast-basis summary::-webkit-details-marker { display: none; }
+.cast-basis summary::before { content: "▸ "; }
+.cast-basis[open] summary::before { content: "▾ "; }
+.cast-basis dl {
+  margin: 12px 0 4px;
+  display: grid;
+  gap: 12px;
+}
+.cast-basis dl > div {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.cast-basis dt {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--ink-2);
+  padding-top: 1px;
+}
+.cast-basis dt b { font-weight: 700; }
+.cast-basis dt b.is-pos { color: var(--accent); }
+.cast-basis dt b.is-neg { color: var(--ink-3); }
+.cast-basis dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.78;
+  color: var(--ink-2);
+  text-align: justify;
+}
+
+@media (max-width: 680px) {
+  .cast-card { padding: 18px 16px 20px; }
+  .cast-sides { grid-template-columns: 1fr; gap: 12px; }
+  .cast-basis dl > div { grid-template-columns: 58px 1fr; }
+}
+
 /* ---------- 9. 加载 / 出错 ---------- */
 .notice {
   font-family: var(--sans);
@@ -1236,10 +1409,12 @@ body.drawer-open .scrim { opacity: 1; visibility: visible; }
 /* 目录页 / 谚语页不需要翻章按钮 */
 body[data-view="catalog"] .mobilebar .jump,
 body[data-view="proverbs"] .mobilebar .jump,
-body[data-view="juechu"] .mobilebar .jump { display: none; }
+body[data-view="juechu"] .mobilebar .jump,
+body[data-view="cast"] .mobilebar .jump { display: none; }
 body[data-view="catalog"] .mobilebar .toc-btn,
 body[data-view="proverbs"] .mobilebar .toc-btn,
-body[data-view="juechu"] .mobilebar .toc-btn { flex: 3; }
+body[data-view="juechu"] .mobilebar .toc-btn,
+body[data-view="cast"] .mobilebar .toc-btn { flex: 3; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

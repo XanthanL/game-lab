@@ -430,6 +430,95 @@
     afterLayout(onScroll);
   }
 
+  /* ---------- 角色卡（本书自己的人） ----------
+   * 与厥初是两层：厥初是出土物，角色是现在活着的人。
+   * 九轴读数直接复用厥初的 dims（九轴是同一套世界语）。 */
+  function castData() {
+    var c = window.CAST;
+    return c && c.items ? c : { intro: {}, items: [] };
+  }
+
+  function renderCast() {
+    var C = castData();
+    if (!C.items.length) { go('catalog'); return; }
+    if (current) savePos();
+
+    current = 0;
+    el.body.setAttribute('data-view', 'cast');
+    el.root.setAttribute('data-view', 'cast');
+    markActive(0);
+    updateMobileBar();
+
+    var dims = juechuData().dims;
+    var J = juechuData().items;
+
+    var intro = C.intro || {};
+    var matched = C.items.filter(function (it) { return !!it.jc; }).length;
+
+    var html =
+      '<section class="cover pv-cover">' +
+        '<div class="kicker">Cast · 角色</div>' +
+        '<h1>角色</h1>' +
+        '<div class="en">The Living</div>' +
+        '<p class="lede">' + esc(intro.lead || '') + '</p>' +
+        '<div class="stats">' +
+          '<div><b>' + C.items.length + '</b><span>人</span></div>' +
+          '<div><b>' + matched + '</b><span>已配型</span></div>' +
+        '</div>' +
+      '</section>' +
+      '<p class="pv-note">' + esc(intro.note || '') + '</p>';
+
+    C.items.forEach(function (it) {
+      var jc = it.jc ? J.filter(function (x) { return x.id === it.jc; })[0] : null;
+      var jcLabel = jc
+        ? (esc(jc.name) + '（' + esc(jc.title) + (jc.num ? '，' + esc(jc.num) : '') + '）')
+        : '';
+
+      html += '<article class="cast-card">' +
+        '<div class="cast-head">' +
+          '<h2 class="cast-name">' + esc(it.name) + '</h2>' +
+          (it.hao ? '<span class="cast-hao">' + esc(it.hao) + '</span>' : '') +
+        '</div>';
+
+      if (jc) {
+        html += '<a class="cast-jc" href="#/juechu"><span class="k">配型</span>' +
+                  jcLabel + ' <span class="arr">→</span></a>';
+      }
+
+      html += '<p class="cast-core">' + esc(it.core) + '</p>' +
+        '<blockquote class="cast-quote">' + esc(it.quote) + '</blockquote>' +
+        (it.quoteSrc ? '<p class="cast-qsrc"><span class="k">出处</span>' + esc(it.quoteSrc) + '</p>' : '') +
+        vecBar(it.vec, dims) +
+        '<div class="cast-sides">' +
+          '<div class="cast-side is-light"><span class="k">成</span><p>' + esc(it.light) + '</p></div>' +
+          '<div class="cast-side is-shadow"><span class="k">积</span><p>' + esc(it.shadow) + '</p></div>' +
+        '</div>';
+
+      if (it.gap) {
+        html += '<p class="cast-gap"><span class="k">与配型之分</span>' + esc(it.gap) + '</p>';
+      }
+
+      if (it.basis && it.basis.length) {
+        html += '<details class="cast-basis"><summary>九轴依据</summary><dl>';
+        it.basis.forEach(function (b) {
+          var cls = b.v > 0 ? 'is-pos' : b.v < 0 ? 'is-neg' : 'is-zero';
+          html += '<div><dt>' + esc(b.k) + ' <b class="' + cls + '">' + (b.v > 0 ? '+' : '') + b.v + '</b></dt>' +
+                    '<dd>' + esc(b.why) + '</dd></div>';
+        });
+        html += '</dl></details>';
+      }
+
+      html += '</article>';
+    });
+
+    html += '<a class="back-catalog" href="#/catalog">返回目录</a>';
+
+    el.view.innerHTML = html;
+    document.title = '角色 · ' + DATA.title;
+    window.scrollTo(0, 0);
+    afterLayout(onScroll);
+  }
+
   /* ---------- 章节页 ---------- */
   function skeleton() {
     var s = '<div class="skeleton">';
@@ -567,6 +656,7 @@
     if (h === '' || h === 'catalog' || h === '/') { renderCatalog(); return; }
     if (h === 'proverbs') { renderProverbs(); return; }
     if (h === 'juechu') { renderJuechu(); return; }
+    if (h === 'cast') { renderCast(); return; }
     var n = parseInt(h, 10);
     if (!isNaN(n) && DATA.byNumber[n]) renderChapter(n);
     else renderCatalog();
