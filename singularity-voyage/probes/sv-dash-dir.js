@@ -37,7 +37,11 @@ let BASE = process.env.SV_URL || 'http://127.0.0.1:8612/index.html';
       // ⚠️ 每例都要清场：跑得久了 updateWave 会继续补敌人，撞上来的接触伤害会往 G.vx/vy 上
       //    加一记互推（`G.vx += ux * 40`），量出来就成了「方向偏了几度」—— 那是场上有怪，不是 dash 的 bug。
       d.clearEnemies(); G.spawnQueue.length = 0;
-      d.setPos(G.px, G.py);
+      // ⚠️ 每例都摆回**世界正中**（不是原地不动 `setPos(G.px, G.py)`）：
+      //    13 例各冲 ~98px，漂出去就是 1200px+，迟早撞上世界边界被回弹/夹住 ——
+      //    这时位移被吃掉（实测出现过 10.0px、甚至 0.0px），像素取整再一抖，
+      //    方向就能报出好几度的假红。摆回中点是让每例都在「远离边界」的同一条件下测。
+      d.setPos(720, 405);
       G.vx = vx; G.vy = vy; G.ang = ang; G.aim = ang + 1.2;   // 故意让准星偏离机头
       G.dashCd = 0; G.dashT = 0; G.hitstop = 0;
       for (const k of held) d.hold(k, true);

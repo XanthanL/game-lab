@@ -99,6 +99,14 @@ const Sound = (() => {
     shield() { tone({ f: 1200, f2: 2200, d: 0.09, type: 'square', v: 0.07 }); tone({ f: 800, d: 0.16, type: 'triangle', v: 0.1 }); },
     // 跃迁：上行扫频，段落切换时播放
     warp() { tone({ f: 160, f2: 2400, d: 0.7, type: 'sawtooth', v: 0.14 }); noise({ d: 0.8, v: 0.3, f: 400, f2: 8000, type: 'bandpass', q: 1.2 }); },
+    // 视界·吞噬（2026-10-20）：**下行**扫频 + 一段低频余响 ——
+    //   和 warp 的上行正好相反：那是「离开」，这是「掉进去」。方向反了就完全读不出「被吞」。
+    devour() {
+      if (!thr('devour', 90)) return;
+      tone({ f: 900, f2: 90, d: 0.34, type: 'sawtooth', v: 0.1 });
+      tone({ f: 70, f2: 42, d: 0.26, type: 'sine', v: 0.22 });
+      noise({ d: 0.3, v: 0.1, f: 1800, f2: 160, type: 'bandpass', q: 1.6 });
+    },
     // 低血量心跳：两下闷响
     heart() {
       tone({ f: 62, f2: 34, d: 0.16, type: 'sine', v: 0.5 });
@@ -130,6 +138,20 @@ const Sound = (() => {
     },
     // 磁暴雷布设：两下金属轻响；触爆复用 boom()
     mine() { if (!thr('mine', 55)) return; tone({ f: 620, f2: 940, d: 0.07, type: 'square', v: 0.06 }); tone({ f: 940, d: 0.05, type: 'triangle', v: 0.05, t0: 0.07 }); },
+    // 地形（2026-10-21）：岩块被啃碎 / 喷口喷发。
+    //   ⚠️ crumble 必须节流 —— 打碎一块会连着掉好几发弹，不节流就是一串爆音；
+    //      但也不能太重，否则「我打碎了它」这个反馈会迟到半秒。
+    crumble() {
+      if (!thr('crumble', 80)) return;
+      noise({ d: 0.26, v: 0.24, f: 2600, f2: 240, type: 'bandpass', q: 1.1 });
+      tone({ f: 150, f2: 46, d: 0.22, type: 'sine', v: 0.3 });
+    },
+    // 喷口喷发：上行气流 + 低频推力，和 boom（爆炸）区分开 —— 这是**持续**的东西
+    vent() {
+      if (!thr('vent', 130)) return;
+      noise({ d: 0.52, v: 0.24, f: 4200, f2: 700, type: 'bandpass', q: 1.4 });
+      tone({ f: 620, f2: 190, d: 0.4, type: 'sawtooth', v: 0.08 });
+    },
     // 制导弹失坠（2026-10-03 削制导时补的反馈）：飞够里程自己熄灭。
     // ⚠️ 节流要重（260ms）—— 一梭子十发同时失坠时如果每发都响，那就是一阵噪音墙，
     //    玩家反而会以为制导整个坏掉了。听得见「有东西结束了」就够了。

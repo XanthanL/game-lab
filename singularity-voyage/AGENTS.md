@@ -4,7 +4,7 @@
 **全游戏中英双语可切**（标题页右上角按钮，见「中英切换 i18n」一节）。
 
 **血统**：画风与代码框架照搬 `last-firewall`（终焉防火墙），内容（船体 / 敌型 / 模块 / 波次）来自 `singularity-echo`（奇点回响）的重设计版。
-本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 7 巨像 / 4 关卡形态 / 39 模块卡（含 MAX 质变 + 30 组协同），完整可通关，**打通后转入无尽深渊**。
+本轮是**垂直切片**：5 船体 / 12 段航程 / 16 敌型 / 8 巨像 / 5 关卡形态 / 45 模块卡（含 MAX 质变 + 36 组协同），完整可通关，**打通后转入无尽深渊**。
 39 张模块卡每一级都带一件**舰体配件**（画在飞船模型上，选不同能力长出不同外形 —— 见下面「舰体配件」一节）。
 
 - 480x270 画布，`#wrap`（canvas + DOM 覆盖层）整体 CSS 缩放，UI 按游戏像素布局。
@@ -213,6 +213,25 @@
 | 潮涌 surge | **存活 N 秒**，敌人一直涌 | 比走位，杀不完也不用杀完 |
 | 回收 salvage | 在骚扰下捡够 N 份星尘 | 逼你离开安全路线去够掉落 |
 | 死斗 duel | 3~4 只精锐重甲，杀光 | 少量高血，考验穿透/爆发 |
+| 视界 horizon | **只出现在第 6 段**：打不死的奇点绕你公转 24s | 见下面专节 |
+
+### 视界 horizon（2026-10-20，唯一非 Boss 的「玩法换血」段）
+
+一颗**打不死**的奇点绕玩家公转（ORBIT 190 / 有 FOLLOW 滞后 → 能拖着它走），吸一切：
+玩家、敌人、掉落、**还有所有子弹**。
+
+- **子弹弯曲是身份机制**：`singBend` 写成**角速度**（BULLET_TURN 1.5 / 敌弹 0.8）而不是
+  加速度的物理解 —— 物理解实测 138px 行程只偏 7.7px，玩家根本看不出来，是抽奖不是技巧。
+  ⚠️ 带 `ang` 字段的弹必须**连 ang 一起改**（decel 分支会按 ang 重写 vx/vy）；
+  ⚠️ 只取引力在垂直速度方向的分量（叉积），平行分量会改速率。
+  **速率必须不变** —— 「子弹一样快，只是路弯了」才学得会打外偏提前量。
+- **吞噬定价**：敌人进视界 = 免费击杀（计 kills/combo/score），但**不掉落**，且每吞一样
+  视界 +1.5（星尘 +0.3，上限 RMAX 52）→ 更大更凶。打掉（保星尘）vs 推进去（省弹药但喂大它）。
+- 奇点自己每秒 +0.5，保证有推进感；加压三档 TIER_MUL [1, 1.26, 1.58]。
+- ⚠️ **公转目标必须夹在世界内**：玩家贴边时奇点会被甩到场外，玩家坐标是 clamp 的 ——
+  「玩家在场内、奇点在场外」永远够不着，整段玩法失效。修法：轨道目标 clamp 到 `r+10`。
+- ⚠️ 玩家吸力走 `fieldDrift` 位移式水流（DRIFT 92 < 满速 168），顶得住但站不住；
+  视界内按 tick 灼烧（**不走 hurtPlayer** —— 那会吃无敌帧还会清连击）。
 
 - 编排 `MAIN_FORMS`（4/8/12 是 Boss 段不在表里）；无尽按 `ENDLESS_FORM_CYCLE` 四种轮着来。
 - ⚠️ **完成条件逐形态不同**，全挂在 `updateWave` 按 `G.waveForm` 分支。
@@ -229,6 +248,36 @@
   `waveObjective()` 对 boss 返回空串 —— 巨像已有血条，再挂「剩余 N」只会误导。
 - HUD 目标文案：`waveObjective()`（清剿「剩余 N」/ 潮涌「存活 Xs」/ 回收「星尘 N/M」/ 死斗「精锐 N」），
   非清剿形态用金色，让玩家注意到「这段的规则不一样」。
+
+## 场地地形（2026-10-21）：可躲掩体 + 迷宫 + 喷口
+
+实体挂 `G.terr`，全部布局只经 `terrAdd()` 入场（三条硬约束集中在那一个入口：
+出生安全区 / 不与既有块重叠 / 世界内收边）。种类三种：
+
+- `core`（骨架墙）：打不碎、巨像也不碾 —— 那是布局的骨架，一塌地形白做。
+- `rock`（可破坏岩）：hp 60，玩家弹/敌弹都会削血，打碎 `terrBreak()` → 碎裂粒子 + 60% 掉尘 + `Sound.sfx.crumble()`。
+- `vent`（热焰喷口）：3.4s 一轮循环（预警 1.0s 环从内向外涨 → 喷发 0.9s），
+  玩家 8/0.34s、敌人 14/0.34s。⚠️ 不走 `hurtPlayer`（同视界灼烧的理由：不吃无敌帧）。
+
+**布局**（`LAYOUTS`，名字走 i18n `bn.terr` + `LAYOUTS.name/nameEn`，同数据表的规矩）：
+`open` 空域 / `pillars` 柱林 / `maze` 回廊 / `cells` 蜂室 / `cross` 四象限 / `ring` 环带。
+编排 `MAIN_LAYOUTS`：**1、2 段空域**（前两段在教操作）；**4/8/12 巨像段空域**
+（巨像体积大，场地一挤就「卡在两块石头中间抽搐」）；相邻段不重复。
+无尽 13+ 按 `ENDLESS_LAYOUT_CYCLE` 轮换，巨像段仍空域。
+
+**可躲闪的全部价值在「敌弹也被挡」**：`terrBullet()` 对敌弹一视同仁，
+躲到掩体后是真的安全，不是看起来安全。玩家撞墙 = 法向速度吃掉、切向保留（**沿墙滑行**，不是撞停）。
+
+**敌人不会傻顶墙**：`terrResolveEnemy()` 在正对墙时沿墙补切向推力（方向选离玩家近的一侧），
+否则它原地顶墙到天荒地老，玩家隔着墙打不到 → 清剿段永远结束不了。
+
+**每条布局保证无封闭区域**（探针 flood fill 验证）：横墙只铺中段、竖墙只在外侧、
+缺口恒在中间附近 —— 敌人不会被关死在里面。玩家出生 92px 内不许有块。
+
+- ⚠️ 索引 `terrIndex()` 是静态的：拆掉一块必须整表重建，否则那块继续挡一切。
+- ⚠️ 掉落 `dropPickup` 出生前要 `terrAt` 查一遍，别把补给埋进墙里。
+- ⚠️ 冲刺/回溯落点同样过 `terrPush`，不然闪现进墙 = 卡死。
+- ⚠️ 开局 `startWave` 会清 `G.terr` 重建 —— 探针测布局要用 `__dbg.setTerrainLayout(id)`。
 
 ## 图鉴 & 续档（搬《奇点回响》的 logbook / save 那套 UI）
 
@@ -920,16 +969,30 @@ G.vx = dx * (keep + 300 * S.spd); G.vy = dy * (keep + 300 * S.spd);
   3. `mousemove` / `mousedown` 开头判 `e.sourceCapabilities.firesTouchEvents` 直接 return ——
      触屏抬指后浏览器会补发一串兼容性鼠标事件（坐标就是最后那个触点），照单全收会让第 2 条当场失效。
      Safari 没这个属性 → 退化成「照旧处理」，与改动前一致。
-- **悬浮瞄准标（2026-10-04 新增，触屏专属）**：`touchMode && !BOT` 时，炮口方向 `G.aim` 与船体方向
-  `G.ang` **解耦**——`touchAim`（`let`，模块级）单独存一个角，`G.aim = touchAim`、开火沿它（不是 `G.ang`）：
-  - 摇杆按下 → 船体立刻朝摇杆（`G.ang` 跟 `joy`），`touchAim` 不动；
-  - 摇杆松手 → 船体以 `TURN_TOUCH × S.turn × dt` 回摆到 `touchAim`；
-  - 右半屏拖动 → `aimFromTouch(cx,cy)` 重算 `touchAim`（船→手指的世界夹角），拖动期间 `aimDrag.fire=true` 即开火。
-  - 桌面端不启用，保持旧的 `G.aim = G.ang` 行为。
+- **触屏双杆（2026-10-21 重写；旧版「悬浮瞄准标」整套删除）**：
+  作者口径「把那个可移动的悬浮标删掉」+「找成熟方案参考」。
+  参考的是**移动端 twin-stick 的通行做法**（Feral Interactive 移植主机双摇杆游戏的三段式右杆是硬样本：
+  **视觉反馈全在杆上，不在世界里另立一个光标**；Nova Drift 手机版同理）。
+  - **左杆（左半屏）**：落点固定基座。推向哪 → 船头立刻朝哪（`TURN_TOUCH`），幅度 >0.25 点火推进。
+  - **右杆（右半屏）**：**相对位移杆** —— 手指从落点往哪拖，炮口就朝哪。`touchAim` 存这个角，
+    `G.aim = touchAim`，与船体 `G.ang` 解耦。
+    ⚠️ **必须是相对位移，不能是「指哪打哪」的绝对指向**。绝对指向在手机上是死路：相机夹取让船
+    恒在屏幕正中，右半屏触点的 `dx` 恒为正 → 炮口只能落在右半平面，**左边整 180° 根本够不到**
+    （实测可达区间恰好 `[-90°, +90°]`，且灵敏度还随手指离中线的距离剧烈变化：贴中线 ±90°、
+    贴右缘只剩 ±28°，玩家没法预期）。
+  - **松手 = 停在哪朝哪**，不回摆。旧实现会把船头自己转回瞄准标方向 —— 玩家没在操作，船却
+    在自己转，朝向的控制权就不在玩家手上了。
+  - **自动开火触屏默认开**（`boot()` 里 `setAutoFireSilent(true)`）：
+    ⚠️ 触屏路径上 `mouse.down` 永远置不上 `true`（`mousedown` 监听把 `firesTouchEvents` 的
+    合成事件全挡了），所以 `wantFire` 只剩 `G.autoFire` 一条支路 —— **默认关 = 手机上半发子弹
+    都打不出去**。桌面端不受影响，仍是「按住才开火」。
+  - 视觉：左杆/右杆的环+内圈+推杆都画在**手指落点**（`drawSticks`）；炮口方向用一条从炮口射出的
+    短射线（`drawAimRay`）表示——它和船是一体的，读起来是「枪指的方向」，不是悬空的光标。
+    ⚠️ 触屏**不画**准星（`drawCrosshair` 开头 `if (pointerKind === 'touch') return`），
+    否则跟右杆的环是两套东西，看着重复。
   - ⚠️ 开局 / `resumeRun()` 后必须 `touchAim = G.ang`，否则船会无故甩头。
-  - ⚠️ 调参铁律：`wantFire` 已含 `aimDrag.fire`；`fireMain(G.aim, …)` 必须在 `updatePlayer` 转向段
-    之后调用（同帧里 G.aim 已被同步成 touchAim）。探针 `probes/sv-aim-mark-check.js` 验四项：
-    解耦 / 松手回摆 / 拖动 / 开火沿瞄准，全绿。
+  - ⚠️ `fireMain(G.aim, …)` 必须在 `updatePlayer` 转向段**之后**调用（同帧里 G.aim 已被同步成 touchAim）。
+  - 探针 `probes/sv-touch-aim-check.js`（由 `sv-aim-mark-check.js` 改名重写，13 项全绿）。
 - ~~**横屏锁定**：`toggleFullscreen()` 里 `screen.orientation.lock('landscape')`~~ **已移除（2026-10-03）**：
   朝向交给 CSS 旋转（见上文「移动端直接横屏」），不再依赖方向锁 API（iOS 没实现、桌面端一律 reject）。
 - **运动模型（2026-10-03 重写，作者口径「惯性再降，松开立刻停」）**：参数都在 `updatePlayer` 上方：
@@ -1230,6 +1293,7 @@ node probes/run-all.js touch      # 只跑名字里含 touch 的（参数按子�
 | `sv-orientation-check.js` | 移动端直接横屏：竖屏视口 `#wrap` 含 `rotate(90deg)` / 横屏不转 / `#rotate` 已移除 / 不调 `screen.orientation.lock` / `toGame` 逆变换误差 <1px，双截图 | `fit()` / `rot` / `toGame` |
 | `sv-bulletskin-check.js` | 子弹外观：家族矩阵 / 逐级 tier / 配色优先级 / 协同+单卡装饰 / 缓存封顶 / 90 帧零 JS 错误，产出 `bullet-overview.png` | `bulletskin.js` / `BSPEC_FAMILY` / `BKIND` / `BDECO_BY_*` / `drawPBullets` |
 | `sv-touch-turn-check.js` | **摇杆「推向哪转向哪」**：满舵 180°/90° 耗时（≤0.2s / ≤0.1s）/ 轻推档 / 死区不转不漂 / 满速掉头时速度方向跟上 / 松手不转，阈值 0.2s+0.35s+0° | `TURN_TOUCH` / `updatePlayer` 转向分支 / `__dbg.setJoy` |
+| `sv-touch-aim-check.js` | **触屏瞄准（2026-10-21，由 `sv-aim-mark-check.js` 改名重写）**：炮口 `G.aim` 与船体 `G.ang` 解耦 / **8 个方向全覆盖（含正左 180°，旧版绝对指向够不到）** / 推过头钳在满舵 / 死区内不抖 / 松手保留炮口且船体不回摆 / 触屏自动开火默认开 / 真实 touch 事件路径，13 项 | `touchAim` / `aimDrag` / `updatePlayer` 触屏分支 / `drawSticks` / `drawAimRay` |
 | `sv-loading-check.js` | 主题化加载动画 + 手机端**首帧即横屏**（内联脚本先于 game.js 生效 / `fit()` 首帧就转 / 标题延后揭示），双截图 | `#loading` / `LOADING_MIN` / `fit()` / `boot()` |
 | `sv-boot-budget-check.js` | **首屏关键路径预算**（2026-10-13）：手势前 0 个 mp3 请求 / 手势后只拉当前那一首 / 只用子集字体且 <120KB / 中文字形真按 FP 栅格化（比像素，不是比宽度）/ 标题中文正常，截图 | `armFileBgm` / `filePlaying` / `tools/subset_font.py` / `@font-face` |
 | `sv-boot-runtime-check.js` | **运行时回归**（2026-10-13）：`?bot=1` 直接开局跑 12s，稳定在 play / 波次推进 / 12s 内 ≤2 首曲（不预取）/ 无 JS 错误 | `boot()` / `startGame` / `armFileBgm` |
@@ -1237,6 +1301,10 @@ node probes/run-all.js touch      # 只跑名字里含 touch 的（参数按子�
 | `sv-bg-tiling-check.js` | **背景视差画法等价**（2026-10-13）：pattern+fillRect 与旧的逐块 `drawImage(round(x))` 逐像素比对，3 星区 × 4 相机偏移差异须 <0.5% | `drawBackground` / `STARSETS` / `CELL=64` |
 | `sv-muzzle-decel.js` | 炮口出膛点 / 尾焰锚点 / 主炮临终减速 / 散射与尾炮的出生点，RESULT: PASS | `hullNose` / `hullTail` / `BDECEL_*` / `pBullet` |
 | `sv-boss-form-check.js` | **巨像 + 4 种关卡形态**：按**形态 × 该形态的 pats** 逐级点名，每种都要有可观测产物（弹/兵/火/激光/环/拽）/ 槽位倍率 1-2.2-4 / 轮换覆盖全部巨像且一轮不重复 / 四形态都能完成 / 死斗全精锐 / 回收星尘够数 / 火场掉血·过期·场外安全 / HUD 目标文案，4 张新巨像截图 | `BOSSES` / `bossFire` / `rollMainBosses` / `bossSlotMul` / `FORMS` / `updateWave` / `addFire` |
+| `sv-horizon-check.js` | **视界形态**：第 6 段独占 / 弹道弯曲（玩家弹 -21px·速率不变·对照组 0）/ 敌弹弯一半 / 玩家被吸 / 吞噬计 kills·不掉落 / 喂大视界 Δr=1.5·上限 52 / 星尘被吞 / 视界内灼烧·场外安全 / 加压三档 / 到时过段 / Boss 段不残留奇点 / i18n | `SING` / `updateSingularity` / `singBend` / `devourEnemy` / `feedSing` / `MAIN_FORMS` |
+| `sv-horizon-shot.js` | 视界实战截图 ×3（全景 / 弹道弧线 / 吞噬排队）。⚠️ 弯曲那张的坑：**相机跟玩家，玩家瞬移会让相机漂出奇点** —— 玩家必须原地不动，以奇点当前位置为基准发弹；且弹群 40 帧后被吸进黑盘（被遮住），要卡在中途截 | 同上 + `drawSingularity` |
+| `sv-terrain-check.js` | **场地地形**（2026-10-21）：主线/无尽编排 / 块数 20-64 / 一屏可见 ≥2 / 出生 92px 安全 / flood fill 无封闭 / 挡玩家且沿墙滑行 / **敌弹被掩体吃 + 对照组**（撤墙必掉血，防「弹没飞」假绿）/ rock 两发掉血·打碎可穿 / core 打不碎 / 喷口内外掉血差 / 巨像碾 rock 不碾 core / 掉落不埋墙 / 每帧开销 +0.1ms / i18n | `LAYOUTS` / `terrAdd` / `terrPush` / `terrBullet` / `terrCrush` / `VENT` / `__dbg.setTerrainLayout` |
+| `sv-terrain-shot.js` | 地形截图 ×6（五布局 + 喷口喷发瞬间）进 `probes/terrain-*.png` | `drawTerrain` |
 | `sv-bgm-nocut.js` | **成品曲「播完再换」**（2026-10-16）：setMode 之后当前这首 src/播放位置一个字节都没动 / 只把 wantMode 记下 / 那一刻连新曲都不许开始下载 / `loop===false` / ended 之后才真的换曲 / 同一首 ended 后续播不停 / 全程 ≤3 个 mp3 请求 | `audio.js` 的 `startFileCur` / `onEnded` / `fileStarted` / `ensureTrack` |
 | `sv-ui-shots.js` | **UI 截图台**（无断言，改排版先拍再看）：标题 / 机库 / 图鉴 / 选卡 / HUD（满装配+巨像）/ 暂停 / 结算 / 手机端 HUD 八张进 `probes/ui-*.png` | `hudPanel` / `drawHUD` / `.pause-cols` / 遮罩底色 |
 

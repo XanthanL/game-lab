@@ -66,17 +66,22 @@ let autoFire = false;
 // 拿 mousemove 判会把状态误判回鼠标，准星会一闪一闪。
 let pointerKind = 'mouse';
 const keys = {}, mouse = { x: W / 2, y: H / 2, down: false, inside: false };
+// 触屏双杆的几何（单位：游戏坐标 px，画布就是 480×270，游戏坐标 == 画布坐标）
+const MOVE_R = 40, MOVE_DZ = 0.12;   // 左杆：满舵半径 / 死区（沿用原值，别动，推力与刹车的阈值就挂在它上面）
+const AIM_R = 40, AIM_DZ = 8;        // 右杆：满舵半径 / 死区（死区是**像素**不是比例，理由见 touchmove）
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
 // 跟奇点回响对齐的「最近一次输入决定朝向控制方式」：
 // 'key' = A/D 转向；'mouse' = 朝鼠标方向缓慢转向。光标动了切到 mouse；A/D 一按切回 key。
 // ⚠️ 必须用 var 而不是 let —— 探针通过 window.aimMode 读这个状态，
 //    plain <script> 下 let 是 script-scope，不会挂到 window。
 var aimMode = 'key';
-// 手机版「悬浮瞄准标」：炮口朝向 G.aim 与船体朝向 G.ang **解耦**。
-// 拖动右侧悬浮标 = 设定 G.aim（开火方向）；摇杆移动时船体转向摇杆方向，
-// 松手后船体回摆到瞄准标方向。桌面端不启用（仍走鼠标/键盘瞄准）。
+// 手机版炮口朝向 G.aim 与船体朝向 G.ang **解耦**：
+// 船体跟着左杆（推向哪就朝哪、并沿船头推进）；炮口由右杆独立设定。
+// ⚠️ 右杆是**相对位移**杆（手指从落点往哪拖 = 炮口朝哪），不是「指哪打哪」的绝对指向。
+//    绝对指向在手机上是死路：相机夹取让船恒在屏幕正中，而右半屏的触点 dx 恒为正
+//    → 炮口只能落在右半平面，左边整 180° 根本够不到（实测可达区间恰好 [-90°, +90°]）。
 let touchAim = -Math.PI / 2;
-const aimDrag = { id: null, fire: false };
+const aimDrag = { id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0 };
 
 // ============ 像素文字（缓存 canvas） ============
 const tcache = new Map();
@@ -304,12 +309,17 @@ const FORMS = {
   surge:   { name: '潮涌', nameEn: 'SURGE' },
   salvage: { name: '回收', nameEn: 'SALVAGE' },
   duel:    { name: '死斗', nameEn: 'DUEL' },
+  // 视界（2026-10-20）：第 6 段专属。**不是第五种刷怪方式** —— 它把奇点本身搬进战场，
+  //   弯曲所有子弹、吞噬一切，玩家的核心动词从「瞄准射击」变成「算弹道 + 别被喂进去」。
+  horizon: { name: '视界', nameEn: 'EVENT HORIZON' },
 };
 // 主线 12 段的形态编排：每段都要和**相邻段**不一样，别连着两段都是杀光。
 // 4/8/12 是 Boss 段，不在这张表里（startWave 里 bossId 优先）。
 const MAIN_FORMS = {
   1: 'purge', 2: 'purge', 3: 'salvage',
-  5: 'purge', 6: 'surge', 7: 'duel',
+  // 第 6 段 = 视界：夹在第 4 段巨像之后、第 8 段巨像之前的**正中间**，
+  //   是玩家已经学会基本操作、但还没被后期数值淹没的位置 —— 最适合塞一段规则完全不同的。
+  5: 'purge', 6: 'horizon', 7: 'duel',
   9: 'purge', 10: 'salvage', 11: 'surge',
 };
 // 无尽里四种形态轮着来（Boss 段除外），否则打 30 段全在「杀光」
@@ -500,6 +510,8 @@ function waveObjective() {
   // 还得把小怪清完才算过段（实际上巨像一死就跃迁）。
   if (f === 'boss' || G.boss) return '';
   if (f === 'surge') return T('hud.survive', Math.max(0, Math.ceil(G.waveDur - G.waveT)));
+  // 视界：倒计时用「逃逸」而不是「存活」—— 这段的动作是把船从引力井里开出来，不是硬扛
+  if (f === 'horizon') return T('hud.horizon', Math.max(0, Math.ceil(G.waveDur - G.waveT)));
   if (f === 'salvage') return T('hud.salvage', Math.min(G.dustGot, G.dustNeed), G.dustNeed);
   if (f === 'duel') return T('hud.duel', G.spawnQueue.length + G.enemies.length);
   return T('hud.left', G.spawnQueue.length + G.enemies.length);
@@ -1142,6 +1154,58 @@ function drawWebs() {
    ⚠️ 持续伤害靠 f.tick 做间隔，不是每帧扣 —— 每帧扣的话 60fps 下 7 点伤害
       一秒就是 420 点，玩家会在 0.1 秒内蒸发（而且完全看不出是被什么打死的）。 */
 const FIRE_LIFE = 5.5, FIRE_R = 26, FIRE_DMG = 7, FIRE_TICK = 0.5, FIRE_MAX = 18;
+
+/* ============ 「视界」形态的奇点常量（2026-10-20）============
+   这一段不让玩家做别的事，只做一件：**和一颗奇点共处**。
+   三件事必须同时成立，缺一个它就退化成「血更厚的潮涌」：
+
+     ① 子弹被引力弯曲      → 「瞄准」这个动词被改写（往外侧打，让引力掰回来）
+     ② 视界吞噬一切        → 敌人 / 星尘掉进去就没了，省弹药但没掉落
+     ③ 喂饱它就长大        → 吞得越多视界越大、吸力越强 —— 白嫖击杀是有代价的
+
+   ⚠️ 对玩家用**位移式**吸引，和 fieldDrift 同理：本作松手减速 940 px/s²，
+      加速度形式的力会被刹车整帧吃掉（磁暴引力井踩过这个坑，见 AGENTS.md）。
+   ⚠️ 对**子弹**可以用加速度（子弹没有刹车），但要写成**纯转向**（只改方向不改速率）——
+      速率不变玩家才学得会：「子弹飞得一样快，只是路弯了」。真按引力加速的话，
+      越靠近越快、弹道不可预测，那就不是技巧是抽奖。 */
+const SING = {
+  R0: 30,            // 事件视界初始半径
+  RMAX: 52,          // 喂饱后的上限（+22，再多就不是「长大」是「铺满屏幕」）
+  PULL_R: 540,       // 引力影响半径
+  DRIFT: 92,         // 对玩家的位移式吸力（px/s）—— 玩家满速 168，顶得住但站不住
+  EH_DMG: 11,        // 视界内每 0.5s 灼烧
+  EH_TICK: 0.5,
+  // ⚠️ 弯曲写成**角速度**（rad/s）而不是「加速度 / 速率」的物理解。
+  //    物理解是对的，但可读性很差：引力几乎平行于弹道时（擦着飞过去）几乎不弯，
+  //    实测 138px 行程只偏 7.7px —— 玩家根本看不出来，更别提学会打提前量。
+  //    直接给角速度，弯曲量才和「离奇点多近」稳定挂钩。
+  // ⚠️ 转向**最多转到正对奇点**（clamp 到朝向角），不会绕着它转圈 ——
+  //    转圈的话近距离开火会变成抽奖。上限带来一个可读的规则：擦得越近，拐得越狠。
+  BULLET_TURN: 1.5,  // 玩家子弹
+  EBULLET_TURN: 0.8, // 敌弹（约一半）：要看得见，但不能让弹幕变得不可读
+  FEED_ENEMY: 1.5,   // 吞一个敌人 → 视界 +1.5
+  FEED_DUST: 0.3,    // 吞一份星尘 → +0.3
+  TIER_MUL: [1, 1.26, 1.58],   // 三个加压档（每 1/3 时长涨一档）
+  ORBIT: 190,        // 奇点绕玩家公转的半径：永远在屏幕内，又不会一直贴脸
+  ORBIT_W: 0.22,     // 公转角速度 rad/s（约 28 秒一圈）
+  FOLLOW: 1.6,       // 跟随时间常数的倒数：故意留滞后，玩家能「拖」着它走
+};
+
+/* 生成奇点。⚠️ 它**绕着玩家公转**而不是钉死在世界某点 ——
+   钉死的话玩家一飞走它就出画了，而这一段的一切（弹道、走位、吞噬）都得看着它才成立。
+   公转还白送一层战术：它有滞后，玩家可以主动把它「拖」到敌人堆里，让引力替自己清场。 */
+function spawnSingularity() {
+  const a = rand(TAU);
+  G.sing = {
+    x: G.px + Math.cos(a) * SING.ORBIT, y: G.py + Math.sin(a) * SING.ORBIT,
+    r: SING.R0, r0: SING.R0, t: 0, orbitA: a, tier: 0, mul: SING.TIER_MUL[0], fed: 0,
+  };
+  G.ehTick = 0;
+  ring(G.sing.x, G.sing.y, 84, '#c070f0', .7, 3);
+  ring(G.sing.x, G.sing.y, 210, '#73eff7', .6, 2);
+  Sound.sfx.warp(); addShake(6);
+}
+
 function addFire(x, y, r) {
   if (G.fires.length >= FIRE_MAX) G.fires.shift();
   G.fires.push({
@@ -1270,7 +1334,8 @@ function drawBeam() {
   if (S.beam <= 0 || G.dead) return;
   const col = S.beamGold ? '#ffcd75' : '#c070f0';
   if (G.beamFire > 0) {
-    const len = S.beamLen;
+    // 光柱被地形截断：撞上掩体就到那儿为止（判定同在 beamTick 里截）
+    const len = Math.min(S.beamLen, G.beamClip || S.beamLen);
     const puls = 0.82 + Math.sin(G.t * 40) * 0.18;
     ctx.save();
     ctx.translate(Math.round(G.px), Math.round(G.py)); ctx.rotate(G.beamAng);
@@ -1341,6 +1406,75 @@ function drawPhantoms() {
       pline(p.x, p.y, b.x, b.y, 2);
       ctx.restore();
     }
+  }
+}
+/* 「视界」形态的奇点（2026-10-20）
+   画的顺序就是它的读法，四层从外到内：
+     ① 受力边界（很淡）   —— 让玩家知道「进了这个圈就被拽」
+     ② 引力透镜（向内收） —— 一圈圈被吸进去，方向感
+     ③ 吸积盘（绕转的弧） —— 被拉长的物质，说明它在吃东西
+     ④ 视界（纯黑 + 光子环）—— ⚠️ 光子环是必需的：黑圆画在深色宇宙上等于看不见
+   ⚠️ 克制：不加射线、不加噪点、不加第二层辉光。这四层已经把「这是个洞」说清楚了，
+      再堆就变成另一只巨像的出场特效，而它恰恰**不是**敌人。 */
+function drawSingularity() {
+  const s = G.sing;
+  if (!s || !onScreen(s.x, s.y, SING.PULL_R)) return;
+  const puls = 0.78 + Math.sin(G.t * 3.1) * 0.22;
+
+  // ① 受力边界：只画「明显受力」的那一段，画满 PULL_R 会把整个屏幕糊住
+  ctx.save();
+  ctx.globalAlpha = 0.09; ctx.strokeStyle = '#c070f0'; ctx.lineWidth = 1;
+  ringPx(s.x, s.y, SING.PULL_R * 0.4, 1);
+  ctx.restore();
+
+  // ② 引力透镜：五道向内收缩的环（相位错开 → 看起来是连续的吸入）
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 5; i++) {
+    const ph = (s.t * 0.5 + i / 5) % 1;          // 0 → 1 表示由外向内
+    ctx.globalAlpha = 0.20 * ph;
+    ctx.strokeStyle = i % 2 ? '#73eff7' : '#c070f0';
+    ringPx(s.x, s.y, s.r + 8 + (1 - ph) * 92, 1 + ph * 1.5);
+  }
+  ctx.restore();
+
+  // ③ 吸积盘：三段绕转的扁弧（离心压扁 = 被引力拉长的物质）
+  ctx.save();
+  ctx.translate(Math.round(s.x), Math.round(s.y));
+  ctx.rotate(s.t * 1.15);
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 3; i++) {
+    ctx.rotate(TAU / 3);
+    ctx.globalAlpha = 0.30 * puls;
+    ctx.strokeStyle = i === 1 ? '#ffcd75' : '#ef7d57';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s.r + 13 + i * 3, (s.r + 13 + i * 3) * 0.34, 0, 0, Math.PI * 0.72);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ④ 视界本体
+  ctx.save();
+  ctx.fillStyle = '#000000'; ctx.globalAlpha = 0.96;
+  disc(s.x, s.y, s.r);
+  ctx.restore();
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ffe9a8'; ctx.lineWidth = 2;
+  ringPx(s.x, s.y, s.r + 1.5, 2);
+  ctx.globalAlpha = 0.32 * puls; ctx.strokeStyle = '#ffcd75'; ctx.lineWidth = 1;
+  ringPx(s.x, s.y, s.r + 5.5, 1);
+  ctx.restore();
+
+  // 刚吃了一口的反馈：一圈快速收掉的亮环 —— 没有它，玩家看不出「喂它」是有代价的
+  if (s.fedPulse > 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = Math.min(1, s.fedPulse / 0.35) * 0.85;
+    ctx.strokeStyle = '#ffcd75'; ctx.lineWidth = 3;
+    ringPx(s.x, s.y, s.r + 3, 3);
+    ctx.restore();
   }
 }
 /* 星蚀的熄灭战场（2026-10-11）
@@ -1499,7 +1633,16 @@ function newGame(hullId) {
     walls: [],    // 风之障壁：机首前方的临时弹幕拦截线（G.walls，靠 t/life 自然消散）
     clones: [],   // 影分身：镜像开火的短暂分身（G.clones，靠 t/life 自然消散）
     phantoms: [], // 棱镜·裂相的幻影（绕本体转的**武器**，不是敌人 —— 打不死也不掉东西）
+    // 地形（2026-10-21）：本段的静态场地（core 骨架 / rock 可破坏岩 / vent 喷口）。
+    // ⚠️ 必须在这里建字段：updateTerrain / drawTerrain / 各解算每帧读它，
+    //    靠 `G.xxx` 自动存在是这个项目踩过的坑（spawnEnemy 漏 xp 那回）。
+    terr: [], layout: 'open',
+    beamClip: 0,      // 瓦解射线被地形截断后的实际长度（每跳重算，0 = 尚无）
     blackout: 0, blackoutMax: 0,   // 星蚀的熄灭战场：剩余秒 / 本次总时长（渲染算淡入淡出用）
+    // 「视界」形态（2026-10-20）：一颗活的微型奇点。打不死，也不算敌人 ——
+    //   它是**场地规则本身**。sing = { x, y, r, r0, t, tier, fed }
+    sing: null,
+    ehTick: 0,        // 事件视界的灼烧结算计时（每 0.5s 一跳，和受击无敌帧解耦）
     spinT: 0,     // 审判：旋斩光环的脉冲计时（每 0.22s 结算一次近身伤害）
     rampageT: 0, rampageMul: 1,   // 杀戮狂热：击杀后短暂抬升射速与移速
     // 第六批的新状态（2026-10-09）
@@ -1756,6 +1899,9 @@ function fireLance(ang) {
   // （不用 WORLD.w —— 那是 3 倍视口，会让矛在屏幕外白烧一大截，还把「点到线段距离」
   //   的 O(n) 判定白白拉长。）
   const len = W + 80;
+  // 地形截断：光矛是贯穿武器，不截的话它会烧到墙后面的敌人 ——
+  //   而那面墙正是玩家拿来挡弹的东西，「我的掩体对我自己的武器无效」是很难读的。
+  const len2 = G.terr.length ? terrRay(G.px, G.py, ang, len) : len;
   const dmg = (44 + S.lance * 26) * S.dmg * (synOn('lanceCaliber') ? 1.4 : 1);
   const mz = hullNose();
   const ox = G.px + Math.cos(ang) * mz, oy = G.py + Math.sin(ang) * mz;
@@ -1765,17 +1911,17 @@ function fireLance(ang) {
     if (e.dead || e.hp <= 0) continue;
     const dx = e.x - ox, dy = e.y - oy;
     const along = dx * ca + dy * sa;
-    if (along < -e.r || along > len) continue;
+    if (along < -e.r || along > len2) continue;
     const perp = Math.abs(-dx * sa + dy * ca);
     if (perp > w + e.r) continue;
     damageEnemy(e, dmg, ca, sa, false, 2.4);
     hitN++;
   }
-  G.lances.push({ x: ox, y: oy, a: ang, len, w, t: 0, life: 0.26, gold: S.lanceGold ? 1 : 0 });
+  G.lances.push({ x: ox, y: oy, a: ang, len: len2, w, t: 0, life: 0.26, gold: S.lanceGold ? 1 : 0 });
   // 透体圣光协同：矛身沿途留下一条灼烧带（复用死亡尾流那套 wake 结算）
   if (synOn('lancePierce')) {
     const gold = S.lanceGold ? 1 : 0;
-    for (let d = 30; d < len; d += 26) {
+    for (let d = 30; d < len2; d += 26) {
       const x = ox + ca * d, y = oy + sa * d;
       if (x < -30 || x > WORLD.w + 30 || y < -30 || y > WORLD.h + 30) break;
       G.wakes.push({ x, y, t: 0, life: 0.7, r: w + 3, hitT: -1, lanceGold: gold });
@@ -2037,6 +2183,12 @@ function detonateMark(e) {
 
 function dropPickup(type, x, y, v = 1) {
   if (G.pickups.length > 260) return;
+  // ⚠️ 掉落落在墙里 = 玩家永远够不着。回收形态是「捡够 N 份」才过段的，
+  //    几份星尘卡在石头里就会把整段顶死（补撒安全阀也救不回来，因为它也往随机位置撒）。
+  if (G.terr.length) {
+    const p = terrPush(x, y, 6);
+    if (p) { x += p.nx * p.pen; y += p.ny * p.pen; }
+  }
   G.pickups.push({ type, x, y, vx: rand(-26, 26), vy: rand(-26, 26), v, life: 22, t: rand(TAU) });
 }
 
@@ -2118,6 +2270,8 @@ function tryBlink(dmg) {
   G.px = clamp(G.px + Math.cos(a) * dist, 16, WORLD.w - 16);
   G.py = clamp(G.py + Math.sin(a) * dist, 16, WORLD.h - 16);
   G.vx *= 0.25; G.vy *= 0.25;
+  // 折跃落点在墙里 → 贴到墙这一侧的面上（直接取消太亏，穿进去更离谱）
+  if (G.terr.length) terrResolvePlayer();
   G.inv = (0.8 + S.invBonus) * (synOn('blinkPhase') ? 2 : 1);
   ring(fromX, fromY, 22, S.blinkMax ? '#ffcd75' : '#c070f0', .3, 2);
   ring(G.px, G.py, 26, S.blinkMax ? '#ffcd75' : '#c070f0', .34, 2);
@@ -2172,6 +2326,9 @@ function tryRewind(dmg) {
   S.hp = clamp(snap.hp * 0.7, S.maxHp * 0.25, S.maxHp * 0.6);
   G.px = clamp(snap.x, 16, WORLD.w - 16); G.py = clamp(snap.y, 16, WORLD.h - 16);
   G.vx = 0; G.vy = 0;
+  // ⚠️ 快照是**几秒前**的位置，而地形是每段重建的 —— 那块地方现在可能有块石头。
+  //    不推出去的话玩家会被永久卡在墙里（推进往哪个方向都被推回来）。
+  if (G.terr.length) terrResolvePlayer();
   // 「回溯残响」协同（时滞 × 相位外壳）：回去之后多喘一口气
   G.inv = (1.6 + S.invBonus) * (synOn('echoPhase') ? 2 : 1);
   if (G.snaps.length) G.snaps = [Object.assign({}, snap)];
@@ -2548,6 +2705,9 @@ function updateBoss(e, dt, dx, dy, d) {
   e.x = clamp(e.x + e.vx * dt, e.r, WORLD.w - e.r);
   e.y = clamp(e.y + e.vy * dt, e.r, WORLD.h - e.r);
   e.ang = Math.atan2(dy, dx);
+  // 巨像**不受地形阻挡**（它的机动是绕视口中心的 8 字，被墙改道就变成抽搐），
+  // 但碾过去时会把挡路的可破坏岩撞碎 —— 骨架墙它直接穿过。
+  if (G.terr.length) terrCrush(e);
 
   // --- 形态的场地效果（aura）---
   //    ⚠️ aura 有两种，别混：
@@ -2602,7 +2762,7 @@ function bossShiftForm(e, fi) {
   burst(e.x, e.y, 30, ['#f4f4f4', e.color, '#ffcd75'], 190, .7, 3, true);
   addShake(8); Sound.sfx.warn(); Sound.sfx.bigKill(); freeze(0.06);
   // 形态名随界面语言走（和 name1 同一条规则：英文模式显示英文，否则显示中文）
-  banner(T('bn.form'), T('bn.formSub', bossName(e), (isEn() && F.labelEn) ? F.labelEn : (F.label || '')), e.color, 2.4);
+  banner(T('bn.bossForm'), T('bn.bossFormSub', bossName(e), (isEn() && F.labelEn) ? F.labelEn : (F.label || '')), e.color, 2.4);
   if (F.turrets) for (let i = 0; i < F.turrets; i++) spawnBossTurret(e, i, F.turrets);
   if (F.phantoms) spawnBossPhantoms(e, F.phantoms);
 }
@@ -2923,6 +3083,8 @@ function updateEnemies(dt) {
     // 边界：允许贴在世界边外一点点，但绝不允许超出子弹够得着的范围（见 EDGE 的说明）
     if (e.x < -EDGE) e.x = -EDGE; if (e.x > WORLD.w + EDGE) e.x = WORLD.w + EDGE;
     if (e.y < -EDGE) e.y = -EDGE; if (e.y > WORLD.h + EDGE) e.y = WORLD.h + EDGE;
+    // 地形：夹进世界之后推出（同玩家），并给一点绕墙的切向推力
+    if (G.terr.length) terrResolveEnemy(e, spd, ux, uy, dt);
     // 接触伤害
     if (d < e.r + 9 && e.touchCd <= 0) {
       e.touchCd = 0.55;
@@ -3018,17 +3180,146 @@ function fieldDrift() {
   return { x: dx / d * s * (a === 'push' ? -1 : 1), y: dy / d * s * (a === 'push' ? -1 : 1) };
 }
 
+/* 奇点对玩家的吸力（视界形态）。同样是**位移式**，理由见 fieldDrift 那条注释。
+   ⚠️ 冲刺期间衰减到 35% —— 冲刺是这一段的解场手段，「被吸住了挣不开」会直接毁掉它。 */
+function singDrift() {
+  const s = G.sing;
+  if (!s) return null;
+  const dx = s.x - G.px, dy = s.y - G.py;
+  const d = Math.hypot(dx, dy) || 1;
+  if (d > SING.PULL_R) return null;
+  const k = clamp(1 - d / SING.PULL_R, 0.12, 1);
+  const sp = SING.DRIFT * s.mul * k * (G.dashT > 0 ? 0.35 : 1);
+  return { x: dx / d * sp, y: dy / d * sp };
+}
+
+/* 引力弯曲一个飞行物（视界形态）。**纯转向：只改方向，不改速率** ——
+   速率不变玩家才学得会「子弹飞得一样快，只是路弯了」，进而学会利用它做制导。
+   ⚠️ 有 `ang` 字段的（玩家子弹）必须**连 ang 一起改**：updateBullets 的 decel 分支
+      会按 ang 重写 vx/vy，只改速度的话下一帧就被覆盖，弯曲等于没做。
+      （速率是 decel 分支按 sp0 给的，所以这里改速率也没用 —— 正好，纯转向是我们要的。） */
+function singBend(o, TURN, dt) {
+  const s = G.sing;
+  if (!s) return;
+  const dx = s.x - o.x, dy = s.y - o.y, d = Math.hypot(dx, dy) || 1;
+  if (d > SING.PULL_R || d < 0.5) return;
+  const cur = Math.atan2(o.vy, o.vx);
+  const want = Math.atan2(dy, dx);
+  let da = ((want - cur + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  const turn = TURN * s.mul * clamp(1 - d / SING.PULL_R, 0.25, 1) * dt;
+  const step = clamp(da, -turn, turn);        // 最多转到正对奇点，不绕圈
+  const cs = Math.cos(step), sn = Math.sin(step);
+  const nx = o.vx * cs - o.vy * sn;
+  o.vy = o.vx * sn + o.vy * cs; o.vx = nx;
+  if (o.ang !== undefined) o.ang = cur + step;
+}
+
+/* 给奇点「喂」东西 → 视界长大。这是整段的核心取舍：
+   把敌人推进去 = 省弹药的白嫖击杀，但奇点每吃一口就大一点、吸得更狠。
+   ⚠️ 上限 RMAX 必须存在：不封顶的话一个贪心的玩家能把视界喂到铺满屏幕。 */
+function feedSing(n) {
+  const s = G.sing; if (!s) return;
+  const before = s.r;
+  s.r = Math.min(SING.RMAX, s.r + n);
+  s.fed += n;
+  s.fedPulse = 0.35;   // 渲染层拿它画「刚吃了一口」的收环，见 drawSingularity
+  if (s.r > before + 0.01) ring(s.x, s.y, s.r, '#ffcd75', .3, 2);
+}
+
+/* 吞噬一个敌人。⚠️ **不掉落**：掉的东西跟着一起进视界了 ——
+   这就是「白嫖击杀」的定价。玩家得自己决定这一只是打掉（保星尘）还是推进去（省弹药）。 */
+function devourEnemy(e, i) {
+  if (e.dead) return;
+  e.dead = true; e.hp = 0;
+  G.kills++; G.waveKills++;
+  G.combo = Math.min(9, G.combo + 1); G.comboT = 2.4;
+  G.score += Math.round((e.xp * 10 + 5) * G.combo);
+  // 被拉长着吸进去的那一撮 —— 让玩家看清「它是被吞的，不是被打死的」
+  for (let k = 0; k < 6; k++) {
+    const a = Math.atan2(G.sing.y - e.y, G.sing.x - e.x) + rand(-0.5, 0.5);
+    part({ x: e.x, y: e.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150,
+           life: .3, max: .3, col: k % 2 ? '#c070f0' : '#73eff7', size: 2, drag: 0.4 });
+  }
+  Sound.sfx.devour();
+  addShake(1.5);
+  G.enemies.splice(i, 1);
+  feedSing(SING.FEED_ENEMY);
+}
+
+function updateSingularity(dt) {
+  const s = G.sing;
+  if (!s) return;
+  s.t += dt;
+  if (s.fedPulse > 0) s.fedPulse = Math.max(0, s.fedPulse - dt);
+  // --- 绕玩家公转（有滞后 → 玩家可以把它拖到敌人堆里）---
+  // ⚠️ 轨道目标必须夹在世界内：玩家贴着世界边缘时，公转半径会把奇点甩到界外，
+  //    而玩家坐标本身是被 clamp 的 —— 于是「玩家在场内、奇点在场外」，
+  //    视界永远够不着，整段的核心玩法（绕着它打 / 把敌人推给它）当场失效。
+  s.orbitA += SING.ORBIT_W * dt;
+  const m = s.r + 10;
+  const tx = clamp(G.px + Math.cos(s.orbitA) * SING.ORBIT, m, WORLD.w - m);
+  const ty = clamp(G.py + Math.sin(s.orbitA) * SING.ORBIT, m, WORLD.h - m);
+  s.x += (tx - s.x) * Math.min(1, SING.FOLLOW * dt);
+  s.y += (ty - s.y) * Math.min(1, SING.FOLLOW * dt);
+  // --- 加压：每 1/3 时长涨一档（这段要「越来越紧」，不能从头平到尾）---
+  const tier = Math.min(2, Math.floor(G.waveT / Math.max(1, G.waveDur / 3)));
+  if (tier > s.tier) {
+    s.tier = tier;
+    s.mul = SING.TIER_MUL[tier];
+    ring(s.x, s.y, s.r + 44, '#c070f0', .5, 2);
+    ring(s.x, s.y, s.r + 104, '#ffcd75', .45, 2);
+    Sound.sfx.warn(); addShake(5);
+    banner(T('bn.horizonGrow'), T('bn.horizonGrowSub'), '#c070f0', 1.8);
+  }
+  // 视界自己也在缓慢长 —— 保证这一段有推进感，不是纯粹的熬时间
+  s.r = Math.min(SING.RMAX, s.r + 0.5 * dt);
+
+  // --- 敌人：被拽向奇点，进视界就被吞 ---
+  for (let i = G.enemies.length - 1; i >= 0; i--) {
+    const e = G.enemies[i];
+    if (e.hp <= 0 || e.boss) continue;      // 巨像太重，拽不动（也不该被白嫖）
+    const dx = s.x - e.x, dy = s.y - e.y, d = Math.hypot(dx, dy) || 1;
+    if (d > SING.PULL_R) continue;
+    // ⚠️ 同样是位移式：敌人 AI 各自往不同方向写位置，加速度会和它们的寻路互相打架
+    const sp = SING.DRIFT * 1.3 * s.mul * clamp(1 - d / SING.PULL_R, 0.1, 1);
+    e.x = clamp(e.x + dx / d * sp * dt, e.r, WORLD.w - e.r);
+    e.y = clamp(e.y + dy / d * sp * dt, e.r, WORLD.h - e.r);
+    if (d < SING.PULL_R * 0.34 && Math.random() < 0.14) {
+      part({ x: e.x, y: e.y, vx: dx / d * 90, vy: dy / d * 90, life: .28, max: .28, col: '#c070f0', size: 1, drag: 0.5 });
+    }
+    if (d < s.r + e.r * 0.4) devourEnemy(e, i);
+  }
+
+  // --- 玩家在视界里：持续灼烧 ---
+  //   ⚠️ 不走 hurtPlayer：那会吃受击无敌帧（刚被打过就免伤），也会清连击、震屏、
+  //      让「站在视界里」变得时灵时不灵。自己按 tick 结算，行为可预测。
+  const pd = Math.hypot(s.x - G.px, s.y - G.py);
+  if (pd < s.r && !G.dead) {
+    G.ehTick -= dt;
+    if (G.ehTick <= 0) {
+      G.ehTick = SING.EH_TICK;
+      G.S.hp -= SING.EH_DMG;
+      G.vign = Math.max(G.vign, 0.8);
+      addShake(2.2);
+      Sound.sfx.hurt();
+      burst(G.px, G.py, 7, ['#c070f0', '#ff3355'], 90, .3, 2);
+      if (G.S.hp <= 0) { G.S.hp = 0; die(); }
+    }
+  } else {
+    G.ehTick = 0;   // 离开视界立刻重置：回去就要重新等一跳，不给「蹭一下就跑」留空子
+  }
+}
+
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
-  // 手机版「悬浮瞄准标」：炮口(G.aim)与船体(G.ang)解耦。
-  // 摇杆移动 → 船体朝摇杆；松手 → 船体回摆到瞄准标；开火始终沿 G.aim。
+  // 手机版：炮口(G.aim)与船体(G.ang)解耦 —— 船体跟着左杆，炮口由右杆独立设定。
   const touchAimMode = touchMode && !BOT;
   if (touchAimMode) {
     if (joy.active) {
-      // 摇杆：推到哪船头立刻朝哪（见 TURN_TOUCH）。炮口保持瞄准标方向，不跟随船体。
+      // 左杆：推到哪船头立刻朝哪（见 TURN_TOUCH）。炮口保持右杆方向，不跟随船体。
       const jm = Math.hypot(joy.x, joy.y);
-      if (jm > 0.12) {
+      if (jm > MOVE_DZ) {
         const want = Math.atan2(joy.y, joy.x);
         const rate = TURN_TOUCH * S.turn * (0.6 + 0.4 * Math.min(1, jm / 0.35));
         let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
@@ -3037,15 +3328,9 @@ function updatePlayer(dt) {
         // 差值 <0.02rad（1.1°）直接吸附，避免每帧在目标附近「蹭」（看着像角度抖动）。
         if (Math.abs(d) < 0.02) G.ang = want; else G.ang += d;
       }
-      // 摇杆活动期间：船体朝摇杆，炮口保持瞄准标方向（touchAim），不跟随船体
-    } else {
-      // 松手：船体回摆到瞄准标方向（同 TURN_TOUCH 速度，保留「跟手」手感）。
-      const want = touchAim;
-      let d = ((want - G.ang + Math.PI) % TAU + TAU) % TAU - Math.PI;
-      const step = TURN_TOUCH * S.turn * dt;
-      if (Math.abs(d) <= step || Math.abs(d) < 0.02) G.ang = want;
-      else G.ang += Math.sign(d) * step;
     }
+    // ⚠️ 松手**不回摆**。旧实现会自己把船头转回瞄准标方向 —— 玩家明明没在操作，
+    //    船却在自己转，朝向的控制权就不在玩家手上了。现在松手 = 停在哪朝哪。
     G.aim = touchAim;
   } else if (joy.active) {
     // 摇杆（桌面/非触屏路径，逻辑同旧版）：方向即朝向，推到哪船头立刻朝哪。
@@ -3146,12 +3431,14 @@ function updatePlayer(dt) {
     else { const f = nv / vm; G.vx *= f; G.vy *= f; vm = nv; }
   }
   if (vm > MAXV_CAP) { G.vx = G.vx / vm * MAXV_CAP; G.vy = G.vy / vm * MAXV_CAP; }
-  // 场地力（引力井 / 反极）：**在夹取之前**叠加，否则贴着世界边缘时被吃掉
-  const fd = fieldDrift();
-  G.px = clamp(G.px + G.vx * dt + (fd ? fd.x * dt : 0), 10, WORLD.w - 10);
-  G.py = clamp(G.py + G.vy * dt + (fd ? fd.y * dt : 0), 10, WORLD.h - 10);
+  // 场地力（引力井 / 反极 / 奇点）：**在夹取之前**叠加，否则贴着世界边缘时被吃掉
+  const fd = fieldDrift(), sd = singDrift();
+  G.px = clamp(G.px + G.vx * dt + (fd ? fd.x * dt : 0) + (sd ? sd.x * dt : 0), 10, WORLD.w - 10);
+  G.py = clamp(G.py + G.vy * dt + (fd ? fd.y * dt : 0) + (sd ? sd.y * dt : 0), 10, WORLD.h - 10);
   if (G.px <= 10 || G.px >= WORLD.w - 10) G.vx *= 0.4;
   if (G.py <= 10 || G.py >= WORLD.h - 10) G.vy *= 0.4;
+  // 地形：夹进世界**之后**再做推出 —— 顺序反了会把船推到世界外面去
+  if (G.terr.length) terrResolvePlayer();
   // 冲角装甲
   if (S.ram > 0) ramCheck();
   // 死亡尾流
@@ -3170,7 +3457,10 @@ function updatePlayer(dt) {
 
   // ---- 开火 ----
   G.fireT -= dt;
-  const wantFire = (mouse.down || keys['Space'] || G.autoFire || aimDrag.fire) && !G.dead;
+  // ⚠️ 触屏不再「拖动即开火」。旧实现里右半屏一拖就开火，和右下角那颗开火开关是
+  //    两条互相打架的路径（玩家想只转向、结果一直在打；松手又立刻停火）。
+  //    现在开火只有三种来源：鼠标 / Space / 开火开关（G.autoFire），右杆只管指向。
+  const wantFire = (mouse.down || keys['Space'] || G.autoFire) && !G.dead;
   // ---- 过热膛线（熔炉专属）：开火蓄热 / 停火散热 / 见顶锁膛 ----
   // ⚠️ 蓄热只看 wantFire（按速率），**不看这一帧是否真的打出一发** —— 与射速解耦是 echo 的原设计。
   // ⚠️ 锁膛期间 canFire=false，但 fireT 照常走，所以解锁后立刻就能开火，不会多等一个间隔。
@@ -3492,13 +3782,16 @@ function updateBeam(dt) {
   G.beamCh += dt;
   if (G.beamCh >= BEAM_CHARGE) {
     G.beamCh = 0; G.beamFire = S.beamDur; G.beamAng = G.aim; G.beamTick = 0;
+    // 地形截断：发射那一刻先量一次（下面的 beamTick 每跳还会再量 —— 掩体可能被打碎）
+    G.beamClip = terrRay(G.px, G.py, G.beamAng, S.beamLen);
     Sound.sfx.laser(); addShake(2.4);
   }
 }
 function beamTick() {
   const S = G.S;
   const ca = Math.cos(G.beamAng), sa = Math.sin(G.beamAng);
-  const len = S.beamLen;
+  G.beamClip = terrRay(G.px, G.py, G.beamAng, S.beamLen);
+  const len = Math.min(S.beamLen, G.beamClip || S.beamLen);
   const mul = synOn('motionTwin') ? 1.5 : 1;
   const dmg = S.beamDmg * S.dmg * mul;
   for (const e of G.enemies) {
@@ -3765,8 +4058,12 @@ function updateBullets(dt) {
         b.vx = Math.cos(b.ang) * sp; b.vy = Math.sin(b.ang) * sp;
       }
     }
+    singBend(b, SING.BULLET_TURN, dt);   // 视界：引力弯曲弹道
     const mvx = b.vx * dt, mvy = b.vy * dt;
     b.x += mvx; b.y += mvy;
+    // 地形：撞上就结算（可破坏岩掉血 / 骨架墙火花）并吃掉这一发。
+    // ⚠️ 必须在出界回收**之前** —— 否则贴着世界边缘的块永远打不到。
+    if (G.terr.length && terrBullet(b, b.x, b.y)) { G.bullets.splice(i, 1); continue; }
     // --- 制导弹的「失坠」：飞够里程就自己熄灭 ---
     // ⚠️ 只在 G.S.homeTrav > 0 时启用 —— 没装制导弹药的普通弹不该被限。
     if (b.homing && G.S.homeTrav > 0) {
@@ -3860,7 +4157,13 @@ function updateEBullets(dt) {
       // 转向时掉一点速度：拐弯总要付出代价，也让它不至于越改越快
       b.vx *= 1 - 0.35 * dt; b.vy *= 1 - 0.35 * dt;
     }
+    singBend(b, SING.EBULLET_TURN, dt);  // 视界：敌弹也弯（系数减半，保住弹幕可读性）
     b.x += b.vx * dt; b.y += b.vy * dt;
+    // 地形：敌弹被掩体吃掉 —— 「躲到石头后面是真的安全」就靠这一行
+    if (G.terr.length && terrAt(b.x, b.y)) {
+      burst(b.x, b.y, 4, ['#8b93a8', '#c0cbdc'], 60, .22, 1);
+      G.ebullets.splice(i, 1); continue;
+    }
     // 敌弹按**视口**回收（外扩 80）：玩家永远在视口里，敌弹也都是从视口内打出来的，
     // 出画之后再飞没有任何意义，反而白占 900 发的上限。
     // ⚠️ 和玩家子弹不一样 —— 玩家子弹必须够得到世界里的任何敌人，所以那条挂在 WORLD 上。
@@ -3924,6 +4227,21 @@ function updatePickups(dt) {
       p.vx *= drift; p.vy *= drift;
       p.x += p.vx * dt; p.y += p.vy * dt;
     }
+    // 视界：星尘也在往奇点里掉。⚠️ 吸得比玩家更快（×1.25）——
+    //   这一段抢星尘的拉锯必须**奇点占优**，否则「冒着被吞的风险去够一份」就不成立了。
+    if (G.sing) {
+      const sx = G.sing.x - p.x, sy = G.sing.y - p.y, sd = Math.hypot(sx, sy) || 1;
+      if (sd < SING.PULL_R) {
+        const sp = SING.DRIFT * 1.25 * G.sing.mul * clamp(1 - sd / SING.PULL_R, 0.1, 1);
+        p.x += sx / sd * sp * dt; p.y += sy / sd * sp * dt;
+        if (sd < G.sing.r) {
+          G.pickups.splice(i, 1);
+          feedSing(p.type === 'dust' ? SING.FEED_DUST : SING.FEED_DUST * 2);
+          Sound.sfx.dust();
+          continue;
+        }
+      }
+    }
     p.x = clamp(p.x, 4, WORLD.w - 4); p.y = clamp(p.y, 4, WORLD.h - 4);
     if (d < PICK_R) {
       G.pickups.splice(i, 1);
@@ -3986,6 +4304,451 @@ function updateFx(dt) {
   for (let i = G.toasts.length - 1; i >= 0; i--) { G.toasts[i].t += dt; if (G.toasts[i].t > G.toasts[i].life) G.toasts.splice(i, 1); }
 }
 
+/* ============ 地形（2026-10-21）：可躲闪的静态场地 ============
+   之前整个战场是一块**空矩形** —— 走位的全部意义只有「拉开距离」，躲弹永远靠速度。
+   现在每段航程铺一套静态地形，把「绕到掩体后面」变成一种真能做的动作：
+
+     core  骨架墙    挡人挡弹，**打不碎**（构成本段的骨架，通道不会消失）
+     rock  可破坏岩   挡人挡弹，能打碎（碎了掉星尘 —— 也能自己轰出一条近路）
+     vent  能量喷口   **不挡**任何东西，但会周期性喷发，谁站在上面谁掉血
+
+   ⚠️ 三条硬约束，破了任意一条都是「整局卡死」，而且一行报错都没有：
+     ① **不许出现封闭区域**。清剿 / 死斗是「杀光才过段」，一只敌人被关在墙里 =
+        子弹打不到、玩家进不去（看不到它）→ 这一段永远结束不了。
+        所以布局一律用「贯通式」：墙不到世界边，缺口**恒在中央附近**。
+     ② **通道宽度 ≥ 44px**。船体半宽 22，通道比它窄就等于把路堵死。
+        现在最窄的缺口也有 144px，柱子之间 120px。
+     ③ **开段时玩家脚边 92px 内不许有块**。开段那一刻玩家在哪是不确定的
+        （上一段打完他可能贴在世界角落），凭空扣在他身上会直接卡住。
+
+   ⚠️ 和 `G.walls`（风之障壁）是**两套东西**，别混：
+       G.walls 是模块卡生成的**临时**拦截线（有 life、只吞敌弹）；
+       G.terr  是**关卡地形**（整段存在、挡人也挡弹）。 */
+const TB = 24;          // 地块最小粒度（= tile 尺寸）；所有块对齐到它
+const TCELL = 24;       // 地形索引格（与 TB 同值：一格 = 一张 tile）
+const TMAP = new Map(); // 格 -> 覆盖它的块列表（静态，只在地形增删时重建）
+const tkey = (cx, cy) => (cx + 4096) * 8192 + (cy + 4096);
+// 能量喷口：不挡路不挡弹，周期性喷一圈火 —— 这是「可交互的背景」那一层，
+// 玩家的用法是**把敌人引上去**，或者在它预警时别站那儿。
+const VENT = { R: 30, DMG: 8, EDMG: 14, CYCLE: 3.4, WARN: 1.0, BLOW: 0.9, TICK: 0.34 };
+
+const LAYOUTS = {
+  open:    { name: '空域',   nameEn: 'OPEN',       build: null },
+  pillars: { name: '柱林',   nameEn: 'PILLARS',    build: terrPillars },
+  maze:    { name: '回廊',   nameEn: 'CORRIDORS',  build: terrMaze },
+  cells:   { name: '蜂室',   nameEn: 'CELLS',      build: terrCells },
+  cross:   { name: '四象限', nameEn: 'QUADRANTS',  build: terrCross },
+  ring:    { name: '环带',   nameEn: 'RING',       build: terrRing },
+};
+// 主线 12 段的地形编排。三条规定：
+//   · 1、2 段**空域** —— 前两段还在教基本操作，先别塞走位题。
+//   · 4/8/12 巨像段走空域（bossId 那条分支兜住）：巨像体积大、要绕侧后方输出，
+//     场地一挤它就变成「卡在两块石头中间抽搐」。
+//   · 相邻两段不重复 —— 连续两段同样的柱林会把「换段了」这件事抹掉。
+const MAIN_LAYOUTS = {
+  1: 'open', 2: 'open', 3: 'pillars',
+  5: 'maze', 6: 'pillars', 7: 'cells',
+  9: 'cross', 10: 'ring', 11: 'maze',
+};
+const ENDLESS_LAYOUT_CYCLE = ['pillars', 'maze', 'cross', 'cells', 'ring'];
+function layoutForWave(w, bossId) {
+  if (bossId) return 'open';
+  if (w <= WAVES) return MAIN_LAYOUTS[w] || 'pillars';
+  return ENDLESS_LAYOUT_CYCLE[(w - ENDLESS_FROM) % ENDLESS_LAYOUT_CYCLE.length];
+}
+
+/* 加一块地形。所有布局都只调这一个入口 —— 三条硬约束集中在里面，
+   改布局的人不可能绕过它们。 */
+function terrAdd(x, y, w, h, kind) {
+  x = Math.round(x / TB) * TB; y = Math.round(y / TB) * TB;
+  w = Math.max(TB, Math.round(w / TB) * TB); h = Math.max(TB, Math.round(h / TB) * TB);
+  const M = 48;
+  if (w > WORLD.w - M * 2 || h > WORLD.h - M * 2) return null;
+  x = clamp(x, M, WORLD.w - M - w); y = clamp(y, M, WORLD.h - M - h);
+  // ③ 玩家脚边留空：块矩形到玩家的最近距离
+  const nx = clamp(G.px, x, x + w), ny = clamp(G.py, y, y + h);
+  if (Math.hypot(G.px - nx, G.py - ny) < 92) return null;
+  const hp = kind === 'rock' ? Math.round(52 * (1 + Math.min(G.wave, WAVES) * 0.15)) : 0;
+  const b = { kind, x, y, w, h, hp, maxHp: hp, seed: irand(0, 3), flash: 0 };
+  if (kind !== 'vent') b.cv = bakeSlab(kind, w, h, b.seed);
+  G.terr.push(b);
+  return b;
+}
+
+// ---- 五种布局 ----
+// ⚠️ 全部按「世界中心的偏移」写，不写死坐标 —— 世界尺寸改了这些布局照样成立。
+/* ⚠️ 密度的单位是「**每个视口**有多少块」，不是「整个世界有多少块」。
+   世界是视口的 9 倍（3×3），玩家一屏只看见 1/9 —— 20 块铺满世界 = 一屏两块，
+   那根本读不出「这里有地形」。所以每套布局都按 **30 块上下** 铺，
+   一屏稳定有 3~5 块可躲的东西。探针里有「采样三个位置数视口内块数」的硬断言守着。 */
+function terrPillars() {
+  const cx = WORLD.w / 2, cy = WORLD.h / 2, gx = 132, gy = 150;
+  for (let i = -5; i <= 5; i++) for (let j = -2; j <= 2; j++) {
+    if (Math.random() < 0.36) continue;
+    // 柱子最长 60：间距 132 − 60 = 72 的通道，船（判定直径 24）钻得过去还有富余
+    const vert = Math.random() < 0.5;
+    const long = Math.random() < 0.5 ? 60 : 36;
+    terrAdd(cx + i * gx - (vert ? 12 : long / 2), cy + j * gy - (vert ? long / 2 : 12),
+      vert ? 24 : long, vert ? long : 24, Math.random() < 0.42 ? 'core' : 'rock');
+  }
+}
+function terrMaze() {
+  const cx = WORLD.w / 2, cy = WORLD.h / 2;
+  // 横墙铺满中段、竖墙只在外侧 —— 两者**永不相交**，就不可能围出封闭房间。
+  // 缺口恒在中间附近（±1 段）：中央永远是通的，敌人不会被关在里面。
+  const seg = 72, gap = 2;
+  const run = (horiz, fixed, from, to) => {
+    const n = Math.floor((to - from) / seg);
+    if (n < gap + 2) return;
+    const skip = clamp(Math.floor(n / 2) - 1 + irand(-1, 1), 0, n - gap);
+    for (let i = 0; i < n; i++) {
+      if (i >= skip && i < skip + gap) continue;
+      const p = from + i * seg;
+      if (horiz) terrAdd(p, fixed, seg, 24, Math.random() < 0.7 ? 'core' : 'rock');
+      else terrAdd(fixed, p, 24, seg, Math.random() < 0.7 ? 'core' : 'rock');
+    }
+  };
+  run(true, cy - 234, cx - 432, cx + 432);
+  run(true, cy, cx - 432, cx + 432);
+  run(true, cy + 234, cx - 432, cx + 432);
+  run(false, cx - 504, cy - 288, cy + 288);
+  run(false, cx + 504, cy - 288, cy + 288);
+}
+function terrCells() {
+  const cx = WORLD.w / 2, cy = WORLD.h / 2;
+  // 两横两竖围出六个隔间，缺口恒在中央。四角会碰头，但**中央永远有口**。
+  const seg = 72, gap = 2;
+  const run = (horiz, fixed, from, to) => {
+    const n = Math.floor((to - from) / seg);
+    if (n < gap + 2) return;
+    const skip = clamp(Math.floor(n / 2) - 1 + irand(-1, 1), 0, n - gap);
+    for (let i = 0; i < n; i++) {
+      if (i >= skip && i < skip + gap) continue;
+      const p = from + i * seg;
+      if (horiz) terrAdd(p, fixed, seg, 24, Math.random() < 0.34 ? 'core' : 'rock');
+      else terrAdd(fixed, p, 24, seg, Math.random() < 0.34 ? 'core' : 'rock');
+    }
+  };
+  run(true, cy - 162, cx - 396, cx + 396);
+  run(true, cy + 162, cx - 396, cx + 396);
+  run(false, cx - 396, cy - 288, cy + 288);
+  run(false, cx + 396, cy - 288, cy + 288);
+  // 每个隔间里再摆一段短隔断：只有四条长墙的话，「蜂室」读起来就是四道栅栏
+  for (const sx of [-1, 1]) for (const sy of [-1, 0, 1]) {
+    terrAdd(cx + sx * 216 - 48, cy + sy * 216 - 108, 96, 24, 'rock');
+  }
+}
+function terrCross() {
+  const cx = WORLD.w / 2, cy = WORLD.h / 2;
+  // 中心十字把场地切成四个象限 —— 四角都通向世界边缘，没有死路。
+  terrAdd(cx - 288, cy - 12, 576, 24, 'core');
+  terrAdd(cx - 12, cy - 216, 24, 432, 'core');
+  // 每个象限里再放一道横的 + 一道竖的短墙：离开中心也不能立刻变成空地
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    terrAdd(cx + sx * 216 - 108, cy + sy * 168 - 12, 216, 24, 'rock');
+    terrAdd(cx + sx * 216 - 12, cy + sy * 168 - 54, 24, 108, 'rock');
+  }
+  // 四角的大块掩体（骨架 / 可破坏各半）
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    terrAdd(cx + sx * 384 - 48, cy + sy * 240 - 24, 96, 48, Math.random() < 0.5 ? 'core' : 'rock');
+  }
+  // 象限外缘再补一圈：只有中心那两道的话，跑到世界边上就是纯空地
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    terrAdd(cx + sx * 336 - 84, cy + sy * 288 - 12, 168, 24, 'rock');
+    terrAdd(cx + sx * 336 - 12, cy + sy * 288 - 60, 24, 120, 'core');
+  }
+}
+function terrRing() {
+  const cx = WORLD.w / 2, cy = WORLD.h / 2;
+  terrAdd(cx - 96, cy - 96, 192, 192, 'core');            // 中央方核
+  terrAdd(cx - 12, cy - 240, 24, 144, 'core');            // 四条辐条
+  terrAdd(cx - 12, cy + 96, 24, 144, 'core');
+  terrAdd(cx - 240, cy - 12, 144, 24, 'core');
+  terrAdd(cx + 96, cy - 12, 144, 24, 'core');
+  // 内环四块（可破坏）：核与外圈之间那一圈，绕着核心跑的时候能顺手轰掉
+  for (const o of [[-216, -216], [120, -216], [-216, 120], [120, 120]]) {
+    terrAdd(cx + o[0], cy + o[1], 96, 96, 'rock');
+  }
+  // 外环四段弧
+  for (const o of [[-432, -264], [336, -264], [-432, 168], [336, 168]]) {
+    terrAdd(cx + o[0], cy + o[1], 168, 24, 'rock');
+  }
+  // 远角四块：走到世界边上也不会是无掩体的空地
+  for (const o of [[-528, -120], [456, -120], [-528, 0], [456, 0]]) {
+    terrAdd(cx + o[0], cy + o[1], 72, 120, Math.random() < 0.5 ? 'core' : 'rock');
+  }
+  // 对角四块：把「环」补成环，而不是十字加四个角
+  for (const o of [[-300, -300], [228, -300], [-300, 228], [228, 228]]) {
+    terrAdd(cx + o[0], cy + o[1], 72, 72, 'rock');
+  }
+}
+// 喷口：找一个离所有块 ≥ R+24、离玩家 ≥150 的位置。找不到就少放一个（不硬塞）。
+function terrVents(n) {
+  for (let k = 0; k < n; k++) {
+    for (let tries = 0; tries < 24; tries++) {
+      const x = rand(120, WORLD.w - 120), y = rand(120, WORLD.h - 120);
+      if (Math.hypot(x - G.px, y - G.py) < 150) continue;
+      let bad = false;
+      for (const b of G.terr) {
+        if (b.kind === 'vent') continue;
+        const nx = clamp(x, b.x, b.x + b.w), ny = clamp(y, b.y, b.y + b.h);
+        if (Math.hypot(x - nx, y - ny) < VENT.R + 24) { bad = true; break; }
+      }
+      if (bad) continue;
+      G.terr.push({ kind: 'vent', x: Math.round(x), y: Math.round(y), r: VENT.R, ph: 0, t: rand(0, VENT.CYCLE), tick: 0 });
+      break;
+    }
+  }
+}
+
+function buildTerrain(w, bossId) {
+  G.terr.length = 0;
+  const id = layoutForWave(w, bossId);
+  G.layout = id;
+  const ly = LAYOUTS[id];
+  if (ly && ly.build) {
+    ly.build();
+    terrVents(w >= 5 ? 3 : 2);
+  }
+  terrIndex();
+  // 报地形（空域不报：场上没东西就不必占一行提示）
+  if (id !== 'open' && ly) toast(T('bn.terr'), L(ly, 'name'), '#c0cbdc', 2.4);
+}
+
+// ---- 索引 / 查询 ----
+// ⚠️ 地形是**静态**的，所以可以建一次索引一直用；只有打碎一块时才需要重建。
+//    每帧对每个实体去遍历几十个块做 AABB 是纯浪费 —— 弹幕一多就是几千次。
+function terrIndex() {
+  TMAP.clear();
+  for (const b of G.terr) {
+    if (b.kind === 'vent') continue;
+    const x0 = Math.floor(b.x / TCELL), x1 = Math.ceil((b.x + b.w) / TCELL) - 1;
+    const y0 = Math.floor(b.y / TCELL), y1 = Math.ceil((b.y + b.h) / TCELL) - 1;
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      const k = tkey(cx, cy);
+      let a = TMAP.get(k);
+      if (!a) TMAP.set(k, a = []);
+      a.push(b);
+    }
+  }
+}
+function terrAt(x, y) {
+  const a = TMAP.get(tkey(Math.floor(x / TCELL), Math.floor(y / TCELL)));
+  if (!a) return null;
+  for (const b of a) if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) return b;
+  return null;
+}
+/* 圆 vs 实心块：返回**穿透最深**的那一块和推出法线。
+   ⚠️ 圆心落在块内的情况必须单独处理（dx=dy=0，没有法线可言）——
+      那是「高速冲刺直接穿进去了一半」，此时沿最短的那条轴推出去。 */
+function terrPush(x, y, r) {
+  const cx = Math.floor(x / TCELL), cy = Math.floor(y / TCELL);
+  let out = null;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const a = TMAP.get(tkey(cx + i, cy + j));
+    if (!a) continue;
+    for (const b of a) {
+      const nx = clamp(x, b.x, b.x + b.w), ny = clamp(y, b.y, b.y + b.h);
+      let dx = x - nx, dy = y - ny;
+      let d = Math.hypot(dx, dy);
+      let ux, uy;
+      if (d > 0.001) { ux = dx / d; uy = dy / d; }
+      else {
+        const dl = x - b.x, dr = b.x + b.w - x, dt = y - b.y, db = b.y + b.h - y;
+        const m = Math.min(dl, dr, dt, db);
+        if (m === dl) { ux = -1; uy = 0; d = -dl; }
+        else if (m === dr) { ux = 1; uy = 0; d = -dr; }
+        else if (m === dt) { ux = 0; uy = -1; d = -dt; }
+        else { ux = 0; uy = 1; d = -db; }
+      }
+      const pen = r - d;
+      if (pen <= 0) continue;
+      if (!out || pen > out.pen) out = { b, nx: ux, ny: uy, pen };
+    }
+  }
+  return out;
+}
+// 射线：沿 ang 步进，返回撞上地形之前的长度（没撞到就返回 maxLen）。
+// 光矛 / 瓦解射线靠它截断 —— 不截的话「隔着一道墙把墙后面的敌人烧了」，
+// 而那面墙明明是玩家拿来挡弹的东西。
+function terrRay(x, y, ang, maxLen) {
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  for (let d = 8; d <= maxLen; d += 8) {
+    if (terrAt(x + ca * d, y + sa * d)) return Math.max(0, d - 8);
+  }
+  return maxLen;
+}
+
+// ---- 解算 ----
+function terrResolvePlayer() {
+  // 判定半径 12：船体精灵 44×32（半宽 22），用圆去贴方块必然有一点点翼尖入墙，
+  //   取 12 是「看着贴住了、又不会陷进去」的位置。别改大 —— 掩体通道是按这个数留的。
+  const p = terrPush(G.px, G.py, 12);
+  if (!p) return;
+  G.px += p.nx * p.pen; G.py += p.ny * p.pen;
+  // 法向速度吃掉、切向保留 = 贴着墙滑行（撞墙不是「撞停」）
+  const dot = G.vx * p.nx + G.vy * p.ny;
+  if (dot < 0) {
+    G.vx -= p.nx * dot; G.vy -= p.ny * dot;
+    if (-dot > 120) {
+      addShake(1.1);
+      burst(G.px, G.py, 3, ['#8b93a8', '#c0cbdc'], 60, .2, 1);
+    }
+  }
+}
+function terrResolveEnemy(e, spd, ux, uy, dt) {
+  const p = terrPush(e.x, e.y, e.r * 0.75);
+  if (!p) return;
+  e.x += p.nx * p.pen; e.y += p.ny * p.pen;
+  const dot = e.vx * p.nx + e.vy * p.ny;
+  if (dot < 0) { e.vx -= p.nx * dot; e.vy -= p.ny * dot; }
+  // 绕行：正对着墙的敌人切向速度是 0，只做上面的话它会**原地顶墙到天荒地老**，
+  //   玩家隔着墙打不到它 → 清剿段永远结束不了。沿墙补一点切向推力，
+  //   方向选「离玩家更近的那一侧」，看起来就是它自己在找路绕过来。
+  const tx = -p.ny, ty = p.nx, s = (tx * ux + ty * uy) >= 0 ? 1 : -1;
+  e.vx += tx * s * spd * 2.4 * dt; e.vy += ty * s * spd * 2.4 * dt;
+}
+// 巨像碾碎可破坏岩：它那么大一只，卡在两块石头中间抽搐比「碾过去」难看一百倍。
+//   ⚠️ 骨架墙**不碾**（那是本段的骨架，boss 一撞就塌等于地形白做）—— 巨像直接穿过去。
+function terrCrush(e) {
+  for (let i = G.terr.length - 1; i >= 0; i--) {
+    const b = G.terr[i];
+    if (b.kind !== 'rock') continue;
+    const nx = clamp(e.x, b.x, b.x + b.w), ny = clamp(e.y, b.y, b.y + b.h);
+    if (Math.hypot(e.x - nx, e.y - ny) < e.r) terrBreak(b, i, true);
+  }
+}
+function terrBreak(b, idx, byBoss) {
+  const i = idx === undefined ? G.terr.indexOf(b) : idx;
+  if (i < 0) return;
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  burst(cx, cy, 18, ['#8b93a8', '#566c86', '#c0cbdc'], 140, .55, 2);
+  for (let k = 0; k < 5; k++) {
+    part({ x: cx + rand(-b.w / 2, b.w / 2), y: cy + rand(-b.h / 2, b.h / 2), vx: rand(-80, 80), vy: rand(-80, 80), life: .7, max: .7, col: '#566c86', size: 2, drag: 2.4 });
+  }
+  ring(cx, cy, Math.max(b.w, b.h) * 0.55, '#8b93a8', .3, 2);
+  G.terr.splice(i, 1);
+  terrIndex();   // ⚠️ 索引是静态的，拆掉一块必须整表重建，否则那块会继续挡住一切
+  addShake(byBoss ? 3.2 : 2.2);
+  Sound.sfx.crumble();
+  if (!byBoss && Math.random() < 0.6) dropPickup('dust', cx, cy, 1);
+}
+/* 子弹撞地形。返回 true = 这一发被吃掉了。
+   ⚠️ **敌弹也被挡** —— 这才是「可躲闪的地形」的全部价值：
+      躲到掩体后面是真的安全，不是「看起来安全」。 */
+function terrBullet(b, x, y) {
+  const t = terrAt(x, y);
+  if (!t) return false;
+  if (t.kind === 'rock') {
+    t.hp -= b.dmg; t.flash = 0.1;
+    if (t.hp <= 0) terrBreak(t);
+    else { burst(x, y, 3, ['#8b93a8', '#566c86'], 70, .22, 1); Sound.sfx.hit(); }
+  } else {
+    burst(x, y, 3, ['#41a6f6', '#c0cbdc'], 70, .22, 1);
+    Sound.sfx.shield();
+  }
+  return true;
+}
+
+// ---- 每帧 ----
+function updateTerrain(dt) {
+  if (!G.terr.length) return;
+  for (let i = G.terr.length - 1; i >= 0; i--) {
+    const b = G.terr[i];
+    if (b.flash > 0) b.flash -= dt;
+    if (b.kind !== 'vent') continue;
+    b.t += dt;
+    if (b.ph === 2) {
+      b.tick -= dt;
+      if (b.tick <= 0) { b.tick = VENT.TICK; ventBlow(b); }
+      if (b.t >= VENT.BLOW) { b.ph = 0; b.t = 0; }
+    } else if (b.ph === 1) {
+      if (b.t >= VENT.WARN) {
+        b.ph = 2; b.t = 0; b.tick = 0;
+        Sound.sfx.vent(); addShake(1.6);
+        burst(b.x, b.y, 14, ['#ffcd75', '#ef7d57', '#f4f4f4'], 150, .5, 2);
+      }
+    } else if (b.t >= VENT.CYCLE) { b.ph = 1; b.t = 0; }
+  }
+}
+function ventBlow(v) {
+  for (let k = 0; k < 5; k++) {
+    const a = rand(TAU), r = rand(4, VENT.R);
+    part({
+      x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r,
+      vx: Math.cos(a) * 95, vy: Math.sin(a) * 95,
+      life: .4, max: .4, col: pick(['#ffcd75', '#ef7d57', '#f4f4f4']), size: 2, drag: 2.6,
+    });
+  }
+  const dx = G.px - v.x, dy = G.py - v.y;
+  if (dx * dx + dy * dy < (VENT.R + 7) * (VENT.R + 7)) hurtPlayer(VENT.DMG);
+  // 敌人也吃喷发 —— 把敌人引到喷口上是这套地形给玩家的第二件玩具
+  for (const e of G.enemies) {
+    if (e.dead || e.hp <= 0 || e.boss) continue;
+    const ex = e.x - v.x, ey = e.y - v.y, d = Math.hypot(ex, ey) || 1;
+    if (d > VENT.R + e.r) continue;
+    damageEnemy(e, VENT.EDMG, ex / d, ey / d, false, 0.4, true);
+  }
+}
+
+// ---- 绘制 ----
+function drawTerrain() {
+  if (!G.terr.length) return;
+  const L = viewL() - 12, T = viewT() - 12, Rr = viewR() + 12, B = viewB() + 12;
+  for (const b of G.terr) {
+    if (b.x > Rr || b.x + b.w < L || b.y > B || b.y + b.h < T) continue;
+    if (b.kind === 'vent') { drawVent(b); continue; }
+    ctx.drawImage(b.cv, Math.round(b.x), Math.round(b.y));
+    // 裂纹随伤害加深：不看血条也能判断「这块快碎了」
+    if (b.kind === 'rock' && b.hp < b.maxHp) {
+      const k = 1 - b.hp / b.maxHp;
+      const n = k > 0.66 ? 3 : k > 0.33 ? 2 : 1;
+      ctx.fillStyle = '#1a1c2c';
+      for (let i = 0; i < n; i++) {
+        const sx = b.x + 3 + ((b.seed * 7 + i * 11) % Math.max(1, b.w - 6));
+        const sy = b.y + 2 + ((b.seed * 5 + i * 17) % Math.max(1, b.h - 5));
+        const len = 4 + i * 3 + Math.round(k * 6);
+        for (let s = 0; s < len; s++) ctx.fillRect(Math.round(sx + s * 0.7), Math.round(sy + s), 1, 1);
+      }
+    }
+    if (b.flash > 0) {
+      ctx.globalAlpha = Math.min(0.55, b.flash * 5);
+      ctx.fillStyle = '#f4f4f4';
+      ctx.fillRect(Math.round(b.x + 1), Math.round(b.y + 1), b.w - 2, b.h - 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+function drawVent(v) {
+  const t = 0.5 + Math.sin(G.t * 6) * 0.5;
+  // 底座：暗环 + 内芯（常驻，随时看得见「这里有个东西」）
+  // ⚠️ ringPx / disc 用的是**当前** strokeStyle / fillStyle，不是传参 —— 见「像素图元」那节。
+  ctx.strokeStyle = '#3a4468'; ringPx(v.x, v.y, 13, 1);
+  ctx.fillStyle = '#242a44'; disc(v.x, v.y, 6);
+  ctx.fillStyle = v.ph === 0 ? '#ef7d57' : '#ffcd75';
+  ctx.fillRect(Math.round(v.x) - 1, Math.round(v.y) - 1, 2, 2);
+  if (v.ph === 1) {
+    // 预警：环从内向外涨 + 闪烁。玩家要的是「还有多久炸」，所以让它**变大**而不是只变色。
+    const k = v.t / VENT.WARN;
+    ctx.strokeStyle = '#ffcd75';
+    ctx.globalAlpha = 0.35 + t * 0.45;
+    ringPx(v.x, v.y, Math.round(8 + k * (VENT.R - 8)), 1);
+    ctx.strokeStyle = '#ef7d57';
+    ctx.globalAlpha = 0.15 + t * 0.2;
+    ringPx(v.x, v.y, Math.round(4 + k * 8), 2);
+    ctx.globalAlpha = 1;
+  } else if (v.ph === 2) {
+    const k = v.t / VENT.BLOW;
+    const r = 6 + k * VENT.R;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = (1 - k) * 0.5; ctx.fillStyle = '#ef7d57'; disc(v.x, v.y, r);
+    ctx.globalAlpha = (1 - k) * 0.6; ctx.fillStyle = '#ffcd75'; disc(v.x, v.y, r * 0.6);
+    ctx.globalAlpha = (1 - k) * 0.9; ctx.fillStyle = '#f4f4f4'; disc(v.x, v.y, r * 0.32);
+    ctx.restore();
+  }
+}
+
 // ============ 航程导演 ============
 function startWave(w) {
   G.wave = w;
@@ -4000,6 +4763,9 @@ function startWave(w) {
   Sound.sfx.warp();
   const tier = eTier(w);
   const bossId = bossForWave(w);
+  // ⚠️ 地形必须在**这里**重建，且要在 `G.px/py` 还是上一段结束的位置时做 ——
+  //    terrAdd 拿它来给玩家脚边留空。放到后面（敌人已经生成）就晚了。
+  buildTerrain(w, bossId);
   if (bossId) {
     G.waveState = 'boss';
     // ⚠️ 形态也要跟着切成 'boss'：否则它会**留着上一段的值**（比如第 3 段是回收，
@@ -4028,6 +4794,9 @@ function startWave(w) {
     const extra = eTierExtra(w);
     const form = formForWave(w);
     G.waveForm = form;
+    // ⚠️ 非视界段必须**显式清空** G.sing：不清的话它会跟着玩家走进下一段，
+    //    子弹继续弯、掉落继续被吞，而 HUD 上完全没有提示（看起来像弹道 bug）。
+    G.sing = null;
 
     // 各形态共用的「挑一只敌型」：星区越深混入越硬的；无尽固定按最深星区配
     const rollType = () => {
@@ -4053,6 +4822,15 @@ function startWave(w) {
       G.waveDur = 22 + Math.min(w, WAVES) * 0.9;
       G.waveNeed = 0;
       for (let i = 0; i < 260; i++) G.spawnQueue.push(rollType());
+    } else if (form === 'horizon') {
+      // 视界：生成奇点，之后只要求**活到时间到**。
+      //   ⚠️ 队列给得比能刷完的多（同 surge）：玩家的终点是逃脱，不是清场。
+      //   ⚠️ 时长比 surge 短（22+0.9w ≈ 27s → 这里 24s）：这段的密度来自「一直被拽」，
+      //      熬到 30 秒会变成受罪。奇点自己也在长，紧迫感不需要靠堆时间。
+      spawnSingularity();
+      G.waveDur = 24;
+      G.waveNeed = 0;
+      for (let i = 0; i < 200; i++) G.spawnQueue.push(rollType());
     } else if (form === 'salvage') {
       // 回收：先在地上撒够星尘（比需求多 6 份，留出「漏掉几份」的余量），再放敌人骚扰。
       // ⚠️ 星尘必须**预撒**而不能指望击杀掉落：击杀掉几份全看运气，
@@ -4104,8 +4882,8 @@ function updateWave(dt) {
       spawnEnemy(t, undefined, undefined, { elite });
     }
 
-    if (form === 'surge') {
-      // 潮涌：活到时间到就过段 —— **剩下的敌人不管**（跃迁会把它们带走）。
+    if (form === 'surge' || form === 'horizon') {
+      // 潮涌 / 视界：活到时间到就过段 —— **剩下的敌人不管**（跃迁会把它们带走）。
       if (G.waveT >= G.waveDur) finishWave();
     } else if (form === 'salvage') {
       if (G.dustGot >= G.dustNeed) finishWave();
@@ -4209,6 +4987,7 @@ function step(dt) {
     updateDrones(dt);
   }
   updateEnemies(dt);
+  updateSingularity(dt);   // 视界：奇点吸人吞物（在敌人移动之后，才能吃掉它们本帧的新位置）
   updateBullets(dt);
   // ⚠️ 尾流必须在 updateEBullets 之前：它的职责之一是把敌弹吃掉，
   //    排到后面就变成「先被弹打到、再把弹清掉」，玩家会觉得这模块根本没生效。
@@ -4224,6 +5003,7 @@ function step(dt) {
   updateLances(dt);
   updateWebs(dt);
   updateFires(dt);
+  updateTerrain(dt);
   updateWave(dt);
 }
 
@@ -4970,27 +5750,59 @@ function drawToasts() {
 // 这里画一个跟着鼠标走的像素十字 —— 全用 fillRect 画 1px 方块，不做抗锯齿，
 // 保持和其余像素素材同一个观感；也不要进任何精灵缓存（坐标每帧都变）。
 // 触屏：手指会盖住瞄准点，所以换成一个更大的环 + 点，顺带把虚拟摇杆也画出来。
-// 手机版「悬浮瞄准标」：在炮口方向、离船体固定半径处画一个像素风准星 + 连接线。
-// 仅触屏对局显示；桌面端由 drawCrosshair 处理，不画这个。
-function drawAimMark() {
-  const Rw = 46;                                   // 悬浮标离船体的世界半径
-  const ax = G.px + Math.cos(touchAim) * Rw;
-  const ay = G.py + Math.sin(touchAim) * Rw;
+// ============ 触屏操作反馈 ============
+// 位置铁律：**反馈画在指尖，不画在船上**。
+// 手指会盖住屏幕，玩家真正看得见的只有指尖周围那一圈。旧的「悬浮瞄准标」把准星画在
+// 船周围 46px 处，等于让玩家同时盯两件事（指尖在指方向、标记在另一处也在表示方向），
+// 再加上手指和标记的距离随手指位置变化，整个读数是割裂的。
+// 这也是 Feral 把《Guardian of Light》搬上手机时定下的位置：三段式右杆的视觉全在杆上。
+
+// 触屏杆：环 + 内圈 + 推杆，画在手指落点（ox,oy）上。
+function drawStick(ox, oy, kx, ky, mag, col) {
+  const R = 40;
   ctx.save();
-  ctx.strokeStyle = 'rgba(115,239,247,.32)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(G.px, G.py); ctx.lineTo(ax, ay); ctx.stroke();
-  ctx.strokeStyle = '#73eff7'; ctx.lineWidth = 1;
-  const r = 7;
-  ctx.strokeRect(Math.round(ax - r), Math.round(ay - r), r * 2, r * 2);
-  ctx.beginPath();
-  ctx.moveTo(Math.round(ax - r - 3), Math.round(ay)); ctx.lineTo(Math.round(ax - 2), Math.round(ay));
-  ctx.moveTo(Math.round(ax + 2), Math.round(ay)); ctx.lineTo(Math.round(ax + r + 3), Math.round(ay));
-  ctx.moveTo(Math.round(ax), Math.round(ay - r - 3)); ctx.lineTo(Math.round(ax), Math.round(ay - 2));
-  ctx.moveTo(Math.round(ax), Math.round(ay + 2)); ctx.lineTo(Math.round(ax), Math.round(ay + r + 3));
-  ctx.stroke();
-  ctx.fillStyle = '#f4f4f4';
-  ctx.fillRect(Math.round(ax) - 1, Math.round(ay) - 1, 2, 2);
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.20; ringPx(ox, oy, R, 1);        // 外环：常态极淡，不喧宾夺主
+  ctx.globalAlpha = 0.16; ringPx(ox, oy, R * 0.6, 1);  // 内圈：满舵参考
+  if (mag > 0.04) {
+    // 落点 → 推杆 的方向短线：指尖就能读出「我往哪推了」
+    ctx.globalAlpha = 0.55; pline(ox, oy, ox + kx, oy + ky, 1);
+  }
+  ctx.globalAlpha = 0.9; ctx.fillStyle = col;
+  disc(ox + kx, oy + ky, 5);                            // 推杆
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function drawSticks() {
+  if (joy.active) {
+    const [jx, jy] = toGame(joy.ox, joy.oy);
+    drawStick(jx, jy, joy.x * MOVE_R, joy.y * MOVE_R, Math.hypot(joy.x, joy.y), '#73eff7');
+  }
+  if (aimDrag.id !== null) {
+    drawStick(aimDrag.ox, aimDrag.oy, aimDrag.x, aimDrag.y, aimDrag.mag, '#9df3fa');
+  }
+}
+
+// 炮口射线：从炮口沿 G.aim 射出的一小段。
+// 删掉悬浮标之后必须有个东西替它告诉玩家「枪现在朝哪」，但它是**从炮口射出去**的，
+// 不是悬在船周围的独立方块 —— 这样它和船是一体的，读起来是「枪指的方向」。
+// 手指按在右杆上时加长加亮（正在瞄准），松开时留一小截淡的（枪口常驻朝向）。
+function drawAimRay() {
+  const a = G.aim;
+  const held = aimDrag.id !== null;
+  const LEN = held ? 30 + 34 * aimDrag.mag : 13;
+  const SEG = held ? 4 : 2;
+  const cs = Math.cos(a), sn = Math.sin(a);
+  const x0 = G.px + cs * 8, y0 = G.py + sn * 8;
+  ctx.save();
+  ctx.strokeStyle = G.muzzle > 0 ? '#f4f4f4' : '#73eff7';
+  for (let i = 0; i < SEG; i++) {
+    const t0 = i / SEG, t1 = (i + 1) / SEG;
+    // 像素游戏不做连续渐变：用几段递降的 alpha 台阶代替
+    ctx.globalAlpha = (held ? 0.6 : 0.34) * (1 - i / SEG) + 0.06;
+    pline(x0 + cs * LEN * t0, y0 + sn * LEN * t0, x0 + cs * LEN * t1, y0 + sn * LEN * t1, 1);
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
@@ -4999,26 +5811,9 @@ function drawCrosshair() {
   const firing = G.muzzle > 0;
   const col = G.odT > 0 ? '#ffcd75' : (firing ? '#f4f4f4' : (S.hullColor || '#73eff7'));
 
-  if (pointerKind === 'touch') {
-    // 摇杆底座 + 推杆：之前触屏完全没有操作反馈，指头一按下去什么都看不见
-    if (joy.active) {
-      const [jx, jy] = toGame(joy.ox, joy.oy);
-      ctx.globalAlpha = 0.5; ctx.fillStyle = '#73eff7'; framePx(jx - 22, jy - 22, 45, 45);
-      ctx.globalAlpha = 0.9; disc(jx + joy.x * 22, jy + joy.y * 22, 5);
-      ctx.globalAlpha = 1;
-    }
-    if (!mouse.down) return;
-    // 手指会盖住瞄准点，所以画一组更大的四角括线，让玩家看得见自己在瞄哪
-    const x = Math.round(mouse.x), y = Math.round(mouse.y);
-    const R = 9;
-    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-      const bx = x + sx * R - (sx > 0 ? 0 : 5), by = y + sy * R - (sy > 0 ? 0 : 5);
-      ctx.fillStyle = '#0a0c18'; ctx.fillRect(bx, by, 5, 5);
-      ctx.fillStyle = col;       ctx.fillRect(bx + 1, by + 1, 3, 3);
-    }
-    ctx.fillStyle = '#f4f4f4'; ctx.fillRect(x - 1, y - 1, 2, 2);
-    return;
-  }
+  // ⚠️ 触屏不画准星。旧版在触屏上还画一个跟着手指的十字，和右杆的环是两套东西，
+  //    看着是重复的。触屏的反馈统一交给 drawSticks（指尖） + drawAimRay（炮口）。
+  if (pointerKind === 'touch') return;
 
   if (!mouse.inside) return;
   const x = Math.round(mouse.x), y = Math.round(mouse.y);
@@ -5150,6 +5945,10 @@ function render() {
     ctx.translate(Math.round(rand(-G.shake, G.shake)), Math.round(rand(-G.shake, G.shake)));
   }
   drawBackground();
+  // 地形压在背景之上、奇点之下：它是**场地**（世界的一部分），
+  //   玩家和敌人都画在它上面（否则贴着掩体时会被自己的掩体盖住）。
+  drawTerrain();
+  drawSingularity();   // 视界：奇点是**场地**不是敌人，所以压在最底层（背景之上、蛛网之下）
   drawWebs();
   // 火场画在蛛网**之上**：锻炉和织网者同场时，玩家得先看见「哪里会烧到我」
   drawFires();
@@ -5164,7 +5963,8 @@ function render() {
   drawPlayer();
   drawUndying();    // 怒火裹在船身之上：这几秒「打不死」必须是画面上最响的信息
   drawBeam();       // 射线压在船身之上：它是从炮口喷出去的，必须盖住被烧的敌机
-  if (touchMode && !BOT && state === 'play' && G && !G.dead) drawAimMark();   // 手机版悬浮瞄准标
+  // 炮口射线画在世界层（它是船的一部分，跟着船走）
+  if (touchMode && !BOT && state === 'play' && G && !G.dead) drawAimRay();
   drawLances();     // 光矛压在船身之上：它是「刚打出去」的一击，必须盖住一切
   drawEBullets();
   drawParts();
@@ -5178,6 +5978,8 @@ function render() {
     drawToasts();
   }
   if (state === 'play' && !G.dead) { drawCrosshair(); drawOffscreenMarkers(); }
+  // 杆环是**屏幕空间**的 UI，压在所有东西之上（弹幕、爆炸、HUD 都别想盖住它）
+  if (touchMode && !BOT && state === 'play' && G && !G.dead) drawSticks();
   drawBlackout();   // 星蚀的熄灭战场：压在世界层之上、HUD **之下**
   // 红色暗角：低血量常驻脉动 + 受击时的一记重闪（取两者较强的一个）
   const S = G.S;
@@ -5896,13 +6698,6 @@ function toGame(cx, cy) {
 // 那几处必须留在屏幕空间），而瞄准、生成、碰撞全在世界空间 —— 中间就差这一个相机偏移。
 function mouseWorld() { return [mouse.x + cam.x - W / 2, mouse.y + cam.y - H / 2]; }
 function worldToView(x, y) { return [x - cam.x + W / 2, y - cam.y + H / 2]; }
-// 触屏：把手指屏幕坐标换算成「船体 → 手指」的世界夹角（= 悬浮瞄准标方向）。
-function aimFromTouch(cx, cy) {
-  const [vx, vy] = toGame(cx, cy);                          // 视口（游戏空间）坐标
-  const wx = vx - W / 2 + cam.x, wy = vy - H / 2 + cam.y;   // → 世界坐标
-  if (!G) return -Math.PI / 2;
-  return Math.atan2(wy - G.py, wx - G.px);
-}
 function toWorld(cx, cy) { const g = toGame(cx, cy); return [g[0] + cam.x - W / 2, g[1] + cam.y - H / 2]; }
 
 function setTouchMode(on) { touchMode = on; wrap.classList.toggle('touch', on); }
@@ -5922,6 +6717,13 @@ function toggleFire() {
   if (G) G.autoFire = autoFire;
   syncFireBtn();
   if (autoFire) Sound.sfx.select(); else Sound.sfx.lock();
+}
+// 只置位不播音：给 boot() 定默认值用。启动时放音效会被自动播放策略拦下，
+// 白记一次「用户手势」却什么也没响。
+function setAutoFireSilent(v) {
+  autoFire = !!v;
+  if (G) G.autoFire = autoFire;
+  syncFireBtn();
 }
 function syncFireBtn() {
   const on = G ? !!G.autoFire : autoFire;
@@ -6151,7 +6953,14 @@ function boot() {
   // 横屏，要等一次 resize 才转 —— 表现就是「进游戏才横屏」的突兀跳变。
   // （index.html 里的内联脚本更早就把 #wrap 转了，这里只是让 game.js 自己的 fit() 也对齐，
   //   好让后续 resize/全屏重算时保持一致。）
-  if (isTouchDevice()) setTouchMode(true);
+  if (isTouchDevice()) {
+    setTouchMode(true);
+    // ⚠️ 触屏必须**默认自动开火**。触屏路径上 mouse.down 永远置不上 true
+    //    （mousedown 监听里把 firesTouchEvents 的合成事件全挡掉了），
+    //    所以 wantFire 只剩 G.autoFire 一条支路 —— 默认关就等于「手机上半发子弹都打不出去」。
+    //    桌面端不受影响（touchMode 恒 false，仍然是「按住才开火」）。
+    setAutoFireSilent(true);
+  }
   // 启动阶段抛异常的话，页面会永远停在 LOADING —— 把错误直接写到那一屏上，
   // 否则「白屏 / 卡 loading」只能靠猜。
   window.addEventListener('error', e => {
@@ -6223,10 +7032,12 @@ function boot() {
       if (gx < W / 2 && joy.id === null) {
         joy.id = t.identifier; joy.ox = t.clientX; joy.oy = t.clientY; joy.active = true;
       } else if (gx >= W / 2 && aimDrag.id === null) {
-        // 右半屏拖动 = 转动「悬浮瞄准标」（设定 G.aim 开火方向）；拖动期间即开火。
+        // 右半屏 = 瞄准杆。原点是**落点**（游戏坐标），之后往哪拖炮口就朝哪。
+        // ⚠️ 不在落点时就计算方向 —— 那时位移是 0，方向是噪声；出死区后才开始生效。
+        const [ax, ay] = toGame(t.clientX, t.clientY);
         aimDrag.id = t.identifier;
-        aimDrag.fire = true;
-        touchAim = aimFromTouch(t.clientX, t.clientY);
+        aimDrag.ox = ax; aimDrag.oy = ay;
+        aimDrag.x = 0; aimDrag.y = 0; aimDrag.mag = 0;
       }
     }
   }, { passive: true });
@@ -6242,8 +7053,18 @@ function boot() {
         const m = Math.hypot(dx, dy) || 1, k = Math.min(1, m / 40);
         joy.x = dx / m * k; joy.y = dy / m * k;
       } else if (t.identifier === aimDrag.id) {
-        // 右半屏拖动：悬浮瞄准标跟随手指方向（绕船体旋转，半径固定）。
-        touchAim = aimFromTouch(t.clientX, t.clientY);
+        // 右杆：位移向量（相对落点）→ 炮口方向。
+        // ⚠️ 落点与当前点都过 toGame，rot=90 的逆旋 toGame 内部已经做了，
+        //    这里拿到的 dx/dy 直接就是游戏空间（= 世界方向）的位移，不需要再逆旋一遍。
+        const [gx2, gy2] = toGame(t.clientX, t.clientY);
+        const dx = gx2 - aimDrag.ox, dy = gy2 - aimDrag.oy;
+        const m = Math.hypot(dx, dy);
+        const c = m > 0 ? Math.min(1, AIM_R / m) : 0;
+        aimDrag.x = dx * c; aimDrag.y = dy * c;              // 推杆：钳在环内
+        aimDrag.mag = clamp((m - AIM_DZ) / (AIM_R - AIM_DZ), 0, 1);
+        // ⚠️ 死区用的是**像素**不是归一化比例：手指在落点附近抖 2px 时角度能差 20° 以上，
+        //    按方向更新会把炮口抖成筛子。出死区才认方向，死区内保持上一次的方向。
+        if (m > AIM_DZ) touchAim = Math.atan2(dy, dx);
       } else {
         const [x, y] = toGame(t.clientX, t.clientY); mouse.x = x; mouse.y = y;
       }
@@ -6253,8 +7074,10 @@ function boot() {
     for (const t of e.changedTouches) {
       if (t.identifier === joy.id) { joy.id = null; joy.active = false; joy.x = joy.y = 0; }
       else if (t.identifier === aimDrag.id) {
-        // 松手保留 touchAim：悬浮标停在原方向，只停止「拖动即开火」。
-        aimDrag.id = null; aimDrag.fire = false;
+        // ⚠️ 松手**保留** touchAim：炮口停在最后指的方向，玩家可以「甩一下炮口」就撒手，
+        //    不用一直按着。这样右手才腾得出来去点冲刺 / 超载。
+        aimDrag.id = null;
+        aimDrag.x = 0; aimDrag.y = 0; aimDrag.mag = 0;
       } else {
         mouse.down = false;
         // ⚠️ 抬指必须把准星一起收掉。否则 mouse 会残留在最后那个触点上，
@@ -6384,10 +7207,27 @@ function boot() {
       if (!joy.active) { joy.id = null; joy.x = joy.y = 0; }
       return { active: joy.active, x: joy.x, y: joy.y };
     },
-    // 探针专用：直接设定手机版「悬浮瞄准标」方向（touchAim）。
+    // 探针专用：直接设定手机版炮口方向（touchAim）。
     // 正常只由右半屏拖动写，无头环境绕一圈太脆 —— 给个直写口测解耦最稳。
     setAim: (a) => { touchAim = a; return touchAim; },
     get aim() { return touchAim; },
+    // 探针专用：直接驱动右瞄准杆（落点 + 手指拖到哪）。
+    // 正常由 touchstart/touchmove 写，合成 touch 事件在无头环境要先 setTouchMode 才行；
+    // 探针要量的是「位移 → 方向」这条映射，给个直写口比绕事件稳得多。
+    setAimStick: (ox, oy, tx, ty) => {
+      aimDrag.id = 1; aimDrag.ox = ox; aimDrag.oy = oy;
+      const dx = tx - ox, dy = ty - oy, m = Math.hypot(dx, dy);
+      const c = m > 0 ? Math.min(1, AIM_R / m) : 0;
+      aimDrag.x = dx * c; aimDrag.y = dy * c;
+      aimDrag.mag = clamp((m - AIM_DZ) / (AIM_R - AIM_DZ), 0, 1);
+      if (m > AIM_DZ) touchAim = Math.atan2(dy, dx);
+      return { aim: touchAim, mag: aimDrag.mag };
+    },
+    releaseAimStick: () => {
+      aimDrag.id = null; aimDrag.x = 0; aimDrag.y = 0; aimDrag.mag = 0;
+      return touchAim;
+    },
+    get aimStick() { return { id: aimDrag.id, ox: aimDrag.ox, oy: aimDrag.oy, x: aimDrag.x, y: aimDrag.y, mag: aimDrag.mag }; },
     ebullet: (x, y, ang, spd, r, color) => eShot(x, y, ang, spd, r, color || HOSTILE.red),
     // ---- 探针专用：无尽航程 / 深渊档位 ----
     // ⚠️ bossForWave 有副作用（会从轮换袋里抽走一张），所以单独开一个 peek 版本给探针做
@@ -6484,6 +7324,26 @@ function boot() {
     get wakeCount() { return G.wakes.length; },
     get lanceCount() { return G.lances.length; },
     get mineCount() { return G.mines.length; },
+    // ---- 探针专用：地形（2026-10-21）----
+    get layout() { return G.layout; },
+    // 只读地形表（含 vent；core / rock 都有 w/h）
+    terr: () => G.terr.map(b => ({
+      kind: b.kind, x: Math.round(b.x), y: Math.round(b.y), w: b.w, h: b.h,
+      hp: Math.round(b.hp || 0), maxHp: Math.round(b.maxHp || 0),
+    })),
+    ventInfo: () => G.terr.filter(b => b.kind === 'vent').map(b => ({ x: b.x, y: b.y, ph: b.ph, t: +b.t.toFixed(2) })),
+    // 「这一点是不是实心」（探针拿它做遮挡 / 阻挡断言）
+    terrAt: (x, y) => { const b = terrAt(x, y); return b ? b.kind : null; },
+    terrRay: (x, y, a, len) => terrRay(x, y, a, len),
+    // 直接铺一套布局（不靠打完前面的段）
+    // ⚠️ 不能叫 setLayout —— 这个名字已经被「触屏 / 横竖屏布局」那一档占了，
+    //    对象字面量里同名键后者覆盖前者，写上去是静默失效（实测：地形一块都没铺出来）。
+    setTerrainLayout: id => { G.terr.length = 0; G.layout = id; const ly = LAYOUTS[id]; if (ly && ly.build) { ly.build(); terrVents(2); } terrIndex(); },
+    terrClear: () => { G.terr.length = 0; G.layout = 'open'; terrIndex(); },
+    // 手动摆一块（探针要精确控制位置，随机布局没法写断言）
+    terrPut: (kind, x, y, w, h) => { const b = terrAdd(x, y, w, h, kind); terrIndex(); return !!b; },
+    // 巨像碾碎用：把玩家挪到指定点并跑一帧解算
+    terrResolve: () => terrResolvePlayer(),
     get bulletCount() { return G.bullets.length; },
     get ebulletCount() { return G.ebullets.length; },
     moduleIds: () => MODULES.map(m => m.id),
@@ -6664,6 +7524,7 @@ function boot() {
         ['MODULES', MODULES, ['nameEn', 'descEn']],
         ['SYNERGIES', SYNERGIES, ['nameEn', 'descEn']],
         ['ZONES', ZONES, ['en']],
+        ['LAYOUTS', LAYOUTS, ['nameEn']],   // 地形布局名（2026-10-21）
       ];
       for (const t of tbl) {
         const nm = t[0], obj = t[1], fields = t[2];

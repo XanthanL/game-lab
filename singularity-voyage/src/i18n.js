@@ -52,7 +52,7 @@ const UI = {
     'title.kills': '累计击坠 {0}',
     'title.locked': '还有 {0} 台待解锁',
     'title.ctrlDesk': 'A/D 转向 · W 推进 · S 制动 · 鼠标瞄准 · 左键/空格开火 · Shift/右键冲刺',
-    'title.ctrlTouch': '左半屏拖动转向推进 · 右半屏拖动悬浮标瞄准（拖动即开火）· 右下角：开火 / 冲刺 / 超载',
+    'title.ctrlTouch': '左半屏拖动 = 转向 + 推进 · 右半屏拖动 = 炮口朝哪拖就朝哪（自动开火）· 右下角：开火开关 / 冲刺 / 超载',
     'title.hintDesk': '按 ENTER 开始',
     'title.hintTouch': '轻触「开始航行」',
 
@@ -87,7 +87,7 @@ const UI = {
       '<p><b>SHIFT / 右键</b> 助推冲刺（短暂无敌）</p>',
       '<p><b>E</b> 超载爆发（能量满时）</p>',
       '<p><b>ESC / P</b> 暂停　<b>M</b> 静音</p>',
-      '<p class="dim">手机：左半屏拖动 = 推进 + 转向 · 右半屏拖动 = 转动悬浮瞄准标（拖动即开火）<br>右下角 大按钮 = <b>开火开关</b>（默认关）· 小按钮 = 冲刺 · 上方容器 = 超载（攒满才可按）</p>',
+      '<p class="dim">手机：左半屏拖动 = 推进 + 转向（推哪朝哪）· 右半屏拖动 = 炮口转向（拖动方向即炮口朝向）<br>右下角 大按钮 = <b>开火开关</b>（默认开）· 小按钮 = 冲刺 · 上方容器 = 超载（攒满才可按）</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">青白色细针</em> 是你的炮弹；<em class="c-r">红紫圆弹</em> 是敌弹，务必躲开</p>',
@@ -187,6 +187,8 @@ const UI = {
     'hud.survive': '存活 {0}s',
     'hud.salvage': '星尘 {0}/{1}',
     'hud.duel': '精锐 {0}',
+    // 视界（2026-10-20）：用「逃逸」不用「存活」—— 这段是把船从引力井里开出来，不是硬扛
+    'hud.horizon': '逃逸 {0}s',
     'hud.cd.lance': '枪',
     'hud.cd.blink': '跃',
     'hud.cd.mine': '雷',
@@ -211,8 +213,16 @@ const UI = {
     'bn.enrage': '狂暴',
     'bn.enrageSub': '{0} · 第二阶段',
     // 巨像形态切换（2026-10-11）：三形态系统
-    'bn.form': '形态转换',
-    'bn.formSub': '{0} · {1}',
+    // ⚠️ 键名必须是 bn.bossForm —— 曾经写成 bn.form，和上面「形态 + 编队」那条撞了键，
+    //    后定义的覆盖前面的，于是每段开场 banner 都显示「形态转换」而不是「清剿 · 编队名」。
+    'bn.bossForm': '形态转换',
+    'bn.bossFormSub': '{0} · {1}',
+    // 视界：奇点加压（2026-10-20）
+    'bn.horizonGrow': '引力增强',
+    'bn.horizonGrowSub': '视界在扩张 —— 别再喂它了',
+    // 地形（2026-10-21）：布局名走 LAYOUTS 的 name / nameEn（同数据表的规矩），
+    //   这里只给「地形」两个字，名字作为 toast 的第二行传进去。
+    'bn.terr': '地形',
     'bn.bloom': '质变 · {0}',
     'bn.bloomSub': '已升至满级',
     'bn.syn': '协同 · {0}',
@@ -271,7 +281,7 @@ const UI = {
     'title.locked': '{0} HULLS STILL LOCKED',
     'title.ctrlDesk': 'A/D TURN · W THRUST · S BRAKE · MOUSE AIM · LMB/SPACE FIRE · SHIFT/RMB DASH',
     // ⚠️ 这条走 data-i18n（textContent），**不能**写 &amp; —— 会被原样显示出来。
-    'title.ctrlTouch': 'L HALF = STEER+THRUST · R HALF = DRAG AIM MARK (FIRES) · CORNER: FIRE/DASH/BURN',
+    'title.ctrlTouch': 'L HALF = STEER + THRUST · R HALF = DRAG TO AIM (AUTO-FIRE) · CORNER: FIRE/DASH/BURN',
     'title.hintDesk': 'PRESS ENTER TO START',
     'title.hintTouch': 'TAP START VOYAGE',
 
@@ -303,7 +313,7 @@ const UI = {
       '<p><b>Mouse</b> aim — nose turns toward cursor (max 12 rad/s)</p>',
       '<p><b>LMB / Space</b> fire (hold) · <b>Shift / RMB</b> dash</p>',
       '<p><b>E</b> overdrive · <b>ESC/P</b> pause · <b>M</b> mute</p>',
-      '<p class="dim">Phone: L half = thrust + steer · R half = drag AIM MARK (fires while dragging)<br>Bottom-right: big = <b>FIRE</b> toggle (off by default) · small = DASH · vessel above = OVERDRIVE (only when full)</p>',
+      '<p class="dim">Phone: L half drag = thrust + steer (nose follows stick) · R half drag = aim (muzzle points where you drag)<br>Bottom-right: big = <b>FIRE</b> toggle (on by default) · small = DASH · vessel above = OVERDRIVE (only when full)</p>',
     ].join(''),
     'help.col2': [
       '<p><em class="c-c">Cyan needles</em> = your shots · <em class="c-r">red/purple orbs</em> = enemy fire (dodge)</p>',
@@ -401,6 +411,8 @@ const UI = {
     'hud.survive': 'SURVIVE {0}s',
     'hud.salvage': 'DUST {0}/{1}',
     'hud.duel': 'ELITE {0}',
+    // Event Horizon (2026-10-20): "ESCAPE", not "survive" — you fly out of the well, you don't tank it
+    'hud.horizon': 'ESCAPE {0}s',
     'hud.cd.lance': 'L',
     'hud.cd.blink': 'B',
     'hud.cd.mine': 'M',
@@ -424,8 +436,16 @@ const UI = {
     'bn.bossDead': 'COLOSSUS · DESTROYED',
     'bn.enrage': 'ENRAGED',
     'bn.enrageSub': '{0} · PHASE 2',
-    'bn.form': 'FORM SHIFT',
-    'bn.formSub': '{0} · {1}',
+    // ⚠️ bn.bossForm, not bn.form — see the zh note: the duplicate key silently shadowed
+    //    the "form + formation" line above.
+    'bn.bossForm': 'FORM SHIFT',
+    'bn.bossFormSub': '{0} · {1}',
+    // Event Horizon: gravity step-up (2026-10-20)
+    'bn.horizonGrow': 'GRAVITY SPIKING',
+    'bn.horizonGrowSub': 'The horizon is growing — stop feeding it',
+    // Terrain (2026-10-21): layout name comes from LAYOUTS.name / nameEn, like every
+    // other data table; this key is only the label.
+    'bn.terr': 'TERRAIN',
     'bn.bloom': 'BLOOM · {0}',
     'bn.bloomSub': 'MAX LEVEL REACHED',
     'bn.syn': 'SYNERGY · {0}',

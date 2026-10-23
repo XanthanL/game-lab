@@ -1412,6 +1412,92 @@ function attachIcon(id, lv, size) {
   return (_acache[key] = out);
 }
 
+/* ============ 地形贴图（2026-10-21）============
+   「可躲闪的地形」的像素素材。和 makeRocks 的区别必须记牢：
+     · makeRocks  = **背景装饰**（有视差、半透明、永远不参与判定）
+     · 这一套      = **场地**（世界坐标、挡人挡弹、可被打碎）
+   两者共用 PAL，但绝不能互相取图 —— 拿装饰岩去当掩体的结果是「看着能躲、实际会穿」。
+
+   两种地块，靠**纹理**区分而不是靠颜色浓淡（弹幕糊脸时没人分得清两档灰）：
+     core 骨架墙  —— 有青色能量导管，打不碎
+     rock 可破坏岩 —— 有黑色裂纹，打碎了掉星尘
+
+   ⚠️ tile 里**不能画边框** —— 边框是整块 slab 铺完 tile 之后补的。
+      画在 tile 里会在每个 24px 接缝上留下一条线，整块看起来像方格纸。
+   ⚠️ tile 必须**无缝**：所有斑点都落在 [1,22] 内、绝不碰边缘，这样任意平铺都不露接缝。 */
+function makeTerrainTiles() {
+  // 确定性伪随机：同一个 seed 永远得到同一张图（截图回归探针靠这个）
+  const prng = seed => {
+    let x = (seed >>> 0) || 1;
+    return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+  };
+  function one(base, hi, lo, crack, accent, seed) {
+    const c = newCanvas(24, 24), x = c.getContext('2d');
+    const r = prng(seed);
+    x.fillStyle = base; x.fillRect(0, 0, 24, 24);
+    for (let i = 0; i < 26; i++) {
+      const px = 1 + ((r() * 22) | 0), py = 1 + ((r() * 22) | 0);
+      x.fillStyle = r() < 0.5 ? hi : lo;
+      const s = r() < 0.3 ? 2 : 1;
+      x.fillRect(px, py, s, s);
+    }
+    // 裂纹：可破坏岩的身份标识（骨架没有 —— 它就是「打不碎」的意思）
+    if (crack) {
+      x.fillStyle = crack;
+      let cx = 4 + ((r() * 13) | 0);
+      for (let i = 0; i < 9; i++) {
+        x.fillRect(cx, 3 + i, 1, 1);
+        if (r() < 0.55) cx += r() < 0.5 ? 1 : -1;
+        cx = cx < 3 ? 3 : cx > 20 ? 20 : cx;
+      }
+    }
+    // 能量导管：骨架的身份标识（横向两段 + 纵向两段，断口错开 = 看着像走线）
+    if (accent) {
+      x.fillStyle = accent;
+      x.fillRect(4, 10, 7, 1); x.fillRect(14, 13, 6, 1);
+      x.fillRect(11, 4, 1, 5); x.fillRect(12, 16, 1, 4);
+    }
+    return c;
+  }
+  const core = [], rock = [];
+  for (let i = 0; i < 4; i++) {
+    core.push(one('#333c57', '#566c86', '#242a44', null, '#41a6f6', 1013 + i * 977));
+    rock.push(one('#3a4468', '#6a5580', '#242a44', '#1a1c2c', null, 5507 + i * 613));
+  }
+  return { core, rock };
+}
+let _ttile = null;
+const terrainTiles = () => (_ttile || (_ttile = makeTerrainTiles()));
+/* 整块 slab：tile 平铺 + 边框。
+   ⚠️ 只在**生成地形时**调用（一局也就几十次），结果按 kind|w|h|seed 缓存；
+      每帧的 drawTerrain 只做一次 drawImage。 */
+const _slabCache = new Map();
+function bakeSlab(kind, w, h, seed) {
+  const key = kind + '|' + w + '|' + h + '|' + seed;
+  const hit = _slabCache.get(key);
+  if (hit) return hit;
+  const tiles = terrainTiles()[kind] || terrainTiles().rock;
+  const c = newCanvas(w, h), x = c.getContext('2d');
+  x.imageSmoothingEnabled = false;
+  let n = 0;
+  for (let ty = 0; ty < h; ty += 24)
+    for (let tx = 0; tx < w; tx += 24) {
+      const v = tiles[(((tx / 24) + (ty / 24) * 3 + seed + (n++)) % 4 + 4) % 4];
+      x.drawImage(v, tx, ty);
+    }
+  // 边框：外 1px 压黑（从星野背景里立住）+ 顶/左受光 + 底/右背光
+  x.fillStyle = '#1a1c2c';
+  x.fillRect(0, 0, w, 1); x.fillRect(0, h - 1, w, 1);
+  x.fillRect(0, 0, 1, h); x.fillRect(w - 1, 0, 1, h);
+  x.fillStyle = '#8b93a8';
+  x.fillRect(1, 1, w - 2, 1); x.fillRect(1, 1, 1, h - 2);
+  x.fillStyle = '#242a44';
+  x.fillRect(1, h - 2, w - 2, 1); x.fillRect(w - 2, 1, 1, h - 2);
+  if (_slabCache.size > 240) _slabCache.clear();
+  _slabCache.set(key, c);
+  return c;
+}
+
 // 小行星（背景装饰，按区着色）
 function makeRocks() {
   const out = [];

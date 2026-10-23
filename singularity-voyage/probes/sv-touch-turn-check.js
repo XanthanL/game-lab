@@ -113,12 +113,16 @@ const log = (...a) => console.log(...a);
     out.velDirDegOff = +(norm(Math.PI / 2 - Math.atan2(G.vy, G.vx)) * 57.3).toFixed(1);
     d.setJoy(0, 0, false);
 
-    // 松手后：船体应回摆到「悬浮瞄准标」方向（新设计），而非停在最后一帧朝向
+    // 松手后：船体应当**停在最后一帧朝向**，一动不动。
+    // ⚠️ 旧设计是「松手回摆到悬浮瞄准标方向」—— 玩家明明没在操作，船却在自己转，
+    //    朝向的控制权就不在玩家手上了。现在松手 = 停在哪朝哪。
+    // ⚠️ 断言必须用 Math.abs：写成 `afterReleaseDeg < 0.01` 的话，**负数永远小于 0.01**，
+    //    船体转了 -86° 也会判 PASS —— 这个坑就是这么踩出来的。
     d.setAim(0.5);
     G.ang = 2.0; G.aim = 0.5; G.vx = 0; G.vy = 0;
     d.setJoy(0, 0, false);
     for (let i = 0; i < 60; i++) await frame();
-    out.afterReleaseDeg = +(norm(0.5 - G.ang) * 57.3).toFixed(2);   // 应≈0：已回到瞄准标 0.5
+    out.afterReleaseDeg = +(norm(G.ang - 2.0) * 57.3).toFixed(2);   // 应≈0：松手后就该一动不动
 
     out.spdMul = G.S.spd; out.turnMul = G.S.turn;
     clearTimeout(wd);
@@ -142,8 +146,8 @@ const log = (...a) => console.log(...a);
   const pass = R.flip180.tHit > 0 && R.flip180.tHit <= 0.20
     && R.turn180light.tHit > 0 && R.turn180light.tHit <= 0.35
     && R.tinyMoved > 3.0            // 摇杆没出死区 → 180° 误差原封不动（≈π）
-    && R.deadzoneDriftDeg < 0.01
-    && R.afterReleaseDeg < 0.01
+    && Math.abs(R.deadzoneDriftDeg) < 0.01
+    && Math.abs(R.afterReleaseDeg) < 0.01
     && !R.fatal && !R._watchdog && errs.length === 0;
   log('\n' + (pass ? 'PASS ✅ 摇杆转向「推向哪转向哪」' : 'FAIL ❌'));
 

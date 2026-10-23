@@ -64,10 +64,17 @@ const log = (...a) => console.log(...a);
       // ---- 2) 6 能力型 / 6 数值型 上限 ----
       const cap = d.TYPE_CAP();
       // 对照：空 mods 时两类新卡都应出现（证明过滤不是「全禁」）
+      // ⚠️ rollPool 是**随机**三选一池 —— 卡池涨到 45 张后，单抽没刷出 stat 新卡
+      //    完全正常（间歇性假红）。多抽几轮取「曾出现」即证过滤有效。
       d.setMods({});
-      let ctl = d.rollPool();
-      out.ctlNewAbil = ctl.filter(c => c.lv === 0 && c.type !== 'stat').length;
-      out.ctlNewStat = ctl.filter(c => c.lv === 0 && c.type === 'stat').length;
+      let ctlNewAbil = 0, ctlNewStat = 0;
+      for (let k = 0; k < 30 && (ctlNewAbil === 0 || ctlNewStat === 0); k++) {
+        const pool = d.rollPool();
+        ctlNewAbil = Math.max(ctlNewAbil, pool.filter(c => c.lv === 0 && c.type !== 'stat').length);
+        ctlNewStat = Math.max(ctlNewStat, pool.filter(c => c.lv === 0 && c.type === 'stat').length);
+      }
+      out.ctlNewAbil = ctlNewAbil;
+      out.ctlNewStat = ctlNewStat;
       // 选 6 个能力型（ability/weapon 混合）+ 6 个数值型（stat）卡，全部 lv1
       const abilPool = MODULES.filter(m => m.type !== 'stat');
       const statPool = MODULES.filter(m => m.type === 'stat');
