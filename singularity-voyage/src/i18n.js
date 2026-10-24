@@ -223,6 +223,14 @@ const UI = {
     // 地形（2026-10-21）：布局名走 LAYOUTS 的 name / nameEn（同数据表的规矩），
     //   这里只给「地形」两个字，名字作为 toast 的第二行传进去。
     'bn.terr': '地形',
+    // 星区场地机制（2026-10-23）：每条一句「要你做什么」，不写数值（打两秒玩家自己就懂）
+    'hz.drift': '掩体在漂 —— 别站死',
+    'hz.emp': '定时脉冲 · 清弹也锁你的枪',
+    'hz.forge': '喷口喷完留火场',
+    'hz.lens': '子弹穿过光带会拐弯',
+    'hz.crystal': '晶壁会弹开你的弹',
+    'hz.empHit': '清掉 {0} 发 · 你锁膛了',
+    'hz.empLock': '脉冲 · 你锁膛了',
     'bn.bloom': '质变 · {0}',
     'bn.bloomSub': '已升至满级',
     'bn.syn': '协同 · {0}',
@@ -446,6 +454,14 @@ const UI = {
     // Terrain (2026-10-21): layout name comes from LAYOUTS.name / nameEn, like every
     // other data table; this key is only the label.
     'bn.terr': 'TERRAIN',
+    // Zone hazards (2026-10-23): one line on "what it wants you to do", no numbers.
+    'hz.drift': 'Cover drifts — never camp one spot',
+    'hz.emp': 'Pulse clears foes, jams your guns',
+    'hz.forge': 'Vents leave burning ground',
+    'hz.lens': 'Shots bend inside the bands',
+    'hz.crystal': 'Crystal walls bounce your shots',
+    'hz.empHit': 'Cleared {0} shots · guns jammed',
+    'hz.empLock': 'Pulse · guns jammed',
     'bn.bloom': 'BLOOM · {0}',
     'bn.bloomSub': 'MAX LEVEL REACHED',
     'bn.syn': 'SYNERGY · {0}',

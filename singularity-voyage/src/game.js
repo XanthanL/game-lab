@@ -271,11 +271,45 @@ const SQUADS = {
 };
 
 // ============ 星区 & 航程 ============
+/* ============ 星区主题（2026-10-23 重写）============
+   以前三个星区只差**背景配色和编队名字** —— 玩家说得出「颜色变了」，说不出「玩法变了」。
+   现在一个主题 = 三件事绑死：
+     skin  视觉（星野配色 / 装饰岩 / 地形贴图，sprites.js 里同一序号的三张表）
+     terrain 地形布局（同一个主题永远同一套骨架，看到布局就知道自己在哪）
+     haz   场地机制（**这一条是主题的全部价值**：每段都在逼玩家做一件不同的事）
+   ⚠️ 三张表必须**同序号对齐**：ZONES[i] ↔ STARSETS[i] ↔ ROCKS[i] ↔ TERR_PAL[i]。
+      插一个新主题 = 四处同时加，少一处就是「进了熔炉却铺着冰晶」。 */
 const ZONES = [
-  { name: '外环碎屑带', en: 'DEBRIS BELT', from: 1,  to: 4,  squads: ['swarm', 'rush', 'guns', 'mixed'] },
-  { name: '中子星云',   en: 'NEUTRON NEBULA', from: 5, to: 8, squads: ['trick', 'weave', 'mixed', 'flock'] },
-  { name: '深空奇点',   en: 'DEEP SINGULARITY', from: 9, to: 12, squads: ['fort', 'flock', 'weave', 'mixed'] },
+  // ① 碎屑带：巨块在漂 —— 掩体是**活的**，射击线随时被切断，不能站桩
+  { name: '外环碎屑带', en: 'DEBRIS BELT', from: 1,  to: 3,
+    squads: ['swarm', 'rush', 'guns', 'mixed'], terrain: 'pillars', haz: 'drift' },
+  // ② 中子星云：定时 EMP —— 全场敌弹清空 + 敌人麻痹，代价是你自己锁膛。是**救命键不是白给**
+  { name: '中子星云',   en: 'NEUTRON NEBULA', from: 4,  to: 6,
+    squads: ['trick', 'weave', 'flock', 'mixed'], terrain: 'cells', haz: 'emp' },
+  // ③ 恒星熔炉：喷口喷完**留火场** —— 地面是真的会烧，站过的地方不能再站
+  { name: '恒星熔炉',   en: 'FORGE RING', from: 7,  to: 9,
+    squads: ['rush', 'guns', 'fort', 'mixed'], terrain: 'cross', haz: 'forge' },
+  // ④ 深空奇点：折射带 —— 子弹穿带持续偏折，敌我同规则；会用的人能绕过掩体打人
+  { name: '深空奇点',   en: 'DEEP SINGULARITY', from: 10, to: 12,
+    squads: ['weave', 'flock', 'fort', 'trick'], terrain: 'ring', haz: 'lens' },
+  // ⑤ 结晶回廊（无尽限定）：晶壁**反弹**你的弹 —— 打角度能打到拐角后面
+  { name: '结晶回廊',   en: 'CRYSTAL SPIRE', from: 13, to: 15,
+    squads: ['guns', 'fort', 'weave', 'swarm'], terrain: 'maze', haz: 'crystal' },
 ];
+/* 每个主题的场地机制。⚠️ 五条**维度必须互不相同** ——
+   两个主题都只是「把你往某处推」的话，玩家只会觉得「又一个推的」。
+     drift   地形在动（改变的是**空间**）
+     emp     定时清屏 + 锁你自己的枪（改变的是**节奏**）
+     forge   喷发留火场（改变的是**地面**）
+     lens    弹道穿过就弯（改变的是**子弹**）
+     crystal 墙反弹你的弹（改变的是**打法**） */
+const HAZARDS = {
+  drift:   { name: '漂移碎块', nameEn: 'DRIFTING MASS' },
+  emp:     { name: 'EMP 脉冲', nameEn: 'EMP PULSE' },
+  forge:   { name: '熔火喷发', nameEn: 'FORGE BLOWOUT' },
+  lens:    { name: '引力折射', nameEn: 'LENSING BAND' },
+  crystal: { name: '晶壁反射', nameEn: 'CRYSTAL BOUNCE' },
+};
 const zoneOf = w => ZONES.find(z => w >= z.from && w <= z.to) || ZONES[2];
 const WAVES = 12;                 // 主线航段数：打完这 12 段 = 通关，但**不停机**，转入无尽
 // ⚠️ BOSS_WAVES 现在只是**兜底 / 图鉴预览**用的默认编排（G 还没建立时 peekBoss 会读它）。
@@ -1637,6 +1671,9 @@ function newGame(hullId) {
     // ⚠️ 必须在这里建字段：updateTerrain / drawTerrain / 各解算每帧读它，
     //    靠 `G.xxx` 自动存在是这个项目踩过的坑（spawnEnemy 漏 xp 那回）。
     terr: [], layout: 'open',
+    // 星区场地机制（2026-10-23）：本段跑哪一条（null = 巨像段 / 视界段不开）
+    hz: null,
+    zskin: null, zskinZone: -1,   // 星区皮肤的装饰元素（按 zone 缓存，换区才重建）
     beamClip: 0,      // 瓦解射线被地形截断后的实际长度（每跳重算，0 = 尚无）
     blackout: 0, blackoutMax: 0,   // 星蚀的熄灭战场：剩余秒 / 本次总时长（渲染算淡入淡出用）
     // 「视界」形态（2026-10-20）：一颗活的微型奇点。打不死，也不算敌人 ——
@@ -4059,11 +4096,13 @@ function updateBullets(dt) {
       }
     }
     singBend(b, SING.BULLET_TURN, dt);   // 视界：引力弯曲弹道
+    lensBend(b, dt, 1);                  // 奇点区：折射带（穿带就持续偏折）
     const mvx = b.vx * dt, mvy = b.vy * dt;
     b.x += mvx; b.y += mvy;
-    // 地形：撞上就结算（可破坏岩掉血 / 骨架墙火花）并吃掉这一发。
+    // 地形：撞上就结算（可破坏岩掉血 / 骨架墙火花）并吃掉这一发；
+    //   结晶回廊里骨架墙是**弹开**而不是吃掉（own=true 才享受这条）。
     // ⚠️ 必须在出界回收**之前** —— 否则贴着世界边缘的块永远打不到。
-    if (G.terr.length && terrBullet(b, b.x, b.y)) { G.bullets.splice(i, 1); continue; }
+    if (G.terr.length && terrBullet(b, b.x, b.y, true)) { G.bullets.splice(i, 1); continue; }
     // --- 制导弹的「失坠」：飞够里程就自己熄灭 ---
     // ⚠️ 只在 G.S.homeTrav > 0 时启用 —— 没装制导弹药的普通弹不该被限。
     if (b.homing && G.S.homeTrav > 0) {
@@ -4158,6 +4197,7 @@ function updateEBullets(dt) {
       b.vx *= 1 - 0.35 * dt; b.vy *= 1 - 0.35 * dt;
     }
     singBend(b, SING.EBULLET_TURN, dt);  // 视界：敌弹也弯（系数减半，保住弹幕可读性）
+    lensBend(b, dt, HZ.LENS_EB);         // 奇点区：敌弹也过折射带，但只有六成 —— 弹幕必须读得懂
     b.x += b.vx * dt; b.y += b.vy * dt;
     // 地形：敌弹被掩体吃掉 —— 「躲到石头后面是真的安全」就靠这一行
     if (G.terr.length && terrAt(b.x, b.y)) {
@@ -4345,16 +4385,21 @@ const LAYOUTS = {
 //   · 4/8/12 巨像段走空域（bossId 那条分支兜住）：巨像体积大、要绕侧后方输出，
 //     场地一挤它就变成「卡在两块石头中间抽搐」。
 //   · 相邻两段不重复 —— 连续两段同样的柱林会把「换段了」这件事抹掉。
-const MAIN_LAYOUTS = {
-  1: 'open', 2: 'open', 3: 'pillars',
-  5: 'maze', 6: 'pillars', 7: 'cells',
-  9: 'cross', 10: 'ring', 11: 'maze',
+// ⚠️ 这张表现在**只剩例外**：第 1 段空域（第一枪还在教基本操作，别塞走位题）。
+//    其余全走主题的 `terrain` —— 一个星区一套骨架，玩家认得出「我又进了熔炉」。
+const MAIN_LAYOUTS = { 1: 'open' };
+/* 星区序号。**必须和 startWave 里算 G.zone 的是同一个函数** —— 分头算就会
+   「背景是熔炉、地形铺着结晶」（布局现在由主题决定，两者只要错开一次就穿帮）。 */
+const zoneIndexFor = w => {
+  const i = ZONES.findIndex(zz => w >= zz.from && w <= zz.to);
+  // 无尽：13 段起进**结晶回廊**（新主题当无尽的第一份见面礼），之后五区循环
+  return i >= 0 ? i : (w - ENDLESS_FROM + 4) % ZONES.length;
 };
-const ENDLESS_LAYOUT_CYCLE = ['pillars', 'maze', 'cross', 'cells', 'ring'];
 function layoutForWave(w, bossId) {
-  if (bossId) return 'open';
-  if (w <= WAVES) return MAIN_LAYOUTS[w] || 'pillars';
-  return ENDLESS_LAYOUT_CYCLE[(w - ENDLESS_FROM) % ENDLESS_LAYOUT_CYCLE.length];
+  if (bossId) return 'open';                                  // 巨像段：场地一挤它就卡在石头中间抽搐
+  if (w <= WAVES && formForWave(w) === 'horizon') return 'open'; // 视界段：奇点自己就是场地
+  // 其余一律按**主题**来 —— 看到这套骨架就知道自己在哪个区
+  return MAIN_LAYOUTS[w] || ZONES[zoneIndexFor(w)].terrain;
 }
 
 /* 加一块地形。所有布局都只调这一个入口 —— 三条硬约束集中在里面，
@@ -4370,7 +4415,8 @@ function terrAdd(x, y, w, h, kind) {
   if (Math.hypot(G.px - nx, G.py - ny) < 92) return null;
   const hp = kind === 'rock' ? Math.round(52 * (1 + Math.min(G.wave, WAVES) * 0.15)) : 0;
   const b = { kind, x, y, w, h, hp, maxHp: hp, seed: irand(0, 3), flash: 0 };
-  if (kind !== 'vent') b.cv = bakeSlab(kind, w, h, b.seed);
+  // ⚠️ 贴图要带 zone：熔炉铺冰晶这种错一旦发生，整个主题就白做了
+  if (kind !== 'vent') b.cv = bakeSlab(kind, w, h, b.seed, G.zone);
   G.terr.push(b);
   return b;
 }
@@ -4508,11 +4554,19 @@ function buildTerrain(w, bossId) {
   const ly = LAYOUTS[id];
   if (ly && ly.build) {
     ly.build();
-    terrVents(w >= 5 ? 3 : 2);
+    // 熔炉区喷口翻倍 ——「地面会烧」这件事要铺够密度才成立，两口喷发玩家根本不会绕
+    const nz = (w >= 5 ? 3 : 2) * (ZONES[zoneIndexFor(w)].haz === 'forge' ? HZ.FORGE_VENT : 1);
+    terrVents(nz);
   }
   terrIndex();
   // 报地形（空域不报：场上没东西就不必占一行提示）
   if (id !== 'open' && ly) toast(T('bn.terr'), L(ly, 'name'), '#c0cbdc', 2.4);
+  // 报机制：只报名字 + 一句「要你做什么」，不写数值（数值玩家打两秒就懂）
+  const hz = ZONES[zoneIndexFor(w)].haz;
+  if (hz && id !== 'open' && !(bossId || formForWave(w) === 'horizon')) {
+    const H = HAZARDS[hz];
+    toast(L(H, 'name'), T('hz.' + hz), '#ffcd75', 3.2);
+  }
 }
 
 // ---- 索引 / 查询 ----
@@ -4636,15 +4690,33 @@ function terrBreak(b, idx, byBoss) {
 /* 子弹撞地形。返回 true = 这一发被吃掉了。
    ⚠️ **敌弹也被挡** —— 这才是「可躲闪的地形」的全部价值：
       躲到掩体后面是真的安全，不是「看起来安全」。 */
-function terrBullet(b, x, y) {
+function terrBullet(b, x, y, own) {
   const t = terrAt(x, y);
   if (!t) return false;
+  /* ⑤ 结晶回廊：晶壁把**玩家的弹**弹回去，而不是吃掉。
+     ⚠️ 只弹玩家弹 —— 敌弹也弹的话，你刚躲过的那一发会从背后追上来，那是耍赖不是机制。
+     ⚠️ 有次数上限：两堵平行的墙之间不设闸会一直弹到子弹寿终（看得见但没意义）。
+     ⚠️ 反弹后必须**把弹推到墙外**：留在块内的话下一帧又判一次，方向来回翻，弹原地抽搐。 */
+  if (own && t.bounce && (b.bounceN || 0) < HZ.CRYSTAL_MAX) {
+    const dl = x - t.x, dr = t.x + t.w - x, du = y - t.y, dd = t.y + t.h - y;
+    const m = Math.min(dl, dr, du, dd);
+    if (m === dl) { b.vx = -Math.abs(b.vx); b.x = t.x - 2; }
+    else if (m === dr) { b.vx = Math.abs(b.vx); b.x = t.x + t.w + 2; }
+    else if (m === du) { b.vy = -Math.abs(b.vy); b.y = t.y - 2; }
+    else { b.vy = Math.abs(b.vy); b.y = t.y + t.h + 2; }
+    b.ang = Math.atan2(b.vy, b.vx);      // decel 弹每帧由 ang 反推速度，不写这行反弹会被立刻抹掉
+    b.bounced = true; b.bounceN = (b.bounceN || 0) + 1;   // 复用跳弹计数 —— bounceBoost 协同顺理成章地吃到
+    b.life = Math.max(b.life, 0.5);
+    burst(x, y, 5, ['#a8f0ff', '#f4f4f4'], 90, .24, 1);
+    Sound.sfx.shield();
+    return false;
+  }
   if (t.kind === 'rock') {
     t.hp -= b.dmg; t.flash = 0.1;
     if (t.hp <= 0) terrBreak(t);
     else { burst(x, y, 3, ['#8b93a8', '#566c86'], 70, .22, 1); Sound.sfx.hit(); }
   } else {
-    burst(x, y, 3, ['#41a6f6', '#c0cbdc'], 70, .22, 1);
+    burst(x, y, 3, [ZONE_ACCENT[G.zone] || '#41a6f6', '#c0cbdc'], 70, .22, 1);
     Sound.sfx.shield();
   }
   return true;
@@ -4672,6 +4744,9 @@ function updateTerrain(dt) {
   }
 }
 function ventBlow(v) {
+  // ③ 恒星熔炉：喷完**留下一片火场** —— 喷口是「点」，火场是「面」。
+  //    只有点的话玩家被喷一次就忘了；留下火场才逼他改走位路线。
+  if (G.hz && G.hz.kind === 'forge') addFire(v.x, v.y, VENT.R + 10);
   for (let k = 0; k < 5; k++) {
     const a = rand(TAU), r = rand(4, VENT.R);
     part({
@@ -4749,12 +4824,243 @@ function drawVent(v) {
   }
 }
 
+/* ============ 星区场地机制（2026-10-23）============
+   五条机制各改**一个不同的维度** —— 两条都只是「把你往某处推」的话，
+   玩家只会说「又一个推的」，不会说「这个星区不一样」。
+     drift   改空间（墙在动）      emp     改节奏（定时清屏 + 锁你自己的枪）
+     forge   改地面（喷完留火场）  lens    改子弹（穿带就弯）
+     crystal 改打法（你的弹会弹墙）
+   ⚠️ 三条纪律：
+     ① **巨像段 / 视界段不开任何机制**（bossId 与 horizon 分支里 startHazard(null)）——
+        它们自己就是一段完整机制，再叠一层就是互相盖住，玩家谁也没看懂。
+     ② 每条机制都**有代价**（EMP 救命但锁膛、折射敌我也弯、火场敌我也烧）——
+        没有代价的场地效果不是玩法，是白给的增益。
+     ③ 机制必须**可预期**：漂移是慢摆不是乱窜，EMP 有 1.4s 预警，火场有预警环。
+        玩家躲不掉的东西不叫机制，叫意外。 */
+const HZ = {
+  DRIFT_AMP: 64, DRIFT_W: [0.42, 0.78],  // 慢摆：周期 8~15s，肉眼跟得上
+  EMP_FIRST: 6.0, EMP_CYCLE: 9.5, EMP_WARN: 1.4, EMP_ROOT: 1.0,
+  FORGE_VENT: 2,                          // 熔炉区喷口数量倍率
+  LENS_N: 3, LENS_TURN: 2.4, LENS_EB: 0.6, // 折射：敌弹也弯，但只有六成，保住弹幕可读性
+  CRYSTAL_MAX: 2,                         // 晶壁最多弹两次（不然两堵墙之间弹到寿终）
+};
+// 各主题的**强调色**：和 sprites.js 的 TERR_PAL.accent 一一对应（火花 / 描边 / 高光用它）
+const ZONE_ACCENT = ['#41a6f6', '#e05cd0', '#ef7d57', '#8ad0ff', '#a8f0ff'];
+function startHazard(kind) {
+  G.hz = kind ? { kind: kind, t: 0, next: kind === 'emp' ? HZ.EMP_FIRST : 0, fx: 0, fired: 0, bands: null } : null;
+  if (!kind) return;
+  if (kind === 'drift') hzDriftInit();
+  if (kind === 'crystal') hzCrystalInit();
+  if (kind === 'lens') hzLensInit();
+}
+function updateHazard(dt) {
+  const h = G.hz;
+  if (!h) return;
+  h.t += dt;
+  if (h.fx > 0) h.fx -= dt;
+  if (h.kind === 'drift') hzDrift(dt);
+  else if (h.kind === 'emp') hzEmp(dt);
+}
+/* ① 漂移碎块：整块沿一个轴慢摆。
+   ⚠️ **只让一半的块动** —— 全场都在动就没法瞄了，掩体和障碍只剩后者。
+   ⚠️ 摆幅必须塞得进世界，塞不进就缩：把块甩出边界 = 一堵看不见的墙。 */
+function hzDriftInit() {
+  let i = 0;
+  for (const b of G.terr) {
+    if (b.kind === 'vent') continue;
+    if ((i++ % 2) !== 0) continue;
+    const horiz = Math.random() < 0.5, M = 48;
+    const room = horiz ? Math.min(b.x - M, WORLD.w - M - (b.x + b.w)) : Math.min(b.y - M, WORLD.h - M - (b.y + b.h));
+    const amp = Math.min(rand(HZ.DRIFT_AMP * 0.6, HZ.DRIFT_AMP), room);
+    if (amp < 12) continue;
+    b.mov = 1; b.ax = horiz ? 1 : 0; b.amp = amp; b.hx = b.x; b.hy = b.y;
+    b.ph = rand(TAU); b.w0 = rand(HZ.DRIFT_W[0], HZ.DRIFT_W[1]);
+  }
+}
+function hzDrift(dt) {
+  let any = false;
+  for (const b of G.terr) {
+    if (!b.mov) continue;
+    b.ph += dt * b.w0;
+    const o = Math.sin(b.ph) * b.amp;
+    if (b.ax) b.x = b.hx + o; else b.y = b.hy + o;
+    any = true;
+  }
+  // ⚠️ 索引是静态的：块动了必须重建，否则它「在 A 处挡弹、在 B 处画着」。
+  //    玩家解算也要跟一帧，不然块扫过玩家时会有一帧穿模。
+  if (any) { terrIndex(); terrResolvePlayer(); }
+}
+/* ② EMP：定时清空全场敌弹 + 麻痹杂兵，代价是**你自己锁膛**。
+   它是救命键，但按下它的不是你 —— 所以必须提前 1.4s 告诉你，让你决定
+   「要不要趁着这一秒把敌人引到开阔地、或者干脆停火等它」。 */
+function hzEmp(dt) {
+  const h = G.hz;
+  h.next -= dt;
+  if (h.next > 0) return;
+  const cleared = G.ebullets.length;
+  G.ebullets.length = 0;
+  let rooted = 0;
+  for (const e of G.enemies) {
+    // ⚠️ 巨像免疫（同「拘束立场」的那条）：站桩 1 秒且不开火的巨像会让整段变成站桩输出
+    if (e.dead || e.hp <= 0 || e.boss) continue;
+    e.root = Math.max(e.root || 0, HZ.EMP_ROOT);
+    e.vx *= 0.15; e.vy *= 0.15; rooted++;
+    burst(e.x, e.y, 4, ['#73eff7', '#f4f4f4'], 70, .3, 1);
+  }
+  G.heat = HEAT_MAX;                 // 代价：锁膛（HEAT_LOCK 秒，自动排空）
+  h.fx = 0.45; h.fired++; h.next = HZ.EMP_CYCLE;
+  ring(G.px, G.py, 44, '#73eff7', .5, 3);
+  ring(G.px, G.py, 160, '#f4f4f4', .45, 2);
+  addShake(3.2); Sound.sfx.shield();
+  toast(T('hz.emp'), cleared > 0 ? T('hz.empHit', cleared) : T('hz.empLock'), '#73eff7', 1.8);
+}
+/* ④ 折射带：几条固定的带，子弹进去就持续偏折。
+   敌我同一套规则 —— 这是它当机制而不是当增益的原因：你的弹会绕，敌弹也会绕。 */
+function hzLensInit() {
+  const bands = [];
+  for (let i = 0; i < HZ.LENS_N; i++) {
+    bands.push({
+      x: rand(200, WORLD.w - 200), y: rand(200, WORLD.h - 200),
+      a: rand(TAU), len: rand(240, 420), w: rand(44, 70),
+      dir: Math.random() < 0.5 ? 1 : -1, ph: rand(TAU),
+    });
+  }
+  G.hz.bands = bands;
+}
+function lensAt(x, y) {
+  const bs = G.hz && G.hz.bands;
+  if (!bs) return null;
+  for (const b of bs) {
+    const ca = Math.cos(b.a), sa = Math.sin(b.a);
+    const t = clamp((x - b.x) * ca + (y - b.y) * sa, -b.len / 2, b.len / 2);
+    const dx = x - (b.x + ca * t), dy = y - (b.y + sa * t);
+    if (dx * dx + dy * dy < (b.w / 2) * (b.w / 2)) return b;
+  }
+  return null;
+}
+// mul：玩家弹 1、敌弹 HZ.LENS_EB（弯得慢一半，弹幕才读得懂）
+function lensBend(o, dt, mul) {
+  if (!G.hz || G.hz.kind !== 'lens') return;
+  const b = lensAt(o.x, o.y);
+  if (!b) return;
+  const step = HZ.LENS_TURN * b.dir * (mul === undefined ? 1 : mul) * dt;
+  const cs = Math.cos(step), sn = Math.sin(step);
+  const nx = o.vx * cs - o.vy * sn;
+  o.vy = o.vx * sn + o.vy * cs; o.vx = nx;
+  o.ang = Math.atan2(o.vy, o.vx);   // ⚠️ decel 弹每帧从 ang 重算速度，不更新 ang 反弹会被立刻抹掉
+}
+/* ⑤ 晶壁反射：core 墙把玩家的弹**弹回去**，而不是吃掉。
+   回廊布局（墙最多）配这条最值钱 —— 打角度能打到拐角后面的人。 */
+function hzCrystalInit() { for (const b of G.terr) if (b.kind === 'core') b.bounce = 1; }
+
+/* ---- 绘制 ----
+   底色只占「认得出」的一半 —— 每个区还得有一件**会动的东西**，
+   而且五件东西必须是五种东西（不是同一套粒子换个颜色）：
+     碎屑 = 横漂的岩（装饰岩加密）  星云 = 缓慢的雾团
+     熔炉 = 上升的余烬              奇点 = 脉动的引力环
+     结晶 = 漂浮的冰晶棱片
+   ⚠️ 位置一律按 G.t **解析**算，不每帧 mutate 状态：这样慢放 / 暂停 / 截图探针
+      拿到的都是同一套确定性画面（探针要逐像素比对才认得出「换了区」）。 */
+function drawZoneSkin() {
+  const z = G.zone, L = viewL(), T = viewT();
+  if (G.zskinZone !== z) {
+    G.zskinZone = z; G.zskin = [];
+    const n = z === 2 ? 26 : z === 4 ? 18 : 4;
+    for (let i = 0; i < n; i++) G.zskin.push({
+      x: rand(W + 80), y: rand(H + 80), p: rand(0.08, 0.3),
+      v: z === 2 ? rand(16, 44) : rand(-8, 8),
+      a: rand(TAU), va: rand(-0.35, 0.35), sz: irand(3, 6), r: rand(64, 128),
+    });
+  }
+  const wx = (v, p) => ((v - cam.x * p) % (W + 80) + (W + 80)) % (W + 80) + L - 40;
+  const wy = (v, p, d) => ((v - cam.y * p + (d || 0)) % (H + 80) + (H + 80)) % (H + 80) + T - 40;
+  if (z === 1) {                       // 星云：雾团
+    for (const s of G.zskin) drawGlow(ctx, '#7a3ab0', s.r, 0.13, wx(s.x + G.t * s.v, s.p), wy(s.y + G.t * s.v * 0.4, s.p));
+  } else if (z === 2) {                // 熔炉：余烬上升
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of G.zskin) {
+      const x = Math.round(wx(s.x, s.p)), y = Math.round(wy(s.y, s.p, -G.t * s.v));
+      const fl = 0.35 + Math.sin(G.t * 4 + s.a) * 0.25;
+      ctx.globalAlpha = fl * 0.7; ctx.fillStyle = '#ef7d57'; ctx.fillRect(x, y, 1, 2);
+      ctx.globalAlpha = fl * 0.3; ctx.fillStyle = '#ffcd75'; ctx.fillRect(x, y + 2, 1, 1);
+    }
+    ctx.restore();
+  } else if (z === 3) {                // 奇点：脉动的引力环（锚在视口中心 —— 它说的是「这里的空间在弯」）
+    ctx.save();
+    ctx.globalAlpha = 0.16; ctx.strokeStyle = '#8ad0ff';
+    for (let i = 0; i < 3; i++) ringPx(L + W / 2, T + H / 2, 60 + i * 46 + Math.sin(G.t * 0.6 + i) * 8, 1);
+    ctx.restore();
+  } else if (z === 4) {                // 结晶：漂浮的冰晶棱片（菱形四点 + 亮心）
+    ctx.save();
+    for (const s of G.zskin) {
+      const x = Math.round(wx(s.x, s.p)), y = Math.round(wy(s.y, s.p, -G.t * 7));
+      const a = s.a + G.t * s.va, rx = Math.cos(a) * s.sz, ry = Math.sin(a) * s.sz;
+      ctx.globalAlpha = 0.45; ctx.fillStyle = '#a8f0ff';
+      ctx.fillRect(x + Math.round(rx), y + Math.round(ry), 1, 1);
+      ctx.fillRect(x - Math.round(rx), y - Math.round(ry), 1, 1);
+      ctx.fillRect(x - Math.round(ry), y + Math.round(rx), 1, 1);
+      ctx.fillRect(x + Math.round(ry), y - Math.round(rx), 1, 1);
+      ctx.globalAlpha = 0.9; ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+/* ④ 折射带：垫在地形**下面**（它是空间的一部分，不是盖在场地上的贴纸）。
+   带里画流动的短线 —— 得让人一眼看出「往哪边弯」，否则玩家只会觉得「子弹今天不准」。 */
+function drawZoneBands() {
+  const h = G.hz;
+  if (!h || h.kind !== 'lens' || !h.bands) return;
+  for (const b of h.bands) {
+    if (!onScreen(b.x, b.y, b.len)) continue;
+    ctx.save();
+    ctx.translate(Math.round(b.x), Math.round(b.y)); ctx.rotate(b.a);
+    ctx.globalAlpha = 0.09; ctx.fillStyle = '#73eff7';
+    ctx.fillRect(-b.len / 2, -b.w / 2, b.len, b.w);
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#8ad0ff';
+    ctx.fillRect(-b.len / 2, -b.w / 2, b.len, 1); ctx.fillRect(-b.len / 2, b.w / 2 - 1, b.len, 1);
+    ctx.fillStyle = '#dffbff';
+    const step = 26, off = ((G.t * 46 * b.dir) % step + step) % step;
+    for (let i = 0; i * step < b.len; i++) {
+      const px = -b.len / 2 + ((i * step + off) % b.len);
+      ctx.globalAlpha = 0.22;
+      ctx.fillRect(Math.round(px), Math.round(-b.w / 2 + 3 + ((i * 5) % Math.max(1, b.w - 6))), 9, 1);
+    }
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+/* ② EMP 的两层视觉：预警（方框往里收，收到底就是脉冲）+ 冲击（一圈扩散）。
+   ⚠️ 预警必须存在：脉冲不是玩家按的，没有预警的清屏只是「偶尔白送一秒」。 */
+function drawHazardTop() {
+  const h = G.hz;
+  if (!h || h.kind !== 'emp') return;
+  if (h.next < HZ.EMP_WARN) {
+    const k = clamp(1 - h.next / HZ.EMP_WARN, 0, 1);
+    const ww = W * (1 - k * 0.55), hh = H * (1 - k * 0.55);
+    ctx.save();
+    ctx.globalAlpha = 0.2 + 0.45 * Math.abs(Math.sin(G.t * 12));
+    ctx.strokeStyle = '#73eff7'; ctx.lineWidth = 2;
+    ctx.strokeRect(Math.round(G.px - ww / 2), Math.round(G.py - hh / 2), Math.round(ww), Math.round(hh));
+    ctx.restore();
+  }
+  if (h.fx > 0) {
+    const k = 1 - h.fx / 0.45;
+    ctx.save();
+    ctx.strokeStyle = '#73eff7';
+    ctx.globalAlpha = (1 - k) * 0.55; ringPx(G.px, G.py, Math.round(40 + k * 300), 2);
+    ctx.globalAlpha = (1 - k) * 0.25; ringPx(G.px, G.py, Math.round(20 + k * 180), 1);
+    ctx.restore();
+  }
+}
+
 // ============ 航程导演 ============
 function startWave(w) {
   G.wave = w;
-  // 星区：主线按 ZONES 的区间走；无尽里 1-2-3 循环，让星野背景也跟着换（视觉不至于腻）。
-  const zi = ZONES.findIndex(zz => w >= zz.from && w <= zz.to);
-  G.zone = zi >= 0 ? zi : (w - 1) % ZONES.length;
+  // 星区：主线按 ZONES 的区间走；无尽里五区循环（13 段起 = 结晶回廊）。
+  // ⚠️ 必须走 zoneIndexFor —— 地形布局也用它，分头算就会「背景熔炉、地形结晶」。
+  G.zone = zoneIndexFor(w);
   const zone = ZONES[G.zone];
   G.waveKills = 0;
   G.spawnQueue = [];
@@ -4766,6 +5072,8 @@ function startWave(w) {
   // ⚠️ 地形必须在**这里**重建，且要在 `G.px/py` 还是上一段结束的位置时做 ——
   //    terrAdd 拿它来给玩家脚边留空。放到后面（敌人已经生成）就晚了。
   buildTerrain(w, bossId);
+  // 场地机制跟着星区走。⚠️ 巨像段与视界段**不开** —— 它们自带完整机制，再叠一层互相盖住。
+  startHazard((bossId || formForWave(w) === 'horizon') ? null : zone.haz);
   if (bossId) {
     G.waveState = 'boss';
     // ⚠️ 形态也要跟着切成 'boss'：否则它会**留着上一段的值**（比如第 3 段是回收，
@@ -5004,6 +5312,7 @@ function step(dt) {
   updateWebs(dt);
   updateFires(dt);
   updateTerrain(dt);
+  updateHazard(dt);
   updateWave(dt);
 }
 
@@ -5945,9 +6254,12 @@ function render() {
     ctx.translate(Math.round(rand(-G.shake, G.shake)), Math.round(rand(-G.shake, G.shake)));
   }
   drawBackground();
+  drawZoneSkin();      // 星区皮肤（雾 / 余烬 / 引力环 / 冰晶）：背景之上的第一层
+  drawZoneBands();     // 折射带：垫在地形下面，它是空间的一部分
   // 地形压在背景之上、奇点之下：它是**场地**（世界的一部分），
   //   玩家和敌人都画在它上面（否则贴着掩体时会被自己的掩体盖住）。
   drawTerrain();
+  drawHazardTop();     // EMP 预警框 / 冲击环：画在地形之上，它是「此刻正在发生」
   drawSingularity();   // 视界：奇点是**场地**不是敌人，所以压在最底层（背景之上、蛛网之下）
   drawWebs();
   // 火场画在蛛网**之上**：锻炉和织网者同场时，玩家得先看见「哪里会烧到我」
@@ -7340,6 +7652,17 @@ function boot() {
     //    对象字面量里同名键后者覆盖前者，写上去是静默失效（实测：地形一块都没铺出来）。
     setTerrainLayout: id => { G.terr.length = 0; G.layout = id; const ly = LAYOUTS[id]; if (ly && ly.build) { ly.build(); terrVents(2); } terrIndex(); },
     terrClear: () => { G.terr.length = 0; G.layout = 'open'; terrIndex(); },
+    // 星区（2026-10-23）：直接切区（视觉 + 地形贴图一起换）/ 直接开某条机制
+    setZone: i => { G.zone = clamp(i | 0, 0, ZONES.length - 1); G.zskinZone = -1; },
+    zoneOf: w => zoneIndexFor(w),
+    zoneName: i => ZONES[i] ? ZONES[i].name : null,
+    hz: () => G.hz,
+    startHaz: k => startHazard(k),
+    zones: () => ZONES.map(z => ({ name: z.name, en: z.en, terrain: z.terrain, haz: z.haz })),
+    hazards: () => HAZARDS,
+    ventBlow: () => { const v = G.terr.find(b => b.kind === 'vent'); if (v) ventBlow(v); return !!v; },
+    lensAt: (x, y) => { const b = lensAt(x, y); return b ? { x: b.x, y: b.y, a: b.a, dir: b.dir } : null; },
+    ventCount: () => G.terr.filter(b => b.kind === 'vent').length,
     // 手动摆一块（探针要精确控制位置，随机布局没法写断言）
     terrPut: (kind, x, y, w, h) => { const b = terrAdd(x, y, w, h, kind); terrIndex(); return !!b; },
     // 巨像碾碎用：把玩家挪到指定点并跑一帧解算

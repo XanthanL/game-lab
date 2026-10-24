@@ -74,7 +74,7 @@ const server = http.createServer((req, res) => {
       }
       await run(14);
     }
-    G.banner = null;
+    G.banners.length = 0; G.toasts.length = 0; G.fx.length = 0; G.parts.length = 0;
     let seen = 0;
     const [l, t, r, b] = d.viewRect;
     for (const o of d.terr()) if (o.x < r && o.x + o.w > l && o.y < b && o.y + o.h > t) seen++;

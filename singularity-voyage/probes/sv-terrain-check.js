@@ -111,11 +111,17 @@ const server = http.createServer((req, res) => {
          buildTerrain 跑一遍、整表换掉探针刚摆的地形：症状是 G.terr.length
          突然变成 30+，断言随机失败，而控制台一行报错都没有。 */
       d.gotoWave(1); await run(2);
-      R.planOk = R.plan[1] === 'open' && R.plan[2] === 'open' && R.plan[3] === 'pillars'
-        && R.plan[5] === 'maze' && R.plan[7] === 'cells' && R.plan[9] === 'cross'
-        && R.plan[10] === 'ring' && R.plan[11] === 'maze';
+      /* 编排 2026-10-23 起改**主题驱动**：非 boss / 非视界段铺该区自己的布局 ——
+         碎屑 1-3 柱林 / 星云 4-6 蜂室（6 视界段 open）/ 熔炉 7-9 四象限 / 奇点 10-12 环带。
+         只有第 1 段还留空域（第一枪还在教基本操作）。 */
+      R.planOk = R.plan[1] === 'open' && R.plan[2] === 'pillars' && R.plan[3] === 'pillars'
+        && R.plan[5] === 'cells' && R.plan[6] === 'open' && R.plan[7] === 'cross'
+        && R.plan[9] === 'cross' && R.plan[10] === 'ring' && R.plan[11] === 'ring';
       R.bossOpenOk = R.bossOpen.every(v => v === 'open');
-      R.endlessOk = new Set(R.endless).size >= 3 && R.endless.every(v => v !== 'open')
+      /* 无尽 13 段起进**结晶回廊**（ZONES[4].from/to = 13..15，先按区间命中），
+         之后按五区循环 —— 17 = 奇点环带、18 = 结晶回廊。 */
+      R.endlessOk = R.endless[0] === 'maze' && R.endless[1] === 'maze' && R.endless[2] === 'maze'
+        && R.endless[3] === 'ring' && R.endless[4] === 'maze'
         && R.endlessBoss === 'open';
 
       // ---------- ② 块数 + 玩家脚边留空 + 无封闭区域 ----------

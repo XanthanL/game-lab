@@ -897,11 +897,16 @@ function drawShip(ctx, hull, ang, x, y, white) {
 // ============ 星空背景 tile（每层视差一套，64x64 无缝） ============
 function makeStarTiles() {
   const sets = [];
-  // 三个星区 × 三层视差
+  // 五个星区 × 三层视差（2026-10-23）
+  // ⚠️ 顺序必须和 game.js 的 ZONES 一致：碎屑 / 星云 / 熔炉 / 奇点 / 结晶。
+  //    这里的**底色差异要拉到一眼能认出来** —— 主题不是换一层滤镜，
+  //    玩家在跃迁动画那一秒里就该知道「换了个地方」。
   const ZONES = [
-    { bg: '#070a18', dots: ['#39456e', '#5a6da8', '#c0cbdc'], neb: null },
-    { bg: '#12082a', dots: ['#5d3a7a', '#9a5cc0', '#e0c8f0'], neb: '#3a1a5c' },
-    { bg: '#04060f', dots: ['#2c3f6e', '#6a7ec0', '#dfe8ff'], neb: '#101a3c' },
+    { bg: '#070a18', dots: ['#39456e', '#5a6da8', '#c0cbdc'], neb: null },      // 碎屑带：冷灰蓝
+    { bg: '#12082a', dots: ['#5d3a7a', '#9a5cc0', '#e0c8f0'], neb: '#3a1a5c' }, // 星云：品红紫
+    { bg: '#170806', dots: ['#6e3a2c', '#c06a3a', '#ffd0a0'], neb: '#4a1408' }, // 熔炉：暗红褐
+    { bg: '#04060f', dots: ['#2c3f6e', '#6a7ec0', '#dfe8ff'], neb: '#101a3c' }, // 奇点：近黑靛蓝
+    { bg: '#061620', dots: ['#2c6e8a', '#7fd0e8', '#e8fbff'], neb: '#0a2a3a' }, // 结晶：青白冷
   ];
   for (const z of ZONES) {
     const layers = [];
@@ -1431,7 +1436,9 @@ function makeTerrainTiles() {
     let x = (seed >>> 0) || 1;
     return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
   };
-  function one(base, hi, lo, crack, accent, seed) {
+  function one(p, isRock, seed) {
+    const base = isRock ? p.rb : p.base, hi = isRock ? p.rh : p.hi, lo = isRock ? p.rl : p.lo;
+    const crack = isRock ? p.crack : null, accent = isRock ? null : p.accent;
     const c = newCanvas(24, 24), x = c.getContext('2d');
     const r = prng(seed);
     x.fillStyle = base; x.fillRect(0, 0, 24, 24);
@@ -1459,24 +1466,44 @@ function makeTerrainTiles() {
     }
     return c;
   }
-  const core = [], rock = [];
-  for (let i = 0; i < 4; i++) {
-    core.push(one('#333c57', '#566c86', '#242a44', null, '#41a6f6', 1013 + i * 977));
-    rock.push(one('#3a4468', '#6a5580', '#242a44', '#1a1c2c', null, 5507 + i * 613));
+  /* 五个星区各一套（顺序同 ZONES）。⚠️ 换的**不只是色相** ——
+     每区的 hero 元素也不同：导管 / 晶簇 / 熔缝 / 引力纹 / 棱线，
+     这样在弹幕糊脸、只看见一小块的时候也能认出自己在哪。 */
+  const TERR_PAL = [
+    // 碎屑带：冷灰蓝岩 + 青色能量导管
+    { base: '#333c57', hi: '#566c86', lo: '#242a44', rb: '#3a4468', rh: '#6a5580', rl: '#242a44', accent: '#41a6f6', crack: '#1a1c2c' },
+    // 星云：紫晶 + 品红导管
+    { base: '#3a2a52', hi: '#6a5580', lo: '#241a38', rb: '#46305e', rh: '#8a5ca0', rl: '#2a1c3c', accent: '#e05cd0', crack: '#140c1e' },
+    // 熔炉：焦褐玄武岩 + 橙红熔缝（accent 画的不是导管，是岩缝里透出来的岩浆）
+    { base: '#4a3028', hi: '#7a4a34', lo: '#2a1810', rb: '#54362a', rh: '#8a5238', rl: '#2e1a12', accent: '#ef7d57', crack: '#16080a' },
+    // 奇点：深靛 + 蓝白引力纹
+    { base: '#2a3350', hi: '#465c8a', lo: '#161c30', rb: '#303c5c', rh: '#4e689a', rl: '#1a2038', accent: '#8ad0ff', crack: '#0a0e1a' },
+    // 结晶：冰青棱面 + 亮蓝棱线
+    { base: '#28444e', hi: '#4a7a86', lo: '#16262e', rb: '#2e4e5a', rh: '#5a8e9c', rl: '#1a2c34', accent: '#a8f0ff', crack: '#0c1a20' },
+  ];
+  const out = [];
+  for (let z = 0; z < TERR_PAL.length; z++) {
+    const p = TERR_PAL[z], core = [], rock = [];
+    for (let i = 0; i < 4; i++) {
+      core.push(one(p, false, 1013 + i * 977 + z * 7919));
+      rock.push(one(p, true, 5507 + i * 613 + z * 6113));
+    }
+    out.push({ core, rock });
   }
-  return { core, rock };
+  return out;
 }
 let _ttile = null;
-const terrainTiles = () => (_ttile || (_ttile = makeTerrainTiles()));
+const terrainTiles = z => (_ttile || (_ttile = makeTerrainTiles()))[z] || _ttile[0];
 /* 整块 slab：tile 平铺 + 边框。
    ⚠️ 只在**生成地形时**调用（一局也就几十次），结果按 kind|w|h|seed 缓存；
       每帧的 drawTerrain 只做一次 drawImage。 */
 const _slabCache = new Map();
-function bakeSlab(kind, w, h, seed) {
-  const key = kind + '|' + w + '|' + h + '|' + seed;
+function bakeSlab(kind, w, h, seed, zone) {
+  const key = kind + '|' + w + '|' + h + '|' + seed + '|' + (zone || 0);
   const hit = _slabCache.get(key);
   if (hit) return hit;
-  const tiles = terrainTiles()[kind] || terrainTiles().rock;
+  const T = terrainTiles(zone || 0);
+  const tiles = T[kind] || T.rock;
   const c = newCanvas(w, h), x = c.getContext('2d');
   x.imageSmoothingEnabled = false;
   let n = 0;
@@ -1510,7 +1537,8 @@ function makeRocks() {
     '.kggggk.',
     '..kkkk..',
   ];
-  for (const col of ['#566c86', '#6a5580', '#3a4468']) {
+  // 五个星区各一色（顺序同 ZONES）：灰蓝碎屑 / 紫晶星云 / 焦褐熔炉 / 深靛奇点 / 冰青结晶
+  for (const col of ['#566c86', '#6a5580', '#8a5340', '#3a4468', '#4a8a9a']) {
     const s = spriteFrom(rows);
     const t = tinted(s, col), tb = scaled(tinted(s, col), 2);
     // 旋转**预烘焙**（和船体同一套做法），不要每帧 rotate()：
