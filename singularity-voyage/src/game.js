@@ -67,8 +67,22 @@ let autoFire = false;
 let pointerKind = 'mouse';
 const keys = {}, mouse = { x: W / 2, y: H / 2, down: false, inside: false };
 // 触屏双杆的几何（单位：游戏坐标 px，画布就是 480×270，游戏坐标 == 画布坐标）
-const MOVE_R = 40, MOVE_DZ = 0.12;   // 左杆：满舵半径 / 死区（沿用原值，别动，推力与刹车的阈值就挂在它上面）
-const AIM_R = 40, AIM_DZ = 8;        // 右杆：满舵半径 / 死区（死区是**像素**不是比例，理由见 touchmove）
+//
+// ⚠️ 满舵半径 40 → 52（2026-10-25）：手机上拇指的**位移分辨率**是有限的，半径越小，
+//    同样一毫米的手指滑动对应的角度变化就越大 —— 40px 时 1mm≈4.5°，想把炮口稳在
+//    一个 3° 的窗口里根本做不到。52px 把这个窗口放宽约 30%，且它仍然是舞台宽度的
+//    1/9，不会占掉太多画面。两杆**必须同值**：左右手是同一套肌肉记忆，不一样会更难。
+const MOVE_R = 52, MOVE_DZ = 0.12;   // 左杆：满舵半径 / **转向**死区（比例）
+const AIM_R = 52, AIM_DZ = 8;        // 右杆：满舵半径 / 死区（死区是**像素**不是比例，理由见 touchmove）
+// 左杆的**推进阈值**（比例，2026-10-25 新增）。杆量落在 (MOVE_DZ, THRUST_DZ) 这一圈里时
+// **只转向、不推进** —— 这是手机上最缺的一个操作带：贴着巨像绕圈、被追击时边退边打、
+// 想微调站位又不想一头冲进弹幕，全都要它。旧代码里推进阈值是 0.25，和转向死区 0.12
+// 之间只隔 0.13，手指稍微一动就越过去，「原地转向」这条操作实际上不存在。
+// ⚠️ 别把 THRUST_DZ 调得太大：推了不走会让人以为游戏卡了。0.34 × 52 ≈ 18px（≈25 CSS px）
+//    刚好是「拇指明确推出去了」的位移量。
+const THRUST_DZ = 0.34;
+// 冲刺冷却（s）。原来在 tryDash 和 HUD 各写了一遍 1.25，触屏按钮的冷却态也要它。
+const DASH_CD = 1.25;
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
 // 跟奇点回响对齐的「最近一次输入决定朝向控制方式」：
 // 'key' = A/D 转向；'mouse' = 朝鼠标方向缓慢转向。光标动了切到 mouse；A/D 一按切回 key。
@@ -82,6 +96,26 @@ var aimMode = 'key';
 //    → 炮口只能落在右半平面，左边整 180° 根本够不到（实测可达区间恰好 [-90°, +90°]）。
 let touchAim = -Math.PI / 2;
 const aimDrag = { id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0 };
+
+/* ============ 触屏瞄准吸附（2026-10-25 新增）============
+   手机上打不中的根因不是「玩家瞄不准」，是**目标在动而拇指跟不上**：
+   右杆是相对位移杆，手指不动炮口就锁死在一个固定角度上，而敌人每秒能横移好几度 ——
+   玩家刚把炮口摆过去，目标已经走出枪线了，于是只能不停小幅度搓杆，搓出来的方向
+   又全是噪声（那正是右杆死区设成 8px 的原因）。桌面端不存在这个问题：鼠标是绝对
+   指向、光标全程可见、手腕的角分辨率比拇指高一个量级。
+   ⚠️ 这不是自动瞄准，三条硬边界缺一不可：
+      ① 只在**玩家已经指到的**锥形内生效（半角 ASSIST_CONE），锥外一动不动。
+         玩家甩炮口的意图永远优先 —— 手指一拖，基准角立刻变成新的手指方向。
+      ② 有角速度上限（ASSIST_RATE），不是瞬移。它补的是「跟丢的那几度」，
+         不是替玩家转向；瞬移在画面上就是炮口自己跳，玩家会觉得枪不听话。
+      ③ 只开在触屏（touchMode），且 bot 不开 —— 平衡性探针的基线一点不能动。
+   ⚠️ 修的是 touchAim（**输入角**）不是 G.aim：这样它是**累积追踪**，
+      手指不动时炮口能一直跟着目标走；松手后停在最后的方向（与「松手不回摆」一致）。 */
+const ASSIST_CONE  = 0.20;   // rad ≈ 11.5°：超过这个偏差就完全不帮（玩家显然在瞄别处）
+const ASSIST_RATE  = 2.6;    // rad/s：追踪角速度上限（敌人横移一般 < 1.5 rad/s，留足余量）
+const ASSIST_RANGE = 320;    // px：只帮射程内的目标（远处的吸附没有意义，还容易被拽偏）
+const ASSIST_IDLE  = 0.45;   // 松手后的强度折扣：还在跟，但慢到不会被察觉成「炮口自己动」
+let assistOn = true;         // 探针口子：sv-touch-assist-check 会关掉它测「无吸附」基线
 
 // ============ 像素文字（缓存 canvas） ============
 const tcache = new Map();
@@ -1649,6 +1683,8 @@ function newGame(hullId) {
   return {
     S, hull,
     t: 0, wave: 1, waveState: 'spawn', waveT: 0, zone: 0,
+    // 触屏首次操作提示的剩余秒数（见 drawTouchHint）。只在触屏 + 首次游玩时给。
+    hintT: 0,
     // 出生在世界正中心 —— 四个方向都留着等长的退路（世界是视口的 3 倍）
     px: WORLD.w / 2, py: WORLD.h / 2, vx: 0, vy: 0, ang: 0, aim: 0,
     fireT: 0, inv: 0, dashT: 0, dashCd: 0, hurtFlash: 0,
@@ -2063,6 +2099,7 @@ function activateOverdrive() {
   if (G.energy < 100 || G.odT > 0) return;
   G.energy = 0; G.odT = 5;
   Sound.sfx.overdrive();
+  buzz(32);   // 手机上一记干脆的长震：超载是这一局为数不多的「大招」，指尖得知道它响了
   banner(T('bn.od'), T('bn.odSub'), '#73eff7', 1.8);
   ring(G.px, G.py, 200, '#73eff7', 0.6, 3);
   burst(G.px, G.py, 40, ['#73eff7', '#f4f4f4', '#41a6f6'], 220, 0.7, 2, true);
@@ -2087,7 +2124,8 @@ function tryDash() {
   const nv = keep + 300 * S.spd;
   G.vx = dx * nv; G.vy = dy * nv;
   // 超出 MAXV_CAP 的部分交给 `updatePlayer` 统一夹（那里才拿到 webSlow 的 slowMul）。
-  G.dashT = 0.22; G.dashCd = 1.25; G.inv = Math.max(G.inv, 0.3);
+  G.dashT = 0.22; G.dashCd = DASH_CD; G.inv = Math.max(G.inv, 0.3);
+  buzz(14);   // 手机上冲刺给一记极短的震：它是一次「位移已经发生」的确认
   Sound.sfx.dash();
   for (let i = 0; i < 10; i++) {
     part({ x: G.px - dx * i * 2, y: G.py - dy * i * 2, vx: -dx * 40, vy: -dy * 40, life: .3, max: .3, col: '#73eff7', size: 2, drag: 4 });
@@ -2469,6 +2507,8 @@ function tryUndying() {
 
 function die() {
   G.dead = true;
+  // 手机上死亡给一记「三连震」（短-长-短）。这一局结束了，光靠画面红一下太轻。
+  buzz([26, 70, 26]);
   Sound.sfx.bigKill(); addShake(10);
   burst(G.px, G.py, 60, ['#ef7d57', '#ffcd75', '#f4f4f4', '#e04060'], 220, 1.1, 3, true);
   ring(G.px, G.py, 120, '#ef7d57', .8, 3);
@@ -3347,6 +3387,31 @@ function updateSingularity(dt) {
   }
 }
 
+/* 触屏瞄准吸附。完整的设计理由见常量区那段注释，这里只说实现上的两条：
+   ⚠️ 找目标走**线性扫描**而不是网格版 nearest()：这里的候选只可能是「锥内 + 射程内」，
+      绝大多数帧一个都没有，先扫一遍全表是 O(n) 且 n 通常 < 40，比建网格便宜得多。
+   ⚠️ 正在进场的巨像（e.entering）不算候选：它还在屏幕外往下飘，吸过去等于把炮口
+      拽向一个看不见的东西。 */
+function aimAssist(dt) {
+  if (!assistOn || !G || G.dead || !G.enemies.length) return;
+  let best = null, bd = ASSIST_RANGE * ASSIST_RANGE;
+  for (const e of G.enemies) {
+    if (e.hp <= 0 || e.entering) continue;
+    const d = (e.x - G.px) ** 2 + (e.y - G.py) ** 2;
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (!best) return;
+  const want = Math.atan2(best.y - G.py, best.x - G.px);
+  const d = ((want - touchAim + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  const ad = Math.abs(d);
+  if (ad >= ASSIST_CONE) return;                       // ① 锥外不帮
+  // 越接近锥心吸得越紧、到锥边缘衰减到 0 —— 这样「刚进锥」时不会突然被拽一下
+  const k = 1 - ad / ASSIST_CONE;
+  // ② 有限角速度；手指没按在右杆上时再打个折（ASSIST_IDLE）
+  const rate = ASSIST_RATE * k * (aimDrag.id !== null ? 1 : ASSIST_IDLE);
+  touchAim += Math.sign(d) * Math.min(ad, rate * dt);
+}
+
 function updatePlayer(dt) {
   const S = G.S;
   // ---- 转向 ----
@@ -3368,6 +3433,9 @@ function updatePlayer(dt) {
     }
     // ⚠️ 松手**不回摆**。旧实现会自己把船头转回瞄准标方向 —— 玩家明明没在操作，
     //    船却在自己转，朝向的控制权就不在玩家手上了。现在松手 = 停在哪朝哪。
+    // ⚠️ 吸附只改 touchAim（输入角），且**在赋给 G.aim 之前**跑 —— 顺序反了会慢一帧，
+    //    弹道和炮口射线就对不上了。
+    aimAssist(dt);
     G.aim = touchAim;
   } else if (joy.active) {
     // 摇杆（桌面/非触屏路径，逻辑同旧版）：方向即朝向，推到哪船头立刻朝哪。
@@ -3415,9 +3483,12 @@ function updatePlayer(dt) {
   // ---- 推进 / 制动 / 线性刹车 ----
   const wHeld = keys['KeyW'] || keys['ArrowUp'];
   const sHeld = keys['KeyS'] || keys['ArrowDown'];
-  // 摇杆：mag > 死区 = 推进；按着不动（在死区里）= 制动
+  // 摇杆：三段带（见 THRUST_DZ 那条注释）
+  //   ① mag <= 0.05        → 制动（手指按着不动 = 想停下）
+  //   ② 0.12 < mag < THRUST_DZ → **只转向、不推进**（手机上的「原地转身」就靠这一圈）
+  //   ③ mag > THRUST_DZ    → 转向 + 推进
   const joyMag = joy.active ? Math.hypot(joy.x, joy.y) : 0;
-  const joyThrust = joy.active && joyMag > 0.25;
+  const joyThrust = joy.active && joyMag > THRUST_DZ;
   const joyBrake = joy.active && joyMag <= 0.05;
   const thrusting = wHeld || joyThrust;
   const braking = sHeld || joyBrake;
@@ -3531,6 +3602,7 @@ function updatePlayer(dt) {
     G.fireT = iv;
     fireMain(G.aim, G.odT > 0 ? 1.35 : 1);
   }
+  if (G.hintT > 0) G.hintT -= dt;
   if (G.muzzle > 0) G.muzzle -= dt;
   if (G.dashT > 0) G.dashT -= dt;
   if (G.dashCd > 0) G.dashCd -= dt;
@@ -6008,7 +6080,7 @@ function drawHUD() {
   text(G.energy >= 100 ? T('hud.odReady') : T('hud.energy'), W / 2, ey - 11, G.energy >= 100 ? '#ffcd75' : '#7a86a8', 'c');
   // 冲刺冷却
   const dw = 60, dx2 = W / 2 - dw - 74;
-  bar(dx2, ey, dw, 6, G.dashCd > 0 ? 1 - G.dashCd / 1.25 : 1, G.dashCd > 0 ? '#566c86' : '#73eff7');
+  bar(dx2, ey, dw, 6, G.dashCd > 0 ? 1 - G.dashCd / DASH_CD : 1, G.dashCd > 0 ? '#566c86' : '#73eff7');
   text(T('hud.dash'), dx2 + dw / 2, ey - 11, '#7a86a8', 'c');
   // 本段目标：逐形态不同（见 FORMS）。「剩余 N 只」只对清剿/死斗成立 ——
   //   潮涌要看倒计时、回收要看星尘进度，沿用「剩余」会让玩家以为杀完就过段。
@@ -6067,25 +6139,55 @@ function drawToasts() {
 // 这也是 Feral 把《Guardian of Light》搬上手机时定下的位置：三段式右杆的视觉全在杆上。
 
 // 触屏杆：环 + 内圈 + 推杆，画在手指落点（ox,oy）上。
-function drawStick(ox, oy, kx, ky, mag, col) {
-  const R = 40;
+// `mark` 给左杆用：画出**推进阈值**那一圈（推出这圈船才走），让「只转向」这个操作带看得见。
+// ⚠️ R 必须跟着 MOVE_R 走，别写死 —— 半径调过一次（40→52），写死的 40 会让环和判定对不上。
+function drawStick(ox, oy, kx, ky, mag, col, mark) {
+  const R = MOVE_R;
   ctx.save();
   ctx.strokeStyle = col;
-  ctx.globalAlpha = 0.20; ringPx(ox, oy, R, 1);        // 外环：常态极淡，不喧宾夺主
-  ctx.globalAlpha = 0.16; ringPx(ox, oy, R * 0.6, 1);  // 内圈：满舵参考
+  // 杆只在**按住时**才画出来，这时的可见度就是玩家的唯一参照。旧值 0.20 太淡：
+  // 户外 / 手指出汗时根本找不着环在哪。按住态提到 0.34。
+  ctx.globalAlpha = 0.34; ringPx(ox, oy, R, 1);                   // 外环 = 满舵
+  if (mark) { ctx.globalAlpha = 0.32; ringPx(ox, oy, mark, 1); }  // 内圈 = 推进阈值（左杆）
+  else { ctx.globalAlpha = 0.22; ringPx(ox, oy, R * 0.6, 1); }    // 内圈 = 满舵参考（右杆）
   if (mag > 0.04) {
     // 落点 → 推杆 的方向短线：指尖就能读出「我往哪推了」
-    ctx.globalAlpha = 0.55; pline(ox, oy, ox + kx, oy + ky, 1);
+    ctx.globalAlpha = 0.6; pline(ox, oy, ox + kx, oy + ky, 1);
   }
   ctx.globalAlpha = 0.9; ctx.fillStyle = col;
-  disc(ox + kx, oy + ky, 5);                            // 推杆
+  // 还没推出去时推杆画小一点：一眼能分出「按住了但没推」和「推出去了」
+  disc(ox + kx, oy + ky, mag > 0.04 ? 5 : 3);
   ctx.globalAlpha = 1;
   ctx.restore();
 }
+/* 触屏首次操作提示（2026-10-25）。
+   标题页那行 ctrl-hint 一按「出击」就没了，而真正的困惑 —— 「哪半边是走、哪半边是打」 ——
+   恰恰发生在进场之后。这里开局给 3 秒的两行淡字，**各画在自己那半屏的中心**：
+   位置本身就是信息，玩家看到「左半屏」这行字就在自己左手拇指这一侧，对应关系立刻就懂了。
+   ⚠️ 只给一次（localStorage），第二次还弹就是骚扰。
+   ⚠️ alpha 走 ctx.globalAlpha 而不是把颜色调淡：像素字只有 12px 一档，
+      改颜色会让它在亮星云上糊掉，改 alpha 又能透出底下的暗带。 */
+function hintShown() { try { return localStorage.getItem('sv-hinted') === '1'; } catch (e) { return true; } }
+function markHintShown() { try { localStorage.setItem('sv-hinted', '1'); } catch (e) {} }
+function drawTouchHint() {
+  if (!G || G.hintT <= 0) return;
+  const k = clamp(G.hintT / 0.8, 0, 1);        // 最后 0.8s 淡出
+  // ⚠️ 垂直位置**不能**取屏幕正中：船恒在画面中心（相机夹取），一条文字带压过去
+  //    正好把玩家自己的船挡住 —— 开局这三秒恰恰是最需要看清自己的时候。
+  //    放在 H*0.29（顶栏之下、船之上）那条空档里。
+  // ⚠️ 不铺整宽底带：那会把 HUD 和两侧一起盖掉。文字自带 1px 描边即可在星云上读清。
+  const y = Math.round(H * 0.29);
+  ctx.save();
+  ctx.globalAlpha = 0.92 * k;
+  text(T('touch.hintMove'), W * 0.25, y, '#9df3fa', 'c', 12, '#1a1c2c');
+  text(T('touch.hintAim'), W * 0.75, y, '#9df3fa', 'c', 12, '#1a1c2c');
+  ctx.restore();
+}
+
 function drawSticks() {
   if (joy.active) {
     const [jx, jy] = toGame(joy.ox, joy.oy);
-    drawStick(jx, jy, joy.x * MOVE_R, joy.y * MOVE_R, Math.hypot(joy.x, joy.y), '#73eff7');
+    drawStick(jx, jy, joy.x * MOVE_R, joy.y * MOVE_R, Math.hypot(joy.x, joy.y), '#73eff7', MOVE_R * THRUST_DZ);
   }
   if (aimDrag.id !== null) {
     drawStick(aimDrag.ox, aimDrag.oy, aimDrag.x, aimDrag.y, aimDrag.mag, '#9df3fa');
@@ -6303,9 +6405,10 @@ function render() {
     ctx.fillRect(0, 0, 3, H); ctx.fillRect(W - 3, 0, 3, H);
     ctx.globalAlpha = 1;
   }
+  drawTouchHint();
   // 触屏超载容器的水位。它是 DOM 元素、和画布无关，但必须跟着能量走 ——
   // 放在 render 末尾是因为「这一帧的能量」到这儿才是最新的。
-  if (touchMode) syncOdBtn();
+  if (touchMode) { syncOdBtn(); syncDashBtn(); }
 }
 
 // 标题页背景：缓慢漂移的星野
@@ -6666,6 +6769,13 @@ function startGame() {
     replayMods(m);
   }
   state = 'play';
+  /* 手机端的首次操作提示。
+     标题页那行 ctrl-hint 只在标题页出现，一按「出击」就没了 —— 而真正的困惑
+     （「哪半边是走、哪半边是打」）恰恰发生在**进场之后**。这里在开局给 3 秒
+     的两行淡字，各画在自己那半屏的中心，让玩家把文字和手的位置对上。
+     ⚠️ 只给**一次**（localStorage），第二次还弹就是骚扰。 */
+  if (touchMode && !hintShown()) { G.hintT = 3.2; markHintShown(); }
+
   // 手机上开局顺手进全屏：横屏游戏被地址栏吃掉 60~80px 高度差别很大。
   // 不再卡「必须是横屏」—— 触屏下 fit() 会把竖屏视口直接转成横屏呈现。
   if (isTouchDevice() && !document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -6814,6 +6924,9 @@ const UP_ARM = 700;
 function openUpgrade() {
   rerollLeft = 1;
   rollChoices();
+  // 手机上一记短震把注意力从战场拉回选卡面板：面板是全屏盖住的，
+  // 少了这一下，玩家会有一瞬间不知道「我现在是不是还能操作」。
+  buzz(18);
   state = 'upgrade';
   G.upOpen = performance.now();
   showOverlay('upgrade');
@@ -7064,6 +7177,20 @@ function syncOdBtn() {
   const f = b.querySelector('.odfill');
   if (f) f.style.width = e.toFixed(1) + '%';
   b.classList.toggle('ready', ready);
+}
+
+/* 冲刺键的冷却态。
+   手机上拇指在右下角、眼睛盯着画面中心 —— HUD 里那条冲刺条在左上角，真打起来
+   根本顾不上看。所以「这一下到底冲没冲出去」必须能在**按钮自己身上**读出来，
+   否则玩家只会以为按键坏了（和超载容器那条「没装满就抖一下」是同一个道理）。
+   ⚠️ 同 syncOdBtn：只在**状态真的翻转**时写 DOM，每帧无脑 toggle 白掉几帧。 */
+let dashCoolShown = null;
+function syncDashBtn() {
+  const b = document.querySelector('.tb-dash'); if (!b) return;
+  const cool = !!(G && G.dashCd > 0);
+  if (cool === dashCoolShown) return;
+  dashCoolShown = cool;
+  b.classList.toggle('cooling', cool);
 }
 
 function handleAct(a) {
@@ -7540,6 +7667,16 @@ function boot() {
       return touchAim;
     },
     get aimStick() { return { id: aimDrag.id, ox: aimDrag.ox, oy: aimDrag.oy, x: aimDrag.x, y: aimDrag.y, mag: aimDrag.mag }; },
+    // 杆的几何（半径 / 死区 / 推进阈值）。探针的断言必须**读这里**而不是写死数字 ——
+    // 半径调过一次（40→52），写死的 41 当场假红（sv-touch-aim-check ③ 踩到过）。
+    get stickGeom() { return { moveR: MOVE_R, moveDz: MOVE_DZ, aimR: AIM_R, aimDz: AIM_DZ, thrustDz: THRUST_DZ, dashCd: DASH_CD }; },
+    // 瞄准吸附的探针口子：要测「无吸附基线」时先关掉它
+    setAssist: v => { assistOn = !!v; return assistOn; },
+    // 探针口子：无头桌面 Chrome 的 (pointer:coarse) 恒为 false，touchMode 起不来，
+    // 触屏专属逻辑（瞄准吸附 / 左杆双区）就没法验。给个直写口。
+    setTouchMode: v => { setTouchMode(!!v); return touchMode; },
+    get assistOn() { return assistOn; },
+    get assistConst() { return { cone: ASSIST_CONE, rate: ASSIST_RATE, range: ASSIST_RANGE, idle: ASSIST_IDLE }; },
     ebullet: (x, y, ang, spd, r, color) => eShot(x, y, ang, spd, r, color || HOSTILE.red),
     // ---- 探针专用：无尽航程 / 深渊档位 ----
     // ⚠️ bossForWave 有副作用（会从轮换袋里抽走一张），所以单独开一个 peek 版本给探针做

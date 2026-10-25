@@ -61,6 +61,14 @@ const server = http.createServer((req, res) => {
         if (!keepBoss) { G.boss = null; G.bossPending = null; }
       };
       const run = async (n, keepBoss) => { for (let i = 0; i < n; i++) { clearSoft(keepBoss); G.hitstop = 0; await frame(); } };
+      /* ⚠️ 按**游戏时间**跑，不是按帧数：主循环把 dt clamp 在 0.05s，机器负载一高
+         帧间隔就超过 50ms，固定帧数等于「推进了更少的游戏时间」—— run-all 跑到后
+         半程时正是这样，drift 的位移掉到 4px 阈值以下假红（2026-10-25 抓到一次，
+         单独重跑却是 19.2px）。凡是「跑一段时间再量位移」的用例都得用它。 */
+      const runSecs = async (s, cap = 400) => {
+        const t0 = G.t;
+        for (let i = 0; i < cap && G.t - t0 < s; i++) { clearSoft(); G.hitstop = 0; await frame(); }
+      };
       const park = (x, y) => { d.setPos(x, y); G.vx = 0; G.vy = 0; };
       // 逐像素 hash：同一张图必须同一个值，换配色必须换值
       const hashCanvas = cv => {
@@ -122,7 +130,7 @@ const server = http.createServer((req, res) => {
       const mov = G.terr.filter(b => b.mov);
       R.mech.driftN = mov.length;
       const p0 = mov.length ? { x: mov[0].x, y: mov[0].y } : null;
-      await run(70);
+      await runSecs(1.2);   // 见 runSecs 那条注释：按游戏时间跑，别写死帧数
       const mv2 = G.terr.filter(b => b.mov)[0];
       R.mech.driftMoved = p0 && mv2 ? +(Math.hypot(mv2.x - p0.x, mv2.y - p0.y)).toFixed(1) : 0;
       R.mech.driftPos = mv2 ? [Math.round(mv2.x), Math.round(mv2.y), mv2.w, mv2.h] : null;

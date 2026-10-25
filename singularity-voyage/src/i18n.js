@@ -262,6 +262,9 @@ const UI = {
     'touch.fire': '开火',
     'touch.on': '开',
     'touch.off': '关',
+    // 开局 3 秒的首次操作提示（画布上画的两行，各在自己那半屏的中心）
+    'touch.hintMove': '左半屏 · 拖动移动与转向',
+    'touch.hintAim': '右半屏 · 拖动瞄准',
     'rotate.t': '请把手机横过来',
     'rotate.s': 'R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E',
     'rotate.x': '轻触此处仍然继续',
@@ -489,6 +492,8 @@ const UI = {
     'touch.fire': 'FIRE',
     'touch.on': 'ON',
     'touch.off': 'OFF',
+    'touch.hintMove': 'LEFT HALF · DRAG TO MOVE',
+    'touch.hintAim': 'RIGHT HALF · DRAG TO AIM',
     'rotate.t': 'PLEASE ROTATE YOUR PHONE',
     'rotate.s': 'R O T A T E&nbsp;&nbsp;T O&nbsp;&nbsp;L A N D S C A P E',
     'rotate.x': 'TAP ANYWHERE TO CONTINUE',

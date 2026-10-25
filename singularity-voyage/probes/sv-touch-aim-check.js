@@ -47,6 +47,9 @@ const deg = a => Math.round(a * 180 / Math.PI);
     const frame = () => new Promise(r => requestAnimationFrame(r));
     const nrm = a => Math.atan2(Math.sin(a), Math.cos(a));
     d.freezeLevel(); d.clearEnemies(); d.clearMods(); d.resetStats();
+    // ⚠️ 杆的几何**必须从游戏里读**，不能写死在断言里：半径调过一次（40→52），
+    //    写死的 41 当场假红。见 game.js 里 __dbg.stickGeom 那条注释。
+    out.geom = d.stickGeom;
     // 摆到世界正中 → 相机不夹取 → 船在屏幕正中（对这个 bug 来说是最严格的位置）
     G.px = 720; G.py = 405; updateCam();
     G.vx = 0; G.vy = 0;
@@ -170,8 +173,9 @@ const deg = a => Math.round(a * 180 / Math.PI);
   chk(lefts.length === 1 && Math.abs(norm(lefts[0].got - Math.PI)) < 0.05,
     '② 向左推能得到 π（旧版绝对指向永远够不到）', 'got=' + deg(lefts[0].got) + '°');
 
-  chk(R.fullMag === 1 && Math.abs(R.fullKnob[0]) <= 41 && Math.abs(R.fullKnob[1]) <= 41,
-    '③ 推过头钳在满舵（推杆不会飞出环外）', 'mag=' + R.fullMag + ' knob=' + JSON.stringify(R.fullKnob));
+  chk(R.fullMag === 1 && Math.abs(R.fullKnob[0]) <= R.geom.aimR + 1 && Math.abs(R.fullKnob[1]) <= R.geom.aimR + 1,
+    '③ 推过头钳在满舵（推杆不会飞出环外）', 'mag=' + R.fullMag + ' knob=' + JSON.stringify(R.fullKnob)
+    + ' aimR=' + R.geom.aimR);
 
   chk(R.dzMag === 0 && Math.abs(norm(R.dzAfter - R.dzBefore)) < 0.01,
     '④ 死区内抖动不改方向（4.5px）', '前 ' + deg(R.dzBefore) + '° → 后 ' + deg(R.dzAfter) + '°, mag=' + R.dzMag);
