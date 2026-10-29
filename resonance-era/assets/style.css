@@ -1,11 +1,21 @@
 /* ==========================================================================
-   共振纪元 RESONANCE ERA · 克莱因蓝阅读器
+   共振纪元 RESONANCE ERA · 手抄本阅读器
    --------------------------------------------------------------------------
-   取色：International Klein Blue #002FA7 一块颜料到底，配白纸与酸黄 #EDFF45。
-     · 亮色 = 纸面（蓝字），暗色 = 蓝底（白字）。两套是同一套语言的正反面。
-     · 顶栏永远满版 IKB —— 这就是这块颜料的签名。
-     · 酸黄只用在「当前」与「进度」上，别处不许出现，一多就散。
-     · 分隔一律 1px 发丝线，不用阴影堆叠。
+   四套色温可切换，共用同一套排版与同一套纹饰：
+
+     · ikb       克莱因   International Klein Blue 原色，最硬的一版
+     · parchment 羊皮纸   暖褐纸面，白天长时间读最省眼
+     · vespers   夜祷     冷灰蓝底，避开纯黑与纯白
+     · candle    烛焰     暖褐底，夜里读不刺眼
+
+   护眼三条红线（四套都守，越靠后守得越紧）：
+     ① 亮色不用纯白底、不用纯黑字 —— 省掉的正是中间那一档灰
+     ② 暗色底不用 #000，正文不用 #fff
+     ③ 主色一律降饱和；强调色的活只交给「当前」与「进度」两个位置
+
+   纹饰走 CSS mask + inline SVG：一张图，颜色跟着 --orn 走。
+   所以四套主题不需要四份 PNG，也不多吃一个请求。
+
    字体全部走系统栈，不挂 Google Fonts（国内直连不稳，且首屏会被它拖住）。
    ========================================================================== */
 
@@ -22,20 +32,31 @@
 
   --rail-w: 288px;
   --topbar-h: 60px;
-  --radius: 2px;          /* 克莱因蓝不吃圆角，方一点更像印刷品 */
+  --radius: 2px;          /* 不吃圆角，方一点更像印刷品 */
 
   /* 阅读参数：由设置面板驱动，写在根上，换章也不会被冲掉 */
   --reader-fs: 17px;
   --reader-lh: 1.9;
+
+  /* 纹饰用的 SVG 花格。切成 data-uri 供 mask 食用。
+     ⚠️ data-uri 里**不能**用 currentColor —— mask 只吃 alpha 通道，
+        颜色交给 background-color（= var(--orn)），所以一套图通吃四套主题。 */
+  --orn-div: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12'%3E%3Cg fill='none' stroke='%23000' stroke-width='1'%3E%3Cpath d='M0 6h44M76 6h44'/%3E%3Cpath d='M60 1.5v9'/%3E%3Cpath d='M52 6c0-3 3.6-4.5 8-4.5S68 3 68 6s-3.6 4.5-8 4.5S52 9 52 6z'/%3E%3Cpath d='M56 6c0-1.4.8-2 1.6-2S59.2 4.6 59.2 6s-.8 2-1.6 2S56 7.4 56 6z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-/* 亮色（默认）：白纸蓝字 */
+/* ---- ikb 克莱因：原色，纸面蓝字 ---- */
 :root,
-:root[data-theme="light"] {
+:root[data-theme="light"],
+:root[data-theme="ikb"] {
   --bg: var(--ikb-tint);
   --surface: #ffffff;
   --chrome: var(--ikb);
   --chrome-ink: #ffffff;
+  --chrome-ink-2: rgba(255, 255, 255, 0.70);
+  --chrome-line: rgba(255, 255, 255, 0.16);
+  --chrome-line-2: rgba(255, 255, 255, 0.38);
+  --chrome-hover: rgba(255, 255, 255, 0.14);
+  --chrome-hover-2: rgba(255, 255, 255, 0.22);
   --ink: #0a1740;
   --ink-2: rgba(10, 23, 64, 0.72);
   --ink-3: rgba(10, 23, 64, 0.46);
@@ -43,31 +64,171 @@
   --line-2: rgba(0, 47, 167, 0.36);
   --accent: var(--ikb);
   --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 47, 167, 0.06);
   --mark: var(--acid);          /* 当前章节的高亮：像荧光笔划在纸上 */
   --mark-ink: #0a1740;
+  --orn: var(--ikb);
+  --chrome-frame: rgba(255, 255, 255, 0.46);
+  --chrome-frame-dim: rgba(255, 255, 255, 0.26);
+  --cover-mark: var(--acid);
+  --cover-mark-ink: #001b62;
+  --orn-op: .5;
+  --pop: 0 2px 12px rgba(0, 12, 46, .30);
   --scrim: rgba(0, 12, 46, 0.44);
   --shadow: 0 1px 0 rgba(0, 47, 167, 0.06);
   color-scheme: light;
 }
 
-/* 暗色：蓝底白字 */
-:root[data-theme="dark"] {
-  --bg: #001243;
-  --surface: #001b5e;
-  --chrome: var(--ikb);
-  --chrome-ink: #ffffff;
-  --ink: #e8ecfa;
-  --ink-2: rgba(232, 236, 250, 0.74);
-  --ink-3: rgba(232, 236, 250, 0.48);
-  --line: rgba(150, 175, 255, 0.20);
-  --line-2: rgba(150, 175, 255, 0.42);
-  --accent: var(--acid);
-  --accent-ink: #001b62;
-  --mark: var(--acid);
-  --mark-ink: #001b62;
-  --scrim: rgba(0, 4, 20, 0.62);
+/* ---- parchment 羊皮纸：暖褐纸面，白天长读最省眼 ----
+   关键是三个「不到头」：底不到纯白、字不到纯黑、强调不到原色。 */
+:root[data-theme="parchment"] {
+  --bg: #ece4d4;
+  --surface: #f6f1e5;
+  --chrome: #6d5738;
+  --chrome-ink: #f6f1e5;
+  --chrome-ink-2: rgba(246, 241, 229, 0.74);
+  --chrome-line: rgba(246, 241, 229, 0.18);
+  --chrome-line-2: rgba(246, 241, 229, 0.42);
+  --chrome-hover: rgba(246, 241, 229, 0.12);
+  --chrome-hover-2: rgba(246, 241, 229, 0.20);
+  --ink: #3b3227;
+  --ink-2: rgba(59, 50, 39, 0.76);
+  --ink-3: rgba(59, 50, 39, 0.50);
+  --line: rgba(109, 87, 56, 0.20);
+  --line-2: rgba(109, 87, 56, 0.40);
+  --accent: #8a6a3c;
+  --accent-ink: #f6f1e5;
+  --accent-soft: rgba(138, 106, 60, 0.08);
+  --mark: #e3c98d;
+  --mark-ink: #3b3227;
+  --orn: #9c7c4b;
+  --chrome-frame: rgba(246, 241, 229, 0.48);
+  --chrome-frame-dim: rgba(246, 241, 229, 0.28);
+  --cover-mark: #c9a86a;
+  --cover-mark-ink: #2b2318;
+  --orn-op: .55;
+  --pop: 0 2px 12px rgba(59, 44, 22, .28);
+  --scrim: rgba(48, 38, 24, 0.42);
+  --shadow: 0 1px 0 rgba(109, 87, 56, 0.06);
+  color-scheme: light;
+}
+
+/* ---- vespers 夜祷：冷灰蓝底。电容沙子屏幕的底色其实偏蓝，顺着它给。 ---- */
+:root[data-theme="dark"],
+:root[data-theme="vespers"] {
+  --bg: #16191f;
+  --surface: #1d212a;
+  --chrome: #1d212a;
+  --chrome-ink: #c7cdd7;
+  --chrome-ink-2: rgba(199, 205, 215, 0.72);
+  --chrome-line: rgba(199, 205, 215, 0.14);
+  --chrome-line-2: rgba(199, 205, 215, 0.38);
+  --chrome-hover: rgba(199, 205, 215, 0.08);
+  --chrome-hover-2: rgba(199, 205, 215, 0.14);
+  --ink: #bcc3ce;
+  --ink-2: rgba(188, 195, 206, 0.76);
+  --ink-3: rgba(188, 195, 206, 0.48);
+  --line: rgba(160, 175, 196, 0.16);
+  --line-2: rgba(160, 175, 196, 0.36);
+  --accent: #7d94b6;
+  --accent-ink: #16191f;
+  --accent-soft: rgba(125, 148, 182, 0.10);
+  --mark: rgba(125, 148, 182, 0.26);
+  --mark-ink: #ced5e0;
+  --orn: #6d829f;
+  --chrome-frame: rgba(199, 205, 215, 0.40);
+  --chrome-frame-dim: rgba(199, 205, 215, 0.22);
+  --cover-mark: #7d94b6;
+  --cover-mark-ink: #16191f;
+  --orn-op: .78;
+  --pop: 0 2px 14px rgba(0, 0, 0, .40);
+  --scrim: rgba(0, 0, 0, 0.58);
   --shadow: none;
   color-scheme: dark;
+}
+
+/* ---- candle 烛焰：暖褐底。夜里读字不发光、不刺眼。 ---- */
+:root[data-theme="candle"] {
+  --bg: #1b1712;
+  --surface: #231d16;
+  --chrome: #231d16;
+  --chrome-ink: #d6c7ab;
+  --chrome-ink-2: rgba(214, 199, 171, 0.72);
+  --chrome-line: rgba(214, 199, 171, 0.14);
+  --chrome-line-2: rgba(214, 199, 171, 0.38);
+  --chrome-hover: rgba(214, 199, 171, 0.08);
+  --chrome-hover-2: rgba(214, 199, 171, 0.14);
+  --ink: #cbbda3;
+  --ink-2: rgba(203, 189, 163, 0.76);
+  --ink-3: rgba(203, 189, 163, 0.48);
+  --line: rgba(190, 168, 130, 0.18);
+  --line-2: rgba(190, 168, 130, 0.38);
+  --accent: #a98753;
+  --accent-ink: #1b1712;
+  --accent-soft: rgba(169, 135, 83, 0.12);
+  --mark: rgba(169, 135, 83, 0.28);
+  --mark-ink: #ddd0b6;
+  --orn: #94754a;
+  --chrome-frame: rgba(214, 199, 171, 0.40);
+  --chrome-frame-dim: rgba(214, 199, 171, 0.22);
+  --cover-mark: #a98753;
+  --cover-mark-ink: #1b1712;
+  --orn-op: .78;
+  --pop: 0 2px 14px rgba(0, 0, 0, .40);
+  --scrim: rgba(0, 0, 0, 0.58);
+  --shadow: none;
+  color-scheme: dark;
+}
+
+/* ---------- 1.5 纹饰 ----------
+   教堂的那套东西其实就三件：花格窗的 tracer y、古籍框线的双线 rule、
+   以及标题区那行对称的莨苕。这里用三种手段做，全部可缩放、全跟随主题色。
+
+   ① .orn        —— 章节/分区之间的对称花饰。
+   ② .rule-*     —— 双线。CSS 原生 border-style:double，不画图。
+   ③ .frame-*    —— 卡片/横幅的外框：细线内嵌一道更细的线，像祭坛画的边。
+
+   关键技术：**mask 而不是 background-image**。
+   mask 只吃 alpha，颜色由 background-color 给 —— 于是那张 SVG 是黑是白都无所谓，
+   四套主题共用同一张，换主题时它自动跟着 --orn 变。写成 background-image 的话，
+   四套主题就要四份不同颜色的 PNG。
+*/
+.orn {
+  display: block;
+  width: 120px;
+  height: 12px;
+  background-color: var(--orn);
+  -webkit-mask: var(--orn-div) no-repeat center / contain;
+  mask: var(--orn-div) no-repeat center / contain;
+  opacity: var(--orn-op);
+}
+.orn-wide { width: 100%; }
+.orn-left { margin-right: auto; }
+.orn-center { margin-left: auto; margin-right: auto; }
+
+/* 接在 JS 生成的结构上的两个位置。
+   ⚠️ opacity 压到 .5 以下是有意的：它是「版面上的装饰」，
+      一旦重过标题就变成注意力的小偷。 */
+.orn-body { margin: 0 auto 20px; }
+.orn-end  { margin: 44px auto 38px; opacity: .4; }
+/* 封面里的那枚：它在深底上，所以要吃 chrome-ink 而不是 --orn */
+.orn-cover { margin: 0 auto 18px; background-color: var(--chrome-ink); opacity: .34; }
+
+/* CSS 的 double 自带「一粗一细」，正是古籍框线的样子，不用画图 */
+.rule-top {
+  border-top: 5px double var(--line-2);
+}
+.rule-bottom {
+  border-bottom: 5px double var(--line-2);
+}
+
+/* 祭坛画式边框：外一圈发丝线，内再嵌一圈，中间留 3px 的空
+   —— 两道线之间必须留白，贴在一起就变成一条脏线了 */
+.frame {
+  border: 1px solid var(--line-2);
+  box-shadow: inset 0 0 0 1px var(--bg), inset 0 0 0 2px rgba(0, 0, 0, 0);
+  outline: 1px solid var(--line);
+  outline-offset: 3px;
 }
 
 /* ---------- 2. 基础 ---------- */
@@ -133,7 +294,7 @@ input { font: inherit; color: inherit; }
   font-family: var(--sans);
   font-size: 12px;
   letter-spacing: .04em;
-  box-shadow: 0 2px 12px rgba(0, 12, 46, .3);
+  box-shadow: var(--pop);
   animation: rtIn .2s ease-out;
 }
 /* flex 会盖掉 UA 的 [hidden]，必须自己声明 */
@@ -143,17 +304,17 @@ input { font: inherit; color: inherit; }
   flex: none;
   background: transparent;
   color: var(--acid);
-  border: 1px solid rgba(237, 255, 69, .55);
+  border: 1px solid var(--accent);
   padding: 3px 9px;
   font: inherit;
   letter-spacing: .04em;
   cursor: pointer;
 }
-.rt-btn:hover { background: rgba(237, 255, 69, .12); }
+.rt-btn:hover { background: var(--accent-soft); }
 .rt-close {
   flex: none;
   background: transparent;
-  color: rgba(255, 255, 255, .6);
+  color: var(--chrome-ink-2);
   border: 0;
   padding: 2px 6px;
   font-size: 16px;
@@ -188,7 +349,7 @@ input { font: inherit; color: inherit; }
   padding: 0 16px;
   background: var(--chrome);
   color: var(--chrome-ink);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 5px double var(--chrome-line);
 }
 
 .topbar .brand {
@@ -221,8 +382,8 @@ input { font: inherit; color: inherit; }
   gap: 7px;
   height: 34px;
   padding: 0 11px;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: var(--chrome-hover);
+  border: 1px solid var(--chrome-line-2);
   border-radius: var(--radius);
   color: var(--chrome-ink);
   font-size: 13px;
@@ -230,7 +391,7 @@ input { font: inherit; color: inherit; }
   cursor: pointer;
   white-space: nowrap;
 }
-.icon-btn:hover { background: rgba(255, 255, 255, 0.20); }
+.icon-btn:hover { background: var(--chrome-hover-2); }
 .icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 
 .topbar-right { display: flex; align-items: center; gap: 8px; }
@@ -258,11 +419,37 @@ input { font: inherit; color: inherit; }
   position: sticky;
   top: var(--topbar-h);
   height: calc(100vh - var(--topbar-h));
-  overflow-y: auto;
+  /* 目录自己滚，设置面板钉在底部 —— 见 index.html 里 .rail-scroll 的注释 */
+  display: flex;
+  flex-direction: column;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 22px 18px 40px;
+  padding: 22px 18px 0;
   border-right: 1px solid var(--line);
+  background: var(--bg);
+}
+.rail-scroll {
+  flex: 1;
+  min-height: 0;              /* ⚠️ flex 子项要能收缩，不然 overflow 不生效 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 22px;
+  /* 底部渐隐，不是装饰：目录比滚动区长时，最后一条会被工具区硬切一刀，
+     读者会以为列表「被截断了」而不是「还能滚」。
+     把最后 26px 淡掉，边界就变成「下面还有」而不是「到这里为止」。 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.rail-scroll::-webkit-scrollbar { width: 6px; }
+.rail-scroll::-webkit-scrollbar-track { background: transparent; }
+.rail-scroll::-webkit-scrollbar-thumb { background: var(--line-2); }
+/* 面板常驻底部：给它一道上边框把它和上方滚动区切开，不然滚起来的内容会从它背后穿过去 */
+.panel {
+  flex: none;
+  padding: 12px 0 14px;
+  border-top: 5px double var(--line-2);
   background: var(--bg);
 }
 
@@ -290,9 +477,9 @@ input { font: inherit; color: inherit; }
 .vol-sub {
   font-size: 12px;
   color: var(--ink-3);
-  margin: 0 0 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  margin: 0 0 12px;
+  padding-bottom: 9px;
+  border-bottom: 5px double var(--line-2);
 }
 
 .chapter-list { list-style: none; margin: 0; padding: 0; }
@@ -307,7 +494,7 @@ input { font: inherit; color: inherit; }
   border-left: 2px solid transparent;
   transition: background-color .15s ease, color .15s ease;
 }
-.chapter-list a:hover { background: rgba(0, 47, 167, 0.06); color: var(--ink); }
+.chapter-list a:hover { background: var(--accent-soft); color: var(--ink); }
 .chapter-list a .n {
   flex: none;
   width: 22px;
@@ -325,12 +512,7 @@ input { font: inherit; color: inherit; }
 .chapter-list a.active .n { color: var(--mark-ink); }
 
 /* 设置 */
-.panel {
-  margin-top: 4px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-}
-.field { margin-bottom: 16px; }
+.field { margin-bottom: 12px; }
 .field-h {
   display: flex;
   justify-content: space-between;
@@ -369,6 +551,94 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-track { height: 2px; background: var(--line-2); }
 input[type="range"]::-moz-range-thumb {
   width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--accent);
+}
+
+/* ---- 色温选择器 ----
+   每枚色板用自己的纸/字配色画一个小样本：
+   色块从上到下是「纸面 → 字 → 强调」，一眼能看出这套读起来是什么气氛，
+   比写四个名字更能传达「切的是一整套」而不是一个开关。 */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.sw {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.sw i {
+  display: block;
+  width: 100%;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+/* 小样本：左侧纸底，中间一条字色，右侧一点强调色 */
+.sw i::before {
+  content: "";
+  position: absolute;
+  inset: 4px 4px auto 4px;
+  height: 6px;
+  border-radius: 1px;
+}
+.sw i::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 12px;
+  height: 6px;
+  border-radius: 1px;
+}
+.sw span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.sw:hover { border-color: var(--line-2); }
+.sw[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.sw[aria-pressed="true"] span { color: var(--ink); font-weight: 600; }
+
+/* 四枚的取色和各自主题里的实际 token 一致，不是随手挑的装饰色 */
+.sw-ikb i       { background: #ffffff; }
+.sw-ikb i::before  { background: #0a1740; }
+.sw-ikb i::after   { background: #002fa7; }
+
+.sw-parchment i { background: #f6f1e5; }
+.sw-parchment i::before { background: #3b3227; }
+.sw-parchment i::after  { background: #8a6a3c; }
+
+.sw-vespers i   { background: #1d212a; }
+.sw-vespers i::before { background: #bcc3ce; }
+.sw-vespers i::after  { background: #7d94b6; }
+
+.sw-candle i    { background: #231d16; }
+.sw-candle i::before { background: #cbbda3; }
+.sw-candle i::after  { background: #a98753; }
+
+.sw-note {
+  margin: 7px 0 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: .04em;
+  color: var(--ink-3);
 }
 
 .seg {
@@ -425,10 +695,26 @@ input[type="range"]::-moz-range-thumb {
 }
 .ch-eyebrow em {
   font-style: normal;
-  padding: 2px 7px;
+  padding: 3px 9px;
   background: var(--accent);
   color: var(--accent-ink);
-  letter-spacing: .1em;
+  letter-spacing: .12em;
+  box-shadow: 0 0 0 1px var(--accent) , 0 0 0 4px var(--accent-soft);
+}
+/* 编号牌右边那道渐隐细线：把 eyebrow 拉成一条真正的装饰线 */
+.ch-eyebrow span {
+  position: relative;
+  flex: 1;
+  padding-left: 12px;
+}
+.ch-eyebrow span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: var(--line-2);
 }
 .ch-title {
   font-family: var(--serif);
@@ -446,8 +732,8 @@ input[type="range"]::-moz-range-thumb {
   font-size: 11px;
   letter-spacing: .08em;
   color: var(--ink-3);
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+  border-bottom: 5px double var(--line-2);
 }
 
 /* 章首引文 —— 古泰拉谚语 / 角色台词。
@@ -455,8 +741,8 @@ input[type="range"]::-moz-range-thumb {
    不加引号、不加装饰，只用一条发丝线和两级灰，让它像拓片不像花边。 */
 .ch-epigraph {
   margin: 26px 0 30px;
-  padding: 2px 0 2px 1.15em;
-  border-left: 1px solid var(--line-2);
+  padding: 4px 0 4px 1.4em;
+  border-left: 5px double var(--line-2);
 }
 .ch-epigraph .epi-q {
   margin: 0;
@@ -578,18 +864,37 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------- 8. 目录页 ---------- */
 .cover {
+  position: relative;
   background: var(--chrome);
   color: var(--chrome-ink);
-  padding: 40px 34px;
-  margin-bottom: 40px;
+  padding: 46px 40px 40px;
+  margin-bottom: 46px;
+  /* 祭坛画式双框。
+     ⚠️ 曾经用 outline + offset 画，结果线跑到深色块**外面**、落在外层浅背景上，
+        浅色的 chrome-line 在浅底上等于隐形 —— 探针报 shadow:none 就是这么来的。
+     改 inset shadow 往里画：从边缘数起是 1px 亮线 / 5px 留白 / 1px 淡线。
+     spread 必须递增写在后面的位置上，因为 box-shadow 是「先写的画在最上层」。 */
+  box-shadow:
+    inset 0 0 0 1px var(--chrome-frame),
+    inset 0 0 0 7px var(--chrome),
+    inset 0 0 0 8px var(--chrome-frame-dim);
 }
 .cover .kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: .34em;
   text-transform: uppercase;
   opacity: .74;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+.cover .kicker::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--chrome-line-2), transparent);
 }
 .cover h1 {
   font-family: var(--serif);
@@ -620,13 +925,13 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-wrap: wrap;
   gap: 26px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  padding-top: 22px;
+  border-top: 5px double var(--chrome-line-2);
 }
 .cover .stats div { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
 .cover .stats b { display: block; font-size: 20px; letter-spacing: .04em; margin-bottom: 2px; }
 .cover .stats span { opacity: .74; }
-.cover .acid { background: var(--acid); color: #001b62; padding: 0 6px; }
+.cover .acid { background: var(--cover-mark); color: var(--cover-mark-ink); padding: 1px 6px; }
 
 .vol-block { margin-bottom: 34px; }
 .vol-block > h2 {
@@ -641,9 +946,9 @@ input[type="range"]::-moz-range-thumb {
   font-size: 11px;
   letter-spacing: .12em;
   color: var(--ink-3);
-  margin: 0 0 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
+  margin: 0 0 18px;
+  padding-bottom: 13px;
+  border-bottom: 5px double var(--line-2);
 }
 .ch-grid {
   display: grid;
@@ -669,7 +974,12 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 700;
   color: var(--accent);
   line-height: 1.3;
+  padding-right: 11px;
+  /* 编号与标题之间立一道竖线 —— 手抄本里数字从来不与正文混排，
+     这条线就是数字结束的地方。改动很小，层级立刻清楚。 */
+  border-right: 1px solid var(--line);
 }
+.ch-grid a:hover .n { border-right-color: var(--accent); }
 .ch-grid .t {
   font-family: var(--serif);
   font-size: 14px;
@@ -856,7 +1166,7 @@ input[type="range"]::-moz-range-thumb {
   border-left: 2px solid transparent;
   transition: background-color .15s ease, color .15s ease;
 }
-.rail-extra a:hover { background: rgba(0, 47, 167, 0.06); color: var(--ink); }
+.rail-extra a:hover { background: var(--accent-soft); color: var(--ink); }
 .rail-extra a .n {
   flex: none;
   width: 22px;
@@ -1315,7 +1625,7 @@ body.drawer-open .scrim { opacity: 1; visibility: visible; }
   display: none;
   background: var(--chrome);
   color: var(--chrome-ink);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--chrome-line);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .mobilebar button {
@@ -1332,9 +1642,9 @@ body.drawer-open .scrim { opacity: 1; visibility: visible; }
   justify-content: center;
   gap: 6px;
 }
-.mobilebar button + button { border-left: 1px solid rgba(255, 255, 255, 0.16); }
+.mobilebar button + button { border-left: 1px solid var(--chrome-line); }
 .mobilebar button:disabled { opacity: .34; }
-.mobilebar button:active { background: rgba(255, 255, 255, 0.14); }
+.mobilebar button:active { background: var(--chrome-hover); }
 
 /* ---------- 12. 响应式 ---------- */
 @media (max-width: 1080px) {
@@ -1356,7 +1666,7 @@ body.drawer-open .scrim { opacity: 1; visibility: visible; }
     border-right: 1px solid var(--line);
     transform: translateX(-102%);
     transition: transform .24s ease;
-    box-shadow: 0 0 40px rgba(0, 12, 46, 0.28);
+    box-shadow: 0 0 40px var(--scrim);
   }
   body.drawer-open .rail { transform: none; }
 

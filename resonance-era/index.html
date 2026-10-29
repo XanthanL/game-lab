@@ -15,14 +15,19 @@
 <meta property="og:url" content="https://xanthanl.github.io/game-lab/resonance-era/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23002FA7'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23EDFF45' stroke-width='2'/%3E%3C/svg%3E">
 
-<!-- 主题在样式生效前定好，避免刷新时闪一下 -->
+<!-- 主题在样式生效前定好，避免刷新时闪一下。
+     旧的 localStorage 存的是 light / dark 两个字，这里做映射，别让老读者的偏好失效。 -->
 <script>
 (function () {
   var d = document.documentElement;
+  var IDS = ["ikb", "parchment", "vespers", "candle"];
   try {
     var t = localStorage.getItem("re-theme");
-    if (t !== "light" && t !== "dark") {
-      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (t === "light") t = "ikb";          // 旧亮色 -> 克莱因
+    else if (t === "dark") t = "vespers";  // 旧暗色 -> 夜祷（同色温的那套）
+    else if (IDS.indexOf(t) < 0) {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "vespers" : "ikb";
     }
     d.setAttribute("data-theme", t);
   } catch (e) {}
@@ -57,7 +62,7 @@
     <a class="icon-btn" id="proverbsBtn" href="#/proverbs">谚语</a>
     <a class="icon-btn" id="juechuBtn" href="#/juechu">厥初</a>
     <a class="icon-btn" id="castBtn" href="#/cast">角色</a>
-    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换日间 / 夜间">夜间</button>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换下一套色温">羊皮纸</button>
   </div>
 </header>
 
@@ -71,20 +76,27 @@
     </div>
 
     <h2 class="rail-h"><span>目录 / Contents</span><span id="railCount">25 章</span></h2>
-    <div id="toc"></div>
+    <!-- 目录单独滚，阅读设置钉在侧栏底部。
+         26 条目录能把设置面板推到很下面，读者为了换个色温得先滚过整本书——
+         面板内容不多但天天要用，位置必须固定。 -->
+    <div class="rail-scroll">
+      <div id="toc"></div>
 
-    <!-- 附录：不是章节，不进目录列表，单独一条 -->
-    <ul class="rail-extra">
-      <li><a href="#/proverbs" data-appendix="proverbs">
-        <span class="n">附</span><span>古泰拉谚语 <em>Gutaira Proverbs</em></span>
-      </a></li>
-      <li><a href="#/juechu" data-appendix="juechu">
-        <span class="n">附</span><span>厥初 <em>Juechu · 三十六型</em></span>
-      </a></li>
-      <li><a href="#/cast" data-appendix="cast">
-        <span class="n">附</span><span>角色 <em>Cast · 配型卡</em></span>
-      </a></li>
-    </ul>
+      <!-- 附录：不是章节，不进目录列表，单独一条 -->
+      <ul class="rail-extra">
+        <li><a href="#/proverbs" data-appendix="proverbs">
+          <span class="n">附</span><span>古泰拉谚语 <em>Gutaira Proverbs</em></span>
+        </a></li>
+        <li><a href="#/juechu" data-appendix="juechu">
+          <span class="n">附</span><span>厥初 <em>Juechu · 三十六型</em></span>
+        </a></li>
+        <li><a href="#/cast" data-appendix="cast">
+          <span class="n">附</span><span>角色 <em>Cast · 配型卡</em></span>
+        </a></li>
+      </ul>
+
+      <div class="rail-foot">XANTHANL · 2026<br>静态托管 · 无追踪 · 无广告</div>
+    </div>
 
     <div class="panel">
       <div class="field">
@@ -96,15 +108,18 @@
         <input type="range" id="lineHeight" min="1.5" max="2.4" step="0.1" value="1.9" aria-label="行距">
       </div>
       <div class="field">
-        <div class="field-h"><span>主题 / Theme</span></div>
-        <div class="seg">
-          <button type="button" id="themeLight" aria-pressed="true">日间</button>
-          <button type="button" id="themeDark" aria-pressed="false">夜间</button>
+        <div class="field-h"><span>色温 / Theme</span><b id="themeVal">克莱因</b></div>
+        <!-- 四套色温。每一枚都用自己的纸/字配色画一个小样本，
+             比写四个名字更能传达「切的是一整套气氛」而不是一个开关。 -->
+        <div class="swatches" role="radiogroup" aria-label="色温">
+          <button type="button" class="sw sw-ikb"       data-theme="ikb"       aria-pressed="true"  role="radio"><i></i><span>克莱因</span></button>
+          <button type="button" class="sw sw-parchment" data-theme="parchment" aria-pressed="false" role="radio"><i></i><span>羊皮纸</span></button>
+          <button type="button" class="sw sw-vespers"   data-theme="vespers"   aria-pressed="false" role="radio"><i></i><span>夜祷</span></button>
+          <button type="button" class="sw sw-candle"    data-theme="candle"    aria-pressed="false" role="radio"><i></i><span>烛焰</span></button>
         </div>
+        <p class="sw-note">羊皮纸 / 夜祷为低刺激配色，正文已避开纯黑白。</p>
       </div>
     </div>
-
-    <div class="rail-foot">XANTHANL · 2026<br>静态托管 · 无追踪 · 无广告</div>
   </aside>
 
   <main class="stage">

@@ -176,6 +176,7 @@
 
     var html =
       '<section class="cover">' +
+        '<i class="orn orn-cover" aria-hidden="true"></i>' +
         '<div class="kicker">Hard Science Fiction · 长篇连载</div>' +
         '<h1>' + esc(DATA.title) + '</h1>' +
         '<div class="en">' + esc(DATA.titleEn) + '</div>' +
@@ -576,6 +577,7 @@
     el.view.innerHTML =
       '<article>' +
         '<header class="ch-head">' +
+          '<i class="orn orn-body" aria-hidden="true"></i>' +
           '<div class="ch-eyebrow"><em>第 ' + ch.number + ' 章</em>' +
           '<span>' + (vol ? esc(vol.title) + ' · ' + esc(vol.subtitle) : '') + '</span></div>' +
           '<h1 class="ch-title">' + esc(heading) + '</h1>' +
@@ -588,6 +590,7 @@
         epigraphHtml(ch) +
         pvEpigraphHtml(ch.number) +
         '<div class="prose">' + parsed.html + '</div>' +
+        '<i class="orn orn-end" aria-hidden="true"></i>' +
         nav +
         '<a class="back-catalog" href="#/catalog">返回目录</a>' +
       '</article>';
@@ -675,11 +678,44 @@
     el.lhVal.textContent = lh.toFixed(1);
   }
 
-  function setTheme(t, persist) {
+  /* 四套色温。顺序 = 顶栏按钮的循环顺序：先两套亮，再两套暗。 */
+  var THEMES = [
+    { id: 'ikb',       name: '克莱因', en: 'Klein' },
+    { id: 'parchment', name: '羊皮纸', en: 'Parchment' },
+    { id: 'vespers',   name: '夜祷',   en: 'Vespers' },
+    { id: 'candle',    name: '烛焰',   en: 'Candle' }
+  ];
+
+  function themeIdx(t) {
+    for (var i = 0; i < THEMES.length; i++) if (THEMES[i].id === t) return i;
+    return -1;
+  }
+
+  /* 旧读者 localStorage 里存的是 light / dark 两个字。
+     映射而不是丢弃 —— 那是一次没打招呼就改掉别人偏好的机会。 */
+  function normalizeTheme(t) {
+    if (t === 'light') return 'ikb';
+    if (t === 'dark') return 'vespers';
+    return themeIdx(t) >= 0 ? t : 'ikb';
+  }
+
+  function setTheme(raw, persist) {
+    var t = normalizeTheme(raw);
+    var i = themeIdx(t);
     el.root.setAttribute('data-theme', t);
-    el.themeLight.setAttribute('aria-pressed', String(t === 'light'));
-    el.themeDark.setAttribute('aria-pressed', String(t === 'dark'));
-    el.themeBtn.textContent = t === 'dark' ? '日间' : '夜间';
+
+    /* 色板的选中态。⚠️ 不能用 inline onclick —— IIFE 里的函数挂不到 window 上，
+       必须走 data-attr + 事件委托。 */
+    if (el.swatches) {
+      var sws = el.swatches.querySelectorAll('[data-theme]');
+      for (var k = 0; k < sws.length; k++) {
+        sws[k].setAttribute('aria-pressed', String(sws[k].getAttribute('data-theme') === t));
+      }
+    }
+    if (el.themeVal) el.themeVal.textContent = THEMES[i].name;
+    /* 顶栏按钮写「下一套」的名字，不然点下去是什么无从预期 */
+    if (el.themeBtn) el.themeBtn.textContent = THEMES[(i + 1) % THEMES.length].name;
+
     if (persist) save(KEY.theme, t);
   }
 
@@ -822,11 +858,17 @@
       applySettings();
     });
 
+    /* 色温：顶栏按钮循环到下一条；抽屉里的色板直接选 */
     el.themeBtn.addEventListener('click', function () {
-      setTheme(el.root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+      var cur = normalizeTheme(el.root.getAttribute('data-theme'));
+      setTheme(THEMES[(themeIdx(cur) + 1) % THEMES.length].id, true);
     });
-    el.themeLight.addEventListener('click', function () { setTheme('light', true); });
-    el.themeDark.addEventListener('click', function () { setTheme('dark', true); });
+    if (el.swatches) {
+      el.swatches.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-theme]');
+        if (b) setTheme(b.getAttribute('data-theme'), true);
+      });
+    }
 
     window.addEventListener('hashchange', route);
     window.addEventListener('scroll', onScrollRaf, { passive: true });
@@ -856,8 +898,8 @@
       scrim: $('scrim'),
       menuBtn: $('menuBtn'),
       themeBtn: $('themeBtn'),
-      themeLight: $('themeLight'),
-      themeDark: $('themeDark'),
+      swatches: document.querySelector('.swatches'),
+      themeVal: $('themeVal'),
       fontSize: $('fontSize'),
       lineHeight: $('lineHeight'),
       fsVal: $('fsVal'),
@@ -871,7 +913,7 @@
     el.railCount = $('railCount');
     if (el.railCount) el.railCount.textContent = DATA.totalChapters + ' 章';
 
-    setTheme(el.root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light', false);
+    setTheme(normalizeTheme(el.root.getAttribute('data-theme')), false);
     applySettings();
     renderToc();
     bind();
