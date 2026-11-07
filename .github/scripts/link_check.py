@@ -40,6 +40,14 @@ SKIP_DIRS = {
     "last-firewall",
 }
 
+# 路径前缀级跳过：本地存在、但项目自己声明「不发布」的生成目录。
+# 不能塞进 SKIP_DIRS —— 那只按目录名匹配，会把同项目里真正上线的
+# tutuhuahua 2.0/index.html 一起跳掉。dist/ 由该项目的 tools/pack.py
+# 生成，其 .gitignore 第 2 行明确写着「发布产物，别提交」，索引页链接的
+# 是源 index.html 而非 dist/。它只活在开发机上，扫它只会报一串
+# 「本机有、但没进 git」的假红（CI 里没有这个目录，反而一直是绿的）。
+SKIP_PATH_PREFIXES = ("testing-example/tutuhuahua 2.0/dist/",)
+
 # 已知豁免：(文件, 前缀) —— 只在理由充分时加，且必须写清为什么
 KNOWN_EXEMPT: dict[str, tuple[str, ...]] = {
     # Vite 开发入口：线上走 dist/，根 index.html 只给 npm run dev 用。
@@ -59,6 +67,9 @@ NON_LOCAL = ("http://", "https://", "mailto:", "tel:", "data:", "javascript:", "
 def iter_html_files() -> list[Path]:
     out = []
     for p in ROOT.rglob("*.html"):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel.startswith(SKIP_PATH_PREFIXES):
+            continue
         if any(part in SKIP_DIRS for part in p.relative_to(ROOT).parts[:-1]):
             continue
         out.append(p)

@@ -114,6 +114,9 @@ body{display:flex;align-items:center;justify-content:center;}
 .goCh2{cursor:pointer;display:inline-block;padding:9px 22px;border:1px solid rgba(232,216,176,0.55);color:#e8d8b0;font-size:min(3.4vw,16px);letter-spacing:0.3em;background:rgba(20,14,8,0.6);user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
 .goCh2:hover{background:rgba(120,90,30,0.35);}
 </style>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicon-180.png" />
+<meta name="description" content="第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。" />
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
@@ -2978,5 +2981,6 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());   // iOS 双指捏合
 window.addEventListener('orientationchange',()=>{setTimeout(setupBuffers,250);});
 </script>
+<script src="../assets/gl-back.js" data-back="../" data-label="GAME LAB"></script>
 </body>
 </html>

@@ -1559,7 +1559,7 @@ html[data-rm] .overlay{animation:none}
 <div id="sharecard" class="overlay" hidden>
   <div class="panel">
     <h2>SHARE CARD<span data-i18n="sh_sub">成绩卡片</span></h2>
-    <img id="shareImg" alt="">
+    <img id="shareImg" alt="" decoding="async">
     <div class="sdhint" data-i18n="sh_seedhint">卡片右上角的 6 位种子码 —— 朋友在 SEEDED RUN 里输入同一个码，就能跑完全相同的一局</div>
     <div class="row-btns">
       <button id="btnShSave" class="btn" data-i18n="sh_save">保存图片</button>
@@ -14603,5 +14603,6 @@ loadKeys();renderKeyList();syncKeyHints();
 renderOpts();applyOpts();
 })();
 </script>
+<script src="../assets/gl-back.js" data-back="../" data-label="GAME LAB"></script>
 </body>
 </html>

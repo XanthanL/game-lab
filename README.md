@@ -26,6 +26,8 @@ same one-line brief.
 | **咒 · 怨宅**<br>*JYU / Cursed House* | First-person Chinese horror. 5 chapters / 6 maps, a DDA raycaster, and a ghost with BFS pathfinding, view cones and hearing that sharpens as the ritual progresses. Wardrobe hiding, breath-holding, procedural WebAudio. Ships with touch controls. | [`/cursed-house/`](https://xanthanl.github.io/game-lab/cursed-house/) |
 | **欧陆风云 · 1444**<br>*Europa 1444* | Browser grand strategy on a hand-drawn Europe / North Africa / Anatolia map: 60+ countries at the 1444 bookmark, economy, diplomacy, war, sieges and historical events. Static, no build. | [`/europa/`](https://xanthanl.github.io/game-lab/europa/) |
 | **Vampire 2D** | Top-down auto-attacking survival: 5 weapons, 6 passives, choose-one-on-level-up, bosses from 180 s and a Blood Frenzy event, 220 enemies on screen. A 45 KB single file; keyboard + mouse. | [`/Vampire-2D/`](https://xanthanl.github.io/game-lab/Vampire-2D/) |
+| **奇点旅途**<br>*Singularity Voyage* | Inertia-drift space bullet-hell: 5 hulls across 12 legs, 29 modules with gold-tier breakthroughs, each upgrade bolts a visible part onto the ship, then an endless abyss. Landscape phones, bilingual. | [`/singularity-voyage/`](https://xanthanl.github.io/game-lab/singularity-voyage/) |
+| **强渡宇宙**<br>*Forcing Cosmos* | Pixel deckbuilder: Mars to a deep-space singularity, 3 acts, 18 enemy types, 4 endings. | [`/forcing-cosmos/`](https://xanthanl.github.io/game-lab/forcing-cosmos/) |
 
 ## Watch
 
@@ -68,6 +70,8 @@ game-lab/
 ├── PVZ/                  canvas tower defense              (static)
 ├── microsoft-vs-code/    meme parody tower defense         (static)
 ├── Vampire-2D/           single-file survivor              (static)
+├── singularity-voyage/   bullet-hell roguelite             (static)
+├── forcing-cosmos/       pixel deckbuilder                  (static)
 ├── singularity-echo/   asteroid survival, vendored FX    (static)
 ├── europa/               1444 grand strategy               (static)
 ├── persona/              11 pixel stage plays + sub-index  (static)
@@ -142,6 +146,27 @@ deliberately **no shared template**: each card is drawn in its own project's idi
 Microsoft vs. Code…). Colours and type come from each site's own CSS
 (collector: `.workbuddy/shots/probe-style.js`). `assets/share_kit.py` holds the shared
 font/texture toolbox.
+
+## Generated assets
+
+Two layers of the site are generated from a source of truth and committed as
+artifacts. Edit the source, re-run the generator, commit both.
+
+- **Skin CSS.** `assets/index.css` is the source. Pages load one self-contained
+  stylesheet from `assets/skins/<style>.css` (~89 KB) instead of the full 459 KB
+  file. Run `python assets/split_skins.py` after any CSS edit. The generator
+  keeps the original rule order inside each skin — the enhancement layer at the
+  end of `index.css` relies on source order to override earlier declarations,
+  so a naive "core + per-skin patch" split silently breaks it.
+  `node tools/probe-skins.cjs` compares all 52 skins against the original full
+  stylesheet (needs Chrome + puppeteer-core).
+- **Entry-page baseline.** `python tools/inject_site_baseline.py` adds the
+  shared favicon, description, `decoding="async"` on images and the
+  `assets/gl-back.js` back-link to each entry page. It is idempotent; run it
+  again after rebuilding `ARH/dist`, `XanthanLMusic/dist` or `golden-wind/out`,
+  since those artifacts are committed too.
+
+Then run `python .github/scripts/link_check.py` before pushing.
 
 ## Not in this repo
 

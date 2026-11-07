@@ -174,8 +174,28 @@
   function normStyle(s) { return STYLES.indexOf(s) !== -1 ? s : "hermes"; }
   function currentStyle() { return normStyle(root.getAttribute("data-style")); }
   /* 真正落地的那一步：写属性 + 存盘 + 跨组跳转 + 同步按钮态 */
+  /* 皮肤 CSS 按需加载：先把新表挂到 head，等它到货再换掉旧的。
+     直接改 href 会有一帧「无皮肤」的裸版式，换肤过渡遮不住。 */
+  function syncSkinCss(s) {
+    var cur = document.getElementById("skinCss");
+    if (!cur) return;                           /* 没用拆分版样式表的页面不参与 */
+    var base = (cur.getAttribute("href") || "").replace(/skins\/[^/]*\.css.*$/, "skins/");
+    var url = base + s + ".css";
+    if ((cur.getAttribute("href") || "").indexOf(url) !== -1) return;
+    var next = document.createElement("link");
+    next.rel = "stylesheet";
+    next.setAttribute("href", url);
+    function swap() {
+      cur.setAttribute("href", url);
+      if (next.parentNode) next.parentNode.removeChild(next);
+    }
+    next.onload = swap;
+    next.onerror = swap;                       /* 取不到也别把界面卡在旧皮肤 */
+    document.head.appendChild(next);
+  }
   function commitStyle(s, persist) {
     root.setAttribute("data-style", s);
+    syncSkinCss(s);
     if (persist) { try { localStorage.setItem(SKEY, s); } catch (e) {} }
     /* 选到别的组的皮肤时，页码自动跟着跳过去，否则选中态看不见 */
     if (skinBar && typeof jumpGroup === "function" && GROUP_OF[s] !== curGroup) jumpGroup(GROUP_OF[s], true);

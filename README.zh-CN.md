@@ -24,6 +24,8 @@
 | **咒 · 怨宅**<br>*JYU / Cursed House* | 第一人称中式恐怖：5 章 6 张地图，单文件里的 DDA 光线投射；怨灵会 BFS 寻路、有视野锥，仪式推进后听觉变灵敏。衣柜躲藏、屏息机制、程序化 WebAudio，手机可玩。 | [`/cursed-house/`](https://xanthanl.github.io/game-lab/cursed-house/) |
 | **欧陆风云 · 1444**<br>*Europa 1444* | 浏览器大战略：手绘欧洲 / 北非 / 安纳托利亚地图，60+ 国家 1444 开局，经济 / 外交 / 战争 / 围城 / 历史事件，纯静态无构建。 | [`/europa/`](https://xanthanl.github.io/game-lab/europa/) |
 | **Vampire 2D** | 顶视角自动攻击生存：5 种武器 6 种被动，升级三选一，180 秒起遭遇 Boss 并有鲜血狂潮事件，同屏 220 只。45KB 单文件，键鼠。 | [`/Vampire-2D/`](https://xanthanl.github.io/game-lab/Vampire-2D/) |
+| **奇点旅途**<br>*Singularity Voyage* | 惯性漂移的太空弹幕 roguelike：5 艘船体、十二段航程、29 种模块满级镀金质变，每次升级都会往飞船上挂一件看得见的配件，通关后转入无尽深渊。手机横屏可玩，中英双语。 | [`/singularity-voyage/`](https://xanthanl.github.io/game-lab/singularity-voyage/) |
+| **强渡宇宙**<br>*Forcing Cosmos* | 像素卡牌构筑：从火星一路杀到深空奇点，三幕 18 种敌人，四种结局。 | [`/forcing-cosmos/`](https://xanthanl.github.io/game-lab/forcing-cosmos/) |
 
 ## 实验
 
@@ -130,6 +132,23 @@ cd golden-wind    && npm install && npm run build   # → golden-wind/out
 草坪加种子栏的是植物大战僵尸，羊皮纸加罗盘的是欧陆风云，纯黑加血红咒印的是怨宅，
 白窗加绿按钮的是微软大战代码……底色、主色、字形气质都取自各站点自己的 CSS
 （采集脚本见 `.workbuddy/shots/probe-style.js`）。`assets/share_kit.py` 是共用的字体 / 纹理工具箱。
+
+## 生成物
+
+站里有两层文件是「源码 → 生成物」，两者都要入库。改源码之后必须重跑生成器。
+
+- **皮肤 CSS**：`assets/index.css` 是源码，页面只加载 `assets/skins/<风格>.css`
+  里的一张自包含样式表（约 89 KB，原文件 459 KB）。改完 CSS 跑
+  `python assets/split_skins.py`。生成器**保留每套皮肤内部的原始规则顺序**——
+  `index.css` 末尾的风格增强层靠源序压过前面的声明，简单拆成「core + 补丁」
+  会让它静默失效。`node tools/probe-skins.cjs` 会把 52 套皮肤逐项与全量原版
+  比对计算样式（需要 Chrome + puppeteer-core）。
+- **入口页基线**：`python tools/inject_site_baseline.py` 给各入口补 favicon、
+  description、图片的 `decoding="async"` 和 `assets/gl-back.js` 返回链接。
+  脚本幂等；`ARH/dist`、`XanthanLMusic/dist`、`golden-wind/out` 是入库的构建产物，
+  每次 rebuild 之后要重跑一次。
+
+推送前跑 `python .github/scripts/link_check.py`。
 
 ## 不在本仓库
 

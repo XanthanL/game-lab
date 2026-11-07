@@ -97,8 +97,14 @@
   var canvas = document.getElementById('ringCanvas');
   if (!dataEl || !sec || !stage || !canvas) return;
 
+  /* 数据源只有一份：#lab-data 的 cats。首屏默认展示第一组（游戏），
+     切分类时由首页的 __ringSwap() 换一组。旧版另存了一份 "sites" 数组，
+     内容与 cats[0].items 逐字相同，现已删除，避免两处清单各自漂移。 */
   var sites;
-  try { sites = (JSON.parse(dataEl.textContent).sites || []); } catch (e) { return; }
+  try {
+    var lab = JSON.parse(dataEl.textContent);
+    sites = (lab.cats && lab.cats[0] && lab.cats[0].items) || [];
+  } catch (e) { return; }
   sites = sites.filter(function (s) { return s.status === 'ok' && s.pages && s.pages.length; });
   if (sites.length < 3 || sites.length > MAXC) return;
 

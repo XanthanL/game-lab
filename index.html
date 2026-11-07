@@ -2,8 +2,8 @@
 <html lang="zh-CN"
       data-title-zh="GAME LAB"
       data-title-en="GAME LAB"
-      data-desc-zh="8 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。"
-      data-desc-en="8 web games, 3 original works, 5 experiments (12 small-business site samples included). Fully static — no install required.">
+      data-desc-zh="9 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。"
+      data-desc-en="9 web games, 3 original works, 5 experiments (12 small-business site samples included). Fully static — no install required.">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,19 +14,19 @@
 <meta name="theme-color" content="#0000f2" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#eef1ff" media="(prefers-color-scheme: light)" />
 <title data-zh="GAME LAB" data-en="GAME LAB">GAME LAB</title>
-<meta name="description" content="8 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
+<meta name="description" content="9 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="GAME LAB" />
 <meta property="og:locale" content="zh_CN" />
 <meta property="og:title" content="GAME LAB" />
-<meta property="og:description" content="8 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
+<meta property="og:description" content="9 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
 <meta property="og:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="1200" />
 <meta property="og:url" content="https://xanthanl.github.io/game-lab/" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="GAME LAB" />
-<meta name="twitter:description" content="8 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
+<meta name="twitter:description" content="9 款网页游戏、3 部原创作品、5 组实验（含 12 套小生意站点样例）。全部静态部署，无需安装。" />
 <meta name="twitter:image" content="https://xanthanl.github.io/game-lab/assets/og-gamelab.jpg" />
 <!-- 主题在样式生效前定好，避免刷新时闪一下白/黑 -->
 <script>
@@ -48,7 +48,8 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="./assets/index.css" />
+<link rel="stylesheet" id="skinCss" href="./assets/skins/hermes.css" />
+<script src="./assets/skin-loader.js"></script>
 <link rel="stylesheet" href="./assets/ring.css" />
 </head>
 <body>
@@ -203,44 +204,6 @@
          "descEn":"Live quote, moving averages and golden / death crosses, statically exported."}
       ]
     }
-  ],
-  "sites": [
-    {"dir":"singularity-echo","status":"ok","updated":"2026-09-20","pages":[{"path":"singularity-echo/index.html"}],
-     "nameZh":"奇点回响","nameEn":"Singularity Echo","tagZh":"弹幕 roguelike","tagEn":"Bullet-hell roguelike",
-     "descZh":"惯性漂移的星域 roguelike：三艘船体拖着彗尾出击，27 种模块升到 LV6 触发镀金质变，第 30 波肃清星域后可无尽漂移。",
-     "descEn":"Inertia-drift space roguelike — three comet-tailed hulls, 27 modules to LV6, endless drift after wave 30."},
-    {"dir":"singularity-voyage","status":"ok","updated":"2026-09-26","pages":[{"path":"singularity-voyage/index.html"}],
-     "nameZh":"奇点旅途","nameEn":"Singularity Voyage","tagZh":"弹幕 roguelike","tagEn":"Bullet-hell roguelike",
-     "descZh":"惯性漂移的太空弹幕 roguelike：5 艘船体穿越十二段航程，29 种模块升到满级触发镀金质变，每一次升级都会往飞船上挂出一件看得见的配件，打通后转入无尽深渊。手机横屏可玩，中英双语。",
-     "descEn":"Inertia-drift space bullet-hell — five hulls across twelve legs, 29 modules to gold-tier, every upgrade bolts a visible part onto your ship, then an endless abyss. Plays on phones in landscape; zh/en."},
-    {"dir":"microsoft-vs-code","status":"ok","updated":"2026-09-10","pages":[{"path":"microsoft-vs-code/index.html"}],
-     "nameZh":"微软大战代码","nameEn":"Microsoft vs. Code","tagZh":"恶搞塔防","tagEn":"Parody tower defense",
-     "descZh":"梗图改编的恶搞塔防：5 章 10 关全是程序员场景，★ 经济 + npm 商店 + 副业花园，手机可玩。",
-     "descEn":"A meme-born parody tower defense — 10 levels in programmer lore, star economy, npm shop, mobile-friendly."},
-    {"dir":"PVZ","status":"ok","updated":"2026-09-19","pages":[{"path":"PVZ/index.html"}],
-     "nameZh":"植物大战僵尸","nameEn":"Plants vs Zombies","tagZh":"完整复刻","tagEn":"Full recreation",
-     "descZh":"完整复刻：23 关 6 世界，美术全部矢量绘制，仓库里没有一张游戏图片。",
-     "descEn":"Full recreation — 23 levels, every sprite drawn in vector code, zero images."},
-    {"dir":"forcing-cosmos","status":"ok","updated":"2026-09-24","pages":[{"path":"forcing-cosmos/index.html"}],
-     "nameZh":"强渡宇宙","nameEn":"Forcing Cosmos","tagZh":"卡牌构筑","tagEn":"Deckbuilder",
-     "descZh":"像素卡牌构筑：从火星一路杀到深空奇点，三幕 18 种敌人，四种结局。",
-     "descEn":"Pixel deckbuilder — Mars to a deep-space singularity, three acts, four endings."},
-    {"dir":"forcing-mars","status":"ok","updated":"2026-09-10","pages":[{"path":"forcing-mars/index.html"}],
-     "nameZh":"强渡火星","nameEn":"Forcing Mars","tagZh":"卡牌构筑","tagEn":"Deckbuilder",
-     "descZh":"卡牌构筑：从火星地表下潜到 2000 米地核，有结局。",
-     "descEn":"Deckbuilder — descend from the surface to a 2,000 m core, with a real ending."},
-    {"dir":"cursed-house","status":"ok","updated":"2026-09-19","pages":[{"path":"cursed-house/index.html"}],
-     "nameZh":"咒 · 怨宅","nameEn":"JYU / Cursed House","tagZh":"中式恐怖","tagEn":"Chinese horror",
-     "descZh":"第一人称中式恐怖：5 章 6 张地图，整个光线投射引擎收在一个文件里。",
-     "descEn":"First-person Chinese horror — 5 chapters, 6 maps, a whole raycasting engine in a single file."},
-    {"dir":"europa","status":"ok","updated":"2026-09-10","pages":[{"path":"europa/index.html"}],
-     "nameZh":"欧陆风云 · 1444","nameEn":"Europa 1444","tagZh":"大战略","tagEn":"Grand strategy",
-     "descZh":"浏览器大战略：手绘欧洲 / 北非 / 安纳托利亚地图，60+ 国家 1444 开局，纯静态无构建。",
-     "descEn":"Browser grand strategy — hand-drawn map, 60+ countries in 1444, static, no build."},
-    {"dir":"Vampire-2D","status":"ok","updated":"2026-09-10","pages":[{"path":"Vampire-2D/index.html"}],
-     "nameZh":"Vampire 2D","nameEn":"Vampire 2D","tagZh":"自动攻击生存","tagEn":"Auto-attack survivor",
-     "descZh":"顶视角自动攻击生存：5 种武器 6 种被动，180 秒起遭遇 Boss。",
-     "descEn":"Top-down survivor — 5 weapons, 6 passives, bosses from 180 s."}
   ]
 }</script>
 <!--LAB:END-->
@@ -250,7 +213,7 @@
   "@context": "https://schema.org",
   "@type": "ItemList",
   "name": "GAME LAB",
-  "description": "8 款网页游戏 · 3 部原创作品 · 5 组实验。全部静态部署，无需安装。",
+  "description": "9 款网页游戏 · 3 部原创作品 · 5 组实验。全部静态部署，无需安装。",
   "itemListElement": [
     {"@type":"ListItem","position":1,"item":{"@type":"WebApplication","name":"奇点回响 / Singularity Echo","url":"https://xanthanl.github.io/game-lab/singularity-echo/"}},
     {"@type":"ListItem","position":2,"item":{"@type":"WebApplication","name":"微软大战代码 / Microsoft vs. Code","url":"https://xanthanl.github.io/game-lab/microsoft-vs-code/"}},
