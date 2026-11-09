@@ -136,15 +136,15 @@ def collect(overrides):
     out.append((
         "样例站点(合集页)", INDEX_FILE,
         BASE_URL + "/testing-example/", "样例站点",
-        "12 套小生意站点样例：理发店、面馆、花店、茶壶、唱片店……同一份需求交给不同风格族各做一遍。",
+        "13 套站点样例：理发店、面馆、花店、茶壶、唱片店……12 套小生意实验，外加一套英／乌尔都双语医院站原型。",
         SHARE_DIR + "/samples.jpg",
     ))
 
     for site_dir in sorted(ROOT.iterdir()):
         if not site_dir.is_dir() or is_skipped(site_dir.name):
             continue
-        if site_dir.name == "teapot-artisan":
-            continue          # Astro 项目，走 Base.astro 模板
+        if site_dir.name in ("teapot-artisan", "hospital-site"):
+            continue          # Astro 走模板；医院站自带 EN/UR 动态 head，别覆盖
         meta = overrides.get(site_dir.name)
         page = find_entry(site_dir)
         if not meta or page is None:

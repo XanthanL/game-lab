@@ -40,6 +40,14 @@
     "descZh": "价目表与电话预约，周一至周六 8:30–18:30。",
     "descEn": "Price list and phone booking. Mon–Sat 8:30–18:30, parking in the yard."
   },
+  "hospital-site": {
+    "title": "医院双语站",
+    "og": "hospital-site.jpg",
+    "nameZh": "医院双语站 · EN / UR",
+    "nameEn": "Hospital Site EN / UR",
+    "descZh": "英／乌尔都双语医院官网原型：急诊条、科室、医生、地图与一键拨号，全部内容由 site.config.js 驱动。",
+    "descEn": "Bilingual EN/UR hospital site — emergency, departments, doctors, map and one-tap calling, all driven by site.config.js."
+  },
   "laochen-noodles": {
     "title": "老陈家面馆",
     "og": "laochen-noodles.jpg",

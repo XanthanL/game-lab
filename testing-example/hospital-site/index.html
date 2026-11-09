@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f7f6f2" />
+<!--SHARE:BEGIN 本页自带 EN/UR 动态 head，tools/sync-share.py 刻意跳过本目录-->
+<title>Hospital Site — EN / UR</title>
+<meta name="description" content="A bilingual English / Urdu hospital website sample: emergency, departments, doctors, directions and contact.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="医院双语站">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Hospital Site — EN / UR">
+<meta property="og:description" content="A bilingual English / Urdu hospital website sample.">
+<meta property="og:url" content="https://xanthanl.github.io/game-lab/testing-example/hospital-site/">
+<meta property="og:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/hospital-site.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hospital Site — EN / UR">
+<meta name="twitter:description" content="A bilingual English / Urdu hospital website sample.">
+<meta name="twitter:image" content="https://xanthanl.github.io/game-lab/testing-example/assets/og/hospital-site.jpg">
+<!--SHARE:END-->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e5c4e'/%3E%3Cpath d='M4 17h6l3-6 4 12 3-6h8' fill='none' stroke='%23f7f6f2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+<!-- Language + direction before first paint, so Urdu never flashes LTR. -->
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get("lang");
+    var l = q || localStorage.getItem("hospital-lang");
+    if (l !== "ur" && l !== "en") l = "en";
+    document.documentElement.lang = l === "ur" ? "ur" : "en";
+    document.documentElement.dir  = l === "ur" ? "rtl" : "ltr";
+  } catch (e) {}
+})();
+</script>
+<script src="site.config.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body id="top">
+
+<a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- ============ utility bar ============ -->
+<div class="utility">
+  <div class="wrap utility-in">
+    <p class="utility-left"><span data-bind="descriptor">General Hospital</span> · <span data-bind="city">[ City ]</span>, <span data-bind="country">Pakistan</span></p>
+    <p class="utility-right"><span class="live-dot" aria-hidden="true"></span> <span data-i18n="utilityEmergency">Emergency open 24/7</span> <span class="utility-sep">·</span> <a class="num" data-link="tel" data-bind="phoneDisplay" href="#">+92 300 0000000</a></p>
+  </div>
+</div>
+
+<!-- ============ header ============ -->
+<header class="site-header">
+  <div class="wrap header-in">
+    <a class="wordmark" href="#top" data-i18n-aria="homeAria" aria-label="Home">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 17h6l3-6 4 12 3-6h8" fill="none" stroke="#f7f6f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="wordmark-text">
+        <strong data-bind="shortName">[ Hospital ]</strong>
+        <small data-bind="descriptor">General Hospital</small>
+      </span>
+    </a>
+
+    <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav">
+      <span class="nav-toggle-bars" aria-hidden="true"></span><span data-i18n="menu">Menu</span>
+    </button>
+
+    <nav class="nav" id="siteNav" data-i18n-aria="navAria" aria-label="Main navigation">
+      <a href="#departments" data-i18n="navDepartments">Departments</a>
+      <a href="#doctors" data-i18n="navDoctors">Doctors</a>
+      <a href="#visit" data-i18n="navVisit">Visit</a>
+      <a href="#about" data-i18n="navAbout">About</a>
+    </nav>
+
+    <button class="lang-toggle" id="langToggle" type="button" lang="ur" dir="rtl" data-i18n-aria="langAria" aria-label="Switch language">اردو</button>
+    <a class="btn btn-primary header-call" data-link="tel" href="#" data-i18n="callNow">Call now</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ hero ============ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> <span data-bind="city">[ City ]</span>, <span data-bind="country">Pakistan</span> <span class="eyebrow-sep">/</span> <span data-i18n="est">Est.</span> <span data-bind="established">[ Year ]</span></p>
+        <h1 id="hero-title" data-bind="name">[ Hospital Name ]</h1>
+        <p class="hero-lede" data-bind="tagline">Emergency care, outpatient clinics, diagnostics and pharmacy.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" data-link="tel" href="#"><span data-i18n="call">Call</span> <span class="num" data-bind="phoneDisplay">+92 300 0000000</span></a>
+          <a class="btn btn-quiet" data-link="wa" href="#"><span data-i18n="whatsapp">Message on WhatsApp</span> <span class="arrow-rtl" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-address" data-bind="addressLine">[ Street address ], [ Area, City ], Pakistan</p>
+      </div>
+
+      <aside class="hero-card" data-i18n-aria="keyInfoAria" aria-label="Key information">
+        <div class="card-head"><span class="tiny" data-i18n="atAGlance">AT A GLANCE</span><span class="card-index num">01 / 03</span></div>
+        <dl class="facts">
+          <div class="fact"><dt data-i18n="factEmergency">Emergency</dt><dd><span class="fact-strong" data-i18n="always">24 hours, 7 days</span></dd></div>
+          <div class="fact"><dt data-i18n="factOpd">Outpatient (OPD)</dt><dd data-bind="opdHours">[ add hours ]</dd></div>
+          <div class="fact"><dt data-i18n="factLocation">Location</dt><dd data-bind="addressLine">[ Street address ], [ Area, City ], Pakistan</dd></div>
+        </dl>
+        <a class="card-link" data-link="directions" href="#"><span data-i18n="getDirections">Get directions</span> <span class="arrow-rtl" aria-hidden="true">↗</span></a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ emergency strip ============ -->
+  <div class="emergency" role="note">
+    <div class="wrap emergency-in">
+      <span class="emergency-label" data-i18n="emergencyLabel">EMERGENCY</span>
+      <p><span data-i18n="emergencyBefore">For an emergency, call</span> <strong class="num" data-bind="emergencyDisplay">+92 300 0000000</strong> <span data-i18n="emergencyAfter">— the emergency department is open 24 hours, every day.</span></p>
+      <a class="emergency-btn" data-link="tel" href="#"><span data-i18n="callNow">Call now</span> <span class="arrow-rtl" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+
+  <!-- ============ departments ============ -->
+  <section class="section" id="departments" aria-labelledby="dept-title">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker" data-i18n="deptKicker">01 / DEPARTMENTS</p>
+        <h2 id="dept-title" data-i18n="deptTitle">Departments &amp; services</h2>
+        <p class="section-note" data-i18n="deptNote">What the hospital offers.</p>
+      </div>
+      <div class="dept-list" id="deptList"></div>
+      <p class="draft-note" data-demo data-i18n-html="deptDraft" hidden></p>
+    </div>
+  </section>
+
+  <!-- ============ doctors ============ -->
+  <section class="section section-tint" id="doctors" aria-labelledby="doctors-title">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker" data-i18n="doctorsKicker">02 / DOCTORS</p>
+        <h2 id="doctors-title" data-i18n="doctorsTitle">Consultants</h2>
+        <p class="section-note" data-i18n="doctorsNote">Names and qualifications are supplied by the hospital.</p>
+      </div>
+      <div class="doctor-grid" id="doctorList"></div>
+      <p class="draft-note" data-demo data-i18n-html="doctorsDraft" hidden></p>
+    </div>
+  </section>
+
+  <!-- ============ visit ============ -->
+  <section class="section" id="visit" aria-labelledby="visit-title">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker" data-i18n="visitKicker">03 / VISIT</p>
+        <h2 id="visit-title" data-i18n="visitTitle">Finding us</h2>
+      </div>
+
+      <div class="visit-grid">
+        <div class="visit-info">
+          <h3 class="subhead" data-i18n="addressTitle">Address</h3>
+          <address class="address">
+            <strong data-bind="name">[ Hospital Name ]</strong><br />
+            <span data-bind="addressLine">[ Street address ], [ Area, City ], Pakistan</span>
+          </address>
+          <a class="btn btn-primary" data-link="directions" href="#"><span data-i18n="directionsBtn">Get directions on Google Maps</span> <span class="arrow-rtl" aria-hidden="true">↗</span></a>
+
+          <h3 class="subhead hours-head" data-i18n="hoursTitle">Opening hours</h3>
+          <dl class="hours" id="hoursList"></dl>
+        </div>
+
+        <div class="map-wrap">
+          <iframe id="mapFrame" data-i18n-aria="mapAria" title="Map showing the hospital location" loading="lazy" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
+          <div class="map-placeholder" id="mapPlaceholder">
+            <p class="map-title" data-i18n="mapTitle">Map goes here</p>
+            <p class="map-copy" data-i18n-html="mapCopy">Add the exact address to mapQuery in site.config.js.</p>
+            <span class="map-coord tiny" data-i18n="mapCoord">LOCATION PENDING</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="before-visit">
+        <p class="kicker" data-i18n="beforeKicker">BEFORE YOU VISIT</p>
+        <ul class="before-list" id="beforeList"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ about ============ -->
+  <section class="section section-tint" id="about" aria-labelledby="about-title">
+    <div class="wrap about-grid">
+      <div>
+        <p class="kicker" data-i18n="aboutKicker">04 / ABOUT</p>
+        <h2 id="about-title" data-i18n="aboutTitle">About the hospital</h2>
+      </div>
+      <div class="about-body">
+        <p class="about-text" data-bind="about">Hospital description goes here.</p>
+        <dl class="about-facts">
+          <div><dt data-i18n="founded">Founded</dt><dd data-bind="established">[ Year ]</dd></div>
+          <div><dt data-i18n="registrationLabel">Registration</dt><dd data-bind="registration">[ add number ]</dd></div>
+          <div><dt data-i18n="contactLabel">Contact</dt><dd class="num" data-bind="phoneDisplay">+92 300 0000000</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ footer ============ -->
+<footer class="footer">
+  <div class="wrap footer-in">
+    <div class="footer-brand">
+      <span class="mark mark-light" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 17h6l3-6 4 12 3-6h8" fill="none" stroke="#10241f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <strong data-bind="name">[ Hospital Name ]</strong>
+        <p data-bind="addressLine">[ Street address ], [ Area, City ], Pakistan</p>
+      </div>
+    </div>
+    <div class="footer-links">
+      <a data-link="tel" href="#" data-i18n="footerCall">Call</a>
+      <a data-link="wa" href="#" data-i18n="footerWhatsapp">WhatsApp</a>
+      <a data-link="directions" href="#" data-i18n="footerDirections">Directions</a>
+      <a href="#departments" data-i18n="footerDepartments">Departments</a>
+    </div>
+    <div class="footer-meta">
+      <p><span class="num">© <span id="year">2026</span></span> <span data-bind="shortName">[ Hospital ]</span></p>
+      <p class="demo-notice" data-demo data-i18n-html="draftNotice" hidden></p>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ mobile action bar ============ -->
+<div class="mobile-bar" data-i18n-aria="quickAria" aria-label="Quick actions">
+  <a data-link="tel" href="#" data-i18n="footerCall">Call</a>
+  <a data-link="wa" href="#" data-i18n="footerWhatsapp">WhatsApp</a>
+  <a data-link="directions" href="#" data-i18n="footerDirections">Directions</a>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript>
+  <div class="noscript">This page needs JavaScript to show the latest details. Contact information lives in <code>site.config.js</code>.<br>اس صفحے کو تازہ معلومات کے لیے JavaScript چاہیے۔ رابطے کی معلومات <code>site.config.js</code> میں ہے۔</div>
+</noscript>
+
+</body>
+</html>

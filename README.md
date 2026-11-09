@@ -78,7 +78,7 @@ game-lab/
 ├── ascii-art/            ASCII text studio                 (static)
 ├── shuyan-travel/        travel timeline + map             (static, Leaflet vendored)
 ├── resonance-era/        25-chapter hard-SF novel + reader (static, Klein-blue)
-├── testing-example/      12 small-business site samples    (static + one Astro build)
+├── testing-example/      13 site samples (12 + 1 bilingual)   (static + one Astro build)
 ├── XanthanLMusic/        music site  → dist/ committed     (Vite + React 19)
 ├── golden-wind/          gold dashboard → out/ committed   (Next.js static export)
 └── ARH/                  7-axis ideology quiz (30/65/95 questions) → dist/ committed (Vite + React)

@@ -73,7 +73,7 @@ game-lab/
 ├── ascii-art/            ASCII 文字工坊             (static)
 ├── shuyan-travel/        旅行时间线 + 地图          (static, Leaflet vendored)
 ├── resonance-era/        25 章硬科幻小说 + 阅读器     (static, 克莱因蓝)
-├── testing-example/      12 套小生意站点样例        (static + 一个 Astro 构建)
+├── testing-example/      13 套站点样例（含 1 套双语医院） (static + 一个 Astro 构建)
 ├── XanthanLMusic/        音乐站 → dist/ 已提交      (Vite + React 19)
 ├── golden-wind/          金价看板 → out/ 已提交     (Next.js 静态导出)
 └── ARH/                  7 维意识形态问卷 (30/65/95 题) → dist/ 已提交 (Vite + React)
