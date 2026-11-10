@@ -83,6 +83,7 @@ const AIM_R = 52, AIM_DZ = 8;        // 右杆：满舵半径 / 死区（死区�
 const THRUST_DZ = 0.34;
 // 冲刺冷却（s）。原来在 tryDash 和 HUD 各写了一遍 1.25，触屏按钮的冷却态也要它。
 const DASH_CD = 1.25;
+const DASH_BUF = 0.15;   // 冲刺输入缓冲：冷却结束前 150ms 内按下的键不吞
 const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, active: false };
 // 跟奇点回响对齐的「最近一次输入决定朝向控制方式」：
 // 'key' = A/D 转向；'mouse' = 朝鼠标方向缓慢转向。光标动了切到 mouse；A/D 一按切回 key。
@@ -1687,7 +1688,7 @@ function newGame(hullId) {
     hintT: 0,
     // 出生在世界正中心 —— 四个方向都留着等长的退路（世界是视口的 3 倍）
     px: WORLD.w / 2, py: WORLD.h / 2, vx: 0, vy: 0, ang: 0, aim: 0,
-    fireT: 0, inv: 0, dashT: 0, dashCd: 0, hurtFlash: 0,
+    fireT: 0, inv: 0, dashT: 0, dashCd: 0, dashBuf: 0, hurtFlash: 0,
     moving: false,   // 「真的在动」（速度 > 14px/s）：审判光环与瓦解射线的中断判据都读它
     energy: 0, odT: 0, grazeT: 0,
     // 过热膛线（熔炉专属，2026-09-26 从《奇点回响》搬过来）。
@@ -2113,7 +2114,10 @@ function activateOverdrive() {
 }
 
 function tryDash() {
-  if (G.dashCd > 0) return;
+  // 冷却还没好：把这次按键记成「待兑现」，不要静默吞掉。
+  //    差 100ms 按早一点的冲刺，玩家感知到的不该是「按了没反应」＝掉帧。
+  if (G.dashCd > 0) { G.dashBuf = DASH_BUF; return; }
+  G.dashBuf = 0;
   const S = G.S;
   // ⚠️ 冲刺方向**只认机头** `G.ang`：不读 WASD（按键是给转向用的），也不用鼠标的 `G.aim`
   //    （那是准星，`aimMode==='key'` 时它跟机头根本不是一个角）。
@@ -2310,7 +2314,22 @@ function killEnemy(e) {
   }
   // 噬能回收：以战养战。按**最大**船体的百分比回血，所以它和「装甲板」是乘法关系 ——
   // 堆血同时买生存和续航。放在最后，让同一帧的击杀结算完再回。
-  if (G.S.leech > 0) healPlayer(G.S.leech / 100 * G.S.maxHp * (synOn('fieldMedic') ? 1.5 : 1));
+  if (G.S.leech > 0) {
+    const hpBefore = G.S.hp;
+    healPlayer(G.S.leech / 100 * G.S.maxHp * (synOn('fieldMedic') ? 1.5 : 1));
+    // 满级质变：「以战养战」要发生在画面上，不能只让浮字换个颜色。
+    //    从残骸朝船体飞回一束金色汲取丝；满血时没真回血，就不发（没东西可看）。
+    if (G.S.leechGold && G.S.hp > hpBefore) {
+      const dx = G.px - e.x, dy = G.py - e.y, dist = Math.hypot(dx, dy) || 1;
+      const life = Math.min(0.55, dist / 180);
+      for (let i = 0; i < 5; i++) {
+        const sp = 150 + i * 22;
+        part({ x: e.x + rand(-3, 3), y: e.y + rand(-3, 3),
+               vx: dx / dist * sp, vy: dy / dist * sp,
+               life, max: life, col: '#ffcd75', size: i % 2 ? 1 : 2, drag: 0.8 });
+      }
+    }
+  }
   // 杀戮狂热（借金克丝「罪恶快感」）：每次击杀刷新 3 秒狂热，期间射速与移速飙升。
   // 挂在最后，等同一帧的伤害结算完再给，免得「这一发击杀」同时享受它自己的加成。
   if (G.S.rampage > 0) G.rampageT = 3;
@@ -3606,6 +3625,11 @@ function updatePlayer(dt) {
   if (G.muzzle > 0) G.muzzle -= dt;
   if (G.dashT > 0) G.dashT -= dt;
   if (G.dashCd > 0) G.dashCd -= dt;
+  // 缓冲兑现必须排在 dashCd 衰减之后：否则冷却归零那一帧不会放，要再等一帧。
+  if (G.dashBuf > 0) {
+    G.dashBuf = Math.max(0, G.dashBuf - dt);   // 不留下 -1e-17 之类的浮点残留
+    if (G.dashCd <= 0) tryDash();
+  }
   if (G.inv > 0) G.inv -= dt;
   if (G.hurtFlash > 0) G.hurtFlash -= dt;
   if (G.comboT > 0) { G.comboT -= dt; if (G.comboT <= 0) G.combo = 1; }
@@ -5636,6 +5660,15 @@ function drawPlayer() {
     ctx.fillStyle = g ? '#ffcd75' : '#73eff7';
     ctx.fillRect(Math.round(mx) - (g ? 4 : 3), Math.round(my) - 1, g ? 8 : 6, 2);
     if (g) { ctx.fillRect(Math.round(mx) - 2, Math.round(my) - 3, 4, 6); }
+  }
+  // 过载超频满级质变：一圈随开火呼吸的金色热环。
+  //    「拿血换输出」原本只写在数字里，画面上和没满级一模一样。这条环让满级之后
+  //    这艘船一直「烧着」，开火瞬间再亮一档 —— 一眼看得出，但不新增别的元素。
+  if (S.ovGold) {
+    ctx.globalAlpha = 0.26 + 0.18 * Math.max(0, Math.sin(G.t * 9)) + (G.muzzle > 0 ? 0.26 : 0);
+    ctx.strokeStyle = '#ffcd75';
+    ringPx(G.px, G.py, G.muzzle > 0 ? 19 : 18, 2);
+    ctx.globalAlpha = 1;
   }
   // 护盾环
   if (S.shield > 0) {

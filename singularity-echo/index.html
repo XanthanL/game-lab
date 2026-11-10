@@ -144,6 +144,7 @@
   --fs-title:clamp(20px,3.4vw,30px);        /* 面板大标题 */
   --fs-disp:clamp(26px,5vw,50px);           /* 波次横幅 / 载入标记 */
   --fs-hero:clamp(40px,11vw,78px);          /* 首屏 / 结算大数 */
+  --fs-hero-sm:clamp(30px,7.6vh,52px);    /* 短视口（max-height:560px）专用，避免 wordmark 吃掉三分之一屏 */
 
   /* ── 动效时长（阶段 B 归并：26 处 → 6 档 + 2 环境档） ──────────
      曲线只许用下面 5 条；禁止 ease-in 用于 UI、禁止 transition:all。 */
@@ -542,69 +543,6 @@ html[data-rm] .overlay{animation:none}
 /* ---------- level-up cards ---------- */
 .cards-in{text-align:center;margin:auto;padding:20px 0}
 #cardrow,#hullrow{display:flex;gap:18px;margin-top:34px;justify-content:center;flex-wrap:wrap}
-
-/* Toast notifications for achievements & combos */
-.toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  pointer-events: none;
-}
-
-.toast-message {
-  font-size: var(--fs-3);
-  font-weight: bold;
-  padding: 16px 32px;
-  border-radius: 8px;
-  text-align: center;
-  opacity: 0;
-  animation: toastIn 0.3s ease-out forwards;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
-
-.toast-combo {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  font-size: 2rem;
-  animation: comboPulse 0.5s ease-in-out infinite;
-}
-
-.toast-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.toast-info {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(-20px) scale(0.9); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes toastVisible {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes toastOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes comboPulseOut {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-.toast-in { animation: toastIn 0.3s ease-out forwards; }
-.toast-visible { opacity: 1; }
-.toast-out { opacity: 0; transition: opacity 0.3s ease-out; }
-
 .card{width:196px;min-height:264px;height:auto;padding:20px 17px 17px;display:flex;flex-direction:column;
   background:rgb(var(--c-panel-rgb) / .82);border:1px solid var(--c-line);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -879,7 +817,7 @@ html[data-rm] .overlay{animation:none}
 /* ---------- Codex Detail Modal ---------- */
 .cx-detail-panel{position:relative;max-width:min(92vw,580px)}
 .cx-close-btn{position:absolute;top:16px;right:16px;font-size:var(--fs-hero);
-  line-height:1;color:#aaa;background:none;border:none;cursor:pointer;
+  line-height:1;color:var(--c-steel);background:none;border:none;cursor:pointer;
   transition:color var(--dur-2),transform var(--dur-3)}
 .cx-close-btn:hover{color:var(--c-cyan-hi);transform:scale(1.1)}
 .cx-detail-model{width:100%;height:140px;margin:24px auto 0;display:flex;align-items:center;justify-content:center;
@@ -1242,7 +1180,7 @@ html[data-rm] .overlay{animation:none}
 #joyknob{position:absolute;left:50%;top:50%;width:46px;height:46px;border-radius:50%;
   background:rgb(var(--c-cyan-rgb) / .28);border:1px solid rgb(var(--c-cyan-rgb) / .7);transform:translate(-50%,-50%)}
 /* 松手回中才给缓动；操杆过程中 .on 在场 → 无过渡，knob 严格跟手不拖尾 */
-#joybase:not(.on) #joyknob{transition:transform .12s var(--ease-ui)}
+#joybase:not(.on) #joyknob{transition:transform var(--dur-2) var(--ease-ui)}
 #firebtn{position:fixed;right:calc(28px + var(--safe-r));bottom:calc(34px + var(--safe-b));width:96px;height:96px;border-radius:50%;
   border:1px solid rgb(var(--c-cyan-rgb) / .4);background:rgb(var(--c-cyan-rgb) / .06);z-index:var(--z-touch);pointer-events:none;
   display:flex;align-items:center;justify-content:center;font-size:var(--fs-2);letter-spacing:.24em;color:rgb(var(--c-ink-rgb) / .7)}
@@ -1284,7 +1222,7 @@ html[data-rm] .overlay{animation:none}
 /* 短视口（横屏手机可用高度常常只有 320~390px）：收紧首屏三层之间的纵向节奏，
    并把标题字号压下来 —— 否则光是 wordmark 就吃掉三分之一屏，下面必然要滚。 */
 @media (max-height:560px){
-  .wordmark{font-size:clamp(30px,7.6vh,52px)}
+  .wordmark{font-size:var(--fs-hero-sm)}
   .wordmark .en{margin-top:8px;font-size:var(--fs-1)}
   .menu-actions{margin-top:16px}
   .menu-actions .btn{padding:12px 10px}
@@ -2960,6 +2898,13 @@ const sfx={
    现在这个值只是**泄漏兜底**（连接真死了才杀掉重来），正常下载远用不到。
    ⚠️ 别调小：调小 = 慢网用户的下载被反复中断并从零重来，反而永远下不完。 */
 const BGM_LOAD_MS=45000;
+/* 8.x：AudioBuffer 解出来的 PCM 不在 JS 堆里，devtools 看不到 —— 一首 4~6MB 的成品曲
+   解成立体声 Float32 约 67~97MB。旧版「留 4 首」= 峰值 335MB，且是 FIFO（命中不刷新）：
+   后台预热 7 组时前 3 首下完立刻被挤掉，等于白下带宽；切曲时还可能把正在响的那首删掉，
+   下一轮又要重下 + 重解码 5MB，正是玩家会感到的一下卡顿。
+   改成按解码字节预算 + 真 LRU + 保护「正在播 / 当前曲组 / 即将开播」。 */
+const BGM_MEM_MAX=256*1024*1024;   // ≈ 3 首成品曲；常态远低于旧的 335MB
+const bufBytes=b=>(b.length|0)*(b.numberOfChannels||2)*4;
 /* 空闲回调：后台预热走它，绝不跟首屏渲染抢帧。Safari <16.4 没有 rIC → 退化为短 setTimeout */
 const idle=(typeof requestIdleCallback==='function')
   ? (fn=>requestIdleCallback(()=>{try{fn();}catch(e){}},{timeout:1500}))
@@ -2975,7 +2920,7 @@ class BGMManager{
       endless:{urls:['bgms/「无尽漂移___Endless_Drift」1.mp3','bgms/「无尽漂移___Endless_Drift」2.mp3'],loop:false},
       end:   {urls:['bgms/「余晖___Afterglow」.mp3'],loop:true}
     };
-    this.cache=new Map(); // url -> AudioBuffer
+    this.cache=new Map(); // url -> AudioBuffer（Map 顺序即 LRU：尾部=最近使用）
     /* 正在下载的 url -> Promise。7.8：后台预热和「开局即切曲」会同时要同一首，
        没有这张表就会并发重复下载同一个 5MB 的 mp3（弱网下直接雪上加霜）。 */
     this.pending=new Map();
@@ -2994,8 +2939,26 @@ class BGMManager{
   ctx(){const c=AU.ctx||null;if(c)return c;AU.ensure();return AU.ctx;}
   unlock(){const c=this.ctx();if(c&&c.state==='suspended')c.resume();}
   _u(url){return encodeURI(url);}
+  cacheBytes(){let n=0;for(const b of this.cache.values())n+=bufBytes(b);return n;}
+  /* 按解码字节淘汰最久未用。保护项过多时宁可短暂超预算 —— 删掉正在响的那首，
+     代价是玩家立刻听到一次「重新下载 + 解码」的卡顿，比多占几十 MB 糟得多。 */
+  _evict(need,keepUrl){
+    const protect=new Set([keepUrl]);
+    if(this.cur&&this.cur.url)protect.add(this.cur.url);
+    const g=this.groups[this.group];if(g)for(const u of g.urls)protect.add(u);
+    let total=this.cacheBytes();
+    for(const [u,b] of this.cache){
+      if(total+need<=BGM_MEM_MAX)break;
+      if(protect.has(u))continue;
+      this.cache.delete(u);total-=bufBytes(b);
+    }
+  }
   async _load(url){
-    if(this.cache.has(url))return this.cache.get(url);
+    if(this.cache.has(url)){
+      const b=this.cache.get(url);
+      this.cache.delete(url);this.cache.set(url,b);   // 命中刷新 LRU，常用曲不会被挤掉
+      return b;
+    }
     const c=this.ctx();if(!c)return null;
     /* 同一首正在下 → 复用它的 Promise，不重复开第二个请求 */
     const inflight=this.pending.get(url);
@@ -3012,7 +2975,7 @@ class BGMManager{
       if(!res.ok)throw new Error('fetch '+res.status);
       const ab=await res.arrayBuffer();
       const buf=await c.decodeAudioData(ab);
-      if(this.cache.size>=4)this.cache.delete(this.cache.keys().next().value);
+      this._evict(bufBytes(buf),url);
       this.cache.set(url,buf);
       this.failN=0;
       return buf;
@@ -3026,10 +2989,15 @@ class BGMManager{
      全部走 requestIdleCallback —— 绝不占用首屏渲染的帧。
      返回 Promise 只为测试钩子用；调用方一律不要 await 它。 */
   warm(groupIds){
-    const list=[].concat(groupIds||[]);
+    /* 8.x：按「开局后最可能先用到」排序，预算快满就停。旧版一口气下 7 首、
+       缓存只有 4 格，前 3 首下完就被 FIFO 挤掉 —— 预热等于白做。 */
+    const pri=['menu','cruise','combat','boss','end','endless','evolve'];
+    const rank=x=>{const k=pri.indexOf(x);return k<0?99:k;};
+    const list=[].concat(groupIds||[]).sort((a,b)=>rank(a)-rank(b));
     let i=0;
     const step=()=>{
       while(i<list.length){
+        if(this.cacheBytes()>=BGM_MEM_MAX*0.92)return;   // 留一手给即将开播的曲子
         const g=this.groups[list[i++]];
         if(!g||!g.urls||!g.urls[0])continue;
         /* 只下每组的第一首：轮换组（cruise / endless）的第二首由 _playDual
@@ -5913,7 +5881,11 @@ const DIFFS=[
  {id:'standard',zh:'标准', en:'STANDARD', hp:1,   dmg:1,   spd:1,   cnt:1,   sc:1,  req:0,
   d:'设计基准难度',de:'The balance the game was tuned for'},
  {id:'abyss',   zh:'深渊', en:'ABYSS',    hp:1.35,dmg:1.3, spd:1.12,cnt:1.2, sc:1.4,req:15,
-  d:'更多更硬更痛 —— 得分 ×1.4',de:'More, tougher, deadlier — score ×1.4'}
+  d:'更多更硬更痛 —— 得分 ×1.4',de:'More, tougher, deadlier — score ×1.4'},
+ /* 8.x 第四档：给打通过一次（最远波次 ≥30）的人一个「数值之外没得加」的终局压力。
+    仍然只改敌人三围·密度·承伤与得分系数，绝不碰玩家输出（6.2 的铁律）。 */
+ {id:'singularity',zh:'奇点', en:'SINGULARITY',hp:1.65,dmg:1.5, spd:1.18,cnt:1.32,sc:1.8,req:30,
+  d:'深渊之上 —— 得分 ×1.8',de:'Beyond the abyss — score ×1.8'}
 ];
 const DIFF_KEY='nova-diff';
 let G_DIFF='standard';
@@ -10267,7 +10239,7 @@ function drawDetailModel(containerId, type, id) {
   } else if (type === 'up') {
     const module = MODULES.find(m => m.id === id);
     if (module) {
-      g.fillStyle = '#7dcfff';
+      g.fillStyle = RGBA('cyan-hi',1);
       g.font = 'bold 48px Consolas, monospace';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
@@ -13638,6 +13610,14 @@ window.NOVA={
     warm:(...ids)=>{BGM.warm(ids);return 1;},
     switchTo:id=>{BGM.switchTo(id);return BGM.group;},
     urls:id=>BGM.groups[id]?BGM.groups[id].urls.slice():null,
+    /* 8.x 曲库预算 / LRU：注入假 buffer 即可不断开真 mp3 断言淘汰顺序与保护集 */
+    budget:()=>BGM_MEM_MAX,
+    bytes:()=>BGM.cacheBytes(),
+    put:(u,n)=>{const b={length:Math.max(1,Math.floor(n/8)),numberOfChannels:2};BGM.cache.delete(u);BGM.cache.set(u,b);return BGM.cacheBytes();},
+    touch:u=>{const b=BGM.cache.get(u);if(!b)return null;BGM.cache.delete(u);BGM.cache.set(u,b);return [...BGM.cache.keys()];},
+    evict:(need,keep)=>{BGM._evict(need,keep);return [...BGM.cache.keys()];},
+    protected:()=>{const a=[];if(BGM.cur&&BGM.cur.url)a.push(BGM.cur.url);const g=BGM.groups[BGM.group];if(g)a.push(...g.urls);return a;},
+    clear:()=>{BGM.cache.clear();return 0;},
   },
   /* 7.10 奇点视界（加载页 / 主界面画布）+ 音乐鉴赏 —— 探针用 */
   sing:{

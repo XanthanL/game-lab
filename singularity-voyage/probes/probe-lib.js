@@ -73,6 +73,39 @@ const MIME = {
   '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
 };
 
+/* ── 站群共享资产回退（2026-11-11）──────────────────────────────────
+   index.html 用 ../assets/gl-back.js 引站群返回角标：线上位于 /game-lab/<子项目>/，
+   解析到 /game-lab/assets/ 是 200；但探针都以「子项目目录」为 root 起静态服务，
+   会把它判成 404 → 所有「无 JS 错误」类断言整片假红（基线 16 PASS / 14 FAIL，
+   14 条全是这一条）。23 份探针各自内嵌了一份 createServer，逐个改既重复又易漏；
+   它们都 require 本模块拿 chrome，所以在这里挂一层薄包装：
+   仅当请求落在 /assets/ 且站群根里确实存在该文件时直接补发，其余一律交给原 handler。
+   ⚠️ 只放行站群根的 assets/，不开放任意目录穿越。 */
+const SITE_ROOT = path.resolve(__dirname, '..', '..');
+const SHARED_DIR = path.join(SITE_ROOT, 'assets') + path.sep;
+function sharedAsset(url) {
+  try {
+    const p = decodeURIComponent((url || '').split('?')[0]);
+    if (!p.startsWith('/assets/')) return null;
+    const alt = path.join(SITE_ROOT, p);
+    if (alt.startsWith(SHARED_DIR) && fs.existsSync(alt) && !fs.statSync(alt).isDirectory()) return alt;
+  } catch (e) { /* 坏 URL 照旧交给原 handler */ }
+  return null;
+}
+const _createServer = http.createServer;
+http.createServer = function (handler) {
+  if (typeof handler !== 'function') return _createServer.call(http, handler);
+  return _createServer.call(http, (q, s) => {
+    const alt = sharedAsset(q.url);
+    if (alt) {
+      s.writeHead(200, { 'Content-Type': MIME[path.extname(alt)] || 'application/octet-stream' });
+      fs.createReadStream(alt).pipe(s);
+      return;
+    }
+    handler(q, s);
+  });
+};
+
 // root 默认是项目根（probes/ 的上一级）
 function serve(port = 0, root = path.resolve(__dirname, '..')) {
   // ⚠️ 必须 resolve：Windows 上 path.join 一律吐反斜杠，直接拿调用方传进来的
@@ -82,9 +115,16 @@ function serve(port = 0, root = path.resolve(__dirname, '..')) {
   const server = http.createServer((q, s) => {
     let p = decodeURIComponent(q.url.split('?')[0]);
     if (p === '/') p = '/index.html';
-    const fp = path.join(R, p);
+    let fp = path.join(R, p);
     if (!fp.startsWith(R) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
-      s.writeHead(404); s.end('404'); return;
+      /* 站群共享资产（../assets/gl-back.js 等）在真实部署里本来就位于子项目的上一级。
+         探针把 root 设成子项目目录会把它们全判成 404，让「无 JS 错误」类断言整片假红。
+         这里只允许回退到站群根的 assets/ 下，且必须真实存在 —— 不开放任意目录穿越。 */
+      const site = path.resolve(R, '..');
+      const alt = path.join(site, p);
+      const shared = path.join(site, 'assets') + path.sep;
+      if (alt.startsWith(shared) && fs.existsSync(alt) && !fs.statSync(alt).isDirectory()) fp = alt;
+      else { s.writeHead(404); s.end('404'); return; }
     }
     s.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream' });
     fs.createReadStream(fp).pipe(s);

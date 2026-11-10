@@ -15,6 +15,8 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { spawn } = require('child_process');
+// 父进程自己也起一份共享静态服务，同样要吃到「站群共享资产」回退补丁
+require('./probe-lib');
 
 const DIR = __dirname;
 const ROOT = path.resolve(DIR, '..');
