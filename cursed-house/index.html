@@ -128,7 +128,7 @@ body{display:flex;align-items:center;justify-content:center;}
 
 <div id="mobileHud">
   <div class="row"><span id="hudLevel">一层</span><span id="hudDolls">纸人偶 0/6</span><span id="hudKey">钥匙 无</span></div>
-  <div class="sanity">精神 <div class="bar"><i id="hudSanity"></i></div></div>
+  <div class="sanity" id="hudSanityBox">精神 <div class="bar"><i id="hudSanity"></i></div></div>
 </div>
 
 <div id="touch">
@@ -225,6 +225,7 @@ body{display:flex;align-items:center;justify-content:center;}
   <p style="color:#3e4434;text-shadow:none;">数年前的七月，你回乡下的老家过暑假。<br>天蓝得发亮，蝉声把整个村子填得满满的。<br>阿婆在院里晒梅子，鸡在墙根下刨土，风里都是盐和青草的味道。</p>
   <p style="color:#6a5628;text-shadow:none;">阿婆说：「帮我做三件事——收梅子、喂鸡、<br>把晾着的纸人偶收进屋。做完就准你去村口玩。」</p>
   <p style="color:#7a7040;text-shadow:none;">晾衣绳上挂着几只纸人偶，在日头底下轻轻晃。<br>……为什么要晒纸人偶？你没有多想。</p>
+  <p style="color:#5a6038;text-shadow:none;font-size:min(2.8vw,14px);">跟着地上那串暖色的光走；<br>每做完一件差事，下一处会自己亮起来。</p>
   <p class="blink" style="color:#8a6418;text-shadow:none;">点击开始</p>
 </div>
 
@@ -731,6 +732,60 @@ function roofTexGen(base,r,g,b,mossAmt){
 }
 const roofSun=roofTexGen(104,1.0,0.97,0.9,12);     // 第〇章：晴日灰瓦，微微偏暖
 const roofNight=roofTexGen(56,0.84,0.93,1.14,26);  // 终章：夜湿青瓦，偏冷、多苔
+
+// ==================== 第〇章 · 夏日：专属视觉素材 ====================
+// 旧版把恐怖章节的障子/灰瓦直接搬过来，晴空底下是一排「玻璃盒 + 黑锯齿」，读不出村庄。
+// 这里换成不透明木格窗、被日头晒亮的瓦、以及能当导航地标的树/人/晾绳。
+const sunRoof=roofTexGen(196,1.05,1.0,0.92,3);       // 晴日瓦：亮、少苔
+const sunWindow=genTex((x,y)=>{
+  const px=x&31,py=y&31;
+  const fx=Math.min(px,31-px),fy=Math.min(py,31-py);
+  if(fx<4||fy<4||Math.abs(px-15.5)<1.5||Math.abs(py-15.5)<1.5){
+    let v=128+snoise(x*0.3,y*0.3)*16;                  // 木格框
+    if(Math.min(fx,fy)===0)v*=0.58;
+    return pack(clamp(v,0,255),clamp(v*0.76,0,255),clamp(v*0.50,0,255));
+  }
+  const d=Math.hypot(x-32,y-32)/44;                   // 窗纸：暖白，中缝透出屋内暗影
+  let v=222-42*d-snoise(x*0.5,y*0.5)*8;
+  return pack(clamp(v,0,255),clamp(v*0.97,0,255),clamp(v*0.86,0,255));
+});
+const sunFence=genTex((x,y)=>{
+  const px=x&15;
+  let v=152+snoise(x*0.4,y*0.15)*18;
+  if(px<2)v*=0.55;else if(px<4)v*=1.2;else if(px>13)v*=0.72;   // 竖木条 + 条间暗缝
+  if(y>26&&y<32)v*=0.66;                                          // 横枋投影
+  if(y<3||y>60)v*=0.82;
+  return pack(clamp(v,0,255),clamp(v*0.78,0,255),clamp(v*0.52,0,255));
+});
+const ch0Tree=svgSprite(140,180,
+  '<ellipse cx="70" cy="172" rx="48" ry="8" fill="rgba(32,48,24,0.20)"/>'+
+  '<path d="M62 172 L63 96 Q61 76 68 62 L73 62 Q80 78 77 96 L78 172 Z" fill="#6a4a30"/>'+
+  '<path d="M68 118 L40 84 M72 108 L104 78 M70 96 L96 66" stroke="#6a4a30" stroke-width="7" fill="none" stroke-linecap="round"/>'+
+  '<g fill="#2e5634"><ellipse cx="70" cy="58" rx="52" ry="40"/><ellipse cx="36" cy="76" rx="30" ry="28"/><ellipse cx="104" cy="76" rx="30" ry="28"/><ellipse cx="70" cy="34" rx="34" ry="26"/></g>'+
+  '<g fill="#457a3c"><ellipse cx="52" cy="50" rx="30" ry="24"/><ellipse cx="92" cy="56" rx="28" ry="22"/><ellipse cx="70" cy="76" rx="34" ry="18"/></g>'+
+  '<g fill="#74a34f" opacity="0.85"><ellipse cx="48" cy="38" rx="16" ry="11"/><ellipse cx="88" cy="44" rx="14" ry="10"/><ellipse cx="66" cy="24" rx="18" ry="9"/><ellipse cx="106" cy="68" rx="10" ry="7"/></g>'+
+  '<g fill="#c9d98a" opacity="0.5"><circle cx="40" cy="32" r="5"/><circle cx="98" cy="34" r="4"/><circle cx="78" cy="66" r="4"/></g>'
+);
+const ch0Granny=svgSprite(52,76,
+  '<ellipse cx="26" cy="72" rx="20" ry="4" fill="rgba(40,40,24,0.22)"/>'+
+  '<rect x="10" y="58" width="32" height="8" rx="2" fill="#7c5a38"/>'+
+  '<path d="M14 60 Q12 38 26 36 Q40 38 38 60 Z" fill="#54626e"/>'+
+  '<path d="M18 38 Q26 32 34 38 L32 46 Q26 42 20 46 Z" fill="#46535e"/>'+
+  '<circle cx="26" cy="26" r="10" fill="#d9c9a8"/>'+
+  '<path d="M16 22 Q26 12 36 22 Q30 17 26 18 Q22 17 16 22 Z" fill="#dedacb"/>'+
+  '<ellipse cx="26" cy="13" rx="7" ry="4" fill="#dedacb"/>'+
+  '<path d="M38 44 Q48 40 48 50 Q42 54 38 50 Z" fill="#c9ad72" stroke="#8a7040" stroke-width="1"/>'
+);
+const ch0DollLine=svgSprite(160,96,
+  '<path d="M4 22 Q80 34 156 24" stroke="#7a6a4a" stroke-width="2" fill="none"/>'+
+  '<path d="M34 26 L34 34 M80 31 L80 39 M124 28 L124 36" stroke="#7a6a4a" stroke-width="1"/>'+
+  '<g fill="#efe9d8" stroke="#b8ac8c" stroke-width="1">'+
+  '<path d="M26 34 L42 33 L40 58 L28 58 Z"/><path d="M72 39 L88 38 L86 63 L74 63 Z"/><path d="M116 36 L132 35 L130 60 L118 60 Z"/></g>'+
+  '<g fill="#a8302a"><circle cx="34" cy="41" r="2"/><circle cx="80" cy="46" r="2"/><circle cx="124" cy="43" r="2"/></g>'+
+  '<g stroke="#d8d0b8" stroke-width="3" stroke-linecap="round">'+
+  '<path d="M28 40 L20 48 M40 40 L48 48 M74 45 L66 53 M86 45 L94 53 M118 42 L110 50 M130 42 L138 50"/></g>'
+);
+const CH0_W=24,CH0_H=20;
 // ---- 房屋墙面：第〇章白灰真壁（露木构）/ 终章湿木板 ----
 const sunWall=genTex((x,y)=>{
   let v=180+snoise(x*0.2,y*0.25)*17;
@@ -785,13 +840,13 @@ const _b=buildingAt(x,y);
 if(_b)return _b.night?nightWall:sunWall;
 switch(tile(x,y)){
 case 'D':return doorTex;
-case 'J':return shoji;
+case 'J':return lvl===4?sunFence:shoji;
 case 'S':return stone;
 case 'B':return book;
 case 'C':return wardrobe;
 case 'X':return bloodTex;
 default:{const h=(x*7+y*13+(x*y)%5)%100;
-  if(lvl===4)return h<38?sunPlaster:h<56?sunWood:h<72?shoji:h<88?sunPlaster:sunWood;   // 第〇章：干净土墙+浅木，阳光味
+  if(lvl===4)return h<58?sunPlaster:h<78?sunWood:h<90?sunWindow:sunPlaster;   // 第〇章：土坯墙 + 木构 + 木格窗（不再用障子）
   if(lvl===2)return h<14?wood:h<44?darkwood:h<58?shoji:h<72?redwood:h<80?bloodTex:h<92?stone:redwood;   // 第二章：破败混色
   if(lvl===3)return h<30?stone:h<46?darkwood:h<60?bloodTex:h<72?shoji:h<86?redwood:stone;              // 第三章：义庄石木朽败
   if(lvl===5)return h<26?darkwood:h<48?stone:h<60?bloodTex:h<72?shoji:h<86?wood:stone;                 // 终章：夜村湿木渗血
@@ -1114,8 +1169,17 @@ const chickImg=voxSprite(36,34,M=>{
   M.put(-1,0,0,'#e0a028');M.put(1,0,0,'#e0a028');   // 腿
 });
 decor.push(
-{x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},                 // 屋檐下的水缸
-{x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}                // 空竹匾（装饰）
+  // 四角槐树：出生点一抬头就能用树定位方向，比 HUD 上悬空的箭头有用
+  {x:1.7,y:4.6,lvl:4,img:ch0Tree,scale:2.5},
+  {x:22.1,y:5.4,lvl:4,img:ch0Tree,scale:2.3},
+  {x:1.7,y:18.6,lvl:4,img:ch0Tree,scale:2.2},
+  {x:22.1,y:18.5,lvl:4,img:ch0Tree,scale:2.6},
+  {x:6.8,y:18.2,lvl:4,img:ch0Granny,scale:1.05},           // 阿婆坐在主屋檐下
+  {x:7.5,y:14.0,lvl:4,img:ch0DollLine,scale:1.55},         // 晾纸偶的绳
+  {x:17.4,y:11.9,lvl:4,img:chickImg,scale:0.55},           // 墙根刨土的鸡
+  {x:19.6,y:13.2,lvl:4,img:chickImg,scale:0.48},
+  {x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},               // 屋檐下的水缸
+  {x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}              // 空竹匾（装饰）
 );
 // ---- 终章 · 夜魇村庄陈设：封石掀开的老井 + 掀翻的石板 + 冷灯笼 ----
 decor.push(
@@ -1129,11 +1193,39 @@ const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.
 // ---- 第〇章 · 夏日：帮阿婆做三件事，最后去村口老井打水 ----
 const WELL_X=11.5,WELL_Y=2.6;      // 村口老井
 let errands=0,nextBird=0;
+// 旧版三件差事都是「走近按一次 E」，没有任何操作、节奏和反馈。
+// 现在每件拆成若干处：收梅子 3 把 / 喂鸡撒谷+收碗 / 收纸偶 3 只，共 8 次交互，
+// 每次有独立台词、拾取音、物件从场上消失；当前该去哪一处，由世界里的光柱指出。
+const CH0_STEPS={
+  plum:['梅子还带着日头的温度，一把一把捡进竹匾。','又一把。竹匾里的红渐渐浅了。','最后一把。竹篾上留着浅浅的红印。'],
+  chick:['谷子撒出去，鸡群从墙根扑棱棱围过来。','空碗收好。阿婆在檐下点了点头。'],
+  doll:['第一只纸偶，轻得不像纸。','第二只。风把袖子吹起来，里面是空的。','第三只。晾绳空了，地上却多了一道影子。']
+};
 const ch0Tasks=[
-  {x:5.5,y:8.5,img:trayImg,scale:0.75,hint:'E 收起竹匾里晒着的梅子',msg:'梅子收进屋了。\n阿婆在檐下笑：「好孩子。」',done:false},
-  {x:18.5,y:12.5,img:chickImg,scale:0.85,hint:'E 撒一把谷子喂鸡',msg:'鸡群咕咕地围上来啄食。\n日头晒在背上，暖烘烘的。',done:false},
-  {x:7.5,y:15.5,img:dollImg,scale:1.05,hint:'E 把晾着的纸人偶收进屋',msg:'纸人偶轻得不对劲……像里面什么都没有。\n袖口拂过你的手背，凉凉的。',done:false},
+  {key:'plum',name:'收梅子',x:5.5,y:8.5,img:trayImg,scale:0.92,hint:'E 收一把梅子',
+   pts:[{x:4.5,y:8.5},{x:5.5,y:7.7},{x:6.5,y:8.5}],step:0,done:false,
+   doneMsg:'梅子收进屋了。\n阿婆在檐下笑：「好孩子。」'},
+  {key:'chick',name:'喂鸡',x:18.5,y:12.5,img:chickImg,scale:0.95,hint:'E 撒谷 / 收碗',
+   pts:[{x:17.5,y:12.5},{x:19.5,y:12.5}],step:0,done:false,
+   doneMsg:'鸡群咕咕地围上来啄食。\n日头晒在背上，暖烘烘的。'},
+  {key:'doll',name:'收纸偶',x:7.5,y:15.5,img:dollImg,scale:1.05,hint:'E 收起纸人偶',
+   pts:[{x:6.6,y:15.3},{x:7.5,y:14.4},{x:8.4,y:15.3}],step:0,done:false,
+   doneMsg:'纸人偶轻得不对劲……像里面什么都没有。\n三只并排靠在门后，你没敢回头看。'}
 ];
+function ch0Active(){for(const t of ch0Tasks)if(!t.done)return t;return null;}
+function ch0Point(){const t=ch0Active();return t?t.pts[t.step]:null;}
+function ch0Reset(){errands=0;for(const t of ch0Tasks){t.done=false;t.step=0;}nextBird=timeSec+1.2;}
+function ch0DoStep(t){
+  const i=t.step;t.step++;
+  dollPickup();flashWhite=0.08;lastScareAt=timeSec;
+  const lines=CH0_STEPS[t.key];
+  toastMsg(lines[Math.min(i,lines.length-1)]);
+  if(t.step<t.pts.length)return;
+  t.done=true;errands++;
+  bell(660,0,0.16);bell(880,0.18,0.14);
+  setTimeout(()=>{if(state==='playing'&&t.done)toastMsg(t.doneMsg);},1500);
+  if(errands>=3)setTimeout(()=>{if(state==='playing')toastMsg('三件事都做完了。阿婆说：去村口老井打一桶水回来吧。');},3100);
+}
 
 // ---- 剧情纸条（拾取后进入暂停菜单「手记」，localStorage 持久化）----
 const noteImg=svgSprite(30,22,'<ellipse cx="15" cy="19.5" rx="9" ry="2" fill="rgba(0,0,0,0.35)"/><path d="M4 4 L26 3 L25 17 L3 18 Z" fill="#e6ddc4" stroke="#b8ac8c" stroke-width="1"/><path d="M7 8 h14 M7 11 h14 M7 14 h9" stroke="#8a7f66" stroke-width="1" opacity="0.8"/><circle cx="23" cy="15" r="2.2" fill="#a01212" opacity="0.85"/>');
@@ -1207,7 +1299,11 @@ function propColliders(){
   else if(lvl===2){cs.push({x:ALTAR_X,y:ALTAR_Y,r:0.68});if(fireSpawned)cs.push({x:FIRE_X,y:FIRE_Y,r:0.35});}
   else if(lvl===3){cs.push({x:SHRINE_X,y:SHRINE_Y,r:0.62});
     for(const tb of tablets)if(!tb.taken)cs.push({x:tb.x,y:tb.y,r:0.26});for(const j of oilJars)if(!j.taken)cs.push({x:j.x,y:j.y,r:0.26});}
-  else if(lvl===4){cs.push({x:WELL_X,y:WELL_Y,r:0.62});for(const t of ch0Tasks)if(!t.done)cs.push({x:t.x,y:t.y,r:0.3});}
+  else if(lvl===4){
+    cs.push({x:WELL_X,y:WELL_Y,r:0.62});
+    for(const _p of [[-1.3,-1.3],[1.3,-1.3],[-1.3,1.3],[1.3,1.3]])cs.push({x:WELL_X+_p[0],y:WELL_Y+_p[1],r:0.16});
+    for(const t of ch0Tasks)if(!t.done)for(let i=t.step;i<t.pts.length;i++){const p=t.pts[i];cs.push({x:p.x,y:p.y,r:0.20});}
+  }
   else if(lvl===5){
     cs.push({x:WELL_X,y:WELL_Y,r:0.62},{x:13.3,y:3.0,r:0.40},{x:10.7,y:6.4,r:0.3},{x:11.7,y:16.4,r:0.3});
     // 井亭四柱：让人从四面绕行，但钻不进柱子里
@@ -1675,14 +1771,18 @@ const papers=[{x:8.5,y:9.5},{x:15.5,y:9.5},{x:12.5,y:11.5},{x:8.5,y:16.5},{x:17.
 // 投影约定：世界高度 h 在深度 t 处 -> screenY = horizon + (VH/t)*(0.5-h)
 function wellRing(x,y){return [{k:'cyl',x,y,r:0.42,y0:0,y1:0.44,tex:wellStone,cap:1,hole:0.27}];}
 function wellPavilion(x,y,night){          // 井亭：石井圈 + 四根木柱 + 攒尖瓦顶
-  const wt=night?darkwood:sunWood, rt=night?roofNight:roofSun, p=0.95, ph=0.07;
+  // 白昼版放大：老井是第〇章的终点地标，从晒场南端就得看得见轮廓；夜魇版保持原尺寸。
+  const wt=night?darkwood:sunWood, rt=night?roofNight:sunRoof;
+  const p=night?0.95:1.30, ph=night?0.07:0.09, h=night?1.00:1.30;
+  const r=night?0.42:0.56, rh=night?0.44:0.52, hole=night?0.27:0.36;
+  const roofY0=night?1.00:1.30, roofY1=night?1.56:2.02, rw=night?1.22:1.64;
   return [
-    {k:'cyl',x,y,r:0.42,y0:0,y1:0.44,tex:wellStone,cap:1,hole:0.27},
-    {k:'box',x:x-p,y:y-p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
-    {k:'box',x:x+p,y:y-p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
-    {k:'box',x:x-p,y:y+p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
-    {k:'box',x:x+p,y:y+p,hw:ph,hd:ph,y0:0,y1:1.00,tex:wt,cap:1},
-    {k:'pyr',x,y,hw:1.22,hd:1.22,y0:1.00,y1:1.56,tex:rt},
+    {k:'cyl',x,y,r:r,y0:0,y1:rh,tex:wellStone,cap:1,hole:hole},
+    {k:'box',x:x-p,y:y-p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
+    {k:'box',x:x+p,y:y-p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
+    {k:'box',x:x-p,y:y+p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
+    {k:'box',x:x+p,y:y+p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
+    {k:'pyr',x,y,hw:rw,hd:rw,y0:roofY0,y1:roofY1,tex:rt},
   ];
 }
 function altarVol(x,y){                    // 香坛：三级收分台基 + 坛身 + 台面
@@ -1889,23 +1989,18 @@ function resolveInteraction(){
       return {t:'E 拾起纸条',note:true,run:tryPickupNote};
   }
   const ft=frontTile();
-  // ---- 第〇章：帮阿婆做三件事 → 村口老井打水（结局） ----
+  // ---- 第〇章：三件差事（每件分步）→ 村口老井打水 ----
   if(chapter===0){
     if(errands>=3&&nearGoal(WELL_X,WELL_Y,2.5))
       return {t:'E 放下木桶，打一桶井水',note:false,run:()=>{whisper();seq={mode:'win',t:0};winSound();}};
     if(errands>=3)return {t:'差事都完成了 · 去村口老井（北面）打水',note:false,run:null};
-    for(const t of ch0Tasks){
-      if(!t.done&&nearGoal(t.x,t.y,1.4))return {t:t.hint,note:false,run:()=>{
-        t.done=true;errands++;
-        dollPickup();flashWhite=0.12;lastScareAt=timeSec;
-        toastMsg(t.msg);
-        if(errands>=3)setTimeout(()=>{if(state==='playing')toastMsg('三件事都做完了。阿婆说：去村口老井打一桶水回来吧。');},2600);
-      }};
-    }
+    const ta=ch0Active(),pt=ch0Point();
+    if(ta&&pt&&nearGoal(pt.x,pt.y,1.0))
+      return {t:ta.hint+' ('+(ta.step+1)+'/'+ta.pts.length+')',note:false,run:()=>ch0DoStep(ta)};
     if(errands<3&&nearGoal(WELL_X,WELL_Y,2.8))return {t:'E 看看井绳',note:false,run:()=>toastMsg(errands===0
       ?'井绳都备好了，就等你打水。\n可阿婆的三件差事还没做——先去帮工吧。'
       :'井绳都备好了，就等你打水。\n还差 '+(3-errands)+' 件差事——做完阿婆的差事再来。')};
-    return {t:'帮阿婆做三件事 ('+errands+'/3)',note:false,run:null};
+    return {t:ta?('帮阿婆做事 · '+ta.name+' · 跟着地上的光走'):'帮阿婆做三件事 ('+errands+'/3)',note:false,run:null};
   }
   // ---- 第三章：请牌位 / 收灯油 / 神龛安放 / 大门（半径提示与执行共用同一数值）----
   if(chapter===3){
@@ -2101,7 +2196,7 @@ function findTile(L,ch){const t=tiles[L];for(let y=0;y<t.length;y++)for(let x=0;
 function guideGoal(){
   const d=(x,y)=>Math.hypot(player.x-x,player.y-y);
   if(chapter===0){
-    if(errands<3){const t=ch0Tasks.find(t=>!t.done);return t?{x:t.x,y:t.y,label:'帮阿婆做差事 ('+errands+'/3)'}:null;}
+    if(errands<3){const t=ch0Active(),p=ch0Point();return (t&&p)?{x:p.x,y:p.y,label:t.name+' ('+(t.step+1)+'/'+t.pts.length+')'}:null;}
     if(d(WELL_X,WELL_Y)>2.8)return {x:WELL_X,y:WELL_Y,label:'去村口老井打水'};
     return null;
   }
@@ -2131,14 +2226,17 @@ function guideGoal(){
 }
 
 
-const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34],g:[158,176,92],p:[198,172,122]};   // g/p：第〇章草地/土路
+const FLOOR_COLORS={T:[138,114,84],W:[86,60,42],G:[44,58,36],S:[54,54,58],D:[48,42,34],g:[158,176,92],p:[198,172,122],
+  v:[126,158,88],q:[212,184,136],r:[188,180,158]};   // v/q/r：第〇章草地 / 晒场土路 / 井台石板（g、p 留给终章）
 function floorStyle(x,y,L){
   if(L===undefined)L=lvl;
   const ix=Math.floor(x),iy=Math.floor(y);
-  if(L===4){   // 第〇章：青草晒场 + 中央土路
-    if(Math.abs(ix-11.5)<=1)return 'p';
-    if(iy>=3&&iy<=16&&hashInt(ix*13,iy*29)%23===0)return 'p';
-    return 'g';
+  if(L===4){   // 第〇章：草地 / 连到井台的土路 / 三处场院 / 井台石板
+    const wx=ix+0.5,wy=iy+0.5;
+    if(Math.hypot(wx-WELL_X,wy-WELL_Y)<3.1)return 'r';
+    if(ix>=10&&ix<=12&&iy>=2&&iy<=17)return 'q';
+    if((ix>=4&&ix<=7&&iy>=7&&iy<=10)||(ix>=16&&ix<=21&&iy>=11&&iy<=14)||(ix>=6&&ix<=10&&iy>=14&&iy<=17))return 'q';
+    return 'v';
   }
   if(L===1)return hashInt(ix*2,iy*3)%9===0?'D':'S';
   if(L===2){   // 第二章：大堂铺石板，其余木地板
@@ -2170,7 +2268,13 @@ function buildFloorCache(L){
   const f={tw,th,R:new Uint8Array(tw*th),G:new Uint8Array(tw*th),B:new Uint8Array(tw*th),U:new Uint8Array(tw*th)};
   for(let y=0;y<th;y++)for(let x=0;x<tw;x++){
     const c=FLOOR_COLORS[floorStyle(x+0.5,y+0.5,L)],k=y*tw+x;
-    f.R[k]=c[0];f.G[k]=c[1];f.B[k]=c[2];f.U[k]=t[y][x]==='U'?1:0;
+    // 白昼地面要有一层大尺度明暗（云影/树影），烘进缓存，逐像素热路径零额外开销
+    let sh=1;
+    if(L===4){
+      const a=hashInt(x>>2,y>>2)/255,b=hashInt((x>>2)+1,y>>2)/255,d=hashInt(x>>2,(y>>2)+1)/255;
+      sh=0.87+0.22*(a+(b-a)*((x&3)/4))*0.65+0.10*d;
+    }
+    f.R[k]=c[0]*sh;f.G[k]=c[1]*sh;f.B[k]=c[2]*sh;f.U[k]=t[y][x]==='U'?1:0;
   }
   return f;
 }
@@ -2184,15 +2288,185 @@ function stairsOf(L){
   return stairsCache[L]=a;
 }
 
+// 第〇章天空：暖白地平线 + 日晕 + 薄云 + 远山/树线剪影。
+// 预烘焙成两倍宽贴图，每帧只按朝向做一次横向取样（buf32.set），不进逐像素热路径。
+let ch0SkyTex=null,ch0SkyW=0,ch0SkyH=0;
+function ch0BuildSky(){
+  const horizon=VH>>1,SW=VW*2;
+  ch0SkyTex=new Uint32Array(SW*horizon);ch0SkyW=SW;ch0SkyH=horizon;
+  const sunX=VW*0.72,sunY=horizon*0.30,sunR=Math.max(64,VW*0.17);
+  for(let y=0;y<horizon;y++){
+    const tt=y/horizon,br=118+130*tt,bg=180+62*tt,bb=224+28*tt;
+    for(let sx=0;sx<SW;sx++){
+      let r=br,g=bg,b=bb;
+      let gl=0;
+      for(let k=0;k<2;k++){
+        const dx=(sx-(sunX+k*VW))/sunR,dy=(y-sunY)/(sunR*1.35),v=1-dx*dx-dy*dy;
+        if(v>0)gl=Math.max(gl,v*v);
+      }
+      if(gl>0){r+=(255-r)*gl*0.94;g+=(250-g)*gl*0.94;b+=(218-b)*gl*0.90;}
+      const cy1=horizon*0.33+Math.sin(sx*0.013)*9+Math.sin(sx*0.031+1.7)*5;
+      const cy2=horizon*0.50+Math.sin(sx*0.009+2.2)*7;
+      const ct=Math.max(1-Math.abs(y-cy1)/(horizon*0.055),1-Math.abs(y-cy2)/(horizon*0.042));
+      if(ct>0){const cl=ct*0.32*(0.6+0.4*Math.sin(sx*0.02+y*0.03));r+=(255-r)*cl;g+=(252-g)*cl;b+=(245-b)*cl;}
+      const ridge=horizon-horizon*(0.095+0.048*Math.sin(sx*0.010)+0.026*Math.sin(sx*0.027+1.1));
+      if(y>ridge){const k=Math.min(1,(y-ridge)/(horizon*0.10));r=146+22*k;g=174+18*k;b=166+14*k;}
+      const tooth=((sx%37)<18?1:0)*horizon*0.020;
+      const tree=horizon-horizon*0.034-tooth-Math.abs(Math.sin(sx*0.045))*horizon*0.012;
+      if(y>tree){r=76;g=106;b=70;}
+      ch0SkyTex[y*SW+sx]=pack(clamp(r,0,255),clamp(g,0,255),clamp(b,0,255));
+    }
+  }
+}
+function ch0SkyRow(y){
+  const horizon=VH>>1;
+  if(!ch0SkyTex||ch0SkyW!==VW*2||ch0SkyH!==horizon)ch0BuildSky();
+  const ang=Math.atan2(player.dirY,player.dirX);
+  let off=Math.round((ang/(Math.PI*2))*VW*1.4+player.x*6+player.y*3)%VW;
+  if(off<0)off+=VW;
+  buf32.set(ch0SkyTex.subarray(y*ch0SkyW+off,y*ch0SkyW+off+VW),y*VW);
+}
+
+// ==================== 第〇章 · 世界内引导与专属 HUD ====================
+// 只在世界坐标里指示方向：光柱 + 地面光圈 + 悬浮字牌 + BFS 路标。
+// 屏幕上方那个悬空箭头（会指向墙、还压住白字）在第〇章不再画。
+function ch0RoundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);
+}
+function ch0WorldGuide(tSec){
+  const g=guideGoal();
+  if(!g)return;
+  const invDet=1/(player.planeX*player.dirY-player.dirX*player.planeY);
+  const proj=(wx,wy)=>{
+    const dx=wx-player.x,dy=wy-player.y;
+    const tX=invDet*(player.dirY*dx-player.dirX*dy);
+    const tY=invDet*(-player.planeY*dx+player.planeX*dy);
+    if(tY<0.35)return null;
+    return {tY:tY,sx:(VW/2)*(1+tX/tY),gy:VH/2+VH/(2*tY)+bobY,unit:VH/tY};
+  };
+  // 1) 地面路钉：从「当前朝向」平滑转向「目标方向」的一条弧线。
+  //    BFS 最短路径的第一段常是纯横向（tY≈0，第一人称里全在屏幕外），照它画等于没画。
+  //    弧线保证标记始终落在前方视野内，玩家顺着走就会转到目标方向；撞墙的点直接跳过。
+  const viewAng=Math.atan2(player.dirY,player.dirX);
+  const aimAng=Math.atan2(g.y-player.y,g.x-player.x);
+  let delta=aimAng-viewAng;
+  delta=Math.atan2(Math.sin(delta),Math.cos(delta));
+  ctx.save();
+  for(let i=1;i<=7;i++){
+    const t=i/8,ang=viewAng+delta*t,dist=1.05+i*0.34;   // 只在脚下前方 1.4~3.4 格，绕开远处篱笆
+    const wx=player.x+Math.cos(ang)*dist,wy=player.y+Math.sin(ang)*dist;
+    const tt=tile(Math.floor(wx),Math.floor(wy));
+    if(tt==='#'||tt==='S'||tt==='J'||tt==='B'||tt==='C'||tt==='X'||tt==='D')continue;
+    const p=proj(wx,wy);
+    if(!p||p.sx<0||p.sx>VW)continue;
+    const cx=Math.round(p.sx);
+    if(p.tY>=zBuffer[cx])continue;
+    const a=(1-i/9)*0.88*(0.80+0.20*Math.sin(tSec*4-i*0.8));
+    const rad=Math.max(3,p.unit*0.075);
+    ctx.fillStyle='rgba(74,46,14,'+(a*0.42).toFixed(3)+')';
+    ctx.beginPath();ctx.ellipse(p.sx,p.gy,rad*1.30,rad*0.62,0,0,6.2832);ctx.fill();
+    ctx.fillStyle='rgba(226,138,40,'+a.toFixed(3)+')';
+    ctx.beginPath();ctx.ellipse(p.sx,p.gy,rad,rad*0.46,0,0,6.2832);ctx.fill();
+    ctx.fillStyle='rgba(255,238,186,'+(a*0.9).toFixed(3)+')';
+    ctx.beginPath();ctx.ellipse(p.sx,p.gy-rad*0.10,rad*0.30,rad*0.16,0,0,6.2832);ctx.fill();
+  }
+  ctx.restore();
+  // 2) 目标光柱 / 光圈 / 字牌，逐列遵守 zBuffer（不穿墙）
+  const q=proj(g.x,g.y);
+  if(!q||q.sx<-VW||q.sx>VW*2)return;
+  const centre=Math.round(q.sx);
+  const visible=centre>=0&&centre<VW&&q.tY<zBuffer[centre];
+  const alpha=visible?1:0.16;
+  const pulse=0.72+0.28*Math.sin(tSec*2.6);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const rr=Math.max(8,Math.min(q.unit*0.36,90));
+  const eg=ctx.createRadialGradient(q.sx,q.gy,2,q.sx,q.gy,rr);
+  eg.addColorStop(0,'rgba(255,226,150,'+(0.46*pulse*alpha).toFixed(3)+')');
+  eg.addColorStop(1,'rgba(255,200,110,0)');
+  ctx.fillStyle=eg;
+  ctx.beginPath();ctx.ellipse(q.sx,q.gy,rr,rr*0.34,0,0,6.2832);ctx.fill();
+  const halfW=Math.max(4,Math.min(q.unit*0.095,42)),top=q.gy-Math.min(q.unit*1.35,VH*0.62);
+  const lg=ctx.createLinearGradient(0,q.gy,0,top);
+  lg.addColorStop(0,'rgba(255,226,150,0.46)');
+  lg.addColorStop(0.55,'rgba(255,214,120,0.16)');
+  lg.addColorStop(1,'rgba(255,214,120,0)');
+  ctx.fillStyle=lg;
+  const x0=Math.max(0,Math.floor(q.sx-halfW)),x1=Math.min(VW,Math.ceil(q.sx+halfW));
+  for(let x=x0;x<x1;x++){
+    if(q.tY>=zBuffer[x])continue;
+    const f=1-Math.abs(x-q.sx)/halfW;
+    ctx.globalAlpha=alpha*f*0.9;
+    ctx.fillRect(x,top,1,q.gy-top);
+  }
+  ctx.restore();
+  if(q.sx<0||q.sx>VW){
+    const left=q.sx<0,ex=left?18:VW-18,ey=VH*0.55,s=left?1:-1;
+    ctx.save();ctx.globalAlpha=0.88;ctx.fillStyle='#f0cf7e';
+    ctx.beginPath();ctx.moveTo(ex+s*11,ey);ctx.lineTo(ex-s*7,ey-9);ctx.lineTo(ex-s*7,ey+9);ctx.closePath();ctx.fill();
+    ctx.font='12px '+GAME_FONT;ctx.textAlign=left?'left':'right';ctx.textBaseline='middle';
+    ctx.fillText('目标 '+Math.round(Math.hypot(g.x-player.x,g.y-player.y))+' 步',left?ex+18:ex-18,ey);
+    ctx.restore();
+  }
+  if(visible){
+    const label=g.label+' · '+Math.round(Math.hypot(g.x-player.x,g.y-player.y))+' 步';
+    ctx.save();ctx.font='13px '+GAME_FONT;ctx.textAlign='center';ctx.textBaseline='middle';
+    const tw=ctx.measureText(label).width,pw=tw+22,ph=25;
+    const py=Math.max(140,top-14),px=clamp(q.sx,pw/2+6,VW-pw/2-6);   // 不压左上任务卡/顶部罗盘
+    ctx.fillStyle='rgba(28,30,22,0.80)';ch0RoundRect(px-pw/2,py-ph/2,pw,ph,6);ctx.fill();
+    ctx.strokeStyle='rgba(240,206,124,0.72)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#f6e6bd';ctx.fillText(label,px,py+1);
+    ctx.restore();
+  }
+}
+function ch0DrawHud(tSec){
+  const x0=12,y0=12,w=Math.min(210,VW*0.38),h=106;
+  ctx.save();
+  ctx.fillStyle='rgba(26,30,22,0.58)';ch0RoundRect(x0,y0,w,h,8);ctx.fill();
+  ctx.strokeStyle='rgba(240,214,150,0.30)';ctx.lineWidth=1;ctx.stroke();
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.font='12px '+GAME_FONT;ctx.fillStyle='rgba(240,226,190,0.92)';
+  ctx.fillText('第〇章 · 夏日',x0+14,y0+17);
+  ctx.font='13px '+GAME_FONT;
+  const act=ch0Active();
+  for(let i=0;i<ch0Tasks.length;i++){
+    const t=ch0Tasks[i],cur=t===act,yy=y0+42+i*22;
+    ctx.fillStyle=t.done?'rgba(158,206,140,0.92)':(cur?'rgba(255,226,152,0.98)':'rgba(214,214,202,0.60)');
+    const mark=t.done?'✓':(cur?'▸':'○');
+    const prog=t.done?'完成':(cur?(t.step+1)+'/'+t.pts.length:'—');
+    ctx.fillText(mark+'  '+t.name+'　'+prog,x0+14,yy);
+  }
+  ctx.restore();
+  const g=guideGoal();
+  if(g){
+    const dx=g.x-player.x,dy=g.y-player.y;
+    const ang=Math.atan2(dy,dx)-Math.atan2(player.dirY,player.dirX);
+    const a=Math.atan2(Math.sin(ang),Math.cos(ang));
+    const dir=Math.abs(a)<0.45?'正前方':(Math.abs(a)>2.4?'身后':(a>0?'右侧':'左侧'));
+    const label='「'+g.label+'」· '+dir+' · '+Math.round(Math.hypot(dx,dy))+' 步';
+    ctx.save();ctx.font='13px '+GAME_FONT;ctx.textAlign='center';ctx.textBaseline='middle';
+    const tw=ctx.measureText(label).width,cy=26,px=clamp(VW*0.68,tw/2+14,VW-tw/2-14);
+    ctx.fillStyle='rgba(26,30,22,0.52)';ch0RoundRect(px-tw/2-12,cy-13,tw+24,26,6);ctx.fill();
+    ctx.fillStyle='rgba(246,228,180,0.96)';ctx.fillText(label,px,cy+1);
+    ctx.restore();
+  }
+}
+function ch0DrawPrompt(txt){
+  ctx.save();ctx.font='14px '+GAME_FONT;ctx.textAlign='center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(txt).width,pw=tw+40,ph=30;
+  const px=clamp(VW/2,pw/2+8,VW-pw/2-8),py=VH-(isTouch?92:26);
+  ctx.fillStyle='rgba(26,30,22,0.76)';ch0RoundRect(px-pw/2,py-ph/2,pw,ph,7);ctx.fill();
+  ctx.strokeStyle='rgba(240,206,124,0.70)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#f6e6bd';ctx.fillText(txt,px,py+1);
+  ctx.restore();
+}
+
 function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度，基线提亮；随机抖动减到 0.02
   const flicker=lvl===4?1:(0.95+0.045*Math.sin(tSec*4.1)+Math.random()*0.02)*(flickerEvent>0?0.55:1)*(lvl===1?0.93:1);   // 第〇章白昼恒亮
   const horizon=VH>>1;
   const hw=VH/2;
   for(let y=0;y<horizon;y++){const tt=y/horizon;
-    if(lvl===4){   // 第〇章：盛夏晴空，湛蓝→地平线暖白
-      const r=(120+115*tt)|0,g=(185+52*tt)|0,b=(235+(255-235)*tt)|0;
-      buf32.fill(pack(r,g,Math.min(255,b)),y*VW,y*VW+VW);
-    }
+    if(lvl===4){ch0SkyRow(y);}   // 第〇章：晴日天空（日晕/薄云/远山/树线，随朝向视差平移）
     else if(lvl===2){const v=(5+26*tt)|0;buf32.fill(pack((v*0.75)|0,(v*0.92)|0,Math.min(255,(v*1.35+8)|0)),y*VW,y*VW+VW);}   // 第二章：冷青夜色
     else if(lvl===3){const v=(6+22*tt)|0;buf32.fill(pack(Math.min(255,(v*1.05)|0),(v*1.02)|0,(v*0.8)|0),y*VW,y*VW+VW);} // 第三章：灰绿朽败
     else if(lvl===5){const v=(4+20*tt)|0;buf32.fill(pack((v*0.82)|0,(v*1.02)|0,Math.min(255,(v*1.5+6)|0)),y*VW,y*VW+VW);} // 终章：深水蓝黑夜空
@@ -2213,7 +2487,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       const ix=Math.floor(fx),iy=Math.floor(fy);
       const ex=fx-ix,ey=fy-iy;
       // 体素地砖：北/西棱受光、南/东棱落影（凸块感）
-      const m=(ex<0.045||ey<0.045)?1.09:((ex>0.955||ey>0.955)?0.78:1);
+      const m=lvl===4?((ex<0.035||ey<0.035)?1.035:((ex>0.965||ey>0.965)?0.93:1))
+                     :((ex<0.045||ey<0.045)?1.09:((ex>0.955||ey>0.955)?0.78:1));
       // 逐像素热路径：hashInt / clamp / pack 全部内联（地面每帧约 VW*VH/2 次，省下 5 次函数调用/像素）
       let hx=(fx*31)|0,hy=(fy*57)|0;
       let h=(hx*73856093)^(hy*19349663);h^=h>>>13;h=(h*1274126177)>>>0;
@@ -2265,14 +2540,17 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       const lineH=Math.round(VH/h.perp);
       const half=lineH/2;
       let y0=Math.floor(horizon-half),y1=Math.floor(horizon+half);
+      // 第〇章：外圈改成半人高的土院墙，让远山/树线/邻家屋顶露出来（旧版一堵黑墙把地平线封死）
+      const ch0Outer=lvl===4&&(h.shoji||h.mapX===0||h.mapY===0||h.mapX===CH0_W-1||h.mapY===CH0_H-1);
+      if(ch0Outer)y0=Math.floor(horizon+half-lineH*0.46);
       if(y0<0)y0=0;if(y1>VH)y1=VH;
       if(y1<=y0)continue;
       const shade=Math.min(1,1.32/(1+h.perp*h.perp*0.08))*flicker*(h.side===1?0.85:1);   // 提亮：衰减放缓
       const fogK=Math.min(1,h.perp/fogDenom);
       const fogR=(fC[0]*fogK)|0,fogG=(fC[1]*fogK)|0,fogB=(fC[2]*fogK)|0;
-      let texPos=(y0-(horizon-half))*64/lineH;
-      const stepT=64/lineH;
-      const a=h.shoji?0.5:1;
+      let texPos=ch0Outer?0:(y0-(horizon-half))*64/lineH;
+      const stepT=ch0Outer?64/Math.max(1,y1-y0):64/lineH;
+      const a=(h.shoji&&lvl!==4)?0.5:1;   // 第〇章篱笆是实心木栅，不做障子半透明
       for(let y=y0;y<y1;y++){
         const c=tex[((texPos|0)&63)*64+texX];texPos+=stepT;
         const r=Math.min(255,(c&255)*shade+fogR);
@@ -2292,7 +2570,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         let ry0=Math.floor(yTop),ry1=Math.ceil(yBot);
         if(ry0<0)ry0=0;if(ry1>VH)ry1=VH;
         if(ry1>ry0){
-          const rTex=(bld.night?roofNight:roofSun).u32;
+          const rTex=(bld.night?roofNight:sunRoof).u32;
           const ru=clamp((wallX*64)|0,0,63);
           const rv=64/(yBot-yTop||1);
           for(let y=ry0;y<ry1;y++){
@@ -2326,7 +2604,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
           const vo=VL[vi];
           const vex=player.x-vo.x,vey=player.y-vo.y;
           const vpr=vex*rdx+vey*rdy;
-          if(vpr<=0)continue;                                   // 在身后
+          if(vpr>=0)continue;                                   // 在身后（vex/vey 指向玩家：前方体积 vpr<0）
           const vperp=(vex*vex+vey*vey)-vpr*vpr/vdd;             // 射线到中心的垂距²
           const vrr=vo.rmax+0.04;
           if(vperp>vrr*vrr)continue;
@@ -2492,8 +2770,15 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     if(tabsPlaced>0){const tp=[[12.15,1.5],[12.5,1.44],[12.85,1.52]];for(let i=0;i<tabsPlaced&&i<3;i++){const o=tp[i];sprites.push({x:o[0],y:o[1],img:tabletImg,scale:0.55,lift:1.02});}}   // 供在龛内
   }
   if(chapter===0&&lvl===4){
-    // 阿婆的三件差事：未完成的才显示（收走/喂完即消失）
-    for(const t of ch0Tasks){if(!t.done)sprites.push({x:t.x,y:t.y,img:t.img,scale:t.scale,bob:t.img===chickImg,phase:2.1});}
+    const act=ch0Active();
+    for(const t of ch0Tasks){
+      if(t.done)continue;
+      for(let i=t.step;i<t.pts.length;i++){
+        const p=t.pts[i],cur=(t===act&&i===t.step);
+        sprites.push({x:p.x,y:p.y,img:t.img,scale:t.scale*(t.key==='plum'?0.72:1),
+          bob:t.key==='chick',phase:2.1+i,glow:cur?0.55:0});
+      }
+    }
   }
   if(chapter===4&&lvl===5){
     // 井中少女（追杀者）+ 三件祭品 + 灯油坛 + 还愿木桶
@@ -2619,6 +2904,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
     }
   }
 
+  if(chapter===0&&state==='playing'&&!seq)ch0WorldGuide(tSec);
   // 暗角：按尺寸缓存渐变（性能），整体减淡提亮；第〇章白昼几乎无暗角
   const vkey=VW+'x'+VH+'c'+chapter;
   if(vgKey!==vkey){
@@ -2689,10 +2975,8 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       ctx.font='15px '+GAME_FONT;
       ctx.textAlign='left';
       ctx.fillStyle='rgba(220,220,220,0.85)';
-      if(chapter===0){
-        ctx.fillText('差事　'+errands+' / 3',28,VH-20);
-        ctx.fillText('老家 · 村口老井在北面',12,18);
-      }else if(chapter===2){
+      if(chapter===0){ch0DrawHud(tSec);}
+      else if(chapter===2){
         ctx.fillText('送还　'+ritualN+' / 6',28,VH-20);
         ctx.fillText('旧宅 · 大堂在中央'+(grabs>0?' · 余 '+(3-grabs):''),12,18);
       }else if(chapter===3){
@@ -2708,6 +2992,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         ctx.fillText('钥匙　'+(hasKey?'有':'无'),28,VH-40);
         ctx.fillText(lvl===0?'一层':'地下室',12,18);
       }
+      if(chapter!==0){
       ctx.textAlign='right';
       ctx.fillStyle='rgba(220,220,220,0.85)';
       ctx.fillText('精神',VW-12,VH-44);
@@ -2717,12 +3002,17 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       sg.addColorStop(0,'rgb(70,150,70)');sg.addColorStop(0.5,'rgb(190,150,60)');sg.addColorStop(1,'rgb(190,50,45)');
       ctx.fillStyle=sg;ctx.fillRect(VW-120,VH-36,108*sc,6);
       ctx.strokeStyle='rgba(220,220,220,0.5)';ctx.strokeRect(VW-122,VH-38,110,10);
+      }
     }
     if(!seq){
       const hv=computeHint();
-      if(hv.t){ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle=hv.note?'rgba(235,220,180,0.75)':'rgba(230,230,230,0.7)';ctx.fillText(hv.t,VW/2,VH-10);}
-      // ---- 全程引导箭头：指向当前目标（屏幕上方中央），带一句话提示与距离 ----
-      const gg=guideGoal();
+      if(hv.t){
+        if(chapter===0&&/^E /.test(hv.t))ch0DrawPrompt(hv.t);
+        else if(chapter===0){ctx.save();ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle='rgba(246,236,212,0.78)';ctx.fillText(hv.t,VW/2,VH-(isTouch?70:14));ctx.restore();}
+        else{ctx.textAlign='center';ctx.font='13px '+GAME_FONT;ctx.fillStyle=hv.note?'rgba(235,220,180,0.75)':'rgba(230,230,230,0.7)';ctx.fillText(hv.t,VW/2,VH-10);}
+      }
+      // ---- 第〇章改用世界内光柱/路标；其余章节沿用悬空箭头 ----
+      const gg=chapter===0?null:guideGoal();
       if(gg){
         const gdx=gg.x-player.x,gdy=gg.y-player.y,gd=Math.hypot(gdx,gdy);
         const ang=Math.atan2(gdy,gdx)-Math.atan2(player.dirY,player.dirX);
@@ -2764,12 +3054,20 @@ function updateHud(){
   mh.style.display='flex';
   if(tc)tc.style.display='block';
   const isCh0=chapter===0,isCh2=chapter===2,isCh3=chapter===3,isCh4=chapter===4;
-  document.getElementById('hudLevel').textContent=isCh0?'老家':(isCh2?'旧宅':(isCh3?'义庄':(isCh4?'夜村':(lvl===0?'一层':'地下室'))));
+  const sanBox=document.getElementById('hudSanityBox');
+  if(sanBox)sanBox.style.display=isCh0?'none':'flex';   // 第〇章没有 SAN 机制
+  document.getElementById('hudLevel').textContent=isCh0?'夏日 · 老家':(isCh2?'旧宅':(isCh3?'义庄':(isCh4?'夜村':(lvl===0?'一层':'地下室'))));
   const gl=grabs>0?' · 余'+(3-grabs):'';   // 移动端：剩余挣扎次数
   document.getElementById('hudDolls').textContent=isCh0?'差事 '+errands+'/3':(isCh2?'送还 '+ritualN+'/6'+gl:(isCh3?'牌位 '+(tabsPlaced+tabsCarried)+'/3'+gl:(isCh4?'沉愿 '+offerSunk+'/3'+gl:'纸人偶 '+dollsTaken+'/6')));
   const hk=document.getElementById('hudKey');
-  hk.textContent=(isCh3||isCh4)?('灯油 '+Math.round(oil)+'%'):('钥匙 '+(hasKey?'有':'无'));
-  hk.style.display=(isCh2)?'none':'';
+  if(isCh0){
+    const t=ch0Active();
+    hk.textContent=t?(t.name+' '+(t.step+1)+'/'+t.pts.length):'去井台打水';
+    hk.style.display='';
+  }else{
+    hk.textContent=(isCh3||isCh4)?('灯油 '+Math.round(oil)+'%'):('钥匙 '+(hasKey?'有':'无'));
+    hk.style.display=(isCh2)?'none':'';
+  }
   document.getElementById('hudSanity').style.width=clamp(sanity,0,100)+'%';
 }
 
@@ -2811,7 +3109,7 @@ function resetChapterState(){
   if(chapter===2&&MAPS.length>2)spawnGhost();
   if(chapter===3&&MAPS.length>3)resetCh3State();
   if(chapter===4&&MAPS.length>5){resetCh4State();spawnGhost();}
-  if(chapter===0){errands=0;for(const t of ch0Tasks)t.done=false;nextBird=timeSec+1.2;}
+  if(chapter===0)ch0Reset();
   const s=spawns[lvl]||spawns[0];
   player.x=s.x;player.y=s.y;player.dirX=0;player.dirY=-1;player.planeX=0.66;player.planeY=0;
   mouseDX=0;ePressed=false;startTime=timeSec;

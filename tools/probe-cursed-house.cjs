@@ -75,9 +75,19 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     O.paths.ch3 = { tabsPlaced, win: pressUntil(() => seq && seq.mode === 'win') };
 
     start(0);
-    for (const t of ch0Tasks) { goto(t.x, t.y, 4); pressUntil(() => t.done); }
+    let ch0Steps = 0, ch0PromptOk = true;
+    for (const t of ch0Tasks) {
+      for (let i = 0; i < t.pts.length; i++) {
+        const p = t.pts[i];
+        goto(p.x, p.y, 4);
+        if (!/^E /.test(computeHint().t)) ch0PromptOk = false;
+        if (pressUntil(() => t.step > i)) ch0Steps++;
+      }
+    }
     goto(WELL_X, WELL_Y, 4);
-    O.paths.ch0 = { errands, win: pressUntil(() => seq && seq.mode === 'win') };
+    O.paths.ch0 = { errands, steps: ch0Steps, prompts: ch0PromptOk,
+      tasks: ch0Tasks.map(t => ({ key: t.key, step: t.step, done: t.done, n: t.pts.length })),
+      win: pressUntil(() => seq && seq.mode === 'win') };
 
     start(4);
     let sunk = 0;
@@ -109,7 +119,7 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
       const actionable = /^E /.test(hint);
       O.drift.push({ label, hint, verdict: (actionable && !changed) ? 'PROMPT_NO_ACTION' : (changed && !actionable) ? 'ACTION_NO_PROMPT' : 'ok' });
     };
-    ch0Tasks.forEach((t, i) => probe(0, 'ch0-task' + i, t.x, t.y, 4));
+    ch0Tasks.forEach(t => t.pts.forEach((p, i) => probe(0, 'ch0-' + t.key + i, p.x, p.y, 4)));
     probe(0, 'ch0-well-busy', WELL_X, WELL_Y, 4);
     probe(0, 'ch0-well-done', WELL_X, WELL_Y, 4, () => { errands = 3; });
     dolls.forEach((d, i) => probe(1, 'ch1-doll' + i, d.x, d.y, d.lvl));
@@ -158,6 +168,42 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     document.getElementById('dead').click();
     O.flow.dead = { state, chapter, marker: window.__chMarker, deadHidden: document.getElementById('dead').style.display };
 
+    // --- 第〇章：世界内引导真的画出来了、实体几何射线方向没再写反 ---
+    start(0); state = 'playing'; seq = null; flashBlack = 0; toast = { text: '', t: 0 };
+    player.x = 12.5; player.y = 17.5; player.dirX = 0; player.dirY = -1; player.planeX = 0.66; player.planeY = 0;
+    const gg0 = guideGoal();
+    const countGold = () => {
+      const d0 = ctx.getImageData(0, 0, VW, VH).data;
+      let n = 0;
+      for (let i = 0; i < d0.length; i += 4) {
+        const r = d0[i], g = d0[i + 1], b = d0[i + 2];
+        if (r > 190 && g > 120 && g < 240 && b < 160 && r - b > 95) n++;
+      }
+      return n;
+    };
+    let guideErr = null;
+    try { render(1.2); } catch (e) { guideErr = String(e); }
+    const countDots = () => {                        // 深橙路钉专用色，土路/草地/金色 UI 都不落在这个区间
+      const d0 = ctx.getImageData(0, 0, VW, VH).data;
+      let n = 0;
+      for (let i = 0; i < d0.length; i += 4) {
+        const r = d0[i], g = d0[i + 1], b = d0[i + 2];
+        if (r > 180 && g > 80 && g < 175 && b < 90) n++;
+      }
+      return n;
+    };
+    const goldFar = countGold();                     // 出生点：目标在左侧视野外，应出现边缘指示
+    const dotsFar = countDots();                     // 脚下前方必须是一串路钉，不是一个
+    player.x = 5.5; player.y = 11.2; player.dirX = 0; player.dirY = -1; player.planeX = 0.66; player.planeY = 0;
+    try { render(1.2); } catch (e) { guideErr = String(e); }
+    const goldNear = countGold();                    // 面向目标：光柱 + 光圈 + 字牌 + 路标
+    const dotsNear = countDots();
+    const vo = volByLvl[4][0];
+    O.ch0 = { guide: gg0 && gg0.label, guideErr, gold: goldFar, goldFar, goldNear, dotsFar, dotsNear,
+      tasks: ch0Tasks.map(t => t.pts.length),
+      vol: { count: volByLvl[4].length,
+             vpr: +((player.x - vo.x) * player.dirX + (player.y - vo.y) * player.dirY).toFixed(2) } };
+
     // --- 渲染耗时（软件渲染，取中位）---
     for (const ch of [0, 1, 2, 3, 4]) {
       startChapter(ch, true); state = 'playing'; seq = null;
@@ -174,7 +220,14 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
   add('钥匙/纸条同点：先提示纸条再提示钥匙', p.ch1.keyHint1 === 'E 拾起纸条' && p.ch1.after1.hasKey === false && p.ch1.keyHint2 === 'E 捡起钥匙', p.ch1.keyHint1 + ' → ' + p.ch1.keyHint2);
   add('ch2 通关路径(送还6+点火)', p.ch2.ritualN === 6 && p.ch2.fireSpawned && p.ch2.win, JSON.stringify(p.ch2));
   add('ch3 通关路径(3牌位+神龛+门)', p.ch3.tabsPlaced === 3 && p.ch3.win, JSON.stringify(p.ch3));
-  add('ch0 通关路径(3差事+井)', p.ch0.errands === 3 && p.ch0.win, JSON.stringify(p.ch0));
+  add('ch0 通关路径(8步差事+井)', p.ch0.errands === 3 && p.ch0.steps === 8 && p.ch0.prompts && p.ch0.win
+    && p.ch0.tasks.every(t => t.step === t.n && t.done), JSON.stringify(p.ch0));
+  add('ch0 世界内引导：视野外指示 + 视野内光柱/路标', game.ch0.guideErr === null
+    && game.ch0.goldFar > 100 && game.ch0.goldNear > 100
+    && game.ch0.guide.includes('收梅子'), JSON.stringify(game.ch0));
+  add('ch0 地面路钉成串可见（不是被墙挡成孤点）', game.ch0.dotsFar > 260 && game.ch0.dotsNear > 120,
+    'dotsFar=' + game.ch0.dotsFar + ' dotsNear=' + game.ch0.dotsNear);
+  add('井亭实体几何射线方向正确(前方 vpr<0)', game.ch0.vol.count === 6 && game.ch0.vol.vpr < 0, JSON.stringify(game.ch0.vol));
   add('ch4 通关路径(3祭品+沉桶)', p.ch4.offerSunk === 3 && p.ch4.bucketSpawned && p.ch4.win, JSON.stringify(p.ch4));
   const bad = game.drift.filter(d => d.verdict !== 'ok');
   add('提示/交互一致性 ' + game.drift.length + ' 点位', bad.length === 0, bad.length ? JSON.stringify(bad) : 'all ok');
@@ -208,7 +261,15 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     startChapter(1, true); state = 'playing'; seq = { mode: 'win', t: 2.7 }; update(0.1);
     const winUI = ui(), winSeq = seq;
     startChapter(1, true); state = 'playing'; flashBlack = 0; toast = { text: '', t: 0 }; showLookHint(); updateHud();
-    return {
+    // 第〇章专属 HUD：这一章没有钥匙，也没有 SAN 机制
+    startChapter(0, true); state = 'playing'; flashBlack = 0; toast = { text: '', t: 0 }; updateHud(); render(1.2);
+    const ch0Hud = {
+      level: document.getElementById('hudLevel').textContent,
+      dolls: document.getElementById('hudDolls').textContent,
+      key: document.getElementById('hudKey').textContent,
+      san: document.getElementById('hudSanityBox').style.display,
+    };
+    return { ch0Hud,
       flexDir: getComputedStyle(hint).flexDirection,
       textWidth: Math.round(lr.width), textHeight: Math.round(lr.height),
       noWrap: lk.scrollWidth <= lk.clientWidth + 1,
@@ -223,6 +284,8 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     && ['pausedUI', 'titleUI', 'winUI'].every(k => lay[k].touch === 'none' && lay[k].hud === 'none'),
     JSON.stringify({ p: lay.playingUI, pause: lay.pausedUI, title: lay.titleUI, win: lay.winUI }));
   add('结算后停止世界渲染', lay.winSeq === null, 'seq=' + lay.winSeq);
+  add('ch0 触屏 HUD 无钥匙/精神模板残留', lay.ch0Hud.san === 'none' && !lay.ch0Hud.key.includes('钥匙')
+    && lay.ch0Hud.key.includes('收梅子') && lay.ch0Hud.dolls.includes('差事'), JSON.stringify(lay.ch0Hud));
   await mp.evaluate(() => { flashBlack = 0; toast = { text: '', t: 0 }; render(3.2); });
   await mp.screenshot({ path: SHOT('ch_mobile_after.png') });
   R.shots.push(SHOT('ch_mobile_after.png'));
