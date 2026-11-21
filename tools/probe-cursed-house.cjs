@@ -208,6 +208,18 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
       vol: { count: wellVols, houses: houses.length, roofs: roofs.length,
              vpr: +((player.x - vo.x) * player.dirX + (player.y - vo.y) * player.dirY).toFixed(2) } };
 
+    // --- 室内四章：天花板贴图 + 体积陈设 + 村庄牌坊 ---
+    O.rooms = {};
+    for (const LL of [0,1,2,3]) {
+      lvl = LL; const sp = spawns[LL]; player.x = sp.x; player.y = sp.y;
+      player.dirX = 0; player.dirY = -1; player.planeX = 0.66; player.planeY = 0;
+      render(1.2);
+      const ct = ceilTexOf(LL).u32; let mn = 255, mx = 0;
+      for (let i = 0; i < 4096; i++) { const v = ct[i] & 255; if (v < mn) mn = v; if (v > mx) mx = v; }
+      O.rooms[LL] = { range: mx - mn, boxes: volByLvl[LL].filter(v => v.k === 'box').length, vols: volByLvl[LL].length };
+    }
+    O.gate = [4,5].map(LL => volByLvl[LL].filter(v => v.k === 'box' && v.y0 > 1.0 && v.hw > 1.0).length);
+
     // --- 渲染耗时（软件渲染，取中位）---
     for (const ch of [0, 1, 2, 3, 4]) {
       startChapter(ch, true); state = 'playing'; seq = null;
@@ -233,6 +245,8 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     'dotsFar=' + game.ch0.dotsFar + ' dotsNear=' + game.ch0.dotsNear);
   add('井亭实体几何射线方向正确(前方 vpr<0)', game.ch0.vol.count >= 6 && game.ch0.vol.vpr < 0, JSON.stringify(game.ch0.vol));
   add('第〇章民居为体积房(墙+双坡顶)', game.ch0.vol.houses >= 10 && game.ch0.vol.roofs >= 10, JSON.stringify(game.ch0.vol));
+  add('室内四章有各自天花板材质与体积陈设', [0,1,2,3].every(LL => game.rooms[LL].range > 25 && game.rooms[LL].boxes >= 4), JSON.stringify(game.rooms));
+  add('第〇/终章村口牌坊为可穿行的高架横梁', game.gate.every(n => n >= 1), JSON.stringify(game.gate));
   add('ch4 通关路径(3祭品+沉桶)', p.ch4.offerSunk === 3 && p.ch4.bucketSpawned && p.ch4.win, JSON.stringify(p.ch4));
   const bad = game.drift.filter(d => d.verdict !== 'ok');
   add('提示/交互一致性 ' + game.drift.length + ' 点位', bad.length === 0, bad.length ? JSON.stringify(bad) : 'all ok');

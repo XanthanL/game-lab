@@ -905,6 +905,30 @@ const steleTex=genTex((x,y)=>{
   return pack(clamp(v*0.96,0,255),clamp(v*0.97,0,255),clamp(v*1.0,0,255));
 });
 
+// ---- 室内器物材质（各章共用原语，但色彩与结构按章区分） ----
+const coffinTex=genTex((x,y)=>{
+  let v=42+(hashInt(x>>2,y>>2)%13-6)+snoise(x*0.4,y*0.4)*12;
+  if(y<8||y>55)v*=0.72;
+  if(Math.abs(x-32)<3||Math.abs(y-32)<2)v*=1.32;      // 棺盖十字木带
+  if(x>28&&x<36&&y>20&&y<44)v*=0.55;                   // 凹铭
+  return pack(clamp(v*0.95,0,255),clamp(v*0.78,0,255),clamp(v*0.62,0,255));
+});
+const bannerTex=genTex((x,y)=>{
+  let v=164+snoise(x*0.10,y*0.06)*9+(hashInt(x>>3,y>>3)%5-2);
+  if(x<3||x>60)v*=0.76;
+  if(y%17<1)v*=0.88;                                   // 纸幅折痕
+  if(y>14&&y<48&&x>26&&x<39){                          // 朱砂符：几道横笔
+    if(y%9<3||Math.abs(x-32)<2)v=124;
+  }
+  return pack(clamp(v,0,255),clamp(v*0.95,0,255),clamp(v*0.84,0,255));
+});
+const crateTex=genTex((x,y)=>{
+  const slat=(y%12<2),brace=((x+y)%26<2)||((x-y+64)%26<2);
+  let v=slat?76:56+(hashInt(x>>2,y>>2)%11-5);
+  if(brace)v*=0.70;
+  return pack(clamp(v,0,255),clamp(v*0.82,0,255),clamp(v*0.60,0,255));
+});
+
 function wallTex(x,y){
 const _b=buildingAt(x,y);
 if(_b)return _b.night?nightWall:sunWall;
@@ -1203,8 +1227,8 @@ const bucketImg=voxSprite(36,34,M=>{
 });
 
 const decor=[
-{x:11.5,y:7.5,lvl:0,img:altarImg,scale:1.15,glow:0.3},
 {x:5.5,y:9.5,lvl:0,img:lanternImg,scale:1.0,glow:0.32},
+{x:20.5,y:7.5,lvl:0,img:lanternImg,scale:0.6,glow:0.26},
 {x:2.5,y:8.5,lvl:0,img:treeImg,scale:1.9},
 {x:1.6,y:9.6,lvl:0,img:grassImg,scale:0.9},
 {x:5.6,y:7.6,lvl:0,img:grassImg,scale:1.0},
@@ -1238,6 +1262,24 @@ const chickImg=voxSprite(36,34,M=>{
   M.put(0,8,2,'#c03828');                   // 冠
   M.put(-1,0,0,'#e0a028');M.put(1,0,0,'#e0a028');   // 腿
 });
+const hayImg=voxSprite(60,46,M=>{
+  M.sph(0,5,0,15,'#c9a65c');M.sph(-2,12,1,11,'#d8b56a');M.sph(2,15,-1,8,'#b8954e');
+  M.box(-14,0,-6,28,2,12,'#a9843f');
+});
+const millImg=voxSprite(44,38,M=>{
+  M.cyl(0,0,0,7,9,'#8c8d86');M.disc(0,0,7,9,'#a6a79e');M.cyl(0,7,0,4,9,'#767871');
+  M.disc(0,11,0,3,'#5c5e59');M.box(-8,4,0,16,2,2,'#6b6d66');
+});
+const basketImg=voxSprite(30,26,M=>{
+  M.cyl(0,0,0,5,8,'#b58b4c');M.ring(0,0,5,3,8,2,'#d5a860');M.disc(0,0,2,7,'#6d4b28');
+});
+const vegImg=voxSprite(52,22,M=>{
+  for(let i=-3;i<=3;i++){M.box(i*7,0,-3,4,2,6,'#6a4e2c');M.sph(i*7,3,-1,2,'#4f7a34');M.sph(i*7,4,1,2,'#5f8a3c');}
+});
+const nightHayImg=voxSprite(60,46,M=>{
+  M.sph(0,5,0,15,'#5d5136');M.sph(-2,12,1,11,'#6b5c3c');M.sph(2,15,-1,8,'#4d432e');
+  M.box(-14,0,-6,28,2,12,'#433a27');
+});
 decor.push(
   // 四角槐树：出生点一抬头就能用树定位方向，比 HUD 上悬空的箭头有用
   {x:1.7,y:4.6,lvl:4,img:ch0Tree,scale:2.5},
@@ -1249,13 +1291,33 @@ decor.push(
   {x:17.4,y:11.9,lvl:4,img:chickImg,scale:0.55},           // 墙根刨土的鸡
   {x:19.6,y:13.2,lvl:4,img:chickImg,scale:0.48},
   {x:16.6,y:4.6,lvl:4,img:jarImg,scale:0.9},               // 屋檐下的水缸
-  {x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55}              // 空竹匾（装饰）
+  {x:9.8,y:14.2,lvl:4,img:trayImg,scale:0.55},             // 空竹匾（装饰）
+  {x:13.6,y:13.5,lvl:4,img:hayImg,scale:1.35},            // 路东草垛
+  {x:10.4,y:12.5,lvl:4,img:millImg,scale:1.15},           // 路西石磨
+  {x:10.6,y:15.5,lvl:4,img:basketImg,scale:0.85},         // 竹篮
+  {x:13.5,y:9.5,lvl:4,img:vegImg,scale:1.1},             // 路东菜畦
+  {x:9.5,y:6.5,lvl:4,img:trayImg,scale:0.5},             // 檐下晒匾
+  {x:14.5,y:6.5,lvl:4,img:trayImg,scale:0.5},
+  {x:15.6,y:13.8,lvl:4,img:chickImg,scale:0.5},
+  {x:8.5,y:16.5,lvl:4,img:chickImg,scale:0.52}
 );
 // ---- 终章 · 夜魇村庄陈设：封石掀开的老井 + 掀翻的石板 + 冷灯笼 ----
+const deadTreeImg=svgSprite(72,104,'<g stroke="#171310" stroke-width="3.4" fill="none" stroke-linecap="round">'+
+  '<path d="M36 102 L36 38"/><path d="M36 68 L17 40"/><path d="M36 60 L55 33"/>'+
+  '<path d="M17 40 L9 27"/><path d="M17 40 L25 24"/><path d="M55 33 L64 19"/><path d="M55 33 L46 20"/>'+
+  '<path d="M36 48 L28 30"/><path d="M36 44 L44 26"/></g>'+
+  '<g stroke="#3a2a20" stroke-width="1.1" fill="none" opacity="0.75"><path d="M36 96 L36 42"/><path d="M36 62 L52 36"/></g>');
 decor.push(
+{x:8.5,y:4.6,lvl:5,img:deadTreeImg,scale:1.7},
+{x:15.5,y:10.5,lvl:5,img:deadTreeImg,scale:1.5},
+{x:20.5,y:17.5,lvl:5,img:deadTreeImg,scale:1.6},
 {x:8.5,y:10.5,lvl:5,img:skeletonImg,scale:1.15},           // 晒场骸骨
 {x:11.7,y:16.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true},   // 出生点冷灯笼（路边，不挡北行井路）
-{x:10.7,y:6.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true}    // 井路中途灯笼（路西侧）
+{x:10.7,y:6.4,lvl:5,img:lanternImg,scale:1.0,glow:0.3,coldGlow:true},  // 井路中途灯笼（路西侧）
+{x:13.6,y:13.5,lvl:5,img:nightHayImg,scale:1.35},        // 白昼草垛的夜魇残影
+{x:10.4,y:12.5,lvl:5,img:millImg,scale:1.15},
+{x:13.5,y:9.5,lvl:5,img:vegImg,scale:1.1},
+{x:14.5,y:6.5,lvl:5,img:trayImg,scale:0.5}
 );
 
 const spawns=[{x:21.5,y:9.5},{x:1.5,y:1.5},{x:12.5,y:19.5},{x:1.5,y:15.5},{x:12.5,y:17.5},{x:12.5,y:17.5}];   // 终章与第〇章同一南院出生点
@@ -1861,7 +1923,7 @@ function wellPavilion(x,y,night){          // 井亭：石井圈 + 四根木柱 
   const wt=night?darkwood:sunWood, rt=night?roofNight:sunRoof;
   const p=night?0.95:1.30, ph=night?0.07:0.09, h=night?1.00:1.30;
   const r=night?0.42:0.56, rh=night?0.44:0.52, hole=night?0.27:0.36;
-  const roofY0=night?1.00:1.28, roofY1=night?1.52:1.82, rw=night?1.22:1.58;
+  const roofY0=night?1.00:1.28, roofY1=night?1.42:1.82, rw=night?1.08:1.58;
   return [
     {k:'cyl',x,y,r:r,y0:0,y1:rh,tex:wellStone,cap:1,hole:hole},
     {k:'box',x:x-p,y:y-p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
@@ -1898,6 +1960,38 @@ function steleVol(x,y,s){                  // 石碑：碑座 + 碑身（薄板�
     {k:'box',x,y,hw:0.30*s,hd:0.075*s,y0:0.34,y1:1.02,tex:steleTex,cap:1},
   ];
 }
+// 室内器物：都用 box 图元（1~3 个体积），远处自动被墙 zBuffer 挡住
+function bV(x,y,hw,hd,y0,y1,tex,cap){return {k:'box',x,y,hw,hd,y0,y1,tex,cap:cap||0};}
+// 香案：细腿供桌 + 香炉座，不再用四级石阶（远看像楼梯，不像祭拜处）
+function incenseAltarVol(x,y){return [
+  bV(x,y,0.44,0.30,0,0.50,altarStone,0),
+  bV(x,y,0.55,0.39,0.50,0.59,darkwood,1),
+  bV(x,y,0.18,0.18,0.59,0.72,redwood,1),
+];}
+// 神龛：两根立柱 + 内凹背板 + 檐枋 + 小屋顶，牌位能在龛口露出来
+function shrineVol2(x,y){return [
+  bV(x,y,0.62,0.26,0,0.12,altarStone,1),
+  bV(x-0.46,y,0.09,0.19,0.12,0.72,redwood,0),
+  bV(x+0.46,y,0.09,0.19,0.12,0.72,redwood,0),
+  bV(x,y+0.15,0.46,0.04,0.12,0.72,darkwood,0),
+  bV(x,y,0.66,0.26,0.72,0.82,redwood,1),
+  {k:'pyr',x,y,hw:0.76,hd:0.40,y0:0.82,y1:1.10,tex:roofNight,ridge:'x'},
+];}
+function tableVol(x,y,tex){return [
+  bV(x,y,0.44,0.30,0.32,0.40,tex||wood,1),           // 桌面（0.4<0.49，顶面可见）
+  bV(x-0.32,y,0.045,0.045,0,0.32,darkwood),
+  bV(x+0.32,y,0.045,0.045,0,0.32,darkwood),
+];}
+function shelfVol(x,y,hw,hd,tex){return [bV(x,y,hw,hd,0,0.86,tex||book,0)];}
+function crateVol(x,y,sc){const s=sc||1;return [bV(x,y,0.30*s,0.28*s,0,0.38*s,crateTex,1)];}
+function pillarVol(x,y,h,tex){return [bV(x,y,0.15,0.15,0,h||0.98,tex||darkwood,0)];}
+function coffinVol(x,y,alongX){return [
+  bV(x,y,alongX?0.70:0.33,alongX?0.33:0.70,0.12,0.43,coffinTex,1),
+  bV(x,y,alongX?0.72:0.35,alongX?0.35:0.72,0.43,0.51,coffinTex,1),
+];}
+function bannerVol(x,y,sc){const k=sc||1;return [bV(x,y,0.18*k,0.025,0.52,0.52+0.68*k,bannerTex,0)];}
+function screenVol(x,y){return [bV(x,y,0.62,0.025,0.06,1.02,shoji,0)];}
+
 function volsAt(lv,list){return list.map(v=>{v.lvl=lv;if(v.k!=='cyl'&&v.hd===undefined)v.hd=v.hw;
   v.rmax=v.k==='cyl'?v.r:Math.hypot(v.hw,v.hd);return v;});}
 const VOLUMES=[
@@ -1906,13 +2000,82 @@ const VOLUMES=[
   ...volsAt(5,wellPavilion(WELL_X,WELL_Y,true)),    // 终章 · 夜魇井亭
   ...volsAt(5,[{k:'box',x:13.3,y:3.0,hw:0.40,hd:0.20,y0:0,y1:0.20,tex:steleTex,cap:1}]),  // 掀翻在井边的封石
   ...volsAt(0,wellRing(3.5,7.5)),                   // 老宅天井枯井
-  ...volsAt(2,altarVol(ALTAR_X,ALTAR_Y)),           // 第二章 · 香坛
+  ...volsAt(2,incenseAltarVol(ALTAR_X,ALTAR_Y)),           // 第二章 · 香坛
   ...volsAt(2,wellRing(21.5,13.4)),                 // 第二章 · 东屋枯井
-  ...volsAt(3,shrineVol(SHRINE_X,SHRINE_Y)),        // 第三章 · 神龛
+  ...volsAt(3,shrineVol2(SHRINE_X,SHRINE_Y)),        // 第三章 · 神龛
   ...volsAt(3,steleVol(2.6,15.5,1.15)),
   ...volsAt(3,steleVol(8.5,7.5,1.0)),
   ...volsAt(3,steleVol(17.5,7.5,1.05)),
   ...volsAt(3,steleVol(19.5,14.5,1.1)),
+  // ---- 第一章：老宅一层与地下室。香案/箱柜/货架让空房间有生活痕迹 ----
+  ...volsAt(0,incenseAltarVol(11.5,7.5)),
+  ...volsAt(0,tableVol(5.5,17.5,redwood)),
+  ...volsAt(0,tableVol(22.5,17.5,wood)),
+  ...volsAt(0,tableVol(15.5,13.5,darkwood)),
+  ...volsAt(0,shelfVol(4.5,2.5,0.34,0.26)),
+  ...volsAt(0,shelfVol(4.5,12.5,0.34,0.26)),
+  ...volsAt(0,shelfVol(22.5,12.5,0.34,0.26)),
+  ...volsAt(0,crateVol(8.5,3.5,1.1)),
+  ...volsAt(0,crateVol(16.5,3.5,0.9)),
+  ...volsAt(0,crateVol(8.5,17.5,1.0)),
+  ...volsAt(0,pillarVol(8.5,9.5,0.98,redwood)),
+  ...volsAt(0,pillarVol(15.5,9.5,0.98,redwood)),
+  ...volsAt(0,pillarVol(8.5,15.5,0.98,redwood)),
+  ...volsAt(0,pillarVol(15.5,15.5,0.98,redwood)),
+  ...volsAt(1,coffinVol(5.5,2.5,true)),
+  ...volsAt(1,coffinVol(18.5,2.5,true)),
+  ...volsAt(1,shelfVol(4.5,10.5,0.38,0.24,stone)),
+  ...volsAt(1,shelfVol(18.5,10.5,0.38,0.24,stone)),
+  ...volsAt(1,crateVol(7.5,12.5,1.2)),
+  ...volsAt(1,crateVol(17.5,12.5,1.0)),
+  ...volsAt(1,tableVol(10.5,4.5,darkwood)),
+  ...volsAt(1,pillarVol(5.5,7.5,0.98,stone)),
+  ...volsAt(1,pillarVol(17.5,7.5,0.98,stone)),
+  // ---- 第二章：归宅大宅。廊柱/供桌/白幡/屏风，潜行路线仍是原地图 ----
+  ...volsAt(2,tableVol(12.5,9.5,redwood)),
+  ...volsAt(2,screenVol(12.5,16.5)),
+  ...volsAt(2,shelfVol(6.5,3.5,0.36,0.26,book)),
+  ...volsAt(2,shelfVol(19.5,3.5,0.36,0.26,book)),
+  ...volsAt(2,crateVol(3.5,17.5,1.0)),
+  ...volsAt(2,crateVol(22.5,17.5,1.0)),
+  ...volsAt(2,pillarVol(8.5,10.5,0.98,darkwood)),
+  ...volsAt(2,pillarVol(16.5,10.5,0.98,darkwood)),
+  ...volsAt(2,pillarVol(8.5,14.5,0.98,darkwood)),
+  ...volsAt(2,pillarVol(16.5,14.5,0.98,darkwood)),
+  ...volsAt(2,bannerVol(9.5,6.5)),
+  ...volsAt(2,bannerVol(16.5,6.5)),
+  // ---- 第三章：义庄。棺木/停尸台/白幡/石灯，保持北屋与中央大堂可达 ----
+  ...volsAt(3,coffinVol(3.5,2.5,true)),
+  ...volsAt(3,coffinVol(21.5,2.5,true)),
+  ...volsAt(3,coffinVol(9.5,10.5,false)),
+  ...volsAt(3,coffinVol(15.5,10.5,false)),
+  ...volsAt(3,tableVol(12.5,16.5,stone)),
+  ...volsAt(3,shelfVol(11.5,4.5,0.34,0.24,stone)),
+  ...volsAt(3,crateVol(5.5,18.5,1.1)),
+  ...volsAt(3,crateVol(20.5,18.5,1.0)),
+  ...volsAt(3,bannerVol(7.5,6.5)),
+  ...volsAt(3,bannerVol(18.5,6.5)),
+  ...volsAt(3,pillarVol(8.5,14.5,0.98,stone)),
+  ...volsAt(3,pillarVol(17.5,14.5,0.98,stone)),
+  // 出生点视线内必须有东西：否则第一章像空房、第三章像空院
+  ...volsAt(0,crateVol(21.5,7.5,1.25)),
+  ...volsAt(0,pillarVol(21.5,6.5,0.98,redwood)),
+  ...volsAt(1,coffinVol(11.5,3.5,true)),
+  ...volsAt(1,bannerVol(12.5,4.5)),
+  ...volsAt(3,coffinVol(1.5,11.5,true)),
+  ...volsAt(3,bannerVol(2.5,13.5,0.8)),
+  ...volsAt(3,tableVol(12.5,8.5,stone)),
+  ...volsAt(5,crateVol(10.5,8.5,1.1)),
+  ...volsAt(5,crateVol(13.5,9.5,0.9)),
+  ...volsAt(5,bannerVol(8.5,4.5,0.62)),
+  ...volsAt(5,bannerVol(14.5,4.5,0.62)),
+  // 南院通往井台的木牌坊：从出生点一眼能读到「往前走，过牌坊到井」
+  ...volsAt(4,[bV(10.4,14.5,0.12,0.12,0,1.08,sunWood,0),bV(13.6,14.5,0.12,0.12,0,1.08,sunWood,0),
+    bV(12.0,14.5,1.68,0.11,1.08,1.22,redwood,0),
+    {k:'pyr',x:12.0,y:14.5,hw:1.82,hd:0.20,y0:1.22,y1:1.42,tex:sunRoof,ridge:'x'}]),
+  ...volsAt(5,[bV(10.4,14.5,0.12,0.12,0,1.08,darkwood,0),bV(13.6,14.5,0.12,0.12,0,1.08,darkwood,0),
+    bV(12.0,14.5,1.68,0.11,1.08,1.22,darkwood,0),
+    {k:'pyr',x:12.0,y:14.5,hw:1.82,hd:0.20,y0:1.22,y1:1.42,tex:roofNight,ridge:'x'}]),
 ];
 const volByLvl=MAPS.map(()=>[]);
 VOLUMES.forEach(v=>{if(volByLvl[v.lvl])volByLvl[v.lvl].push(v);});
@@ -2385,6 +2548,37 @@ function buildFloorCache(L){
   return f;
 }
 function floorOf(L){return floorCache[L]||(floorCache[L]=buildFloorCache(L));}
+
+// ---- 室内天花板：镜像 floor casting 的屋顶层 ----
+// 四章各有自己的材料（老宅暗木 / 地下室土檩 / 大宅横梁 / 义庄朽椽），不是同一张皮。
+const ceilCache=[];
+function ceilTexOf(L){
+  if(ceilCache[L])return ceilCache[L];
+  let t;
+  if(L===1){
+    t=genTex((x,y)=>{
+      const beam=(y%18<3)||(x%40<2);
+      const v=(beam?26:42)+snoise(x*0.7,y*0.7)*16+(hashInt(x>>2,y>>2)%7-3);
+      return pack(clamp(v*0.9,0,255),clamp(v*0.86,0,255),clamp(v*0.78,0,255));
+    });
+  }else if(L===3){
+    t=genTex((x,y)=>{
+      const rafter=(x%14<2),seam=(y%28<1);
+      const v=(rafter?30:58)+snoise(x*0.5,y*0.8)*20+(hashInt(x,y)%9-4);
+      const g=seam?v*0.62:v;
+      return pack(clamp(g*0.95,0,255),clamp(g*0.98,0,255),clamp(g*0.88,0,255));
+    });
+  }else{
+    const light=L===0;
+    t=genTex((x,y)=>{
+      const beam=(y%24<4)||(x%56<3);
+      const plank=(y>>2)%2?6:0;
+      const v=(beam?(light?30:24):(light?52:42))+plank+snoise(x*0.5,y*0.5)*14+(hashInt(x>>1,y>>1)%7-3);
+      return pack(clamp(v*1.02,0,255),clamp(v*0.92,0,255),clamp(v*0.78,0,255));
+    });
+  }
+  ceilCache[L]=t;return t;
+}
 // 楼梯贴图精灵位：同样每帧扫全图，预计算一次
 const stairsCache=[];
 function stairsOf(L){
@@ -2575,12 +2769,33 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   for(let vi=0;vi<VL.length;vi++){const v=VL[vi];const dx=v.x-player.x,dy=v.y-player.y;v._d2=dx*dx+dy*dy;}
   const horizon=VH>>1;
   const hw=VH/2;
+  // 每帧常量外提（天花板 / 地面 / 墙面共用）
+  const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));
+  const fogDenom=lvl===1?12:(lvl===4?20:15);
   for(let y=0;y<horizon;y++){const tt=y/horizon;
     if(lvl===4){ch0SkyRow(y);}   // 第〇章：晴日天空（日晕/薄云/远山/树线，随朝向视差平移）
     else if(lvl===2){const v=(5+26*tt)|0;buf32.fill(pack((v*0.75)|0,(v*0.92)|0,Math.min(255,(v*1.35+8)|0)),y*VW,y*VW+VW);}   // 第二章：冷青夜色
     else if(lvl===3){const v=(6+22*tt)|0;buf32.fill(pack(Math.min(255,(v*1.05)|0),(v*1.02)|0,(v*0.8)|0),y*VW,y*VW+VW);} // 第三章：灰绿朽败
     else if(lvl===5){const v=(4+20*tt)|0;buf32.fill(pack((v*0.82)|0,(v*1.02)|0,Math.min(255,(v*1.5+6)|0)),y*VW,y*VW+VW);} // 终章：深水蓝黑夜空
     else{const v=(7+32*tt)|0;buf32.fill(pack(v,v,Math.min(255,v+6)),y*VW,y*VW+VW);}
+  }
+  // 室内天花板：镜像地面投射。近处木梁清楚、远处沉入暗雾；第〇/终章保持露天天空。
+  if(lvl>=0&&lvl<=3){
+    const CT=ceilTexOf(lvl).u32;
+    for(let y=0;y<horizon;y++){
+      const rf=1/(horizon-y-0.5),rowDist=hw*rf;
+      const fogC=Math.min(1,rowDist/16)*0.62,sh=(1-fogC)*flicker;
+      const row=y*VW;
+      for(let x=0;x<VW;x++){
+        const cam=2*x/VW-1;
+        const fx=player.x+rowDist*(player.dirX+player.planeX*cam);
+        const fy=player.y+rowDist*(player.dirY+player.planeY*cam);
+        const c=CT[(((((fy*64)|0)&63)*64)+(((fx*64)|0)&63))];
+        buf32[row+x]=pack(Math.min(255,(c&255)*sh+fC[0]*fogC*0.35),
+                          Math.min(255,((c>>>8)&255)*sh+fC[1]*fogC*0.35),
+                          Math.min(255,((c>>>16)&255)*sh+fC[2]*fogC*0.35));
+      }
+    }
   }
   // 地面：底色调色板按层预计算（见 floorOf），雾系数按行外提
   const FC=floorOf(lvl),ftw=FC.tw,fth=FC.th,fR=FC.R,fG=FC.G,fB=FC.B,fU=FC.U;
@@ -2617,9 +2832,6 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       buf32[row+x]=(0xFF000000|(b<<16)|(g<<8)|r)>>>0;
     }
   }
-  // 每帧常量外提（性能：避免列循环内重复分配数组）
-  const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾 / 终章深水雾（已提亮）
-  const fogDenom=lvl===1?12:(lvl===4?20:15);
   const hits=[],vhits=[];
   for(let x=0;x<VW;x++){
     const cam=2*x/VW-1;
