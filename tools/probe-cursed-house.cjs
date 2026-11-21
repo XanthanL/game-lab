@@ -198,10 +198,14 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     try { render(1.2); } catch (e) { guideErr = String(e); }
     const goldNear = countGold();                    // 面向目标：光柱 + 光圈 + 字牌 + 路标
     const dotsNear = countDots();
-    const vo = volByLvl[4][0];
+    // 井亭 = 井圈(cyl) + 4柱 + 攒尖顶，按位置识别；房子是 box/pyr 且 hw>0.9
+    const vo = volByLvl[4].find(v => v.k === 'cyl' && Math.abs(v.x - 11.5) < 0.1 && Math.abs(v.y - 2.6) < 0.1);
+    const wellVols = volByLvl[4].filter(v => Math.abs(v.x - 11.5) < 1.8 && Math.abs(v.y - 2.6) < 1.8).length;
+    const houses = volByLvl[4].filter(v => v.k === 'box' && v.hw > 0.9 && v.y0 >= 0.1 && v.y1 >= 0.99);
+    const roofs  = volByLvl[4].filter(v => v.k === 'pyr' && v.ridge === 'x' && v.hw > 1);
     O.ch0 = { guide: gg0 && gg0.label, guideErr, gold: goldFar, goldFar, goldNear, dotsFar, dotsNear,
       tasks: ch0Tasks.map(t => t.pts.length),
-      vol: { count: volByLvl[4].length,
+      vol: { count: wellVols, houses: houses.length, roofs: roofs.length,
              vpr: +((player.x - vo.x) * player.dirX + (player.y - vo.y) * player.dirY).toFixed(2) } };
 
     // --- 渲染耗时（软件渲染，取中位）---
@@ -227,7 +231,8 @@ const URL = `http://127.0.0.1:${PORT}/cursed-house/index.html`;
     && game.ch0.guide.includes('收梅子'), JSON.stringify(game.ch0));
   add('ch0 地面路钉成串可见（不是被墙挡成孤点）', game.ch0.dotsFar > 260 && game.ch0.dotsNear > 120,
     'dotsFar=' + game.ch0.dotsFar + ' dotsNear=' + game.ch0.dotsNear);
-  add('井亭实体几何射线方向正确(前方 vpr<0)', game.ch0.vol.count === 6 && game.ch0.vol.vpr < 0, JSON.stringify(game.ch0.vol));
+  add('井亭实体几何射线方向正确(前方 vpr<0)', game.ch0.vol.count >= 6 && game.ch0.vol.vpr < 0, JSON.stringify(game.ch0.vol));
+  add('第〇章民居为体积房(墙+双坡顶)', game.ch0.vol.houses >= 10 && game.ch0.vol.roofs >= 10, JSON.stringify(game.ch0.vol));
   add('ch4 通关路径(3祭品+沉桶)', p.ch4.offerSunk === 3 && p.ch4.bucketSpawned && p.ch4.win, JSON.stringify(p.ch4));
   const bad = game.drift.filter(d => d.verdict !== 'ok');
   add('提示/交互一致性 ' + game.drift.length + ' 点位', bad.length === 0, bad.length ? JSON.stringify(bad) : 'all ok');

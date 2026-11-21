@@ -472,46 +472,46 @@ const MAPS=[
 // 第〇章 · 夏日：老家村子，开阔晒场，J=篱笆/晾绳架，## = 厢房与棚屋
 [
 "########################",
-"#.......##........##...#",
-"#.......##........##...#",
+"#..##..............##..#",
+"#..##..............##..#",
 "#......................#",
-"#..JJ..............JJ..#",
+"#....JJ..........JJ....#",
+"#.##....##....##....##.#",
+"#.##....##....##....##.#",
 "#......................#",
-"#...##............##...#",
-"#...##............##...#",
+"#........JJ..JJ........#",
 "#......................#",
-"#.......JJ......JJ.....#",
 "#......................#",
-"#..##...............##.#",
-"#..##...............##.#",
+"#.##....##....##....##.#",
+"#.##....##....##....##.#",
 "#......................#",
-"#.........JJ...........#",
+"#....JJ.........JJ.....#",
 "#......................#",
-"#...###...........##...#",
-"#...###...........##...#",
+"#...###..........###...#",
+"#...###..........###...#",
 "#......................#",
 "########################",
 ],
 // ---- 终章「封井」：第〇章村庄的夜魇版。同一口井(11.5,2.6)、同一南院出生点，封石已掀开 ----
 [
 "########################",
-"#.......##........##...#",
-"#.......##........##...#",
+"#..##..............##..#",
+"#..##..............##..#",
 "#....X.............X...#",
-"#..JJ..............JJ..#",
+"#....JJ..........JJ....#",
+"#.##....##....##....##.#",
+"#.##....##....##....##.#",
 "#......................#",
-"#...##............##...#",
-"#...##............##...#",
-"#.........X............#",
-"#.......JJ......JJ.....#",
+"#........JX..JJ........#",
 "#......................#",
-"#..##...............##.#",
-"#..##...............##.#",
 "#......................#",
-"#.........JJ...........#",
+"#.##....##....##....##.#",
+"#.##....##....##....##.#",
+"#......................#",
+"#....JJ.........JJ.....#",
 "#..........X...........#",
-"#...###...........##...#",
-"#...###...........##...#",
+"#...###..........###...#",
+"#...###..........###...#",
 "#......................#",
 "########################",
 ],
@@ -527,24 +527,32 @@ function solid(x,y){const t=tile(x,y);return t==='#'||t==='S'||t==='J'||t==='B'|
 // 渲染时在墙顶之上再画一段坡屋顶：屋脊压顶 / 瓦垄 / 檐口暗边 / 石基，山墙面呈三角。
 // rise=屋脊相对墙顶的高度(墙高=1)，eave=檐口相对墙顶的高度，axis=屋脊走向。
 const BUILDINGS=[
-  // ---- 第〇章 · 老家村子（lvl 4）----
-  {lvl:4,x0:8, y0:1, x1:9, y1:2,  axis:'y',rise:0.66,eave:0.15,night:false},   // 北厢房（收窄一格，给村口井亭让位）
-  {lvl:4,x0:18,y0:1, x1:19,y1:2,  axis:'y',rise:0.52,eave:0.13,night:false},   // 北仓
-  {lvl:4,x0:4, y0:6, x1:5, y1:7,  axis:'y',rise:0.48,eave:0.12,night:false},   // 西棚屋
-  {lvl:4,x0:18,y0:6, x1:19,y1:7,  axis:'y',rise:0.48,eave:0.12,night:false},   // 东棚屋
-  {lvl:4,x0:3, y0:11,x1:4, y1:12, axis:'y',rise:0.50,eave:0.13,night:false},   // 西仓
-  {lvl:4,x0:20,y0:11,x1:21,y1:12, axis:'y',rise:0.50,eave:0.13,night:false},   // 东仓
-  {lvl:4,x0:4, y0:16,x1:6, y1:17, axis:'y',rise:0.72,eave:0.15,night:false},   // 老家主屋
-  {lvl:4,x0:18,y0:16,x1:19,y1:17, axis:'y',rise:0.50,eave:0.13,night:false},   // 南仓
-  // ---- 终章 · 夜魇村庄（lvl 5）：同一座村子，湿冷的夜色版 ----
-  {lvl:5,x0:8, y0:1, x1:9, y1:2,  axis:'y',rise:0.66,eave:0.15,night:true},
-  {lvl:5,x0:18,y0:1, x1:19,y1:2,  axis:'y',rise:0.52,eave:0.13,night:true},
-  {lvl:5,x0:4, y0:6, x1:5, y1:7,  axis:'y',rise:0.48,eave:0.12,night:true},
-  {lvl:5,x0:18,y0:6, x1:19,y1:7,  axis:'y',rise:0.48,eave:0.12,night:true},
-  {lvl:5,x0:3, y0:11,x1:4, y1:12, axis:'y',rise:0.50,eave:0.13,night:true},
-  {lvl:5,x0:20,y0:11,x1:21,y1:12, axis:'y',rise:0.50,eave:0.13,night:true},
-  {lvl:5,x0:4, y0:16,x1:6, y1:17, axis:'y',rise:0.72,eave:0.15,night:true},
-  {lvl:5,x0:18,y0:16,x1:19,y1:17, axis:'y',rise:0.50,eave:0.13,night:true},
+  // lvl4 第〇章：沿街院落，主路 col11-12 两侧民居
+  {lvl:4,x0: 3,y0: 1,x1: 4,y1: 2,axis:'y',rise:0.60,eave:0.14,night:false},
+  {lvl:4,x0:19,y0: 1,x1:20,y1: 2,axis:'y',rise:0.54,eave:0.13,night:false},
+  {lvl:4,x0: 2,y0: 5,x1: 3,y1: 6,axis:'y',rise:0.46,eave:0.11,night:false},
+  {lvl:4,x0: 8,y0: 5,x1: 9,y1: 6,axis:'y',rise:0.58,eave:0.13,night:false},
+  {lvl:4,x0:14,y0: 5,x1:15,y1: 6,axis:'y',rise:0.58,eave:0.13,night:false},
+  {lvl:4,x0:20,y0: 5,x1:21,y1: 6,axis:'y',rise:0.46,eave:0.11,night:false},
+  {lvl:4,x0: 2,y0:11,x1: 3,y1:12,axis:'y',rise:0.48,eave:0.12,night:false},
+  {lvl:4,x0: 8,y0:11,x1: 9,y1:12,axis:'y',rise:0.52,eave:0.12,night:false},
+  {lvl:4,x0:14,y0:11,x1:15,y1:12,axis:'y',rise:0.52,eave:0.12,night:false},
+  {lvl:4,x0:20,y0:11,x1:21,y1:12,axis:'y',rise:0.48,eave:0.12,night:false},
+  {lvl:4,x0: 4,y0:16,x1: 6,y1:17,axis:'y',rise:0.72,eave:0.15,night:false},
+  {lvl:4,x0:17,y0:16,x1:19,y1:17,axis:'y',rise:0.66,eave:0.14,night:false},
+  // lvl5 终章：同村夜版
+  {lvl:5,x0: 3,y0: 1,x1: 4,y1: 2,axis:'y',rise:0.60,eave:0.14,night:true},
+  {lvl:5,x0:19,y0: 1,x1:20,y1: 2,axis:'y',rise:0.54,eave:0.13,night:true},
+  {lvl:5,x0: 2,y0: 5,x1: 3,y1: 6,axis:'y',rise:0.46,eave:0.11,night:true},
+  {lvl:5,x0: 8,y0: 5,x1: 9,y1: 6,axis:'y',rise:0.58,eave:0.13,night:true},
+  {lvl:5,x0:14,y0: 5,x1:15,y1: 6,axis:'y',rise:0.58,eave:0.13,night:true},
+  {lvl:5,x0:20,y0: 5,x1:21,y1: 6,axis:'y',rise:0.46,eave:0.11,night:true},
+  {lvl:5,x0: 2,y0:11,x1: 3,y1:12,axis:'y',rise:0.48,eave:0.12,night:true},
+  {lvl:5,x0: 8,y0:11,x1: 9,y1:12,axis:'y',rise:0.52,eave:0.12,night:true},
+  {lvl:5,x0:14,y0:11,x1:15,y1:12,axis:'y',rise:0.52,eave:0.12,night:true},
+  {lvl:5,x0:20,y0:11,x1:21,y1:12,axis:'y',rise:0.48,eave:0.12,night:true},
+  {lvl:5,x0: 4,y0:16,x1: 6,y1:17,axis:'y',rise:0.72,eave:0.15,night:true},
+  {lvl:5,x0:17,y0:16,x1:19,y1:17,axis:'y',rise:0.66,eave:0.14,night:true},
 ];
 // 每层的建筑索引表（-1 = 非建筑），渲染列循环里 O(1) 查询
 const bldIndex=MAPS.map(()=>null);
@@ -794,6 +802,68 @@ const sunWall=genTex((x,y)=>{
   if(hashInt(x*7,y*5)%53===0)v-=22;                // 斑驳剥落
   if(y>55)v*=0.7;                                  // 墙根返潮
   return pack(clamp(v,0,255),clamp(v*0.95,0,255),clamp(v*0.83,0,255));
+});
+// ---- 第〇章民居立面：白灰墙 + 木构 + 两扇木格窗 + 中间木门 + 石基 ----
+// 一张 64x64 贴满整面墙（box 的 uv 跨整面），门+窗一次画齐，不再是格子墙重复小色块。
+const houseFacade=genTex((x,y)=>{
+  const wood=null;
+  let v=0,pr=1,pg=1,pb=1;
+  const inWall=(x>3&&x<60);
+  // 石基（底部 8px）
+  if(y>=56){
+    const c=y>>3,px=x&7;
+    v=118+(hashInt(x*3+c*17,c*7)%15-7)+(px===0?-16:0);
+    pr=0.98;pg=0.95;pb=0.88;
+  }
+  // 檐下横梁（顶部 7px）
+  else if(y<7){
+    v=104+(hashInt(x*5,3)%11-5);
+    pr=1.0;pg=0.74;pb=0.50;
+  }
+  // 左右木柱（露明柱）
+  else if(x<4||x>59){
+    v=112+(hashInt((x&3)*7,y*3)%13-6)+(x===0||x===63?-14:0);
+    pr=1.0;pg=0.72;pb=0.48;
+  }
+  // 木门（中央 x 26..38, y 22..56）
+  else if(x>=26&&x<=38&&y>=22){
+    const edge=(x===26||x===38||y===22);
+    if(edge){v=70;pr=1.0;pg=0.66;pb=0.42;}
+    else{
+      v=104+snoise(x*0.5,y*0.2)*14;
+      pr=1.0;pg=0.62;pb=0.38;
+      if(x===32)v*=0.55;                       // 门扇对开缝
+      if(y>28&&y<34&&(x===30||x===34)){v=186;pr=1.0;pg=0.84;pb=0.52;} // 门环
+    }
+  }
+  // 木格窗（左 x 9..23 / 右 x 41..55, y 16..40）
+  else if(((x>=9&&x<=23)||(x>=41&&x<=55))&&y>=16&&y<=40){
+    const lx=x<32?x-9:x-41;
+    const frame=(lx===0||lx===14||y===16||y===40);
+    const mull=(lx===7||y===28);
+    if(frame||mull){v=96;pr=1.0;pg=0.70;pb=0.46;}
+    else{
+      v=206+snoise(x*0.4,y*0.4)*10;            // 窗纸：暖白透光
+      pr=1.0;pg=0.96;pb=0.82;
+      if(y>=38){v*=0.72;pr=1.0;pg=0.80;pb=0.55;} // 窗台下的暗影
+    }
+  }
+  // 白灰墙
+  else{
+    v=182+snoise(x*0.16,y*0.22)*18;
+    pr=1.0;pg=0.96;pb=0.86;
+    if(y>=52)v*=0.86;                          // 墙裙
+    if(hashInt(x*9,y*7)%71===0)v-=20;          // 斑驳
+  }
+  return pack(clamp(v*pr,0,255),clamp(v*pg,0,255),clamp(v*pb,0,255));
+});
+// 石基：暖灰毛石，错缝
+const houseBase=genTex((x,y)=>{
+  const row=y>>4,px=(x+(row&1?8:0))&15;
+  let v=126+(hashInt((x>>4)*13+row*29,row*11)%21-10)+snoise(x*0.3,y*0.4)*14;
+  if(px===0)v*=0.62;else if(px===1)v*=1.14;
+  if((y&15)===0)v*=0.7;
+  return pack(clamp(v,0,255),clamp(v*0.97,0,255),clamp(v*0.90,0,255));
 });
 const nightWall=genTex((x,y)=>{
   const col=x>>4,px=x&15;
@@ -1769,20 +1839,39 @@ const papers=[{x:8.5,y:9.5},{x:15.5,y:9.5},{x:12.5,y:11.5},{x:8.5,y:16.5},{x:17.
 //   cyl 圆柱(井圈)   box 方盒(台基/碑身/立柱)   pyr 四角攒尖顶(井亭瓦顶/龛顶)
 // y0/y1 = 世界高度（0=地面，1=标准墙高，视平线在 0.5）
 // 投影约定：世界高度 h 在深度 t 处 -> screenY = horizon + (VH/t)*(0.5-h)
+// 体积房屋：石基 + 房身(带门窗立面) + 双坡瓦顶(出檐)
+// b = BUILDINGS 条目，格子范围 x0..x1 / y0..y1 → 世界中心与半宽
+function houseVol(b){
+  const cx=(b.x0+b.x1+1)/2,cy=(b.y0+b.y1+1)/2;
+  const hw=(b.x1-b.x0+1)/2,hd=(b.y1-b.y0+1)/2;
+  const rise=b.rise||0.55, eave=b.eave||0.12;
+  const wallTex=b.night?nightWall:houseFacade;   // 夜版用湿木墙，白昼用民居立面
+  const roofTex=b.night?roofNight:sunRoof;
+  const baseTex=b.night?nightWall:houseBase;
+  return [
+    {k:'box',x:cx,y:cy,hw:hw,   hd:hd,  y0:0,    y1:0.11, tex:baseTex,cap:0},   // 石基
+    {k:'box',x:cx,y:cy,hw:hw-0.01,hd:hd-0.01,y0:0.11,y1:1.0,tex:wallTex,cap:0}, // 房身
+    // 双坡顶：屋脊沿 x（房子多为东西向），出檐 0.16；ridge='x' 表示坡度在 y 方向
+    {k:'pyr',x:cx,y:cy,hw:hw+0.16,hd:hd+0.18,y0:1.0-eave,y1:1.0+rise,tex:roofTex,ridge:'x'},
+  ];
+}
 function wellRing(x,y){return [{k:'cyl',x,y,r:0.42,y0:0,y1:0.44,tex:wellStone,cap:1,hole:0.27}];}
 function wellPavilion(x,y,night){          // 井亭：石井圈 + 四根木柱 + 攒尖瓦顶
   // 白昼版放大：老井是第〇章的终点地标，从晒场南端就得看得见轮廓；夜魇版保持原尺寸。
   const wt=night?darkwood:sunWood, rt=night?roofNight:sunRoof;
   const p=night?0.95:1.30, ph=night?0.07:0.09, h=night?1.00:1.30;
   const r=night?0.42:0.56, rh=night?0.44:0.52, hole=night?0.27:0.36;
-  const roofY0=night?1.00:1.30, roofY1=night?1.56:2.02, rw=night?1.22:1.64;
+  const roofY0=night?1.00:1.28, roofY1=night?1.52:1.82, rw=night?1.22:1.58;
   return [
     {k:'cyl',x,y,r:r,y0:0,y1:rh,tex:wellStone,cap:1,hole:hole},
     {k:'box',x:x-p,y:y-p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
     {k:'box',x:x+p,y:y-p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
     {k:'box',x:x-p,y:y+p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
     {k:'box',x:x+p,y:y+p,hw:ph,hd:ph,y0:0,y1:h,tex:wt,cap:1},
-    {k:'pyr',x,y,hw:rw,hd:rw,y0:roofY0,y1:roofY1,tex:rt},
+    // 檐枋：东西两根横梁托住屋顶，井亭才有木构感（不是四柱顶一块板）
+    {k:'box',x:x,   y:y-p,hw:p+ph,hd:ph*0.8,y0:h-0.10,y1:h+0.02,tex:wt,cap:0},
+    {k:'box',x:x,   y:y+p,hw:p+ph,hd:ph*0.8,y0:h-0.10,y1:h+0.02,tex:wt,cap:0},
+    {k:'pyr',x,y,hw:rw,hd:rw,y0:roofY0,y1:roofY1,tex:rt,ridge:'x'},
   ];
 }
 function altarVol(x,y){                    // 香坛：三级收分台基 + 坛身 + 台面
@@ -1812,6 +1901,7 @@ function steleVol(x,y,s){                  // 石碑：碑座 + 碑身（薄板�
 function volsAt(lv,list){return list.map(v=>{v.lvl=lv;if(v.k!=='cyl'&&v.hd===undefined)v.hd=v.hw;
   v.rmax=v.k==='cyl'?v.r:Math.hypot(v.hw,v.hd);return v;});}
 const VOLUMES=[
+  ...BUILDINGS.flatMap(b=>volsAt(b.lvl,houseVol(b))),   // 第〇/终章的民居：真正的体积房子
   ...volsAt(4,wellPavilion(WELL_X,WELL_Y,false)),   // 第〇章 · 村口井亭
   ...volsAt(5,wellPavilion(WELL_X,WELL_Y,true)),    // 终章 · 夜魇井亭
   ...volsAt(5,[{k:'box',x:13.3,y:3.0,hw:0.40,hd:0.20,y0:0,y1:0.20,tex:steleTex,cap:1}]),  // 掀翻在井边的封石
@@ -2268,11 +2358,27 @@ function buildFloorCache(L){
   const f={tw,th,R:new Uint8Array(tw*th),G:new Uint8Array(tw*th),B:new Uint8Array(tw*th),U:new Uint8Array(tw*th)};
   for(let y=0;y<th;y++)for(let x=0;x<tw;x++){
     const c=FLOOR_COLORS[floorStyle(x+0.5,y+0.5,L)],k=y*tw+x;
-    // 白昼地面要有一层大尺度明暗（云影/树影），烘进缓存，逐像素热路径零额外开销
+    // 白昼地面：大尺度云影 + 按地表类型的高频细节，全部烘进缓存（逐像素热路径零开销）
     let sh=1;
     if(L===4){
       const a=hashInt(x>>2,y>>2)/255,b=hashInt((x>>2)+1,y>>2)/255,d=hashInt(x>>2,(y>>2)+1)/255;
-      sh=0.87+0.22*(a+(b-a)*((x&3)/4))*0.65+0.10*d;
+      sh=0.90+0.18*(a+(b-a)*((x&3)/4))*0.65+0.08*d;
+      // 地表类型：v=草地 q=土路 r=井台石板
+      const style=floorStyle(x+0.5,y+0.5,4);
+      if(style==='v'){
+        // 草地：斑驳草簇（种子格点，亮暗交错）
+        const seed=hashInt(x*13,y*17);
+        sh*=((seed&7)===0?1.12:((seed&7)===1?1.06:((seed&15)===2?0.94:1)));
+      }else if(style==='q'){
+        // 土路：细碎石子与轻微车辙（横向压暗带）
+        const seed=hashInt(x*7,y*11);
+        sh*=((seed&15)===0?1.10:((seed&31)===0?0.90:1));
+        if(y%4===0)sh*=0.96;
+      }else if(style==='r'){
+        // 井台石板：交错石缝压暗
+        const px=(x+((y&1)?1:0))%3;
+        if(px===0||y%3===0)sh*=0.88;
+      }
     }
     f.R[k]=c[0]*sh;f.G[k]=c[1]*sh;f.B[k]=c[2]*sh;f.U[k]=t[y][x]==='U'?1:0;
   }
@@ -2462,7 +2568,11 @@ function ch0DrawPrompt(txt){
 }
 
 function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度，基线提亮；随机抖动减到 0.02
+  const VL=volByLvl[lvl];   // 实体几何列表：每层固定，提到列循环外（含远处屋顶剔除缓存）
   const flicker=lvl===4?1:(0.95+0.045*Math.sin(tSec*4.1)+Math.random()*0.02)*(flickerEvent>0?0.55:1)*(lvl===1?0.93:1);   // 第〇章白昼恒亮
+  // 体积几何距离缓存：远处屋顶(pyr)的采样是主要开销，超过 VIEW_DIST2 只留墙体轮廓
+  const VD2=lvl===4||lvl===5?1600:1e9;   // 40格²=1600：近处完整屋顶，远处省去采样
+  for(let vi=0;vi<VL.length;vi++){const v=VL[vi];const dx=v.x-player.x,dy=v.y-player.y;v._d2=dx*dx+dy*dy;}
   const horizon=VH>>1;
   const hw=VH/2;
   for(let y=0;y<horizon;y++){const tt=y/horizon;
@@ -2511,7 +2621,6 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
   const fC=lvl===4?[64,62,50]:(lvl===2?[6,13,26]:(lvl===3?[11,15,10]:(lvl===5?[7,15,24]:[9,10,15])));   // 第〇章暖阳薄雾 / 第二章冷蓝雾 / 第三章灰绿雾 / 终章深水雾（已提亮）
   const fogDenom=lvl===1?12:(lvl===4?20:15);
   const hits=[],vhits=[];
-  const VL=volByLvl[lvl];   // 实体几何列表：每层固定，提到列循环外
   for(let x=0;x<VW;x++){
     const cam=2*x/VW-1;
     const rdx=player.dirX+player.planeX*cam,rdy=player.dirY+player.planeY*cam;
@@ -2526,6 +2635,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
       if(sideX<sideY){sideX+=ddx;mapX+=stepX;side=0;}else{sideY+=ddy;mapY+=stepY;side=1;}
       const t=tile(mapX,mapY);
       const isSolid=t==='#'||t==='S'||t==='B'||t==='C'||t==='X'||t==='D';
+      if(isSolid&&(lvl===4||lvl===5)&&buildingAt(mapX,mapY))continue;  // 建筑格由体积房屋接管（碰撞仍由 solid() 管）
       if(isSolid){hits.push({perp:side===0?sideX-ddx:sideY-ddy,mapX,mapY,side,shoji:false});break;}
       if(t==='J'){hits.push({perp:side===0?sideX-ddx:sideY-ddy,mapX,mapY,side,shoji:true});if(hits.length>3)break;}
     }
@@ -2602,6 +2712,7 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
         const vdd=rdx*rdx+rdy*rdy;
         for(let vi=0;vi<VL.length;vi++){
           const vo=VL[vi];
+          if(vo.k==='pyr'&&vo._d2>VD2)continue;   // 远处屋顶省采样：只画墙体轮廓
           const vex=player.x-vo.x,vey=player.y-vo.y;
           const vpr=vex*rdx+vey*rdy;
           if(vpr>=0)continue;                                   // 在身后（vex/vey 指向玩家：前方体积 vpr<0）
@@ -2642,18 +2753,16 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
             if(vo.k==='pyr'){
               // 四角攒尖顶：沿光线采样屋面高度场，取投影最高点作外轮廓（近→远，近坡遮远坡）
               let vN=((VH/vta)*(vo.y1-vo.y0))|0;
-              vN=(vN<14?14:(vN>110?110:vN))+8;
-              let vTop=1e9;
+              vN=(vN<12?12:(vN>64?64:vN))+6;   // 限采样：双坡顶/攒尖顶的屋面高度场，64 已足够平滑（近景省一半开销）
               for(let si=0;si<vN;si++){
                 const vt=vta+(vtb-vta)*((si+0.5)/vN);
                 const vwx=player.x+rdx*vt,vwy=player.y+rdy*vt;
                 const vadx=Math.abs(vwx-vo.x)/vo.hw,vady=Math.abs(vwy-vo.y)/vo.hd;
-                const vm=vadx>vady?vadx:vady;
+                const vm=vo.ridge?(vo.ridge==='y'?vadx:vady):(vadx>vady?vadx:vady); // ridge=双坡人字顶：沿屋脊方向等高
                 if(vm>1)continue;
                 const vT=vo.y1-(vo.y1-vo.y0)*vm;          // 该点的屋面高度
                 const vlH=VH/vt;
                 const vyT=horizon+vlH*(0.5-vT),vyB=horizon+vlH*(0.5-vo.y0);
-                if(vyT>=vTop)continue;
                 let vu=vadx>=vady?(((vwy-(vo.y-vo.hd))/(2*vo.hd))*64)|0:(((vwx-(vo.x-vo.hw))/(2*vo.hw))*64)|0;
                 if(vu<0)vu=0;else if(vu>63)vu=63;
                 let vv=((1-(vT-vo.y0)/(vo.y1-vo.y0))*64)|0;
@@ -2663,13 +2772,12 @@ function render(tSec){  // 烛光闪烁：降低频率(4.1Hz→慢波)与幅度�
                 const vfk2=Math.min(1,vt/fogDenom);
                 const vfr2=(fC[0]*vfk2)|0,vfg2=(fC[1]*vfk2)|0,vfb2=(fC[2]*vfk2)|0;
                 const vp0=vyT<0?0:Math.ceil(vyT);
-                const vp1=Math.min(VH,Math.ceil(vyB<vTop?vyB:vTop));
+                const vp1=Math.min(VH,Math.ceil(vyB));
                 for(let yy=vp0;yy<vp1;yy++){
                   if(vt>=vzBuf[yy])continue;
                   vzBuf[yy]=vt;
                   buf32[yy*VW+x]=pack((vc&255)*vsh2+vfr2,((vc>>>8)&255)*vsh2+vfg2,((vc>>>16)&255)*vsh2+vfb2);
                 }
-                if(vyT<vTop)vTop=vyT;
               }
             }else{
               // 圆柱 / 方盒：等高的侧壁（圆柱每列只交一点，u 由该点方位角决定 → 自然弯曲）
